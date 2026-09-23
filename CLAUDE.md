@@ -3,9 +3,59 @@
 PWA de listas personalizables para capturar rápidamente tareas, cosas que comprar y eventos.
 Lema: "Sácalo de la cabeza". Mobile-first, instalable y usable offline, con Supabase como backend.
 
-> **La documentación funcional vive en `docs/`.** Léela antes de implementar cualquier feature:
-> define el comportamiento esperado, el modelo de datos y el diseño (`docs/design/`).
+> **La documentación funcional vive en `docs/concept/` y los planes de desarrollo en `docs/plans/`.**
+> Léelos antes de implementar cualquier feature: definen el comportamiento esperado, el modelo de
+> datos, el diseño (`docs/design/`) y el orden de trabajo por sesiones.
 > `docs/` está en `.gitignore`: es local y no se commitea salvo que se pida (`git add -f`).
+
+## Cómo trabajar en este proyecto
+
+- **Al empezar cada sesión**, lee `docs/concept/README.md` y `docs/plans/README.md`. Este último
+  dice qué fase está en curso y enlaza su plan, que trae los documentos a releer y un prompt de
+  arranque.
+- **Trabaja solo en la fase en curso.** No adelantes trabajo de fases posteriores aunque sea
+  pequeño; si surge algo útil para más adelante, anótalo en el plan de esa fase.
+- **Cualquier plan nuevo** se escribe en `docs/plans/` (un archivo por plan) y se registra en
+  `docs/plans/README.md`. Nunca planes sueltos en el chat.
+- **Al terminar**, actualiza el estado de la fase en `docs/plans/README.md` y la documentación
+  afectada en `docs/concept/` (y `docs/concept/08-revision-inicial.md` si cierras alguno de sus
+  puntos), en el mismo commit que el código.
+- **Antes de cerrar la sesión**, `pnpm typecheck && pnpm lint && pnpm test` en verde. Si algo
+  queda a medias, se dice explícitamente en las notas de la fase.
+
+## Ramas y pull requests
+
+- **Nunca se trabaja directamente sobre `main`.** `main` solo recibe merges de pull requests con
+  typecheck, lint y tests en verde. Si GitHub no permite proteger la rama en el plan del repo,
+  la regla se cumple por disciplina igual.
+- **Una rama por sesión del plan** (o por tarea, si una sesión se parte). Se crea desde `main`
+  actualizado: `git switch main && git pull && git switch -c <rama>`.
+- **Nombre = intención**: `<tipo>/<fase>-<qué-hace>`, en kebab-case y en español, con el tipo de
+  Conventional Commits. Ejemplos: `chore/0-preparar-entorno`, `feat/1.01-esquema-inicial-rls`,
+  `feat/1.05-inicio-con-listas`, `fix/1.07-checkbox-no-completa`, `docs/plan-fase-2`,
+  `refactor/1.09-swipe-sin-libreria`.
+- **Pull request por rama**, con título en Conventional Commits y una descripción que enlaza la
+  sesión del plan, lista qué se verificó (la lista de la sesión) y qué documentos se actualizaron.
+  Se mergea con _Squash and merge_ (un commit por sesión en `main`, con el título del PR) y se
+  borra la rama. La URL de previsualización de Cloudflare Pages del PR sirve para probar en el
+  iPhone antes de mergear.
+- Los commits dentro de la rama siguen siendo Conventional Commits en español.
+
+## Diseño y UX
+
+- El diseño de referencia viene de Claude Design (`docs/design/`, extraído en
+  `docs/concept/06-diseno-y-ui.md`). **Cualquier pantalla, componente, flujo, texto de interfaz o
+  concepto de UI/UX que no esté en ese diseño se consulta con Fran antes de implementarlo**:
+  describe la propuesta en dos o tres frases (qué, dónde, por qué) y espera su respuesta. Esto
+  incluye las pantallas que el documento 06 lista como "se diseñan en código".
+- **Si el cambio es grande** (una vista nueva, un concepto nuevo, el rediseño de una pantalla,
+  una sugerencia de UX importante), además de consultarlo entrega un **prompt para Claude Design**
+  listo para pegar, siguiendo la plantilla de `docs/concept/06-diseno-y-ui.md` §"Qué hacer cuando
+  el diseño no cubre algo". El resultado exportado se guarda en `docs/design/` y se extrae al
+  documento 06 antes de implementar.
+- Los ajustes pequeños (espaciado, un estado hover, alinear un token) se resuelven en código
+  siguiendo el sistema, y se anotan en el inventario de 06.
+- Nunca se inventan ni se redibujan recursos de marca (ver §Marca).
 
 ## Stack
 
