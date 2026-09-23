@@ -15,6 +15,9 @@ coverage
 *.local
 !.env.example
 
+# Documentación local (no se versiona; forzar con `git add -f docs/...` si hace falta)
+docs/
+
 # Supabase CLI
 supabase/.branches
 supabase/.temp

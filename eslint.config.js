@@ -11,6 +11,7 @@ export default defineConfig([
     'dist',
     'dev-dist',
     'coverage',
+    'docs',
     'supabase',
     'src/app/routeTree.gen.ts',
     'src/lib/supabase/database.types.ts',

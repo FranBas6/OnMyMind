@@ -3,8 +3,9 @@
 PWA de listas personalizables para capturar rápidamente tareas, cosas que comprar y eventos.
 Lema: "Sácalo de la cabeza". Mobile-first, instalable y usable offline, con Supabase como backend.
 
-> **La documentación funcional vive en [`docs/`](docs/).** Léela antes de implementar cualquier
-> feature: define el comportamiento esperado, el modelo de datos y el diseño (`docs/design/`).
+> **La documentación funcional vive en `docs/`.** Léela antes de implementar cualquier feature:
+> define el comportamiento esperado, el modelo de datos y el diseño (`docs/design/`).
+> `docs/` está en `.gitignore`: es local y no se commitea salvo que se pida (`git add -f`).
 
 ## Stack
 
@@ -51,8 +52,8 @@ supabase/
   config.toml     Configuración del stack local de Supabase
   migrations/     Migraciones SQL (supabase migration new <nombre>)
   functions/      Edge functions (scraper de precios, envío de push)
-public/icons/     icon.svg (fuente) y PNG generados con `pnpm icons`
-docs/             Documentación funcional y de diseño (docs/design/)
+public/logos/     Logos oficiales del diseño (svg/ y png/): no se generan ni se editan aquí
+docs/             Documentación funcional y de diseño (local, fuera de git)
 ```
 
 Dentro de cada feature, organiza por necesidad: `components/`, `hooks/`, `api/` (queries y
@@ -90,13 +91,25 @@ pnpm typecheck        # tsc -b
 pnpm lint             # ESLint (0 warnings)
 pnpm format           # Prettier (escribe); pnpm format:check solo comprueba
 pnpm test             # Vitest una vez; pnpm test:watch en modo watch
-pnpm icons            # regenera los PNG/ico desde public/icons/icon.svg
 pnpm supabase:types   # regenera src/lib/supabase/database.types.ts desde Supabase local
 
 pnpm exec supabase start                  # levanta Supabase local (requiere Docker)
 pnpm exec supabase migration new <nombre> # nueva migración
 pnpm exec supabase db reset               # aplica migraciones desde cero
 ```
+
+## Marca
+
+Los logos vienen de Claude Design y están en `public/logos/`. No inventes ni redibujes recursos de
+marca: si falta una variante, pídela.
+
+- `svg/omm-mark.svg`: símbolo principal (índigo). `omm-mark-white.svg` sobre fondos de color,
+  `omm-mark-dark.svg` para modo oscuro, `omm-mark-mono-black.svg` monocromo.
+- `svg/omm-app-icon.svg` / `omm-app-icon-maskable.svg`: icono de app (1024, maskable con zona
+  segura del 80 %).
+- `png/`: iconos PWA (192, 512, maskable), apple-touch 180, favicon 32, marcas de 512 y wordmark
+  `onmymind-logo(-white|-dark).png` de 1200×300.
+- Wordmark: Plus Jakarta Sans 800, tracking -0.03em.
 
 ## Notas
 

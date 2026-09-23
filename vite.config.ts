@@ -22,7 +22,12 @@ export default defineConfig({
       strategies: 'generateSW',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['icons/icon.svg', 'icons/favicon.ico', 'icons/apple-touch-icon-180x180.png'],
+      // Logos de public/logos (diseño). Los iconos del manifest se precachean automáticamente.
+      includeAssets: [
+        'logos/svg/omm-mark.svg',
+        'logos/png/favicon-32.png',
+        'logos/png/apple-touch-icon-180.png',
+      ],
       manifest: {
         id: '/',
         name: 'OnMyMind',
@@ -37,20 +42,21 @@ export default defineConfig({
         background_color: '#FBFAF7',
         categories: ['productivity', 'lifestyle'],
         icons: [
-          { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/logos/png/pwa-icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/logos/png/pwa-icon-512.png', sizes: '512x512', type: 'image/png' },
           {
-            src: '/icons/maskable-icon-512x512.png',
+            src: '/logos/png/pwa-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
           },
-          { src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml' },
         ],
       },
       workbox: {
         // App shell completa + fuentes autoalojadas (woff2) para que funcione offline.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
+        // El resto de variantes del logo (wordmarks, 1024…) no hacen falta offline.
+        globIgnores: ['logos/**'],
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
       },

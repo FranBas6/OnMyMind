@@ -27,5 +27,5 @@ Otros comandos: `pnpm build`, `pnpm preview`, `pnpm test`, `pnpm lint`, `pnpm ty
 
 ## Documentación
 
-La documentación funcional y de diseño está en [`docs/`](docs/). Las convenciones de código y la
-estructura del proyecto están en [`CLAUDE.md`](CLAUDE.md).
+La documentación funcional y de diseño vive en `docs/`, que es local y no se versiona. Las
+convenciones de código y la estructura del proyecto están en [`CLAUDE.md`](CLAUDE.md).
