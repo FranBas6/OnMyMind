@@ -1,0 +1,37 @@
+# Dependencias
+node_modules
+
+# Build / Vite / PWA
+dist
+dist-ssr
+dev-dist
+*.tsbuildinfo
+.vite
+coverage
+
+# Variables de entorno (solo se versiona el ejemplo)
+.env
+.env.*
+*.local
+!.env.example
+
+# Supabase CLI
+supabase/.branches
+supabase/.temp
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Caches de herramientas
+.eslintcache
+
+# Editor / SO
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.sw?
