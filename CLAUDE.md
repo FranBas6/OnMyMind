@@ -23,22 +23,28 @@ Lema: "Sácalo de la cabeza". Mobile-first, instalable y usable offline, con Sup
 - **Antes de cerrar la sesión**, `pnpm typecheck && pnpm lint && pnpm test` en verde. Si algo
   queda a medias, se dice explícitamente en las notas de la fase.
 
-## Ramas y pull requests
+## Ramas
 
-- **Nunca se trabaja directamente sobre `main`.** `main` solo recibe merges de pull requests con
-  typecheck, lint y tests en verde. Si GitHub no permite proteger la rama en el plan del repo,
-  la regla se cumple por disciplina igual.
-- **Una rama por sesión del plan** (o por tarea, si una sesión se parte). Se crea desde `main`
-  actualizado: `git switch main && git pull && git switch -c <rama>`.
+- **Dos ramas fijas y nunca se trabaja directamente sobre ellas.** `main` es lo publicado (la rama
+  de producción de Cloudflare Pages desde la fase 1.4); `develop` es la de integración.
+- **Una rama por fase, paso o tarea**, la unidad de trabajo que tenga sentido. Se crea desde
+  `develop` actualizado: `git switch develop && git pull && git switch -c <rama>`.
 - **Nombre = intención**: `<tipo>/<fase>-<qué-hace>`, en kebab-case y en español, con el tipo de
   Conventional Commits. Ejemplos: `chore/0-preparar-entorno`, `feat/1.01-esquema-inicial-rls`,
   `feat/1.05-inicio-con-listas`, `fix/1.07-checkbox-no-completa`, `docs/plan-fase-2`,
   `refactor/1.09-swipe-sin-libreria`.
-- **Pull request por rama**, con título en Conventional Commits y una descripción que enlaza la
-  sesión del plan, lista qué se verificó (la lista de la sesión) y qué documentos se actualizaron.
-  Se mergea con _Squash and merge_ (un commit por sesión en `main`, con el título del PR) y se
-  borra la rama. La URL de previsualización de Cloudflare Pages del PR sirve para probar en el
-  iPhone antes de mergear.
+- **La rama vuelve a `develop` con squash** cuando su verificación está hecha y los checks en
+  verde: `git switch develop && git merge --squash <rama> && git commit` con un mensaje en
+  Conventional Commits (un commit por tarea en `develop`). Después se borra con
+  `git branch -D <rama>` (`-D` porque tras un squash git no la considera mergeada) y, si se
+  subió, `git push origin --delete <rama>`.
+- **`main` avanza al cerrar cada sesión**, solo por fast-forward:
+  `git switch main && git merge --ff-only develop && git push`. Si el fast-forward falla, `main`
+  tiene algo que `develop` no, y se investiga antes de seguir.
+- **Sin pull requests**: el proyecto es de una sola persona. La comprobación la hace el hook
+  `.husky/pre-push` (typecheck, lint y tests): un push con algo en rojo no sale. Para probar en el
+  iPhone antes de avanzar `main`, Cloudflare Pages publica una URL de previsualización por rama
+  (`develop` incluida).
 - Los commits dentro de la rama siguen siendo Conventional Commits en español.
 
 ## Diseño y UX
@@ -72,7 +78,7 @@ Lema: "Sácalo de la cabeza". Mobile-first, instalable y usable offline, con Sup
   next-themes (modo oscuro con clase `.dark`), sonner (toasts).
 - **Tooling**: ESLint 9 (flat config, typescript-eslint type-checked, react-hooks,
   react-refresh), Prettier + prettier-plugin-tailwindcss, Vitest + Testing Library + jsdom,
-  Husky + lint-staged (pre-commit).
+  Husky + lint-staged (pre-commit) y typecheck + lint + tests (pre-push).
 
 ## Estructura
 
@@ -143,10 +149,15 @@ pnpm format           # Prettier (escribe); pnpm format:check solo comprueba
 pnpm test             # Vitest una vez; pnpm test:watch en modo watch
 pnpm supabase:types   # regenera src/lib/supabase/database.types.ts desde Supabase local
 
-pnpm exec supabase start                  # levanta Supabase local (requiere Docker)
-pnpm exec supabase migration new <nombre> # nueva migración
-pnpm exec supabase db reset               # aplica migraciones desde cero
+pnpm db:start              # levanta Supabase local (requiere Docker vía Colima)
+pnpm db:stop               # para los contenedores conservando los datos
+pnpm db:status             # URLs y claves locales
+pnpm db:reset              # aplica migraciones desde cero
+pnpm db:migration <nombre> # nueva migración en supabase/migrations/
 ```
+
+Cualquier otro comando de la CLI de Supabase va con `pnpm exec supabase …`: es una dependencia
+de desarrollo, no está instalada de forma global.
 
 ## Marca
 
