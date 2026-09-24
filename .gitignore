@@ -21,6 +21,7 @@ docs/
 # Supabase CLI
 supabase/.branches
 supabase/.temp
+supabase/snippets
 
 # Logs
 logs
