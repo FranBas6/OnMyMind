@@ -25,6 +25,17 @@ pnpm dev                          # http://localhost:5173
 Otros comandos: `pnpm build`, `pnpm preview`, `pnpm test`, `pnpm lint`, `pnpm typecheck`,
 `pnpm format`.
 
+## Despliegue
+
+- **Producción:** <https://onmymind.pages.dev> (Cloudflare Pages, rama `main`).
+- **Previsualización:** cada rama que se sube tiene su URL, por ejemplo
+  `https://develop.onmymind.pages.dev`.
+- Cloudflare construye con `pnpm build` y publica `dist/`. Las variables `VITE_SUPABASE_URL` y
+  `VITE_SUPABASE_ANON_KEY` del proyecto de Supabase en la nube están en el panel de Cloudflare
+  y se incrustan en el build: cambiarlas exige un nuevo despliegue.
+- El esquema de la base de datos se sube con `pnpm exec supabase db push`. Una migración ya
+  aplicada en la nube no se edita: los cambios van en una migración nueva.
+
 ## Documentación
 
 La documentación funcional y de diseño vive en `docs/`, que es local y no se versiona. Las
