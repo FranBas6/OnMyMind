@@ -107,6 +107,13 @@ export type Database = {
             foreignKeyName: "items_list_id_fkey"
             columns: ["list_id"]
             isOneToOne: false
+            referencedRelation: "list_counters"
+            referencedColumns: ["list_id"]
+          },
+          {
+            foreignKeyName: "items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
             referencedRelation: "lists"
             referencedColumns: ["id"]
           },
@@ -138,6 +145,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "list_members_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "list_counters"
+            referencedColumns: ["list_id"]
+          },
           {
             foreignKeyName: "list_members_list_id_fkey"
             columns: ["list_id"]
@@ -233,7 +247,15 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      list_counters: {
+        Row: {
+          done_count: number | null
+          list_id: string | null
+          pending_count: number | null
+          pending_price_cents: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       is_list_member: { Args: { p_list_id: string }; Returns: boolean }

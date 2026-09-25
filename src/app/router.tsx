@@ -33,4 +33,8 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: ReturnType<typeof createAppRouter>
   }
+  interface StaticDataRouteOption {
+    /** Contenido de escritorio a 880 px en vez de 760 (Inicio, diseño 03 Inicio). */
+    wide?: boolean
+  }
 }

@@ -2,30 +2,39 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Inbox, Plus, Search, Sun, type LucideIcon } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 
+import { useLists } from '@/features/lists'
+import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
 import { isDestinationActive } from './navigation'
 
 /**
  * Sidebar de escritorio (diseño, pantalla D1): marca, buscador (⌘K), accesos a «En mente» y
- * «Hoy», «Mis listas» y «+ Nueva lista». Las listas y los contadores llegan en 1.5; crear
- * listas, en 1.6.
+ * «Hoy», «Mis listas» con su color y contador, y «+ Nueva lista» (se activa en 1.6). El contador
+ * de «Hoy» llega con la vista Hoy (1.11).
  */
 export function Sidebar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const lists = useLists()
+  const inbox = lists.data?.inbox
   useSearchShortcut()
 
   return (
     <aside className="sticky top-0 flex h-dvh flex-col gap-[22px] overflow-y-auto border-r border-border-soft bg-secondary px-4 py-6">
-      <div className="flex items-center gap-2.5 px-2">
+      {/* La marca lleva a Inicio (diseño 03 Inicio). */}
+      <Link
+        to="/"
+        aria-label="OnMyMind, Inicio"
+        className="flex items-center gap-2.5 self-start rounded-xl px-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      >
         <img src="/logos/svg/omm-mark.svg" alt="" className="size-7 dark:hidden" />
         <img src="/logos/svg/omm-mark-dark.svg" alt="" className="hidden size-7 dark:block" />
         <span className="font-display text-lg font-extrabold tracking-[-0.02em]">OnMyMind</span>
-      </div>
+      </Link>
 
       <Link
         to="/search"
-        className="flex h-11 items-center gap-2.5 rounded-[14px] border border-border bg-card px-3.5 text-sm text-placeholder outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="flex h-11 items-center gap-2.5 rounded-[14px] border border-border bg-card px-3.5 text-sm text-subtle-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         <Search aria-hidden className="size-4" />
         Buscar
@@ -35,10 +44,17 @@ export function Sidebar() {
       </Link>
 
       <nav aria-label="Accesos" className="flex flex-col gap-0.5">
-        {/* Provisional: en 1.5 «En mente» abrirá el detalle de la lista inbox. */}
-        <SidebarLink to="/" icon={Inbox} active={pathname === '/'}>
-          En mente
-        </SidebarLink>
+        {inbox && (
+          <SidebarLink
+            to="/lists/$listId"
+            params={{ listId: inbox.id }}
+            icon={Inbox}
+            active={pathname === `/lists/${inbox.id}`}
+            count={inbox.counters.pending}
+          >
+            {inbox.name}
+          </SidebarLink>
+        )}
         <SidebarLink to="/today" icon={Sun} active={isDestinationActive('/today', pathname)}>
           Hoy
         </SidebarLink>
@@ -51,6 +67,31 @@ export function Sidebar() {
         >
           Mis listas
         </h2>
+        <ul className="flex flex-col gap-0.5">
+          {lists.data?.lists.map((list) => {
+            const active = pathname === `/lists/${list.id}`
+            return (
+              <li key={list.id}>
+                <Link
+                  to="/lists/$listId"
+                  params={{ listId: list.id }}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex h-10 items-center gap-2.5 rounded-xl px-3 text-sm font-medium outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                    active && 'bg-card',
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cn('size-3 shrink-0 rounded-[4px]', LIST_COLOR_BG[list.color])}
+                  />
+                  <span className="truncate">{list.name}</span>
+                  <Count value={list.counters.pending} />
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
       </section>
 
       <button
@@ -65,17 +106,19 @@ export function Sidebar() {
   )
 }
 
-interface SidebarLinkProps {
-  to: '/' | '/today'
+type SidebarLinkProps = (
+  { to: '/today'; params?: never } | { to: '/lists/$listId'; params: { listId: string } }
+) & {
   icon: LucideIcon
   active: boolean
+  count?: number
   children: ReactNode
 }
 
-function SidebarLink({ to, icon: Icon, active, children }: SidebarLinkProps) {
+function SidebarLink({ to, params, icon: Icon, active, count, children }: SidebarLinkProps) {
   return (
     <Link
-      to={to}
+      {...(params ? { to, params } : { to })}
       aria-current={active ? 'page' : undefined}
       className={cn(
         'flex h-10 items-center gap-2.5 rounded-xl px-3 text-sm outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
@@ -83,9 +126,14 @@ function SidebarLink({ to, icon: Icon, active, children }: SidebarLinkProps) {
       )}
     >
       <Icon aria-hidden className="size-4" />
-      {children}
+      <span className="truncate">{children}</span>
+      {count !== undefined && <Count value={count} />}
     </Link>
   )
+}
+
+function Count({ value }: { value: number }) {
+  return <span className="ml-auto text-xs font-normal text-subtle-foreground">{value}</span>
 }
 
 /** ⌘K (Ctrl+K fuera de Mac) lleva a Buscar desde cualquier pantalla de escritorio. */

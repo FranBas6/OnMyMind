@@ -70,6 +70,15 @@
 
   --brand: #5a4be6;
   --brand-tint: #eeebff;
+  /* Tarjeta fijada de «En mente» (Inicio): en oscuro no usa el primario, que lleva texto oscuro */
+  --inbox-card: #5a4be6;
+  --inbox-card-shadow: 0 12px 28px rgb(90 75 230 / 0.22);
+  /* Tarjetas de lista e ítem */
+  --card-shadow: 0 2px 8px rgb(28 27 34 / 0.04);
+  /* Controles apagados: puntos del menú ···, borde del checkbox pendiente */
+  --control: #c9c6d2;
+  /* Bloques del esqueleto de carga */
+  --skeleton: #ece9e2;
 
   /* Texto terciario legible (iconos inactivos de la barra, pistas): #9b98aa del diseño, a AA */
   --subtle-foreground: #747088;
@@ -123,6 +132,12 @@
 
   --brand: #8c81ff;
   --brand-tint: #2a2740;
+  --inbox-card: #6a5cf0;
+  --inbox-card-shadow: 0 12px 32px rgb(106 92 240 / 0.3);
+  --card-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
+  --control: #4a485a;
+  /* Sin valor en el diseño: el borde, que se distingue sobre las tarjetas */
+  --skeleton: #2c2b39;
 
   --subtle-foreground: #878494;
   --error: #ff8a8e;
@@ -173,6 +188,11 @@
 
   --color-brand: var(--brand);
   --color-brand-tint: var(--brand-tint);
+  --color-inbox-card: var(--inbox-card);
+  --shadow-inbox-card: var(--inbox-card-shadow);
+  --shadow-card: var(--card-shadow);
+  --color-control: var(--control);
+  --color-skeleton: var(--skeleton);
 
   --color-subtle-foreground: var(--subtle-foreground);
   --color-error: var(--error);
