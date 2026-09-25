@@ -9,17 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './../routes/__root'
-import { Route as IndexRouteImport } from './../routes/index'
+import { Route as AuthenticatedRouteImport } from './../routes/_authenticated'
 import { Route as LoginRouteImport } from './../routes/login'
-import { Route as ProfileRouteImport } from './../routes/profile'
-import { Route as SearchRouteImport } from './../routes/search'
-import { Route as TodayRouteImport } from './../routes/today'
-import { Route as ListsIndexRouteImport } from './../routes/lists.index'
-import { Route as ListsListIdRouteImport } from './../routes/lists.$listId'
+import { Route as AuthenticatedIndexRouteImport } from './../routes/_authenticated.index'
+import { Route as AuthenticatedProfileRouteImport } from './../routes/_authenticated.profile'
+import { Route as AuthenticatedSearchRouteImport } from './../routes/_authenticated.search'
+import { Route as AuthenticatedTodayRouteImport } from './../routes/_authenticated.today'
+import { Route as AuthCallbackRouteImport } from './../routes/auth.callback'
+import { Route as AuthenticatedListsListIdRouteImport } from './../routes/_authenticated.lists.$listId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -27,59 +27,66 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfileRoute = ProfileRouteImport.update({
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const SearchRoute = SearchRouteImport.update({
+const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
   id: '/search',
   path: '/search',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const TodayRoute = TodayRouteImport.update({
+const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
   id: '/today',
   path: '/today',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ListsIndexRoute = ListsIndexRouteImport.update({
-  id: '/lists/',
-  path: '/lists/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ListsListIdRoute = ListsListIdRouteImport.update({
-  id: '/lists/$listId',
-  path: '/lists/$listId',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedListsListIdRoute =
+  AuthenticatedListsListIdRouteImport.update({
+    id: '/lists/$listId',
+    path: '/lists/$listId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/search': typeof SearchRoute
-  '/today': typeof TodayRoute
-  '/lists/$listId': typeof ListsListIdRoute
-  '/lists/': typeof ListsIndexRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/search': typeof AuthenticatedSearchRoute
+  '/today': typeof AuthenticatedTodayRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/lists/$listId': typeof AuthenticatedListsListIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/search': typeof SearchRoute
-  '/today': typeof TodayRoute
-  '/lists/$listId': typeof ListsListIdRoute
-  '/lists': typeof ListsIndexRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/search': typeof AuthenticatedSearchRoute
+  '/today': typeof AuthenticatedTodayRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/lists/$listId': typeof AuthenticatedListsListIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/search': typeof SearchRoute
-  '/today': typeof TodayRoute
-  '/lists/$listId': typeof ListsListIdRoute
-  '/lists/': typeof ListsIndexRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/search': typeof AuthenticatedSearchRoute
+  '/_authenticated/today': typeof AuthenticatedTodayRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/lists/$listId': typeof AuthenticatedListsListIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,45 +96,42 @@ export interface FileRouteTypes {
     | '/profile'
     | '/search'
     | '/today'
+    | '/auth/callback'
     | '/lists/$listId'
-    | '/lists/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/login'
     | '/profile'
     | '/search'
     | '/today'
+    | '/auth/callback'
+    | '/'
     | '/lists/$listId'
-    | '/lists'
   id:
     | '__root__'
-    | '/'
+    | '/_authenticated'
     | '/login'
-    | '/profile'
-    | '/search'
-    | '/today'
-    | '/lists/$listId'
-    | '/lists/'
+    | '/_authenticated/profile'
+    | '/_authenticated/search'
+    | '/_authenticated/today'
+    | '/auth/callback'
+    | '/_authenticated/'
+    | '/_authenticated/lists/$listId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
-  ProfileRoute: typeof ProfileRoute
-  SearchRoute: typeof SearchRoute
-  TodayRoute: typeof TodayRoute
-  ListsListIdRoute: typeof ListsListIdRoute
-  ListsIndexRoute: typeof ListsIndexRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -137,52 +141,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/profile': {
-      id: '/profile'
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
       path: '/profile'
       fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/search': {
-      id: '/search'
+    '/_authenticated/search': {
+      id: '/_authenticated/search'
       path: '/search'
       fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedSearchRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/today': {
-      id: '/today'
+    '/_authenticated/today': {
+      id: '/_authenticated/today'
       path: '/today'
       fullPath: '/today'
-      preLoaderRoute: typeof TodayRouteImport
+      preLoaderRoute: typeof AuthenticatedTodayRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lists/': {
-      id: '/lists/'
-      path: '/lists'
-      fullPath: '/lists/'
-      preLoaderRoute: typeof ListsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lists/$listId': {
-      id: '/lists/$listId'
+    '/_authenticated/lists/$listId': {
+      id: '/_authenticated/lists/$listId'
       path: '/lists/$listId'
       fullPath: '/lists/$listId'
-      preLoaderRoute: typeof ListsListIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedListsListIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
+  AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedListsListIdRoute: typeof AuthenticatedListsListIdRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedSearchRoute: AuthenticatedSearchRoute,
+  AuthenticatedTodayRoute: AuthenticatedTodayRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedListsListIdRoute: AuthenticatedListsListIdRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
-  ProfileRoute: ProfileRoute,
-  SearchRoute: SearchRoute,
-  TodayRoute: TodayRoute,
-  ListsListIdRoute: ListsListIdRoute,
-  ListsIndexRoute: ListsIndexRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -72,5 +72,11 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     css: false,
+    // Valores ficticios: el cliente de Supabase lanza si faltan al importarse. Los tests no
+    // hablan con Supabase (la sesión se inyecta en el contexto del router).
+    env: {
+      VITE_SUPABASE_URL: 'http://127.0.0.1:54321',
+      VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+    },
   },
 })

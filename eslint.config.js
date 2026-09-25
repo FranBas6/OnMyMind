@@ -41,6 +41,11 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+      // TanStack Router redirige lanzando `redirect()`, que es un `Response` y no un `Error`.
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        { allow: [{ from: 'package', package: '@tanstack/router-core', name: 'Redirect' }] },
+      ],
     },
   },
   {

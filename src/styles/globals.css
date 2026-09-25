@@ -65,6 +65,10 @@
   --brand: #5a4be6;
   --brand-tint: #eeebff;
 
+  /* Formularios: error de campo o del servidor, y placeholder / pista (diseño Acceso) */
+  --error: #e0474c;
+  --placeholder: #9b98aa;
+
   --priority-high: #dc4c3f;
   --priority-medium: #d9912a;
   --priority-low: #8e8b99;
@@ -101,6 +105,9 @@
 
   --brand: #8c81ff;
   --brand-tint: #2b2850;
+
+  --error: #ff8a8e;
+  --placeholder: #6e6b7a;
 
   --priority-high: #f07a6d;
   --priority-medium: #f0b45a;
@@ -139,6 +146,9 @@
 
   --color-brand: var(--brand);
   --color-brand-tint: var(--brand-tint);
+
+  --color-error: var(--error);
+  --color-placeholder: var(--placeholder);
 
   --color-priority-high: var(--priority-high);
   --color-priority-medium: var(--priority-medium);
