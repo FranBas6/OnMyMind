@@ -90,7 +90,10 @@ function FieldMessage({ id, error, hint }: FieldMessageProps) {
   return (
     <p
       id={id}
-      className={cn('px-1 text-[13px] leading-[1.4]', error ? 'text-error' : 'text-placeholder')}
+      className={cn(
+        'px-1 text-[13px] leading-[1.4]',
+        error ? 'text-error' : 'text-subtle-foreground',
+      )}
     >
       {message}
     </p>

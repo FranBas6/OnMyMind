@@ -14,7 +14,18 @@ interface AppProvidersProps {
 export function AppProviders({ queryClient, children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      {/*
+        next-themes inyecta un <script> anti-parpadeo pensado para SSR que en una SPA no se
+        ejecuta nunca, y React 19 avisa en consola. Marcarlo como bloque de datos lo silencia;
+        el anti-parpadeo real está en index.html.
+      */}
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+        scriptProps={{ type: 'application/json' }}
+      >
         <TooltipProvider>
           {children}
           <Toaster position="top-center" />

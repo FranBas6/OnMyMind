@@ -1,30 +1,32 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 
-import { Button } from '@/components/ui/button'
-import { useDisplayName, useSignOut } from '@/features/auth'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { useDisplayName } from '@/features/auth'
+import { formatHeaderDate } from '@/lib/date'
 
 export const Route = createFileRoute('/_authenticated/')({
   component: HomePage,
 })
 
-/** Provisional (1.2): saludo y cerrar sesión. Inicio con listas reales llega en 1.5. */
+/** Inicio (diseño, pantalla 2). Las listas llegan en 1.5. */
 function HomePage() {
   const { session } = Route.useRouteContext()
   const displayName = useDisplayName(session.user.id)
-  const signOut = useSignOut()
+  const initial = displayName.data?.charAt(0).toUpperCase() ?? ''
 
   return (
-    <section className="space-y-6 pt-8">
-      <h1 className="text-[32px]">Hola, {displayName.data ?? '…'}</h1>
-      <Button
-        variant="outline"
-        disabled={signOut.isPending}
-        onClick={() => {
-          signOut.mutate()
-        }}
-      >
-        Cerrar sesión
-      </Button>
-    </section>
+    <PageHeader
+      eyebrow={formatHeaderDate(new Date())}
+      title="Mis listas"
+      trailing={
+        <Link
+          to="/profile"
+          aria-label="Perfil"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-tint text-[15px] font-bold text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          {initial}
+        </Link>
+      }
+    />
   )
 }
