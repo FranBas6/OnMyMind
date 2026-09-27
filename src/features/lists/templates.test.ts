@@ -5,6 +5,7 @@ import {
   archivedSummary,
   counterLabel,
   deleteMessage,
+  doneLabel,
   menuSummary,
   pendingTotal,
 } from './templates'
@@ -32,10 +33,22 @@ describe('counterLabel', () => {
     ['events', 1, '1 próximo'],
     ['inbox', 3, '3 cosas sin ordenar'],
     ['inbox', 1, '1 cosa sin ordenar'],
+    ['inbox', 0, 'Nada sin ordenar'],
     ['shopping', 0, '0 pendientes'],
     ['custom', 7, '7 pendientes'],
   ] as const)('%s con %i → «%s»', (kind, count, expected) => {
     expect(counterLabel(kind, count)).toBe(expected)
+  })
+})
+
+describe('doneLabel', () => {
+  it.each([
+    ['tasks', 2, '2 hechas'],
+    ['tasks', 1, '1 hecha'],
+    ['events', 1, '1 pasado'],
+    ['shopping', 0, '0 compradas'],
+  ] as const)('%s con %i → «%s»', (kind, count, expected) => {
+    expect(doneLabel(kind, count)).toBe(expected)
   })
 })
 

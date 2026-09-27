@@ -36,5 +36,10 @@ declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
     /** Contenido de escritorio a 880 px en vez de 760 (Inicio, diseño 03 Inicio). */
     wide?: boolean
+    /**
+     * En móvil, la pantalla pega su campo de añadir encima de la barra de navegación (detalle de
+     * lista): sin hueco para el FAB y con la columna a toda la altura para que el campo quede abajo.
+     */
+    addBar?: boolean
   }
 }

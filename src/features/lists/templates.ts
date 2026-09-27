@@ -18,13 +18,12 @@ interface KindTemplate {
   doneCounter: Plural
   /** Qué cuenta el contador de pendientes (02 §Inicio, diseño pantalla 2). */
   counter: Plural
-  /** Estados válidos del tipo (03 §items), con su etiqueta; el primero es el inicial. */
-  statuses: readonly { value: string; label: string; final: boolean }[]
 }
 
 /**
  * Plantillas de los tipos base. El esquema de campos de cada tipo llega con los formularios
- * de ítem (1.8); aquí solo lo que Inicio y los filtros necesitan saber del tipo.
+ * de ítem (1.8); aquí solo lo que Inicio necesita saber del tipo. Los estados de cada tipo viven
+ * en `features/items/status.ts`.
  */
 export const KIND_TEMPLATES: Record<ListKind, KindTemplate> = {
   inbox: {
@@ -32,59 +31,44 @@ export const KIND_TEMPLATES: Record<ListKind, KindTemplate> = {
     description: 'Lo que capturas sin elegir lista.',
     doneCounter: { one: 'hecha', other: 'hechas' },
     counter: { one: 'cosa sin ordenar', other: 'cosas sin ordenar' },
-    statuses: [
-      { value: 'pending', label: 'Pendiente', final: false },
-      { value: 'done', label: 'Hecha', final: true },
-    ],
   },
   tasks: {
     label: 'Tareas',
     description: 'Prioridad, fecha límite y estado.',
     doneCounter: { one: 'hecha', other: 'hechas' },
     counter: { one: 'pendiente', other: 'pendientes' },
-    statuses: [
-      { value: 'pending', label: 'Pendiente', final: false },
-      { value: 'in_progress', label: 'En curso', final: false },
-      { value: 'done', label: 'Hecha', final: true },
-    ],
   },
   shopping: {
     label: 'Compras',
     description: 'Precio, tienda e histórico de precios.',
     doneCounter: { one: 'comprada', other: 'compradas' },
     counter: { one: 'pendiente', other: 'pendientes' },
-    statuses: [
-      { value: 'pending', label: 'Pendiente', final: false },
-      { value: 'bought', label: 'Comprado', final: true },
-      { value: 'discarded', label: 'Descartado', final: true },
-    ],
   },
   events: {
     label: 'Eventos',
     description: 'Fecha y hora, recordatorio, repetición.',
     doneCounter: { one: 'pasado', other: 'pasados' },
     counter: { one: 'próximo', other: 'próximos' },
-    statuses: [
-      { value: 'upcoming', label: 'Próximo', final: false },
-      { value: 'cancelled', label: 'Cancelado', final: true },
-    ],
   },
   custom: {
     label: 'Personalizada',
     description: 'Tú decides los campos.',
     doneCounter: { one: 'hecha', other: 'hechas' },
     counter: { one: 'pendiente', other: 'pendientes' },
-    statuses: [
-      { value: 'pending', label: 'Pendiente', final: false },
-      { value: 'done', label: 'Hecha', final: true },
-    ],
   },
 }
 
-/** «4 pendientes», «1 próximo», «3 cosas sin ordenar». */
+/** «4 pendientes», «1 próximo», «3 cosas sin ordenar»; la inbox vacía, «Nada sin ordenar» (05). */
 export function counterLabel(kind: ListKind, count: number): string {
+  if (kind === 'inbox' && count === 0) return 'Nada sin ordenar'
   const { counter } = KIND_TEMPLATES[kind]
   return `${count} ${count === 1 ? counter.one : counter.other}`
+}
+
+/** Lo que ya está fuera de la cabeza: «2 hechas», «1 pasado». */
+export function doneLabel(kind: ListKind, count: number): string {
+  const { doneCounter } = KIND_TEMPLATES[kind]
+  return `${count} ${count === 1 ? doneCounter.one : doneCounter.other}`
 }
 
 /** Total pendiente de una lista de compras («627 €»), o `null` si no es de compras o no hay importe. */
@@ -108,8 +92,7 @@ function statusLabel(list: List): string {
   if (list.counters.pending > 0 || list.counters.done === 0) {
     return counterLabel(list.kind, list.counters.pending)
   }
-  const { doneCounter } = KIND_TEMPLATES[list.kind]
-  return `${list.counters.done} ${list.counters.done === 1 ? doneCounter.one : doneCounter.other}`
+  return doneLabel(list.kind, list.counters.done)
 }
 
 /** Cabecera del menú ···: «Tareas · 6 pendientes · 12 ítems» (diseño 04 Listas, L3). */

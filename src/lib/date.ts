@@ -34,3 +34,23 @@ export function formatCaptureAge(date: Date, now: Date = new Date()): string {
   if (days < 7) return format(date, 'EEEE')
   return format(date, isSameYear(date, now) ? 'd MMM' : 'd MMM yyyy')
 }
+
+export interface DueDateLabel {
+  text: string
+  /** Hoy o antes: el chip va en rojo (diseño, pantalla 4). */
+  urgent: boolean
+}
+
+/**
+ * Fecha límite de una tarea en su chip: «Hoy», «Mañana», «Ayer» y, si no, la fecha («3 oct», con
+ * año si no es el actual). Se compara por día natural en la zona del dispositivo: una fecha sin
+ * hora se guarda como las 00:00 locales (04 §Fechas).
+ */
+export function formatDueDate(date: Date, now: Date = new Date()): DueDateLabel {
+  const days = differenceInCalendarDays(date, now)
+  const urgent = days <= 0
+  if (days === 0) return { text: 'Hoy', urgent }
+  if (days === 1) return { text: 'Mañana', urgent }
+  if (days === -1) return { text: 'Ayer', urgent }
+  return { text: format(date, isSameYear(date, now) ? 'd MMM' : 'd MMM yyyy'), urgent }
+}

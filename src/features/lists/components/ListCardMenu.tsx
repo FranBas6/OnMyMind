@@ -14,6 +14,11 @@ interface ListCardMenuProps {
   list: List
   open: boolean
   onOpenChange: (open: boolean) => void
+  /**
+   * `card`: el botón de 32 px con puntos en `control` de la tarjeta de Inicio. `header`: el de la
+   * cabecera del detalle, de 44 px con puntos en `foreground` (6 px en móvil, 5 en escritorio).
+   */
+  variant?: 'card' | 'header'
 }
 
 /**
@@ -21,7 +26,7 @@ interface ListCardMenuProps {
  * 200 px bajo el botón (D1); en móvil, hoja inferior con la lista en la cabecera (L3), que también
  * abre la pulsación larga.
  */
-export function ListCardMenu({ list, open, onOpenChange }: ListCardMenuProps) {
+export function ListCardMenu({ list, open, onOpenChange, variant = 'card' }: ListCardMenuProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const actions = useListActions()
   const items: readonly MenuEntry[] = [
@@ -49,7 +54,9 @@ export function ListCardMenu({ list, open, onOpenChange }: ListCardMenuProps) {
     },
   ]
 
-  const trigger = <DotsButton active={open} label={`Opciones de «${list.name}»`} />
+  const trigger = (
+    <DotsButton active={open} variant={variant} label={`Opciones de «${list.name}»`} />
+  )
 
   if (isDesktop) {
     return (
@@ -81,6 +88,7 @@ export function ListCardMenu({ list, open, onOpenChange }: ListCardMenuProps) {
     <>
       <DotsButton
         active={open}
+        variant={variant}
         label={`Opciones de «${list.name}»`}
         onClick={() => {
           onOpenChange(true)
@@ -136,17 +144,23 @@ function rowClass(item: MenuEntry, height: string) {
 
 interface DotsButtonProps extends React.ComponentProps<'button'> {
   active: boolean
+  variant: 'card' | 'header'
   label: string
 }
 
-/** Botón ··· de la tarjeta: en reposo, puntos en `control`; con el menú abierto, fondo y puntos oscuros. */
-function DotsButton({ active, label, className, ...props }: DotsButtonProps) {
+/**
+ * Botón ···. En la tarjeta: en reposo, puntos en `control`; con el menú abierto, fondo y puntos
+ * oscuros. En la cabecera del detalle los puntos van siempre en `foreground` (pantalla 4, D1).
+ */
+function DotsButton({ active, variant, label, className, ...props }: DotsButtonProps) {
+  const header = variant === 'header'
   return (
     <button
       type="button"
       aria-label={label}
       className={cn(
-        'flex size-8 items-center justify-center gap-[3px] rounded-[10px] outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'flex items-center justify-center outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        header ? '-mr-2 size-11 gap-1 rounded-xl' : 'size-8 gap-[3px] rounded-[10px]',
         active && 'bg-fill',
         className,
       )}
@@ -155,7 +169,11 @@ function DotsButton({ active, label, className, ...props }: DotsButtonProps) {
       {[0, 1, 2].map((dot) => (
         <span
           key={dot}
-          className={cn('size-1 rounded-full', active ? 'bg-foreground' : 'bg-control')}
+          className={cn(
+            'rounded-full',
+            header ? 'size-1.5 bg-foreground md:size-[5px]' : 'size-1',
+            !header && (active ? 'bg-foreground' : 'bg-control'),
+          )}
         />
       ))}
     </button>

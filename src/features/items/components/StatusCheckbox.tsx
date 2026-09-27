@@ -1,0 +1,41 @@
+import { Check } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+
+import type { CheckboxState } from '../status'
+
+interface StatusCheckboxProps {
+  state: CheckboxState
+  /** El título del ítem: es lo que anuncia el lector de pantalla junto al estado. */
+  label: string
+  onToggle: () => void
+  className?: string
+}
+
+/**
+ * Checkbox de tres estados (diseño, pantallas 4 y D1): círculo de 24 px vacío con borde `control`
+ * (sin empezar), medio relleno en verde azulado (en curso) o índigo con el check (terminado). Al
+ * llenarse hace una escala 0,9 → 1 si el sistema no pide menos movimiento. La zona táctil llega a
+ * 44 px con un pseudoelemento, sin agrandar el círculo.
+ */
+export function StatusCheckbox({ state, label, onToggle, className }: StatusCheckboxProps) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={state === 'full' ? true : state === 'half' ? 'mixed' : false}
+      aria-label={label}
+      onClick={onToggle}
+      className={cn(
+        'relative grid size-6 shrink-0 place-items-center rounded-full outline-none before:absolute before:-inset-2.5 before:content-[""] focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        state === 'empty' && 'border-2 border-control',
+        state === 'half' &&
+          'border-2 border-in-progress bg-[linear-gradient(90deg,var(--in-progress)_50%,transparent_50%)]',
+        state === 'full' && 'bg-primary text-primary-foreground motion-safe:animate-check-pop',
+        className,
+      )}
+    >
+      {state === 'full' && <Check aria-hidden className="size-[13px]" strokeWidth={3.5} />}
+    </button>
+  )
+}

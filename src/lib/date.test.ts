@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatCaptureAge, formatHeaderDate } from './date'
+import { formatCaptureAge, formatDueDate, formatHeaderDate } from './date'
 
 describe('formatHeaderDate', () => {
   it('día de la semana con mayúscula, día y mes en español', () => {
@@ -25,5 +25,22 @@ describe('formatCaptureAge', () => {
     [new Date(2025, 11, 24, 10, 0), '24 dic 2025'],
   ])('%s → «%s»', (date, expected) => {
     expect(formatCaptureAge(date, now)).toBe(expected)
+  })
+})
+
+describe('formatDueDate', () => {
+  // Jueves, 25 de septiembre de 2026, a las 18:00
+  const now = new Date(2026, 8, 25, 18, 0)
+
+  it.each([
+    [new Date(2026, 8, 25), 'Hoy', true],
+    [new Date(2026, 8, 25, 23, 59), 'Hoy', true],
+    [new Date(2026, 8, 26), 'Mañana', false],
+    [new Date(2026, 8, 24), 'Ayer', true],
+    [new Date(2026, 8, 20), '20 sep', true],
+    [new Date(2026, 9, 3), '3 oct', false],
+    [new Date(2027, 0, 8), '8 ene 2027', false],
+  ])('%s → «%s» (urgente: %s)', (date, text, urgent) => {
+    expect(formatDueDate(date, now)).toEqual({ text, urgent })
   })
 })

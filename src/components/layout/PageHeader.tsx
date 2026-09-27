@@ -33,19 +33,16 @@ export function PageHeader({
     <header className="flex flex-col gap-3">
       {back && (
         <div className="flex h-11 items-center justify-between">
-          <Link
-            to={back.to}
-            className="-ml-1 flex h-11 items-center gap-1 pr-2 text-[15px] font-semibold text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            <ChevronLeft aria-hidden className="size-5" strokeWidth={2.4} />
-            {back.label}
-          </Link>
+          <BackLink {...back} />
           {menu}
         </div>
       )}
 
-      <div className="flex items-end justify-between gap-4 px-1">
-        <div className="flex min-w-0 items-center gap-3.5">
+      {/* Con icono delante (detalle de lista) el menú de la derecha se centra con el título. */}
+      <div
+        className={cn('flex justify-between gap-4 px-1', leading ? 'items-center' : 'items-end')}
+      >
+        <div className="flex min-w-0 items-center gap-3.5 md:gap-4">
           {leading}
           <div className="min-w-0">
             {eyebrow && <p className="text-[13px] font-medium text-muted-foreground">{eyebrow}</p>}
@@ -54,11 +51,26 @@ export function PageHeader({
             >
               {title}
             </h1>
-            {subtitle && <p className="mt-0.5 text-[13px] text-muted-foreground">{subtitle}</p>}
+            {subtitle && (
+              <p className="mt-0.5 text-[13px] text-muted-foreground md:text-sm">{subtitle}</p>
+            )}
           </div>
         </div>
         {trailing}
       </div>
     </header>
+  )
+}
+
+/** «‹ Listas»: vuelta atrás de las pantallas de detalle, en `primary` (pantalla 4). */
+export function BackLink({ to, label }: { to: LinkProps['to']; label: string }) {
+  return (
+    <Link
+      to={to}
+      className="-ml-1 flex h-11 items-center gap-1 self-start pr-2 text-[15px] font-semibold text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      <ChevronLeft aria-hidden className="size-5" strokeWidth={2.4} />
+      {label}
+    </Link>
   )
 }
