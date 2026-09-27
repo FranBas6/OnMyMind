@@ -1,8 +1,8 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { Inbox, Plus, Search, Sun, type LucideIcon } from 'lucide-react'
+import { Archive, Inbox, Plus, Search, Sun, type LucideIcon } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 
-import { useLists } from '@/features/lists'
+import { ARCHIVED_SECTION_ID, useArchivedLists, useLists, useListActions } from '@/features/lists'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
@@ -10,12 +10,15 @@ import { isDestinationActive } from './navigation'
 
 /**
  * Sidebar de escritorio (diseño, pantalla D1): marca, buscador (⌘K), accesos a «En mente» y
- * «Hoy», «Mis listas» con su color y contador, y «+ Nueva lista» (se activa en 1.6). El contador
- * de «Hoy» llega con la vista Hoy (1.11).
+ * «Hoy», «Mis listas» con su color y contador, la mención de las archivadas y «+ Nueva lista».
+ * El contador de «Hoy» llega con la vista Hoy (1.11).
  */
 export function Sidebar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const lists = useLists()
+  const archived = useArchivedLists()
+  const archivedCount = archived.data?.length ?? 0
+  const { openCreate } = useListActions()
   const inbox = lists.data?.inbox
   useSearchShortcut()
 
@@ -92,12 +95,24 @@ export function Sidebar() {
             )
           })}
         </ul>
+        {/* Las archivadas se mencionan en gris, sin contar como lista (diseño 04 Listas, D8). */}
+        {archivedCount > 0 && (
+          <Link
+            to="/"
+            hash={ARCHIVED_SECTION_ID}
+            className="mt-1.5 flex h-10 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium text-subtle-foreground outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Archive aria-hidden className="size-[18px]" strokeWidth={2} />
+            Archivadas
+            <Count value={archivedCount} />
+          </Link>
+        )}
       </section>
 
       <button
         type="button"
-        disabled
-        className="mt-auto flex h-11 items-center gap-2.5 rounded-[14px] px-3 text-sm font-semibold text-primary disabled:opacity-50"
+        onClick={openCreate}
+        className="mt-auto flex h-11 shrink-0 items-center gap-2.5 rounded-[14px] px-3 text-sm font-semibold text-primary outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         <Plus aria-hidden className="size-4" />
         Nueva lista

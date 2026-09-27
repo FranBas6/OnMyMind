@@ -16,6 +16,7 @@ function list(id: string, name: string, kind: List['kind'], pending: number, cen
     kind,
     position: 1000,
     counters: { pending, done: 0, pendingPriceCents: cents },
+    archivedAt: null,
   }
 }
 
@@ -79,7 +80,7 @@ describe('Inicio', () => {
     expect(screen.queryByRole('list', { name: 'Mis listas' })).not.toBeInTheDocument()
   })
 
-  it('en escritorio, «En mente» enseña las últimas capturas y la cabecera trae «Nueva lista»', async () => {
+  it('en escritorio, «En mente» enseña las últimas capturas y «Nueva lista» funciona', async () => {
     setDesktop(true)
     renderHome(
       [list('i', 'En mente', 'inbox', 2), list('a', 'Casa', 'tasks', 4)],
@@ -95,6 +96,11 @@ describe('Inicio', () => {
     expect(inbox).toHaveTextContent('Comprar pilas AA')
     expect(inbox).toHaveTextContent('ahora')
     expect(inbox).toHaveTextContent('Llamar a Marta')
-    expect(within(main).getByRole('button', { name: 'Nueva lista' })).toBeDisabled()
+    // La cabecera trae el botón redondo (móvil) y «+ Nueva lista» (escritorio); jsdom no aplica CSS.
+    const newListButtons = within(main).getAllByRole('button', { name: 'Nueva lista' })
+    expect(newListButtons.length).toBeGreaterThan(0)
+    newListButtons.forEach((button) => {
+      expect(button).toBeEnabled()
+    })
   })
 })

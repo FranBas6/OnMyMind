@@ -62,7 +62,9 @@
   /* En shadcn "accent" es el fondo de hover/selección: el tinte de marca (accent-tint). */
   --accent: #eeebff;
   --accent-foreground: #1c1b22;
-  --destructive: #e0474c;
+  /* Acciones de borrar (texto y botón): el rojo que usa el diseño 04 Listas */
+  --destructive: #dc2d33;
+  --destructive-foreground: #ffffff;
   --border: #e6e2da;
   --border-soft: #efece6;
   --input: #e6e2da;
@@ -79,6 +81,19 @@
   --control: #c9c6d2;
   /* Bloques del esqueleto de carga */
   --skeleton: #ece9e2;
+  /* Superficie secundaria sobre una tarjeta u hoja (botón Cancelar, cerrar, «Pronto», icono archivado) */
+  --fill: #f4f2ee;
+  /* Índigo reforzado: título del tipo de lista elegido */
+  --primary-strong: #4335c9;
+  /* Velo y sombras de hojas, diálogos, popovers y avisos (diseño 04 Listas) */
+  --scrim: rgb(28 27 34 / 0.28);
+  --sheet-shadow: 0 -12px 40px rgb(28 27 34 / 0.14);
+  --dialog-shadow: 0 32px 80px rgb(0 0 0 / 0.28);
+  --popover-shadow: 0 16px 48px rgb(28 27 34 / 0.18);
+  --toast: #1c1b22;
+  --toast-foreground: #ffffff;
+  --toast-action: #b8b0ff;
+  --toast-shadow: 0 12px 32px rgb(28 27 34 / 0.25);
 
   /* Texto terciario legible (iconos inactivos de la barra, pistas): #9b98aa del diseño, a AA */
   --subtle-foreground: #747088;
@@ -124,7 +139,9 @@
   --muted-foreground: #9b98aa;
   --accent: #2a2740;
   --accent-foreground: #f2f0f7;
-  --destructive: #e0474c;
+  /* Diseño: blanco sobre #ff7a7f (2,3:1); el texto pasa a oscuro para llegar a AA */
+  --destructive: #ff7a7f;
+  --destructive-foreground: #15141c;
   --border: #2c2b39;
   --border-soft: #2c2b39;
   --input: #2c2b39;
@@ -138,6 +155,17 @@
   --control: #4a485a;
   /* Sin valor en el diseño: el borde, que se distingue sobre las tarjetas */
   --skeleton: #2c2b39;
+  --fill: #2a2937;
+  --primary-strong: #8c81ff;
+  --scrim: rgb(0 0 0 / 0.5);
+  --sheet-shadow: 0 -12px 40px rgb(0 0 0 / 0.4);
+  --dialog-shadow: 0 32px 80px rgb(0 0 0 / 0.28);
+  --popover-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
+  /* Sin versión oscura en el diseño: un punto más claro que el fondo para que se distinga */
+  --toast: #2a2937;
+  --toast-foreground: #f2f0f7;
+  --toast-action: #b8b0ff;
+  --toast-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
 
   --subtle-foreground: #878494;
   --error: #ff8a8e;
@@ -181,6 +209,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-border-soft: var(--border-soft);
   --color-input: var(--input);
@@ -193,6 +222,16 @@
   --shadow-card: var(--card-shadow);
   --color-control: var(--control);
   --color-skeleton: var(--skeleton);
+  --color-fill: var(--fill);
+  --color-primary-strong: var(--primary-strong);
+  --color-scrim: var(--scrim);
+  --shadow-sheet: var(--sheet-shadow);
+  --shadow-dialog: var(--dialog-shadow);
+  --shadow-popover: var(--popover-shadow);
+  --color-toast: var(--toast);
+  --color-toast-foreground: var(--toast-foreground);
+  --color-toast-action: var(--toast-action);
+  --shadow-toast: var(--toast-shadow);
 
   --color-subtle-foreground: var(--subtle-foreground);
   --color-error: var(--error);

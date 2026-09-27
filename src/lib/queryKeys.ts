@@ -8,6 +8,8 @@
 export const queryKeys = {
   lists: {
     all: ['lists'] as const,
+    /** Archivadas: cuelga de `['lists']`, así que invalidar `all` también las refresca. */
+    archived: ['lists', 'archived'] as const,
     detail: (listId: string) => ['lists', listId] as const,
   },
   items: {

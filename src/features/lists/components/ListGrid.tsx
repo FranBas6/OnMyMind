@@ -1,5 +1,6 @@
 import type { List } from '../types'
 import { ListCard } from './ListCard'
+import { NewListCard } from './NewListEntries'
 
 /**
  * Rejilla de listas: dos columnas en móvil; en escritorio, tres cuando la columna de contenido
@@ -19,6 +20,10 @@ export function ListGrid({ lists }: { lists: List[] }) {
             <ListCard list={list} />
           </li>
         ))}
+        {/* En móvil, crear una lista desde el final de la rejilla (diseño 04 Listas). */}
+        <li className="flex min-w-0 md:hidden">
+          <NewListCard />
+        </li>
       </ul>
     </div>
   )

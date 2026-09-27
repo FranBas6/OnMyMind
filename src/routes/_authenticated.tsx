@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { useSession } from '@/features/auth'
+import { ListActionsProvider } from '@/features/lists'
 
 /**
  * Layout de todas las rutas privadas (el `_` hace que no añada segmento a la URL).
@@ -31,8 +32,10 @@ function AuthenticatedLayout() {
   }, [sessionState.status, router])
 
   return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
+    <ListActionsProvider>
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    </ListActionsProvider>
   )
 }

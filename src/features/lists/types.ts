@@ -30,4 +30,6 @@ export interface List {
   kind: ListKind
   position: number
   counters: ListCounters
+  /** Solo en las archivadas. */
+  archivedAt: Date | null
 }

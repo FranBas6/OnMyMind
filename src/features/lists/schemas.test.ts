@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { mergeListsWithCounters } from './schemas'
+import { listFormSchema, mergeListsWithCounters } from './schemas'
 
 const casa = {
   id: 'a',
@@ -47,5 +47,29 @@ describe('mergeListsWithCounters', () => {
     const [only] = mergeListsWithCounters([{ ...casa, color: 'morado' }], [])
     expect(only?.color).toBe('indigo')
     expect(warn).toHaveBeenCalledOnce()
+  })
+})
+
+describe('listFormSchema', () => {
+  it('nombre vacío o solo espacios', () => {
+    const result = listFormSchema.safeParse({ name: '   ', color: 'coral', kind: 'tasks' })
+    expect(result.error?.issues[0]?.message).toBe('Ponle un nombre.')
+  })
+
+  it('nombre de más de 80 caracteres dice cuántos llevas', () => {
+    const result = listFormSchema.safeParse({ name: 'a'.repeat(96), color: 'coral', kind: 'tasks' })
+    expect(result.error?.issues[0]?.message).toBe('Máximo 80 caracteres. Llevas 96.')
+  })
+
+  it('«Personalizada» todavía no se puede crear', () => {
+    expect(
+      listFormSchema.safeParse({ name: 'Libros', color: 'teal', kind: 'custom' }).success,
+    ).toBe(false)
+  })
+
+  it('limpia espacios del nombre', () => {
+    expect(listFormSchema.parse({ name: '  Casa ', color: 'coral', kind: 'tasks' }).name).toBe(
+      'Casa',
+    )
   })
 })

@@ -8,10 +8,33 @@ import type { List, ListCounters } from './types'
 type ListRow = Pick<
   Database['public']['Tables']['lists']['Row'],
   'id' | 'name' | 'color' | 'icon' | 'kind' | 'position'
->
+> & { archived_at?: string | null }
 type CountersRow = Database['public']['Views']['list_counters']['Row']
 
 export const listColorSchema = z.enum(LIST_COLORS)
+
+export const LIST_NAME_MAX_LENGTH = 80
+
+/** Tipos que se pueden crear desde el formulario; «Personalizada» llega en 1.14. */
+export const CREATABLE_KINDS = ['tasks', 'shopping', 'events'] as const
+
+/**
+ * Formulario de crear y editar lista (diseño 04 Listas). El mismo esquema lo usa `api.ts`, así que
+ * la base nunca recibe un nombre vacío o de más de 80 caracteres (la tabla también lo impide).
+ */
+export const listFormSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { error: 'Ponle un nombre.' })
+    .max(LIST_NAME_MAX_LENGTH, {
+      error: (issue) =>
+        `Máximo ${LIST_NAME_MAX_LENGTH} caracteres. Llevas ${typeof issue.input === 'string' ? issue.input.length : LIST_NAME_MAX_LENGTH + 1}.`,
+    }),
+  color: listColorSchema,
+  kind: z.enum(CREATABLE_KINDS),
+})
+export type ListFormValues = z.infer<typeof listFormSchema>
 
 /** `field_schema` de las listas personalizadas (03 §lists); se usa a partir de 1.14. */
 export const fieldSchemaSchema = z.object({
@@ -52,6 +75,7 @@ export function mergeListsWithCounters(lists: ListRow[], counters: CountersRow[]
     kind: row.kind,
     position: row.position,
     counters: countersById.get(row.id) ?? EMPTY_COUNTERS,
+    archivedAt: row.archived_at ? new Date(row.archived_at) : null,
   }))
 }
 

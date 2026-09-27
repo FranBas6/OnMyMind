@@ -1,11 +1,21 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ListPlus, Plus } from 'lucide-react'
+import { ListPlus } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useDisplayName } from '@/features/auth'
-import { InboxCard, ListGrid, listsQueryOptions, ListsSkeleton, useLists } from '@/features/lists'
+import {
+  ArchivedListsSection,
+  InboxCard,
+  ListGrid,
+  listsQueryOptions,
+  ListsSkeleton,
+  NewListEmptyButton,
+  NewListHeaderButton,
+  NewListRoundButton,
+  useLists,
+} from '@/features/lists'
 import { formatHeaderDate } from '@/lib/date'
 
 export const Route = createFileRoute('/_authenticated/')({
@@ -48,8 +58,11 @@ function HomePage() {
               icon={ListPlus}
               title="Aún no hay listas."
               description="Crea la primera para ordenar lo que tienes en mente."
-            />
+            >
+              <NewListEmptyButton />
+            </EmptyState>
           )}
+          <ArchivedListsSection />
         </>
       )}
     </HomeLayout>
@@ -63,16 +76,9 @@ function HomeLayout({ avatar, children }: { avatar: ReactNode; children: ReactNo
         eyebrow={formatHeaderDate(new Date())}
         title="Mis listas"
         trailing={
-          <div className="flex items-center gap-3">
-            {/* Acción principal de Inicio en escritorio; crear listas llega en 1.6. */}
-            <button
-              type="button"
-              disabled
-              className="hidden h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-4 text-sm font-semibold whitespace-nowrap disabled:opacity-50 md:inline-flex"
-            >
-              <Plus aria-hidden className="size-4" />
-              Nueva lista
-            </button>
+          <div className="flex items-center gap-2.5 md:gap-3">
+            <NewListRoundButton />
+            <NewListHeaderButton />
             {avatar}
           </div>
         }

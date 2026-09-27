@@ -1,14 +1,14 @@
 # lists
 
-Listas del usuario: tipos base y sus plantillas, consultas y componentes de Inicio.
+Listas del usuario: tipos base y sus plantillas, consultas, mutaciones y componentes.
 
-- `types.ts`: `List`, `ListKind`, `ListColor`, `ListCounters`.
-- `templates.ts`: por tipo, su etiqueta, sus estados y la etiqueta del contador
-  (`counterLabel`, `listSummary`).
-- `schemas.ts`: zod de `field_schema` y `mergeListsWithCounters` (filas → dominio).
-- `api.ts`: `fetchLists` (tabla `lists` + vista `list_counters`).
-- `queries.ts`: `listsQueryOptions`, compartida por `useLists` y el loader de Inicio.
-- `hooks/useLists.ts`: separa «En mente» del resto con `select`.
-- `components/`: `InboxCard`, `ListCard`, `ListGrid`, `ListsSkeleton`.
-
-Solo lectura por ahora; crear, editar, archivar y borrar llegan en 1.6.
+- `types.ts`, `templates.ts` (etiquetas, descripciones, estados y los textos que dependen de los
+  datos: contadores, menú, archivadas, borrado), `schemas.ts` (`listFormSchema`, `field_schema`,
+  filas → dominio).
+- `api.ts`: lectura (`fetchLists`, `fetchArchivedLists`, `fetchRecentCaptures`) y escritura
+  (`createList`, `updateList`, `archiveList`, `unarchiveList`, `deleteList`).
+- `queries.ts` y `hooks/`: `useLists`, `useArchivedLists`, `useRecentCaptures` y
+  `useListMutations` (archivar, desarchivar y borrar optimistas; crear y editar esperan).
+- `components/`: `ListActionsProvider` (formulario y confirmación, una vez en el layout privado) y
+  `useListActions`; `ListFormDialog`, `ColorPicker`, `KindPicker`, `ListCardMenu`,
+  `DeleteListDialog`, `ArchivedListsSection`, `NewListEntries`, tarjetas y rejilla de Inicio.

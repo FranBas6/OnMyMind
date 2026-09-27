@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { counterLabel, pendingTotal } from './templates'
+import {
+  archivedCountLabel,
+  archivedSummary,
+  counterLabel,
+  deleteMessage,
+  menuSummary,
+  pendingTotal,
+} from './templates'
 import type { List } from './types'
 
 function list(overrides: Partial<List>): List {
@@ -12,6 +19,7 @@ function list(overrides: Partial<List>): List {
     kind: 'tasks',
     position: 1000,
     counters: { pending: 0, done: 0, pendingPriceCents: 0 },
+    archivedAt: null,
     ...overrides,
   }
 }
@@ -47,5 +55,40 @@ describe('pendingTotal', () => {
         list({ kind: 'tasks', counters: { pending: 1, done: 0, pendingPriceCents: 500 } }),
       ),
     ).toBeNull()
+  })
+})
+
+describe('textos del menú, archivadas y borrado', () => {
+  const trabajo = list({ name: 'Trabajo', counters: { pending: 6, done: 6, pendingPriceCents: 0 } })
+
+  it('cabecera del menú: tipo, pendientes y total de ítems', () => {
+    expect(menuSummary(trabajo)).toBe('Tareas · 6 pendientes · 12 ítems')
+  })
+
+  it('archivada: con pendientes, o lo hecho si ya no queda nada, y la fecha', () => {
+    const compras = list({
+      kind: 'shopping',
+      counters: { pending: 2, done: 1, pendingPriceCents: 0 },
+      archivedAt: new Date(2026, 8, 12),
+    })
+    expect(archivedSummary(compras)).toBe('Compras · 2 pendientes · archivada el 12 sep')
+    const hechas = list({
+      counters: { pending: 0, done: 31, pendingPriceCents: 0 },
+      archivedAt: new Date(2026, 5, 3),
+    })
+    expect(archivedSummary(hechas)).toBe('Tareas · 31 hechas · archivada el 3 jun')
+  })
+
+  it('contador de archivadas en singular y plural', () => {
+    expect(archivedCountLabel(1)).toBe('1 lista archivada')
+    expect(archivedCountLabel(2)).toBe('2 listas archivadas')
+  })
+
+  it('confirmación de borrado según cuántos ítems se pierden', () => {
+    expect(deleteMessage(trabajo)).toBe('Se borrará «Trabajo» y sus 12 ítems. No hay vuelta atrás.')
+    expect(
+      deleteMessage(list({ name: 'Uno', counters: { pending: 1, done: 0, pendingPriceCents: 0 } })),
+    ).toBe('Se borrará «Uno» y su ítem. No hay vuelta atrás.')
+    expect(deleteMessage(list({ name: 'Vacía' }))).toBe('Se borrará «Vacía». No hay vuelta atrás.')
   })
 })

@@ -2,7 +2,7 @@ import { queryOptions } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/queryKeys'
 
-import { fetchLists, fetchRecentCaptures } from './api'
+import { fetchArchivedLists, fetchLists, fetchRecentCaptures } from './api'
 
 /**
  * Consulta de las listas: clave + función en un solo objeto. La usan `useLists` (componentes)
@@ -11,6 +11,12 @@ import { fetchLists, fetchRecentCaptures } from './api'
 export const listsQueryOptions = queryOptions({
   queryKey: queryKeys.lists.all,
   queryFn: fetchLists,
+})
+
+/** Listas archivadas (sección colapsada al final de Inicio). */
+export const archivedListsQueryOptions = queryOptions({
+  queryKey: queryKeys.lists.archived,
+  queryFn: fetchArchivedLists,
 })
 
 /** Las tres últimas capturas de «En mente», que su tarjeta enseña en escritorio. */
