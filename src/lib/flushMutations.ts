@@ -6,17 +6,20 @@ const FLUSH_TIMEOUT_MS = 8000
 /** La clave de la mutación de cerrar sesión: no es un cambio por enviar, es quien espera. */
 export const SIGN_OUT_MUTATION_KEY = ['auth', 'signOut'] as const
 
-const isSignOut = (mutation: Mutation) =>
-  mutation.options.mutationKey?.[1] === SIGN_OUT_MUTATION_KEY[1]
+/**
+ * Si una mutación es un cambio por enviar: todas menos el propio cerrar sesión, que está en vuelo
+ * mientras espera a los demás. Lo usan cerrar sesión y la banda de «Sin conexión».
+ */
+export const isPendingChange = (mutation: Mutation) =>
+  mutation.options.mutationKey?.[1] !== SIGN_OUT_MUTATION_KEY[1]
 
 /**
  * Cuántos cambios hay sin enviar: en vuelo o en pausa esperando la red. No cuenta el propio
  * cerrar sesión, que está en vuelo mientras espera a los demás.
  */
 export function pendingMutations(queryClient: QueryClient): number {
-  return queryClient
-    .getMutationCache()
-    .findAll({ status: 'pending', predicate: (mutation) => !isSignOut(mutation) }).length
+  return queryClient.getMutationCache().findAll({ status: 'pending', predicate: isPendingChange })
+    .length
 }
 
 /**

@@ -2,6 +2,7 @@ import { useMatches } from '@tanstack/react-router'
 import { useState, type ReactNode } from 'react'
 
 import { Fab } from '@/components/Fab'
+import { OfflineBanner } from '@/components/OfflineBanner'
 import { useCapture } from '@/features/capture'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
@@ -64,6 +65,8 @@ export function AppShell({ children }: AppShellProps) {
             : 'pb-[calc(env(safe-area-inset-bottom)+7rem)]',
         )}
       >
+        {/* Sin red, una banda encima de la cabecera de cada pantalla (diseño 10, I4). */}
+        <OfflineBanner variant="page" />
         {children}
       </main>
       {/* En el detalle de lista el campo de añadir sustituye al + (06 §Layout); Buscar no lo lleva. */}

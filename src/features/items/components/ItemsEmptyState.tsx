@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { List } from '@/features/lists'
+import { thisDevice } from '@/lib/device'
 import { LIST_COLOR_TEXT, LIST_COLOR_TINT } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
@@ -43,6 +44,39 @@ export function NewListEmpty({ list, isDesktop }: EmptyProps & { list: List }) {
             desde cualquier sitio y elige {list.name}.
           </>
         )}
+      </Description>
+    </Centered>
+  )
+}
+
+/**
+ * Una lista que nunca se abrió en este dispositivo, sin conexión (diseño 10, I7): aún no hay nada
+ * de ella en la caché. Se puede añadir igual: se guarda aquí y se envía al volver la red.
+ */
+export function NotDownloadedEmpty() {
+  return (
+    <Centered>
+      <Tile className="bg-fill">
+        <svg aria-hidden viewBox="0 0 56 56" className="size-12 text-subtle-foreground">
+          <circle
+            cx="28"
+            cy="26"
+            r="20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.5"
+            strokeDasharray="6 6"
+          />
+          <circle cx="14" cy="46" r="4.5" fill="currentColor" />
+          <circle cx="7" cy="53" r="2.5" fill="currentColor" />
+        </svg>
+      </Tile>
+      <p className="font-display text-[22px] leading-[1.2] font-extrabold tracking-[-0.02em]">
+        Esta lista aún no está en este {thisDevice()}.
+      </p>
+      <Description>
+        Se descargará al volver la conexión. Mientras, puedes añadirle cosas: se guardan aquí y se
+        envían después.
       </Description>
     </Centered>
   )

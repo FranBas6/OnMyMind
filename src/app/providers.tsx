@@ -5,12 +5,17 @@ import type { ReactNode } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
+import { PwaProvider } from './pwa'
+
 interface AppProvidersProps {
   queryClient: QueryClient
   children: ReactNode
 }
 
-/** Providers globales: datos (Query), tema claro/oscuro (clase `.dark`), tooltips y toasts. */
+/**
+ * Providers globales: datos (Query, con la caché ya restaurada de IndexedDB en `main.tsx`), tema
+ * claro/oscuro (clase `.dark`), la app instalable (service worker, `pwa.tsx`), tooltips y toasts.
+ */
 export function AppProviders({ queryClient, children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
@@ -27,7 +32,7 @@ export function AppProviders({ queryClient, children }: AppProvidersProps) {
         scriptProps={{ type: 'application/json' }}
       >
         <TooltipProvider>
-          {children}
+          <PwaProvider>{children}</PwaProvider>
           {/*
             Los avisos de abajo («Deshacer») van a 32 px en escritorio. En móvil, sobre la barra y a
             la izquierda del botón +, centrados con él: dejan libres sus 76 px (diseño 07, C7).

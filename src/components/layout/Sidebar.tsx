@@ -8,6 +8,7 @@ import { ProfileLink } from '@/features/profile'
 import { focusSearchField, SidebarSearchField } from '@/features/search'
 import { useTodayCount } from '@/features/today'
 import { LIST_COLOR_BG } from '@/lib/listColors'
+import { OfflineBanner } from '@/components/OfflineBanner'
 import { cn } from '@/lib/utils'
 
 import { isDestinationActive } from './navigation'
@@ -127,6 +128,8 @@ export function Sidebar() {
       </section>
 
       <div className="mt-auto flex flex-col gap-0.5">
+        {/* Sin red, al pie, sobre «+ Nueva lista» (diseño 10, D1). */}
+        <OfflineBanner variant="sidebar" />
         <button
           type="button"
           onClick={() => {

@@ -1,10 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownUp } from 'lucide-react'
 import { useState } from 'react'
 
 import { InboxHeader, ListDetailHeader, type List } from '@/features/lists'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { OFFLINE_MESSAGE } from '@/lib/errors'
+import { useOnline } from '@/hooks/useOnline'
 import { cn } from '@/lib/utils'
 
 import { addPlaceholder } from '../copy'
@@ -22,13 +22,19 @@ import {
 import { useItems } from '../hooks/useItems'
 import { nextItemPosition, useCreateItem } from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
-import { movedFromInboxQueryOptions } from '../queries'
+import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
 import { initialStatus, isOutOfMind } from '../status'
 import type { Item, MovedItem } from '../types'
 import { AddItemBar } from './AddItemBar'
 import { FilterChips } from './FilterChips'
 import { ItemRow } from './ItemRow'
-import { AllDoneNote, FilterEmpty, InboxEmpty, NewListEmpty } from './ItemsEmptyState'
+import {
+  AllDoneNote,
+  FilterEmpty,
+  InboxEmpty,
+  NewListEmpty,
+  NotDownloadedEmpty,
+} from './ItemsEmptyState'
 import { ItemWorkspace, ListScope } from './ItemWorkspace'
 import { OutOfMindSection } from './OutOfMindSection'
 
@@ -57,6 +63,8 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
     enabled: list.kind === 'inbox',
   })
   const createItem = useCreateItem()
+  const queryClient = useQueryClient()
+  const online = useOnline()
   const { lingering, hold } = useLingering(LINGER_MS)
   const listOf = () => list
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -73,18 +81,25 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
     : detailSummary(list.kind, list.counters.pending, list.counters.done)
   const empty = all?.length === 0
 
+  // Sin red y sin nada de esta lista en caché (nunca se abrió aquí): se puede añadir igual.
+  // (Sin esperar a que la consulta quede en pausa, que tarda lo que su primer intento.)
+  const notDownloaded = items.isPending && (items.fetchStatus === 'paused' || !online)
+
   const add = (title: string) => {
+    // Una lista aún sin descargar empieza vacía en caché, para que lo añadido se vea; al volver
+    // la red se descarga entera. La posición la pone el servidor (no sabemos cuál es la última).
+    if (!all) queryClient.setQueryData(itemsQueryOptions(list.id).queryKey, [])
     createItem.mutate({
       id: crypto.randomUUID(),
       listId: list.id,
       title,
       status: initialStatus(list.kind),
-      position: nextItemPosition(all),
+      position: all ? nextItemPosition(all) : undefined,
     })
   }
 
   const showFilters = all !== undefined && (inbox ? active.length > 0 : !empty)
-  const addBar = all && (
+  const addBar = (all ?? notDownloaded) && (
     <AddItemBar
       variant={isDesktop ? 'inline' : 'docked'}
       placeholder={addPlaceholder(list, empty)}
@@ -158,8 +173,7 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
 
           {isDesktop && addBar}
 
-          {items.isPending &&
-            (items.fetchStatus === 'paused' ? <FilterEmpty>{OFFLINE_MESSAGE}</FilterEmpty> : null)}
+          {notDownloaded && <NotDownloadedEmpty />}
           {items.isError && (
             <p role="alert" className="px-1 text-[15px] text-muted-foreground">
               No hemos podido cargar esta lista. Prueba otra vez en un momento.

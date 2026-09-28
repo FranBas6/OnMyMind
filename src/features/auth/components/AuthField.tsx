@@ -12,9 +12,10 @@ interface AuthFieldProps extends ComponentProps<typeof Input> {
   hint?: string | undefined
 }
 
-// Campos del diseño Acceso: 52 px, radio 16, borde de 1,5 px, fondo de tarjeta y texto de 15 px.
+// Campos del diseño Acceso: 52 px, radio 16, borde de 1,5 px y fondo de tarjeta. El texto va a
+// 16 px y no a los 15 del diseño: por debajo de 16, Safari en iOS amplía la página al enfocar.
 const fieldClassName = cn(
-  'h-13 rounded-md border-[1.5px] border-border bg-card px-[18px] text-[15px] shadow-none md:text-[15px] dark:bg-card',
+  'h-13 rounded-md border-[1.5px] border-border bg-card px-[18px] text-base shadow-none md:text-base dark:bg-card',
   'placeholder:text-placeholder aria-invalid:border-error aria-invalid:ring-error/20 dark:aria-invalid:ring-error/30',
 )
 

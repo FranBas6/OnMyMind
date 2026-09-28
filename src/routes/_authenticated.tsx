@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect, useRouter } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
+import { InstallHint } from '@/components/InstallHint'
 import { AppShell } from '@/components/layout/AppShell'
 import { useSession } from '@/features/auth'
 import { CaptureProvider } from '@/features/capture'
@@ -37,6 +38,8 @@ function AuthenticatedLayout() {
     <ListActionsProvider>
       {/* El tema viaja con la cuenta: se aplica al llegar el perfil (08 B.14). */}
       <ThemeSync />
+      {/* En Safari del iPhone, la primera vez: cómo instalarla (diseño 10). */}
+      <InstallHint />
       <CaptureProvider>
         <AppShell>
           <Outlet />

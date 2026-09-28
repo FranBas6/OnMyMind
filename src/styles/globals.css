@@ -142,6 +142,9 @@
   --overdue-border: #f5c6c8;
   --price-down: #1f7b72;
   --price-down-bg: #e4f5f2;
+  /* Algo que ha salido bien (la banda «Ya hay conexión», «Al día» en Perfil, diseño 10) */
+  --success: #1f7b72;
+  --success-bg: #e4f5f2;
   --price-up: #d32429;
   --price-up-bg: #fdecec;
   /* Estado «En curso»: borde y medio relleno del checkbox (diseño, pantalla D1) */
@@ -220,6 +223,8 @@
   --overdue-border: #6b3a42;
   --price-down: #4fd1c1;
   --price-down-bg: #17302e;
+  --success: #4fd1c1;
+  --success-bg: #17302e;
   --price-up: #ff8a8e;
   --price-up-bg: #3a2226;
   --in-progress: #2baa9e;
@@ -291,6 +296,8 @@
   --color-overdue-border: var(--overdue-border);
   --color-price-down: var(--price-down);
   --color-price-down-bg: var(--price-down-bg);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
   --color-price-up: var(--price-up);
   --color-in-progress: var(--in-progress);
   --color-price-up-bg: var(--price-up-bg);

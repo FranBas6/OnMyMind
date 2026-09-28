@@ -3,6 +3,7 @@ import { AlertDialog } from 'radix-ui'
 
 import { authErrorMessage, FormError, useSignOut } from '@/features/auth'
 import { useOnline } from '@/hooks/useOnline'
+import { isPendingChange } from '@/lib/flushMutations'
 import { cn } from '@/lib/utils'
 
 interface SignOutDialogProps {
@@ -20,10 +21,8 @@ interface SignOutDialogProps {
 export function SignOutDialog({ open, onOpenChange, isDesktop }: SignOutDialogProps) {
   const signOut = useSignOut()
   const online = useOnline()
-  // Los cambios por enviar, sin contar el propio cerrar sesión (`pendingMutations`).
-  const pending = useIsMutating({
-    predicate: (mutation) => mutation.options.mutationKey?.[1] !== 'signOut',
-  })
+  // Los cambios por enviar, sin contar el propio cerrar sesión.
+  const pending = useIsMutating({ predicate: isPendingChange })
   const willLose = !online && pending > 0
 
   return (
