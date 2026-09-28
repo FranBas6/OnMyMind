@@ -1,4 +1,3 @@
-import { useLongPress } from '@/hooks/useLongPress'
 import { cn } from '@/lib/utils'
 
 import { checkboxState } from '../status'
@@ -9,12 +8,13 @@ import { ItemRowDotsMenu } from './ItemRowMenu'
 import { PriorityChip } from './PriorityChip'
 import { RowTitle } from './RowTitle'
 import { StatusCheckbox } from './StatusCheckbox'
+import { SwipeableRow } from './SwipeableRow'
 
 /**
  * Fila de una tarea (pantalla 4 v1 y D1). En móvil, el título y debajo los chips de prioridad y
  * fecha; en escritorio, una rejilla con los chips en sus columnas a la derecha, alineados entre
  * filas (un hueco vacío cuando falta uno), y el ··· del menú al final (diseño 06, D8). Tocar la
- * fila abre el detalle; mantenerla pulsada, el menú. En fase 1 también es la fila básica de
+ * fila abre el detalle; mantenerla pulsada, el menú; deslizarla, sus acciones (`SwipeableRow`). En fase 1 también es la fila básica de
  * Compras y Eventos, sin chips: sus pantallas llegan en la fase 2.
  */
 export function TaskRow({ item }: { item: Item }) {
@@ -22,14 +22,10 @@ export function TaskRow({ item }: { item: Item }) {
   const { list, isDesktop } = actions
   const priority = list.kind === 'tasks' ? item.priority : null
   const dueAt = list.kind === 'tasks' ? item.dueAt : null
-  const longPress = useLongPress(() => {
-    actions.openMenu(item)
-  })
-
   return (
-    <li
-      {...longPress}
-      className={cn(
+    <SwipeableRow
+      item={item}
+      surfaceClassName={cn(
         'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-3.5 duration-200 fade-in md:grid md:grid-cols-[24px_minmax(0,1fr)_auto_auto_32px] md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
         rowHighlight(actions, item),
       )}
@@ -52,6 +48,6 @@ export function TaskRow({ item }: { item: Item }) {
         )}
       </div>
       {isDesktop && <ItemRowDotsMenu item={item} />}
-    </li>
+    </SwipeableRow>
   )
 }

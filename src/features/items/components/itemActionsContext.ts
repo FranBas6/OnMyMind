@@ -22,6 +22,9 @@ export interface ItemActions {
   openMenu: (item: Item) => void
   startMove: (item: Item, anchor: HTMLElement | null) => void
   remove: (item: Item) => void
+  /** La fila abierta a la izquierda al deslizar («Mover» y «Borrar»): solo una a la vez. */
+  swipeOpenId: string | undefined
+  setSwipeOpenId: (itemId: string | undefined) => void
 }
 
 export const ItemActionsContext = createContext<ItemActions | null>(null)
@@ -32,9 +35,12 @@ export function useItemActions(): ItemActions {
   return actions
 }
 
-/** Contorno índigo de la fila abierta en el detalle (escritorio) o con el menú abierto (móvil). */
+/**
+ * Contorno índigo de la fila abierta en el detalle (escritorio) o con el menú abierto (móvil).
+ * Va por dentro del borde: la fila recorta lo que se sale al deslizarla.
+ */
 export function rowHighlight(actions: ItemActions, item: Item): string | false {
   const active =
     (actions.isDesktop && actions.selectedId === item.id) || actions.menuItemId === item.id
-  return active && 'outline-2 outline-offset-0 outline-primary outline-solid'
+  return active && 'outline-2 -outline-offset-2 outline-primary outline-solid'
 }

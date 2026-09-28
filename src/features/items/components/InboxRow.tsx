@@ -1,6 +1,5 @@
 import { ArrowRightLeft, ChevronDown } from 'lucide-react'
 
-import { useLongPress } from '@/hooks/useLongPress'
 import { formatCaptureAge } from '@/lib/date'
 import { cn } from '@/lib/utils'
 
@@ -9,23 +8,21 @@ import type { Item } from '../types'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { RowTitle } from './RowTitle'
 import { StatusCheckbox } from './StatusCheckbox'
+import { SwipeableRow } from './SwipeableRow'
 
 /**
  * Fila de «En mente» (diseño 05, E1 y D1): el título y la antigüedad de la captura («hace 2 h»,
  * «ayer», «martes»), debajo en móvil y a la derecha en escritorio, sin prioridad ni fecha. A la
  * derecha, «Mover a…», la acción principal de la inbox: en móvil un botón de 40 px con el icono;
- * en escritorio, con texto. Tocar la fila abre el detalle; mantenerla pulsada, el menú.
+ * en escritorio, con texto. Tocar la fila abre el detalle; mantenerla pulsada, el menú; deslizarla,
+ * sus acciones.
  */
 export function InboxRow({ item }: { item: Item }) {
   const actions = useItemActions()
-  const longPress = useLongPress(() => {
-    actions.openMenu(item)
-  })
-
   return (
-    <li
-      {...longPress}
-      className={cn(
+    <SwipeableRow
+      item={item}
+      surfaceClassName={cn(
         'relative flex min-h-12 animate-in items-center gap-3 rounded-[18px] border border-border-soft bg-card py-2 pr-2.5 pl-4 duration-200 fade-in md:grid md:min-h-15 md:grid-cols-[24px_minmax(0,1fr)_auto_auto] md:gap-4 md:rounded-2xl md:py-2.5 md:pl-[18px]',
         rowHighlight(actions, item),
       )}
@@ -57,6 +54,6 @@ export function InboxRow({ item }: { item: Item }) {
         <span className="hidden md:inline">Mover a…</span>
         <ChevronDown aria-hidden className="hidden size-3.5 md:block" strokeWidth={2.2} />
       </button>
-    </li>
+    </SwipeableRow>
   )
 }

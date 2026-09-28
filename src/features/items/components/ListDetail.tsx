@@ -78,6 +78,7 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
   const { lingering, hold } = useLingering(LINGER_MS)
   const [menuItemId, setMenuItemId] = useState<string | undefined>(undefined)
   const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null)
+  const [swipeOpenId, setSwipeOpenId] = useState<string | undefined>(undefined)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('all')
   const [sort, setSort] = useState<SortOrder>('newest')
@@ -145,6 +146,8 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
       setMoveTarget({ item, anchor })
     },
     remove,
+    swipeOpenId,
+    setSwipeOpenId,
   }
 
   const add = (title: string) => {

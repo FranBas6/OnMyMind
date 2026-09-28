@@ -22,6 +22,13 @@
   --color-list-green: #4caf6a;
   --color-list-indigo: #5a4be6;
 
+  /* Fondos de las acciones de deslizar (sesión 1.9), iguales en claro y oscuro y con texto blanco.
+     Diseño #2BAA9E y #E0474C, oscurecidos lo justo para AA (decisión de Fran): 5,1:1 y 4,7:1. */
+  --color-swipe-progress: #1f7b72;
+  --color-swipe-done: #5a4be6;
+  --color-swipe-move: #6e6b7a;
+  --color-swipe-delete: #dc2d33;
+
   /* Radios: 16px controles (rounded-md), 20–28px tarjetas y hojas (rounded-lg … rounded-2xl) */
   --radius-sm: 0.75rem;
   --radius-md: 1rem;
@@ -103,6 +110,8 @@
   --popover-shadow: 0 16px 48px rgb(28 27 34 / 0.18);
   /* Panel lateral del detalle de un ítem en escritorio (diseño 06, D1) */
   --panel-shadow: -16px 0 40px rgb(28 27 34 / 0.08);
+  /* Fila mientras se desliza: sombra hacia el lado de la acción (pantalla 4 v2) */
+  --swipe-shadow: 0 0 24px rgb(28 27 34 / 0.1);
   --toast: #1c1b22;
   --toast-foreground: #ffffff;
   --toast-action: #b8b0ff;
@@ -177,6 +186,7 @@
   --dialog-shadow: 0 32px 80px rgb(0 0 0 / 0.28);
   --popover-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
   --panel-shadow: -16px 0 40px rgb(0 0 0 / 0.35);
+  --swipe-shadow: 0 0 24px rgb(0 0 0 / 0.4);
   /* Sin versión oscura en el diseño: un punto más claro que el fondo para que se distinga */
   --toast: #2a2937;
   --toast-foreground: #f2f0f7;
@@ -246,6 +256,7 @@
   --shadow-dialog: var(--dialog-shadow);
   --shadow-popover: var(--popover-shadow);
   --shadow-panel: var(--panel-shadow);
+  --shadow-swipe: var(--swipe-shadow);
   --color-toast: var(--toast);
   --color-toast-foreground: var(--toast-foreground);
   --color-toast-action: var(--toast-action);

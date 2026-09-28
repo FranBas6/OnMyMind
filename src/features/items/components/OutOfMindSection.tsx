@@ -1,7 +1,6 @@
 import { ArrowRightLeft, ChevronDown } from 'lucide-react'
 import { useId, useState } from 'react'
 
-import { useLongPress } from '@/hooks/useLongPress'
 import { formatCaptureAge } from '@/lib/date'
 import { cn } from '@/lib/utils'
 
@@ -10,6 +9,7 @@ import type { Item, MovedItem } from '../types'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { RowTitle } from './RowTitle'
 import { StatusCheckbox } from './StatusCheckbox'
+import { SwipeableRow } from './SwipeableRow'
 
 interface OutOfMindSectionProps {
   items: readonly Item[]
@@ -108,11 +108,11 @@ const ROW =
 
 function DoneRow({ item }: { item: Item }) {
   const actions = useItemActions()
-  const longPress = useLongPress(() => {
-    actions.openMenu(item)
-  })
   return (
-    <li {...longPress} className={cn(ROW, rowHighlight(actions, item))}>
+    <SwipeableRow
+      item={item}
+      surfaceClassName={cn(ROW, 'bg-background', rowHighlight(actions, item))}
+    >
       <StatusCheckbox
         state={checkboxState(item.status)}
         label={item.title}
@@ -125,7 +125,7 @@ function DoneRow({ item }: { item: Item }) {
         item={item}
         className="truncate text-[15px] font-normal text-subtle-foreground line-through"
       />
-    </li>
+    </SwipeableRow>
   )
 }
 
