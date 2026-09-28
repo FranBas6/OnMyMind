@@ -14,7 +14,7 @@ interface EmptyProps {
 /**
  * Lista sin nada (diseño 05, E7 y D4): el patrón de la pantalla 15 sin «Importar» ni «Editar
  * campos», con la nube punteada en el color de la lista. La mención al + de captura («o pulsa +
- * desde cualquier sitio…») y a mover desde «En mente» se añaden cuando existan (1.10 y 1.8).
+ * desde cualquier sitio…») se añade cuando exista (1.10).
  */
 export function NewListEmpty({ list, isDesktop }: EmptyProps & { list: List }) {
   return (
@@ -36,7 +36,9 @@ export function NewListEmpty({ list, isDesktop }: EmptyProps & { list: List }) {
       </Tile>
       <Title>Aún no hay nada aquí.</Title>
       <Description>
-        Escribe {firstItemNoun(list.kind)} {isDesktop ? 'arriba' : 'abajo'}.
+        {isDesktop
+          ? `Escribe ${firstItemNoun(list.kind)} arriba. También puedes mover aquí cosas desde «En mente».`
+          : `Escribe ${firstItemNoun(list.kind)} abajo.`}
       </Description>
     </Centered>
   )

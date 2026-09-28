@@ -14,7 +14,10 @@ const itemStatusSchema = z.enum(ITEM_STATUSES)
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at'
+  'id, list_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at'
+
+/** Límite de las notas: el `check` de `items.notes`. */
+export const ITEM_NOTES_MAX_LENGTH = 5000
 
 export interface ItemRow {
   id: string
@@ -29,6 +32,8 @@ export interface ItemRow {
   recurrence: string | null
   completed_at: string | null
   created_at: string
+  left_inbox_id: string | null
+  left_inbox_at: string | null
 }
 
 const toDate = (value: string | null) => (value === null ? null : new Date(value))
@@ -48,5 +53,14 @@ export function mapItemRow(row: ItemRow): Item {
     position: row.position,
     completedAt: toDate(row.completed_at),
     createdAt: new Date(row.created_at),
+    leftInboxId: row.left_inbox_id,
+    leftInboxAt: toDate(row.left_inbox_at),
   }
+}
+
+/** `fields` de una fila a partir de la prioridad (el único campo flexible en fase 1). */
+export function fieldsFor(priority: Item['priority']): {
+  priority?: NonNullable<Item['priority']>
+} {
+  return priority ? { priority } : {}
 }

@@ -1,11 +1,12 @@
 import { useMatches } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 
 import { BottomNav } from './BottomNav'
 import { Sidebar } from './Sidebar'
+import { SidePanelContext } from './sidePanel'
 
 interface AppShellProps {
   children: ReactNode
@@ -16,7 +17,8 @@ interface AppShellProps {
  * Escritorio: sidebar de 272 px y contenido centrado a 760 px (880 px si la ruta declara
  * `staticData: { wide: true }`, como Inicio). Con `addBar`, el móvil deja sitio solo para la barra
  * (el detalle de lista pega su campo encima). Se pinta solo una de las dos
- * navegaciones para no duplicar enlaces en el DOM ni en el orden de tabulación.
+ * navegaciones para no duplicar enlaces en el DOM ni en el orden de tabulación. En escritorio hay
+ * una tercera columna, vacía salvo cuando una pantalla abre ahí su panel lateral (`sidePanel.ts`).
  */
 export function AppShell({ children }: AppShellProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -24,17 +26,21 @@ export function AppShell({ children }: AppShellProps) {
   const addBar = useMatches({
     select: (matches) => matches.some((match) => match.staticData.addBar),
   })
+  const [panel, setPanel] = useState<HTMLElement | null>(null)
 
   if (isDesktop) {
     return (
-      <div className="grid min-h-dvh grid-cols-[272px_minmax(0,1fr)] bg-background text-foreground">
-        <Sidebar />
-        <main className="min-w-0 px-12 py-9">
-          <div className={cn('mx-auto w-full', wide ? 'max-w-[880px]' : 'max-w-[760px]')}>
-            {children}
-          </div>
-        </main>
-      </div>
+      <SidePanelContext value={panel}>
+        <div className="grid min-h-dvh grid-cols-[272px_minmax(0,1fr)_auto] bg-background text-foreground">
+          <Sidebar />
+          <main className="min-w-0 px-12 py-9">
+            <div className={cn('mx-auto w-full', wide ? 'max-w-[880px]' : 'max-w-[760px]')}>
+              {children}
+            </div>
+          </main>
+          <div ref={setPanel} className="sticky top-0 h-dvh" />
+        </div>
+      </SidePanelContext>
     )
   }
 

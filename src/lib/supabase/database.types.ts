@@ -45,6 +45,8 @@ export type Database = {
           fields: Json
           id: string
           image_url: string | null
+          left_inbox_at: string | null
+          left_inbox_id: string | null
           list_id: string
           notes: string | null
           position: number
@@ -65,6 +67,8 @@ export type Database = {
           fields?: Json
           id?: string
           image_url?: string | null
+          left_inbox_at?: string | null
+          left_inbox_id?: string | null
           list_id: string
           notes?: string | null
           position?: number
@@ -85,6 +89,8 @@ export type Database = {
           fields?: Json
           id?: string
           image_url?: string | null
+          left_inbox_at?: string | null
+          left_inbox_id?: string | null
           list_id?: string
           notes?: string | null
           position?: number
@@ -101,6 +107,20 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_left_inbox_id_fkey"
+            columns: ["left_inbox_id"]
+            isOneToOne: false
+            referencedRelation: "list_counters"
+            referencedColumns: ["list_id"]
+          },
+          {
+            foreignKeyName: "items_left_inbox_id_fkey"
+            columns: ["left_inbox_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
             referencedColumns: ["id"]
           },
           {

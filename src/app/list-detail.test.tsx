@@ -44,6 +44,8 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     position: 1000,
     completedAt: null,
     createdAt: new Date(Date.now() - 2 * HOUR),
+    leftInboxId: null,
+    leftInboxAt: null,
     ...overrides,
   }
 }

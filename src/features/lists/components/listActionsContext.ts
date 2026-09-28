@@ -3,7 +3,8 @@ import { createContext, use } from 'react'
 import type { List } from '../types'
 
 export interface ListActions {
-  openCreate: () => void
+  /** `onCreated` recibe la lista recién creada (p. ej. para mover ahí un ítem). */
+  openCreate: (options?: { onCreated?: (list: List) => void }) => void
   openEdit: (list: List) => void
   confirmDelete: (list: List) => void
   archive: (list: List) => void

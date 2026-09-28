@@ -17,6 +17,8 @@ export const queryKeys = {
     /** Últimas capturas pendientes de una lista (la tarjeta de «En mente» en escritorio). */
     latest: (listId: string, limit: number) => ['items', { listId, latest: limit }] as const,
     today: () => ['items', { today: true }] as const,
+    /** Lo que salió de una inbox y sigue en otra lista («Fuera de la cabeza» de «En mente»). */
+    movedFrom: (inboxId: string) => ['items', { movedFrom: inboxId }] as const,
     detail: (itemId: string) => ['items', itemId] as const,
   },
   prices: (itemId: string) => ['prices', itemId] as const,

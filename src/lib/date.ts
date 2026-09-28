@@ -54,3 +54,26 @@ export function formatDueDate(date: Date, now: Date = new Date()): DueDateLabel 
   if (days === -1) return { text: 'Ayer', urgent }
   return { text: format(date, isSameYear(date, now) ? 'd MMM' : 'd MMM yyyy'), urgent }
 }
+
+/**
+ * Fecha límite en el detalle (diseño 06): «Hoy, 25 sep», «Ayer, 24 sep», «Mañana, 26 sep» y, si
+ * no, solo la fecha. Con `relative: false` (tarea hecha), siempre la fecha sola.
+ */
+export function formatDueDateLong(
+  date: Date,
+  { now = new Date(), relative = true }: { now?: Date; relative?: boolean } = {},
+): DueDateLabel {
+  const plain = format(date, isSameYear(date, now) ? 'd MMM' : 'd MMM yyyy')
+  const short = formatDueDate(date, now)
+  if (!relative) return { text: plain, urgent: false }
+  if (['Hoy', 'Mañana', 'Ayer'].includes(short.text)) {
+    return { text: `${short.text}, ${plain}`, urgent: short.urgent }
+  }
+  return { text: plain, urgent: short.urgent }
+}
+
+/** Mes del calendario con mayúscula: «Septiembre 2026». */
+export function formatMonthCaption(month: Date): string {
+  const text = format(month, 'LLLL yyyy')
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}

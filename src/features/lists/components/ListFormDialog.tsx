@@ -21,6 +21,8 @@ interface ListFormDialogProps {
   onOpenChange: (open: boolean) => void
   /** Con lista, «Editar lista»; sin ella, «Nueva lista». */
   list?: List | undefined
+  /** Al crear, recibe la lista nueva («Nueva lista con esto» mueve ahí el ítem, diseño 05). */
+  onCreated?: ((list: List) => void) | undefined
 }
 
 /**
@@ -28,7 +30,7 @@ interface ListFormDialogProps {
  * cabecera; diálogo de 560 px en escritorio, con los botones abajo. Espera al servidor
  * («Creando…») y enseña su error sin cerrarse.
  */
-export function ListFormDialog({ open, onOpenChange, list }: ListFormDialogProps) {
+export function ListFormDialog({ open, onOpenChange, list, onCreated }: ListFormDialogProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
 
   return (
@@ -47,6 +49,7 @@ export function ListFormDialog({ open, onOpenChange, list }: ListFormDialogProps
           <ListForm
             list={list}
             isDesktop={isDesktop}
+            onCreated={onCreated}
             onDone={() => {
               onOpenChange(false)
             }}
@@ -60,10 +63,11 @@ export function ListFormDialog({ open, onOpenChange, list }: ListFormDialogProps
 interface ListFormProps {
   list: List | undefined
   isDesktop: boolean
+  onCreated: ((list: List) => void) | undefined
   onDone: () => void
 }
 
-function ListForm({ list, isDesktop, onDone }: ListFormProps) {
+function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
   const formId = useId()
   const nameId = useId()
   const createList = useCreateList()
@@ -92,9 +96,16 @@ function ListForm({ list, isDesktop, onDone }: ListFormProps) {
   const kindLocked = list ? itemCount(list) > 0 : false
 
   const onSubmit = handleSubmit((values: ListFormValues) => {
-    const options = { onSuccess: onDone }
-    if (list) updateList.mutate({ list, values }, options)
-    else createList.mutate(values, options)
+    if (list) {
+      updateList.mutate({ list, values }, { onSuccess: onDone })
+      return
+    }
+    createList.mutate(values, {
+      onSuccess: (created) => {
+        onCreated?.(created)
+        onDone()
+      },
+    })
   })
 
   const serverError = mutation.error

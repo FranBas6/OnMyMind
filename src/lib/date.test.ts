@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatCaptureAge, formatDueDate, formatHeaderDate } from './date'
+import {
+  formatCaptureAge,
+  formatDueDate,
+  formatDueDateLong,
+  formatHeaderDate,
+  formatMonthCaption,
+} from './date'
 
 describe('formatHeaderDate', () => {
   it('día de la semana con mayúscula, día y mes en español', () => {
@@ -42,5 +48,23 @@ describe('formatDueDate', () => {
     [new Date(2027, 0, 8), '8 ene 2027', false],
   ])('%s → «%s» (urgente: %s)', (date, text, urgent) => {
     expect(formatDueDate(date, now)).toEqual({ text, urgent })
+  })
+})
+
+describe('formatDueDateLong', () => {
+  const now = new Date(2026, 8, 25, 18, 0)
+
+  it.each([
+    [new Date(2026, 8, 25), true, 'Hoy, 25 sep', true],
+    [new Date(2026, 8, 24), true, 'Ayer, 24 sep', true],
+    [new Date(2026, 8, 26), true, 'Mañana, 26 sep', false],
+    [new Date(2026, 9, 3), true, '3 oct', false],
+    [new Date(2026, 8, 25), false, '25 sep', false],
+  ])('%s (relativa: %s) → «%s»', (date, relative, text, urgent) => {
+    expect(formatDueDateLong(date, { now, relative })).toEqual({ text, urgent })
+  })
+
+  it('mes del calendario con mayúscula', () => {
+    expect(formatMonthCaption(new Date(2026, 8, 1))).toBe('Septiembre 2026')
   })
 })

@@ -9,6 +9,8 @@ interface StatusCheckboxProps {
   /** El título del ítem: es lo que anuncia el lector de pantalla junto al estado. */
   label: string
   onToggle: () => void
+  /** El del detalle (diseño 06): 28 px en móvil y 26 en escritorio. */
+  large?: boolean
   className?: string
 }
 
@@ -18,7 +20,13 @@ interface StatusCheckboxProps {
  * llenarse hace una escala 0,9 → 1 si el sistema no pide menos movimiento. La zona táctil llega a
  * 44 px con un pseudoelemento, sin agrandar el círculo.
  */
-export function StatusCheckbox({ state, label, onToggle, className }: StatusCheckboxProps) {
+export function StatusCheckbox({
+  state,
+  label,
+  onToggle,
+  large = false,
+  className,
+}: StatusCheckboxProps) {
   return (
     <button
       type="button"
@@ -27,7 +35,8 @@ export function StatusCheckbox({ state, label, onToggle, className }: StatusChec
       aria-label={label}
       onClick={onToggle}
       className={cn(
-        'relative grid size-6 shrink-0 place-items-center rounded-full outline-none before:absolute before:-inset-2.5 before:content-[""] focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'relative grid shrink-0 place-items-center rounded-full outline-none before:absolute before:-inset-2.5 before:content-[""] focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        large ? 'size-7 md:size-[26px]' : 'size-6',
         state === 'empty' && 'border-2 border-control',
         state === 'half' &&
           'border-2 border-in-progress bg-[linear-gradient(90deg,var(--in-progress)_50%,transparent_50%)]',
@@ -35,7 +44,9 @@ export function StatusCheckbox({ state, label, onToggle, className }: StatusChec
         className,
       )}
     >
-      {state === 'full' && <Check aria-hidden className="size-[13px]" strokeWidth={3.5} />}
+      {state === 'full' && (
+        <Check aria-hidden className={large ? 'size-4' : 'size-[13px]'} strokeWidth={3.5} />
+      )}
     </button>
   )
 }

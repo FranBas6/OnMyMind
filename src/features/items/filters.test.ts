@@ -19,6 +19,8 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
     position: 1000,
     completedAt: null,
     createdAt: new Date('2026-09-20T10:00:00'),
+    leftInboxId: null,
+    leftInboxAt: null,
     ...overrides,
   }
 }

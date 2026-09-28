@@ -9,6 +9,8 @@ interface BottomSheetProps {
   /** Título para lectores de pantalla (la hoja pinta su propia cabecera visible). */
   title: string
   description?: string
+  /** Hoja abierta desde otra hoja (el selector de fecha sobre el detalle): se apila encima. */
+  nested?: boolean
   className?: string
   children: ReactNode
 }
@@ -23,11 +25,13 @@ export function BottomSheet({
   onOpenChange,
   title,
   description,
+  nested = false,
   className,
   children,
 }: BottomSheetProps) {
+  const Root = nested ? Drawer.NestedRoot : Drawer.Root
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+    <Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-scrim" />
         <Drawer.Content
@@ -45,6 +49,6 @@ export function BottomSheet({
           {children}
         </Drawer.Content>
       </Drawer.Portal>
-    </Drawer.Root>
+    </Root>
   )
 }

@@ -2,6 +2,10 @@ import { LIST_COLOR_BG, type ListColor } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
 const SIZES = {
+  // Destino en el popover «Mover a…» de escritorio (diseño 06, D6)
+  xs: 'size-[30px] rounded-[9px] text-[13px]',
+  // Destino en la hoja «Mover a…» (diseño 05 E2 y 06 T6)
+  row: 'size-9 rounded-[10px] text-[15px]',
   // Tarjeta de Inicio (diseño, pantalla 2)
   sm: 'size-10 rounded-[13px] text-[17px]',
   // Cabecera del detalle de lista (pantalla 4)

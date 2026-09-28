@@ -25,4 +25,27 @@ export interface Item {
   /** La rellena el trigger al pasar a un estado final. */
   completedAt: Date | null
   createdAt: Date
+  /** De qué «En mente» salió y cuándo (trigger `items_track_inbox`); `null` si no viene de una. */
+  leftInboxId: string | null
+  leftInboxAt: Date | null
+}
+
+/**
+ * Algo que salió de «En mente» y vive ya en otra lista: la inbox lo enseña tachado en su «Fuera
+ * de la cabeza», con «movida a Casa · lunes» (diseño 05).
+ */
+export interface MovedItem {
+  id: string
+  title: string
+  listName: string
+  movedAt: Date
+}
+
+/** Lo que se puede cambiar de un ítem desde su detalle, campo a campo. */
+export interface ItemPatch {
+  title?: string
+  notes?: string | null
+  priority?: Priority | null
+  dueAt?: Date | null
+  status?: ItemStatus
 }

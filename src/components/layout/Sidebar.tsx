@@ -111,7 +111,9 @@ export function Sidebar() {
 
       <button
         type="button"
-        onClick={openCreate}
+        onClick={() => {
+          openCreate()
+        }}
         className="mt-auto flex h-11 shrink-0 items-center gap-2.5 rounded-[14px] px-3 text-sm font-semibold text-primary outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         <Plus aria-hidden className="size-4" />

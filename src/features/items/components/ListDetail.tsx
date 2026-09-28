@@ -1,9 +1,11 @@
-import { ArrowDownUp } from 'lucide-react'
-import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { ArrowDownUp, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-import { InboxHeader, ListDetailHeader, type List } from '@/features/lists'
+import { InboxHeader, ListDetailHeader, useListActions, type List } from '@/features/lists'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { OFFLINE_MESSAGE } from '@/lib/errors'
+import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 
 import { addPlaceholder } from '../copy'
@@ -19,31 +21,63 @@ import {
   type StatusFilter,
 } from '../filters'
 import { useItems } from '../hooks/useItems'
-import { nextItemPosition, useCreateItem, useSetItemStatus } from '../hooks/useItemMutations'
+import {
+  nextItemPosition,
+  useCreateItem,
+  useDeleteItem,
+  useMoveItem,
+  useRestoreItem,
+  useSetItemStatus,
+  useUpdateItem,
+} from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
+import { movedFromInboxQueryOptions } from '../queries'
 import { initialStatus, isFinalStatus, isOutOfMind, nextStatusOnToggle } from '../status'
-import type { Item } from '../types'
+import type { Item, ItemStatus, MovedItem } from '../types'
 import { AddItemBar } from './AddItemBar'
 import { FilterChips } from './FilterChips'
+import { ItemActionsContext, type ItemActions } from './itemActionsContext'
 import { ItemRow } from './ItemRow'
+import { ItemRowMenuSheet } from './ItemRowMenu'
+import { ItemSheet } from './ItemSheet'
 import { AllDoneNote, FilterEmpty, InboxEmpty, NewListEmpty } from './ItemsEmptyState'
+import { MoveToList, type MoveTarget } from './MoveToList'
 import { OutOfMindSection } from './OutOfMindSection'
 
 /** Lo que tarda un ítem recién completado en bajar a «Fuera de la cabeza» (06 §Interacción). */
 const LINGER_MS = 400
 
+interface ListDetailProps {
+  list: List
+  /** El ítem abierto en el detalle (`?item=` de la ruta). */
+  openItemId: string | undefined
+  /** Abre (con id) o cierra (sin él) el detalle: la ruta lo refleja en `?item=`. */
+  onOpenItem: (itemId: string | undefined) => void
+}
+
 /**
- * Detalle de una lista (pantalla 4, D1 y diseño 05): cabecera, filtros, ítems, «Fuera de la
- * cabeza» y el campo de añadir, abajo en móvil y arriba en escritorio. «En mente» tiene su propia
- * cabecera y filtra por antigüedad en vez de por estado. Montarlo con `key={list.id}` reinicia
- * filtros y orden al cambiar de lista.
+ * Detalle de una lista (pantalla 4, D1 y diseños 05 y 06): cabecera, filtros, ítems, «Fuera de la
+ * cabeza» y el campo de añadir, abajo en móvil y arriba en escritorio; y encima, el detalle de un
+ * ítem, «Mover a…» y el menú de fila. «En mente» tiene su propia cabecera y filtra por antigüedad
+ * en vez de por estado. Montarlo con `key={list.id}` reinicia filtros y orden al cambiar de lista.
  */
-export function ListDetail({ list }: { list: List }) {
+export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const items = useItems(list.id)
+  const movedQuery = useQuery({
+    ...movedFromInboxQueryOptions(list.id),
+    enabled: list.kind === 'inbox',
+  })
   const createItem = useCreateItem(list.id)
-  const setStatus = useSetItemStatus(list.id)
+  const statusMutation = useSetItemStatus(list.id)
+  const updateItem = useUpdateItem(list.id)
+  const moveItem = useMoveItem()
+  const deleteItem = useDeleteItem(list.id)
+  const restoreItem = useRestoreItem(list.id)
+  const { openCreate } = useListActions()
   const { lingering, hold } = useLingering(LINGER_MS)
+  const [menuItemId, setMenuItemId] = useState<string | undefined>(undefined)
+  const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('all')
   const [sort, setSort] = useState<SortOrder>('newest')
@@ -58,10 +92,59 @@ export function ListDetail({ list }: { list: List }) {
     : detailSummary(list.kind, list.counters.pending, list.counters.done)
   const empty = all?.length === 0
 
-  const toggle = (item: Item) => {
-    const status = nextStatusOnToggle(list.kind, item.status)
-    if (isFinalStatus(status)) hold(item.id)
-    setStatus.mutate({ item, status })
+  const openItem = all?.find((item) => item.id === openItemId)
+  const menuItem = all?.find((item) => item.id === menuItemId)
+
+  // `?item=` de algo que ya no está en esta lista (borrado, movido, un enlace viejo): se quita.
+  const staleItemId = all !== undefined && openItemId !== undefined && !openItem
+  useEffect(() => {
+    if (staleItemId) onOpenItem(undefined)
+  }, [staleItemId, onOpenItem])
+
+  const setStatus = (item: Item, status: ItemStatus) => {
+    // Lo que se termina se queda un instante en su sitio antes de bajar (06 §Interacción).
+    if (isFinalStatus(status) && !isFinalStatus(item.status)) hold(item.id)
+    statusMutation.mutate({ item, status })
+  }
+
+  const move = (item: Item, to: List) => {
+    if (item.id === openItemId) onOpenItem(undefined)
+    moveItem.mutate({ item, from: list, to })
+  }
+
+  const remove = (item: Item) => {
+    if (item.id === openItemId) onOpenItem(undefined)
+    deleteItem.mutate(item)
+    showUndoToast({
+      icon: Trash2,
+      message: `«${item.title}» borrada`,
+      onUndo: () => {
+        restoreItem.mutate(item)
+      },
+    })
+  }
+
+  const actions: ItemActions = {
+    list,
+    isDesktop,
+    selectedId: openItemId,
+    menuItemId,
+    openDetail: (item) => {
+      onOpenItem(item.id)
+    },
+    toggle: (item) => {
+      setStatus(item, nextStatusOnToggle(list.kind, item.status))
+    },
+    setStatus,
+    openMenu: (item) => {
+      setMenuItemId(item.id)
+    },
+    startMove: (item, anchor) => {
+      // En móvil, «Mover a…» sale sobre la lista (diseño 06, T6): el detalle se cierra antes.
+      if (!isDesktop && item.id === openItemId) onOpenItem(undefined)
+      setMoveTarget({ item, anchor })
+    },
+    remove,
   }
 
   const add = (title: string) => {
@@ -85,95 +168,138 @@ export function ListDetail({ list }: { list: List }) {
   )
 
   return (
-    <div
-      className={cn(
-        'flex flex-1 flex-col md:min-h-[calc(100dvh-4.5rem)] md:gap-[22px]',
-        inbox ? 'gap-2' : 'gap-4',
-      )}
-    >
-      {inbox ? (
-        <InboxHeader inbox={list} summary={summary} />
-      ) : (
-        <ListDetailHeader list={list} summary={summary} />
-      )}
+    <ItemActionsContext value={actions}>
+      <div
+        className={cn(
+          'flex flex-1 flex-col md:min-h-[calc(100dvh-4.5rem)] md:gap-[22px]',
+          inbox ? 'gap-2' : 'gap-4',
+        )}
+      >
+        {inbox ? (
+          <InboxHeader inbox={list} summary={summary} />
+        ) : (
+          <ListDetailHeader list={list} summary={summary} />
+        )}
 
-      {showFilters && (
-        <div className="flex items-center justify-between gap-3">
-          {inbox ? (
-            <FilterChips
-              label="Filtrar por antigüedad"
-              options={AGE_FILTER_OPTIONS}
-              value={ageFilter}
-              onChange={setAgeFilter}
+        {showFilters && (
+          <div className="flex items-center justify-between gap-3">
+            {inbox ? (
+              <FilterChips
+                label="Filtrar por antigüedad"
+                options={AGE_FILTER_OPTIONS}
+                value={ageFilter}
+                onChange={setAgeFilter}
+              />
+            ) : (
+              <FilterChips
+                label="Filtrar por estado"
+                options={statusFilterOptions(list.kind)}
+                value={statusFilter}
+                onChange={setStatusFilter}
+              />
+            )}
+            {inbox && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSort((current) => (current === 'newest' ? 'oldest' : 'newest'))
+                }}
+                aria-label={`Ordenar: ${SORT_LABELS[sort]}. Cambiar a ${SORT_LABELS[sort === 'newest' ? 'oldest' : 'newest']}`}
+                // Como el botón secundario de Inicio («+ Nueva lista»), a la altura de los filtros. En
+                // móvil no cabe el texto junto a las tres píldoras: solo el icono, de 36 px.
+                className="inline-flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-card text-[13px] font-semibold whitespace-nowrap outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50 md:w-auto md:px-3"
+              >
+                <ArrowDownUp
+                  aria-hidden
+                  className="size-4 text-muted-foreground md:size-3.5"
+                  strokeWidth={2.2}
+                />
+                <span aria-hidden className="hidden md:inline">
+                  <span className="font-normal text-muted-foreground">Ordenar: </span>
+                  {SORT_LABELS[sort]}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {isDesktop && addBar}
+
+        {items.isPending &&
+          (items.fetchStatus === 'paused' ? <FilterEmpty>{OFFLINE_MESSAGE}</FilterEmpty> : null)}
+        {items.isError && (
+          <p role="alert" className="px-1 text-[15px] text-muted-foreground">
+            No hemos podido cargar esta lista. Prueba otra vez en un momento.
+          </p>
+        )}
+
+        {all &&
+          (inbox ? (
+            <InboxContent
+              active={active.filter((item) => matchesAge(item, ageFilter))}
+              hasPending={active.length > 0}
+              ageFilter={ageFilter}
+              outOfMind={outOfMind}
+              moved={movedQuery.data ?? []}
+              empty={empty}
+              isDesktop={isDesktop}
             />
           ) : (
-            <FilterChips
-              label="Filtrar por estado"
-              options={statusFilterOptions(list.kind)}
-              value={statusFilter}
-              onChange={setStatusFilter}
+            <ListContent
+              list={list}
+              active={active}
+              outOfMind={outOfMind}
+              filter={statusFilter}
+              empty={empty}
+              isDesktop={isDesktop}
             />
-          )}
-          {inbox && (
-            <button
-              type="button"
-              onClick={() => {
-                setSort((current) => (current === 'newest' ? 'oldest' : 'newest'))
-              }}
-              aria-label={`Ordenar: ${SORT_LABELS[sort]}. Cambiar a ${SORT_LABELS[sort === 'newest' ? 'oldest' : 'newest']}`}
-              // Como el botón secundario de Inicio («+ Nueva lista»), a la altura de los filtros. En
-              // móvil no cabe el texto junto a las tres píldoras: solo el icono, de 36 px.
-              className="inline-flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-card text-[13px] font-semibold whitespace-nowrap outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50 md:w-auto md:px-3"
-            >
-              <ArrowDownUp
-                aria-hidden
-                className="size-4 text-muted-foreground md:size-3.5"
-                strokeWidth={2.2}
-              />
-              <span aria-hidden className="hidden md:inline">
-                <span className="font-normal text-muted-foreground">Ordenar: </span>
-                {SORT_LABELS[sort]}
-              </span>
-            </button>
-          )}
-        </div>
+          ))}
+
+        {!isDesktop && addBar}
+      </div>
+
+      <ItemSheet
+        item={openItem}
+        list={list}
+        isDesktop={isDesktop}
+        onToggle={actions.toggle}
+        onUpdate={(item, patch) => {
+          if (patch.status && isFinalStatus(patch.status) && !isFinalStatus(item.status)) {
+            hold(item.id)
+          }
+          updateItem.mutate({ item, patch })
+        }}
+        onMove={actions.startMove}
+        onDelete={remove}
+        onClose={() => {
+          onOpenItem(undefined)
+        }}
+      />
+      {!isDesktop && (
+        <ItemRowMenuSheet
+          item={menuItem}
+          onClose={() => {
+            setMenuItemId(undefined)
+          }}
+        />
       )}
-
-      {isDesktop && addBar}
-
-      {items.isPending &&
-        (items.fetchStatus === 'paused' ? <FilterEmpty>{OFFLINE_MESSAGE}</FilterEmpty> : null)}
-      {items.isError && (
-        <p role="alert" className="px-1 text-[15px] text-muted-foreground">
-          No hemos podido cargar esta lista. Prueba otra vez en un momento.
-        </p>
-      )}
-
-      {all &&
-        (inbox ? (
-          <InboxContent
-            active={active.filter((item) => matchesAge(item, ageFilter))}
-            hasPending={active.length > 0}
-            ageFilter={ageFilter}
-            outOfMind={outOfMind}
-            empty={empty}
-            isDesktop={isDesktop}
-            onToggle={toggle}
-          />
-        ) : (
-          <ListContent
-            list={list}
-            active={active}
-            outOfMind={outOfMind}
-            filter={statusFilter}
-            empty={empty}
-            isDesktop={isDesktop}
-            onToggle={toggle}
-          />
-        ))}
-
-      {!isDesktop && addBar}
-    </div>
+      <MoveToList
+        from={list}
+        target={moveTarget}
+        isDesktop={isDesktop}
+        onClose={() => {
+          setMoveTarget(null)
+        }}
+        onMove={move}
+        onMoveToNewList={(item) => {
+          openCreate({
+            onCreated: (created) => {
+              move(item, created)
+            },
+          })
+        }}
+      />
+    </ItemActionsContext>
   )
 }
 
@@ -182,7 +308,6 @@ interface ContentProps {
   outOfMind: Item[]
   empty: boolean
   isDesktop: boolean
-  onToggle: (item: Item) => void
 }
 
 /** Listas normales: los ítems, y «Fuera de la cabeza» salvo con el filtro «Pendientes». */
@@ -193,13 +318,12 @@ function ListContent({
   filter,
   empty,
   isDesktop,
-  onToggle,
 }: ContentProps & { list: List; filter: StatusFilter }) {
   if (empty) return <NewListEmpty list={list} isDesktop={isDesktop} />
 
   if (filter === 'closed') {
     return outOfMind.length > 0 ? (
-      <OutOfMindSection items={outOfMind} onToggle={onToggle} defaultOpen collapsible={false} />
+      <OutOfMindSection items={outOfMind} defaultOpen collapsible={false} />
     ) : (
       <FilterEmpty>Aún no hay nada fuera de la cabeza.</FilterEmpty>
     )
@@ -207,33 +331,29 @@ function ListContent({
 
   return (
     <>
-      {active.length > 0 ? (
-        <Rows items={active} kind={list.kind} onToggle={onToggle} />
-      ) : (
-        <AllDoneNote withHint={filter === 'all'} />
-      )}
+      {active.length > 0 ? <Rows items={active} /> : <AllDoneNote withHint={filter === 'all'} />}
       {filter === 'all' && outOfMind.length > 0 && (
-        <OutOfMindSection items={outOfMind} onToggle={onToggle} defaultOpen />
+        <OutOfMindSection items={outOfMind} defaultOpen />
       )}
     </>
   )
 }
 
 /**
- * «En mente»: sus capturas por antigüedad. Sin nada pendiente, «Nada en mente.» y lo hecho
- * plegado al fondo (E3); los filtros solo afectan a lo pendiente.
+ * «En mente»: sus capturas por antigüedad. Sin nada pendiente, «Nada en mente.» y lo hecho y lo
+ * movido plegados al fondo (E3); los filtros solo afectan a lo pendiente.
  */
 function InboxContent({
   active,
   hasPending,
   ageFilter,
   outOfMind,
+  moved,
   empty,
   isDesktop,
-  onToggle,
-}: ContentProps & { hasPending: boolean; ageFilter: AgeFilter }) {
-  const section = outOfMind.length > 0 && (
-    <OutOfMindSection items={outOfMind} onToggle={onToggle} defaultOpen={hasPending} />
+}: ContentProps & { hasPending: boolean; ageFilter: AgeFilter; moved: MovedItem[] }) {
+  const section = (outOfMind.length > 0 || moved.length > 0) && (
+    <OutOfMindSection items={outOfMind} moved={moved} defaultOpen={hasPending} />
   )
 
   if (empty || !hasPending) {
@@ -248,7 +368,7 @@ function InboxContent({
   return (
     <>
       {active.length > 0 ? (
-        <Rows items={active} kind="inbox" onToggle={onToggle} />
+        <Rows items={active} />
       ) : (
         <FilterEmpty>
           {ageFilter === 'week'
@@ -261,19 +381,11 @@ function InboxContent({
   )
 }
 
-function Rows({
-  items,
-  kind,
-  onToggle,
-}: {
-  items: Item[]
-  kind: List['kind']
-  onToggle: (item: Item) => void
-}) {
+function Rows({ items }: { items: Item[] }) {
   return (
     <ul aria-label="Ítems" className="flex flex-col gap-2">
       {items.map((item) => (
-        <ItemRow key={item.id} item={item} kind={kind} onToggle={onToggle} />
+        <ItemRow key={item.id} item={item} />
       ))}
     </ul>
   )
