@@ -1,6 +1,8 @@
 import { useMatches } from '@tanstack/react-router'
 import { useState, type ReactNode } from 'react'
 
+import { Fab } from '@/components/Fab'
+import { useCapture } from '@/features/capture'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 
@@ -27,6 +29,7 @@ export function AppShell({ children }: AppShellProps) {
     select: (matches) => matches.some((match) => match.staticData.addBar),
   })
   const [panel, setPanel] = useState<HTMLElement | null>(null)
+  const capture = useCapture()
 
   if (isDesktop) {
     return (
@@ -60,6 +63,14 @@ export function AppShell({ children }: AppShellProps) {
       >
         {children}
       </main>
+      {/* En el detalle de lista el campo de añadir sustituye al + (06 §Layout). */}
+      {!addBar && (
+        <Fab
+          onClick={() => {
+            capture.open()
+          }}
+        />
+      )}
       <BottomNav />
     </div>
   )

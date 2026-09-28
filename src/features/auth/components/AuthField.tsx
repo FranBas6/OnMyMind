@@ -68,7 +68,7 @@ export function PasswordField({ label, error, hint, className, ...props }: AuthF
           }}
           aria-pressed={visible}
           aria-controls={id}
-          className="absolute inset-y-0 right-0 flex min-w-11 items-center justify-center rounded-md px-[18px] text-[13px] font-semibold text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="absolute inset-y-0 right-0 flex min-w-11 items-center justify-center rounded-md px-[18px] text-[13px] font-semibold text-primary outline-none hover:text-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {visible ? 'Ocultar' : 'Mostrar'}
         </button>

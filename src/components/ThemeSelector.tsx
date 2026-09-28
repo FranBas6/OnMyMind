@@ -34,7 +34,9 @@ export function ThemeSelector() {
             }}
             className={cn(
               'h-9 flex-1 rounded-[11px] text-[13px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-              selected && 'bg-card shadow-[0_1px_4px_rgb(28_27_34/0.08)]',
+              selected
+                ? 'bg-card shadow-[0_1px_4px_rgb(28_27_34/0.08)]'
+                : 'text-muted-foreground hover:bg-card/60 hover:text-foreground',
             )}
           >
             {label}

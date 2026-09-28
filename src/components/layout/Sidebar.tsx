@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Archive, Inbox, Plus, Search, Sun, type LucideIcon } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 
+import { useCapture } from '@/features/capture'
 import { ARCHIVED_SECTION_ID, useArchivedLists, useLists, useListActions } from '@/features/lists'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -19,6 +20,7 @@ export function Sidebar() {
   const archived = useArchivedLists()
   const archivedCount = archived.data?.length ?? 0
   const { openCreate } = useListActions()
+  const capture = useCapture()
   const inbox = lists.data?.inbox
   useSearchShortcut()
 
@@ -34,6 +36,21 @@ export function Sidebar() {
         <img src="/logos/svg/omm-mark-dark.svg" alt="" className="hidden size-7 dark:block" />
         <span className="font-display text-lg font-extrabold tracking-[-0.02em]">OnMyMind</span>
       </Link>
+
+      {/* La entrada visible de la captura: el único botón relleno del sidebar (diseño 07, D1). */}
+      <button
+        type="button"
+        onClick={() => {
+          capture.open()
+        }}
+        className="flex h-12 shrink-0 items-center gap-2 rounded-[14px] bg-primary px-3.5 font-display text-[13px] font-bold whitespace-nowrap text-primary-foreground shadow-fab outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      >
+        <Plus aria-hidden className="size-4" strokeWidth={2.4} />
+        ¿Qué tienes en mente?
+        <kbd className="ml-auto rounded-[5px] bg-white/20 px-1.5 py-0.5 font-sans text-[10px] font-semibold">
+          ⌘⇧␣
+        </kbd>
+      </button>
 
       <Link
         to="/search"

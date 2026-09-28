@@ -34,7 +34,8 @@ export interface NewItem {
   listId: string
   title: string
   status: ItemStatus
-  position: number
+  /** Sin posición (la captura rápida no tiene la lista destino en caché), va al final. */
+  position?: number
 }
 
 /**
@@ -55,7 +56,7 @@ export async function createItem(item: NewItem): Promise<void> {
       created_by: createdBy,
       title,
       status: item.status,
-      position: item.position,
+      position: item.position ?? (await lastPosition(item.listId)) + 1000,
     },
     { onConflict: 'id', ignoreDuplicates: true },
   )
@@ -93,15 +94,7 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
  * estar en caché. El rastro de «En mente» lo pone el trigger `items_track_inbox`.
  */
 export async function moveItem(itemId: string, patch: MovePatch): Promise<void> {
-  const last = await supabase
-    .from('items')
-    .select('position')
-    .eq('list_id', patch.listId)
-    .order('position', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (last.error) throw last.error
-
+  const position = (await lastPosition(patch.listId)) + 1000
   const { error } = await supabase
     .from('items')
     .update({
@@ -111,10 +104,23 @@ export async function moveItem(itemId: string, patch: MovePatch): Promise<void> 
       due_at: patch.dueAt ? patch.dueAt.toISOString() : null,
       all_day: patch.allDay,
       recurrence: patch.recurrence,
-      position: (last.data?.position ?? 0) + 1000,
+      position,
     })
     .eq('id', itemId)
   if (error) throw error
+}
+
+/** La mayor posición de una lista (0 si está vacía), para poner algo al final. */
+async function lastPosition(listId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('items')
+    .select('position')
+    .eq('list_id', listId)
+    .order('position', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  return data?.position ?? 0
 }
 
 export async function deleteItem(itemId: string): Promise<void> {

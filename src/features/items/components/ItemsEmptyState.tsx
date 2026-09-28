@@ -13,8 +13,7 @@ interface EmptyProps {
 
 /**
  * Lista sin nada (diseño 05, E7 y D4): el patrón de la pantalla 15 sin «Importar» ni «Editar
- * campos», con la nube punteada en el color de la lista. La mención al + de captura («o pulsa +
- * desde cualquier sitio…») se añade cuando exista (1.10).
+ * campos», con la nube punteada en el color de la lista.
  */
 export function NewListEmpty({ list, isDesktop }: EmptyProps & { list: List }) {
   return (
@@ -36,18 +35,20 @@ export function NewListEmpty({ list, isDesktop }: EmptyProps & { list: List }) {
       </Tile>
       <Title>Aún no hay nada aquí.</Title>
       <Description>
-        {isDesktop
-          ? `Escribe ${firstItemNoun(list.kind)} arriba. También puedes mover aquí cosas desde «En mente».`
-          : `Escribe ${firstItemNoun(list.kind)} abajo.`}
+        {isDesktop ? (
+          `Escribe ${firstItemNoun(list.kind)} arriba. También puedes mover aquí cosas desde «En mente».`
+        ) : (
+          <>
+            Escribe {firstItemNoun(list.kind)} abajo, o pulsa <b className="text-foreground">+</b>{' '}
+            desde cualquier sitio y elige {list.name}.
+          </>
+        )}
       </Description>
     </Centered>
   )
 }
 
-/**
- * «En mente» vacía (E3 y D3). El diseño añade «o con el +» (móvil) y «o pulsa ⌘⇧Espacio»
- * (escritorio): llegan con la captura rápida (1.10).
- */
+/** «En mente» vacía (E3 y D3), con el + de captura en móvil y su atajo en escritorio. */
 export function InboxEmpty({ isDesktop }: EmptyProps) {
   return (
     <Centered>
@@ -56,7 +57,19 @@ export function InboxEmpty({ isDesktop }: EmptyProps) {
       </Tile>
       <Title>Nada en mente.</Title>
       <Description>
-        Disfrútalo. Cuando algo aparezca, {isDesktop ? 'escríbelo arriba' : 'apúntalo abajo'}.
+        {isDesktop ? (
+          <>
+            Disfrútalo. Cuando algo aparezca, escríbelo arriba o pulsa{' '}
+            <kbd className="rounded-md bg-fill px-1.5 py-0.5 font-sans text-xs font-semibold text-foreground">
+              ⌘⇧Espacio
+            </kbd>
+          </>
+        ) : (
+          <>
+            Disfrútalo. Cuando algo aparezca, apúntalo abajo o con el{' '}
+            <b className="text-foreground">+</b>.
+          </>
+        )}
       </Description>
     </Centered>
   )

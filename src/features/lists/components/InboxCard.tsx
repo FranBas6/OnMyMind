@@ -21,7 +21,7 @@ export function InboxCard({ inbox }: { inbox: List }) {
     <Link
       to="/lists/$listId"
       params={{ listId: inbox.id }}
-      className="flex items-center justify-between gap-4 rounded-3xl bg-inbox-card px-[22px] py-5 text-white shadow-inbox-card outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 md:grid md:grid-cols-[200px_minmax(0,1fr)_auto] md:gap-7 md:px-6 md:py-[22px]"
+      className="flex items-center justify-between gap-4 rounded-3xl bg-inbox-card px-[22px] py-5 text-white shadow-inbox-card outline-none hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring/50 md:grid md:grid-cols-[200px_minmax(0,1fr)_auto] md:gap-7 md:px-6 md:py-[22px]"
     >
       <div className="flex min-w-0 flex-col gap-1">
         <span className="flex items-center gap-2 text-xs font-semibold tracking-[0.06em] uppercase opacity-80 md:opacity-85">

@@ -1,6 +1,6 @@
 # capture
 
-Captura rápida: entrada mínima para "sacarlo de la cabeza" en segundos, con detección de
-URLs (y de otros patrones como fechas o cantidades) para rellenar campos automáticamente.
-
-_Pendiente de implementar._
+Captura rápida (sesión 1.10): la hoja de móvil y el flotante de escritorio, «Guardar en» con los
+chips de destino (`destinations.ts`) y todas las listas, el atajo ⌘⇧Espacio y el aviso con
+«Deshacer». La abren el botón + (`src/components/Fab.tsx`), el botón del sidebar y la ruta
+`/add`. La captura de URL con vista previa llega en la fase 2.

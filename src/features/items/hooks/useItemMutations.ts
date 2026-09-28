@@ -175,7 +175,7 @@ function patchItem(item: Item, patch: ItemPatch): Item {
  * Añadir (optimista): el ítem aparece al instante con un id generado en el cliente, que es
  * también el que se guarda, así que la fila real sustituye a la optimista sin saltos.
  */
-export function useCreateItem(listId: string) {
+export function useCreateItem() {
   const queryClient = useQueryClient()
   return useMutation({
     ...OFFLINE_TOLERANT,
@@ -183,7 +183,7 @@ export function useCreateItem(listId: string) {
     onMutate: (item) =>
       applyOptimistic(queryClient, {
         items: {
-          [listId]: (items) => [
+          [item.listId]: (items) => [
             ...items,
             {
               id: item.id,
@@ -195,7 +195,7 @@ export function useCreateItem(listId: string) {
               dueAt: null,
               allDay: false,
               recurrence: null,
-              position: item.position,
+              position: item.position ?? nextItemPosition(items),
               completedAt: null,
               createdAt: new Date(),
               leftInboxId: null,
@@ -203,7 +203,7 @@ export function useCreateItem(listId: string) {
             },
           ],
         },
-        counters: { [listId]: { pending: 1, done: 0 } },
+        counters: { [item.listId]: { pending: 1, done: 0 } },
       }),
     onError: (error, item, snapshot) => {
       rollback(
@@ -370,15 +370,15 @@ export function useMoveItem() {
  * Borrar (optimista y sin confirmación, diseño 06): desaparece al instante y quien llama enseña
  * el aviso «Deshacer». Deshacer es `useRestoreItem`, que lo vuelve a crear igual.
  */
-export function useDeleteItem(listId: string) {
+export function useDeleteItem() {
   const queryClient = useQueryClient()
   return useMutation({
     ...OFFLINE_TOLERANT,
-    mutationFn: (item: Item) => deleteItem(item.id),
+    mutationFn: (item: Pick<Item, 'id' | 'listId' | 'status' | 'title'>) => deleteItem(item.id),
     onMutate: (item) =>
       applyOptimistic(queryClient, {
-        items: { [listId]: (items) => items.filter((entry) => entry.id !== item.id) },
-        counters: { [listId]: negate(counted(item.status)) },
+        items: { [item.listId]: (items) => items.filter((entry) => entry.id !== item.id) },
+        counters: { [item.listId]: negate(counted(item.status)) },
       }),
     onError: (error, item, snapshot) => {
       rollback(
@@ -394,7 +394,7 @@ export function useDeleteItem(listId: string) {
 }
 
 /** «Deshacer» un borrado (optimista): el ítem vuelve a su sitio con todo lo que tenía. */
-export function useRestoreItem(listId: string) {
+export function useRestoreItem() {
   const queryClient = useQueryClient()
   return useMutation({
     ...OFFLINE_TOLERANT,
@@ -402,10 +402,10 @@ export function useRestoreItem(listId: string) {
     onMutate: (item) =>
       applyOptimistic(queryClient, {
         items: {
-          [listId]: (items) =>
+          [item.listId]: (items) =>
             items.some((entry) => entry.id === item.id) ? items : [...items, item],
         },
-        counters: { [listId]: counted(item.status) },
+        counters: { [item.listId]: counted(item.status) },
       }),
     onError: (error, item, snapshot) => {
       rollback(

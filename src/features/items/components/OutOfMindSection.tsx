@@ -75,7 +75,7 @@ export function OutOfMindSection({
             onClick={() => {
               setOpen((current) => !current)
             }}
-            className="flex h-9 items-center gap-1.5 rounded-lg px-1 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="flex h-9 items-center gap-1.5 rounded-lg px-1 outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <ChevronDown
               aria-hidden
@@ -111,7 +111,7 @@ function DoneRow({ item }: { item: Item }) {
   return (
     <SwipeableRow
       item={item}
-      surfaceClassName={cn(ROW, 'bg-background', rowHighlight(actions, item))}
+      surfaceClassName={cn(ROW, 'bg-background hover:bg-fill', rowHighlight(actions, item))}
     >
       <StatusCheckbox
         state={checkboxState(item.status)}

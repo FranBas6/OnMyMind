@@ -163,7 +163,7 @@ export function ItemRowDotsMenu({ item }: { item: Item }) {
                   run(item, action, trigger.current)
                 }}
                 className={cn(
-                  'flex h-11 cursor-default items-center gap-3 rounded-xl px-3.5 text-sm font-medium outline-none select-none data-highlighted:bg-fill',
+                  'flex h-11 cursor-pointer items-center gap-3 rounded-xl px-3.5 text-sm font-medium outline-none select-none data-highlighted:bg-fill',
                   destructive &&
                     'mt-1 rounded-none border-t border-border-soft pt-1 text-destructive',
                 )}

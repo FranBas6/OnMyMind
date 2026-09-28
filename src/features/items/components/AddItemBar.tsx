@@ -39,7 +39,7 @@ export function AddItemBar({ placeholder, onAdd, variant, autoFocus = false }: A
     <form
       onSubmit={submit}
       className={cn(
-        'flex items-center gap-3 border border-border bg-card focus-within:border-primary focus-within:shadow-[0_0_0_0.5px_var(--primary)]',
+        'flex items-center gap-3 border border-border bg-card focus-within:border-primary focus-within:shadow-[0_0_0_0.5px_var(--primary)] hover:border-control',
         variant === 'docked' ? 'h-[50px] rounded-2xl pr-3 pl-2' : 'h-14 rounded-[18px] pr-4 pl-3',
       )}
     >
@@ -50,7 +50,7 @@ export function AddItemBar({ placeholder, onAdd, variant, autoFocus = false }: A
         onMouseDown={(event) => {
           event.preventDefault()
         }}
-        className="grid size-9 shrink-0 place-items-center rounded-xl text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="grid size-9 shrink-0 place-items-center rounded-xl text-primary outline-none hover:bg-brand-tint focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         <Plus aria-hidden className="size-5 md:size-[22px]" strokeWidth={2.6} />
       </button>

@@ -70,7 +70,7 @@ export function SegmentedControl<T extends string>({
               selected
                 ? (option.selectedClassName ?? 'bg-foreground font-bold text-background')
                 : cn(
-                    'font-semibold',
+                    'font-semibold hover:bg-card/60 hover:text-foreground',
                     value === null ? 'text-subtle-foreground' : 'text-muted-foreground',
                   ),
             )}

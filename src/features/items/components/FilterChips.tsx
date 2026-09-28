@@ -59,7 +59,7 @@ export function FilterChips<T extends string>({
               'inline-flex h-9 items-center rounded-full border px-4 text-[13px] font-semibold whitespace-nowrap outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
               selected
                 ? 'border-foreground bg-foreground text-background'
-                : 'border-border bg-card text-foreground',
+                : 'border-border bg-card text-foreground hover:border-control hover:bg-fill',
             )}
           >
             {option.label}

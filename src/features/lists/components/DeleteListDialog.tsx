@@ -58,7 +58,7 @@ export function DeleteListDialog({ list, onOpenChange, onConfirm }: DeleteListDi
               >
                 <AlertDialog.Cancel
                   className={cn(
-                    'bg-fill font-display font-bold text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                    'bg-fill font-display font-bold text-foreground outline-none hover:bg-border focus-visible:ring-[3px] focus-visible:ring-ring/50',
                     isDesktop
                       ? 'h-12 rounded-[14px] px-5 text-[15px]'
                       : 'h-13 rounded-2xl text-base',
@@ -71,7 +71,7 @@ export function DeleteListDialog({ list, onOpenChange, onConfirm }: DeleteListDi
                     onConfirm(list)
                   }}
                   className={cn(
-                    'bg-destructive font-display font-bold text-destructive-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                    'bg-destructive font-display font-bold text-destructive-foreground outline-none hover:brightness-95 focus-visible:ring-[3px] focus-visible:ring-ring/50',
                     isDesktop
                       ? 'h-12 rounded-[14px] px-[22px] text-[15px]'
                       : 'h-13 rounded-2xl text-base',

@@ -130,14 +130,14 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
           <Dialog.Title className="text-[22px] tracking-[-0.02em]">{title}</Dialog.Title>
           <Dialog.Close
             aria-label="Cerrar"
-            className="grid size-9 place-items-center rounded-[10px] bg-fill text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="grid size-9 place-items-center rounded-[10px] bg-fill text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <X aria-hidden className="size-5" />
           </Dialog.Close>
         </div>
       ) : (
         <div className="flex h-11 items-center justify-between px-5">
-          <Dialog.Close className="text-[15px] font-semibold text-muted-foreground outline-none focus-visible:underline">
+          <Dialog.Close className="text-[15px] font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:underline">
             Cancelar
           </Dialog.Close>
           <Dialog.Title className="font-display text-base font-bold tracking-normal">
@@ -151,7 +151,7 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
               'text-[15px] outline-none focus-visible:underline',
               mutation.isPending
                 ? 'font-semibold text-subtle-foreground'
-                : 'font-bold text-primary',
+                : 'font-bold text-primary hover:text-primary-hover',
             )}
           >
             {actionLabel}
@@ -233,13 +233,13 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
               </p>
             )}
             <div className="mt-1 flex justify-end gap-2.5">
-              <Dialog.Close className="h-12 rounded-[14px] bg-fill px-5 font-display text-[15px] font-bold text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+              <Dialog.Close className="h-12 rounded-[14px] bg-fill px-5 font-display text-[15px] font-bold text-foreground outline-none hover:bg-border focus-visible:ring-[3px] focus-visible:ring-ring/50">
                 Cancelar
               </Dialog.Close>
               <button
                 type="submit"
                 disabled={mutation.isPending}
-                className="h-12 rounded-[14px] bg-primary px-[22px] font-display text-[15px] font-bold text-primary-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
+                className="h-12 rounded-[14px] bg-primary px-[22px] font-display text-[15px] font-bold text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
               >
                 {actionLabel}
               </button>

@@ -135,7 +135,7 @@ interface MenuEntry {
 /** Filas del menú: la de Borrar, en rojo y tras un filete, algo más baja (48 px). */
 function rowClass(item: MenuEntry, height: string) {
   return cn(
-    'flex w-full cursor-default items-center gap-3 rounded-xl px-3.5 text-[15px] font-medium outline-none select-none',
+    'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 text-[15px] font-medium outline-none select-none',
     item.destructive
       ? 'mt-1 h-12 rounded-none border-t border-border-soft pt-1 text-destructive'
       : [height, 'text-foreground [&_svg]:text-muted-foreground'],

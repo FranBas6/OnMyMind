@@ -28,14 +28,17 @@ export function AppProviders({ queryClient, children }: AppProvidersProps) {
       >
         <TooltipProvider>
           {children}
-          {/* Los avisos de abajo («Deshacer») van sobre la barra en móvil y a 32 px en escritorio. */}
+          {/*
+            Los avisos de abajo («Deshacer») van a 32 px en escritorio. En móvil, sobre la barra y a
+            la izquierda del botón +, centrados con él: dejan libres sus 76 px (diseño 07, C7).
+          */}
           <Toaster
             position="top-center"
             offset={{ bottom: 32 }}
             mobileOffset={{
-              bottom: 'calc(env(safe-area-inset-bottom) + 104px)',
+              bottom: 'calc(env(safe-area-inset-bottom) + 76px)',
               left: 20,
-              right: 20,
+              right: 96,
             }}
           />
         </TooltipProvider>

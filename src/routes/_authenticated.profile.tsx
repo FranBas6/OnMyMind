@@ -36,7 +36,7 @@ function ProfilePage() {
           onClick={() => {
             signOut.mutate()
           }}
-          className="flex h-12 w-full items-center rounded-[18px] px-4 text-[15px] font-medium text-error outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
+          className="flex h-12 w-full items-center rounded-[18px] px-4 text-[15px] font-medium text-error outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
         >
           Cerrar sesión
         </button>

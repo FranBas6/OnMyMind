@@ -32,7 +32,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
               onChange(color)
             }}
             className={cn(
-              'size-9 rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              'size-9 rounded-full outline-none hover:scale-110 focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:transition-transform',
               LIST_COLOR_BG[color],
               selected && [
                 'ring-2 ring-offset-[3px] ring-offset-background',

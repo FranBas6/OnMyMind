@@ -1,3 +1,5 @@
 export { ListDetail } from './components/ListDetail'
+export { useCreateItem, useDeleteItem } from './hooks/useItemMutations'
 export { itemsQueryOptions } from './queries'
+export { initialStatus } from './status'
 export type { Item, ItemStatus, Priority } from './types'

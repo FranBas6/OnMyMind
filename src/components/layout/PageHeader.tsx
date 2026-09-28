@@ -67,7 +67,7 @@ export function BackLink({ to, label }: { to: LinkProps['to']; label: string }) 
   return (
     <Link
       to={to}
-      className="-ml-1 flex h-11 items-center gap-1 self-start pr-2 text-[15px] font-semibold text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="-ml-1 flex h-11 items-center gap-1 self-start pr-2 text-[15px] font-semibold text-primary outline-none hover:text-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       <ChevronLeft aria-hidden className="size-5" strokeWidth={2.4} />
       {label}

@@ -21,6 +21,8 @@
   --color-list-pink: #e05a8e;
   --color-list-green: #4caf6a;
   --color-list-indigo: #5a4be6;
+  /* Texto sobre un color de lista donde el blanco no llega a AA (chip elegido de la captura) */
+  --color-on-list: #1c1b22;
 
   /* Fondos de las acciones de deslizar (sesión 1.9), iguales en claro y oscuro y con texto blanco.
      Diseño #2BAA9E y #E0474C, oscurecidos lo justo para AA (decisión de Fran): 5,1:1 y 4,7:1. */
@@ -103,6 +105,8 @@
   --fill: #f4f2ee;
   /* Índigo reforzado: título del tipo de lista elegido */
   --primary-strong: #4335c9;
+  /* Botones rellenos al pasar el ratón: un punto más oscuro en claro y más claro en oscuro */
+  --primary-hover: #4f41d9;
   /* Velo y sombras de hojas, diálogos, popovers y avisos (diseño 04 Listas) */
   --scrim: rgb(28 27 34 / 0.28);
   --sheet-shadow: 0 -12px 40px rgb(28 27 34 / 0.14);
@@ -110,6 +114,8 @@
   --popover-shadow: 0 16px 48px rgb(28 27 34 / 0.18);
   /* Panel lateral del detalle de un ítem en escritorio (diseño 06, D1) */
   --panel-shadow: -16px 0 40px rgb(28 27 34 / 0.08);
+  /* Botón + de captura y su entrada en el sidebar (diseño 07) */
+  --fab-shadow: 0 12px 28px rgb(90 75 230 / 0.35);
   /* Fila mientras se desliza: sombra hacia el lado de la acción (pantalla 4 v2) */
   --swipe-shadow: 0 0 24px rgb(28 27 34 / 0.1);
   --toast: #1c1b22;
@@ -181,11 +187,13 @@
   --skeleton: #2c2b39;
   --fill: #2a2937;
   --primary-strong: #8c81ff;
+  --primary-hover: #a097ff;
   --scrim: rgb(0 0 0 / 0.5);
   --sheet-shadow: 0 -12px 40px rgb(0 0 0 / 0.4);
   --dialog-shadow: 0 32px 80px rgb(0 0 0 / 0.28);
   --popover-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
   --panel-shadow: -16px 0 40px rgb(0 0 0 / 0.35);
+  --fab-shadow: 0 12px 28px rgb(0 0 0 / 0.45);
   --swipe-shadow: 0 0 24px rgb(0 0 0 / 0.4);
   /* Sin versión oscura en el diseño: un punto más claro que el fondo para que se distinga */
   --toast: #2a2937;
@@ -251,11 +259,13 @@
   --color-skeleton: var(--skeleton);
   --color-fill: var(--fill);
   --color-primary-strong: var(--primary-strong);
+  --color-primary-hover: var(--primary-hover);
   --color-scrim: var(--scrim);
   --shadow-sheet: var(--sheet-shadow);
   --shadow-dialog: var(--dialog-shadow);
   --shadow-popover: var(--popover-shadow);
   --shadow-panel: var(--panel-shadow);
+  --shadow-fab: var(--fab-shadow);
   --shadow-swipe: var(--swipe-shadow);
   --color-toast: var(--toast);
   --color-toast-foreground: var(--toast-foreground);
@@ -314,5 +324,35 @@
 
   h1 {
     @apply font-extrabold;
+  }
+
+  /*
+    Lo que se pulsa lleva la mano: Tailwind v4 dejó los botones con el cursor de flecha, y en
+    escritorio parecía que nada respondía. Los cambios de color al pasar el ratón duran 150 ms
+    (06 §Interacción). Los `hover:` solo se aplican con ratón (Tailwind v4 los mete en
+    `@media (hover: hover)`), así que en el iPhone no se quedan pegados.
+  */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='radio']:not(:disabled),
+  [role='checkbox']:not(:disabled),
+  [role='menuitem'],
+  [role='option'],
+  select,
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a,
+    button,
+    [role='radio'],
+    [role='checkbox'],
+    [role='menuitem'] {
+      transition-property: color, background-color, border-color, box-shadow, opacity, filter;
+      transition-duration: 150ms;
+      transition-timing-function: ease-out;
+    }
   }
 }

@@ -26,7 +26,7 @@ export function TaskRow({ item }: { item: Item }) {
     <SwipeableRow
       item={item}
       surfaceClassName={cn(
-        'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-3.5 duration-200 fade-in md:grid md:grid-cols-[24px_minmax(0,1fr)_auto_auto_32px] md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
+        'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-3.5 duration-200 fade-in hover:border-border hover:shadow-card md:grid md:grid-cols-[24px_minmax(0,1fr)_auto_auto_32px] md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
         rowHighlight(actions, item),
       )}
     >

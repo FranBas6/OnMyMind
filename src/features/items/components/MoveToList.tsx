@@ -132,7 +132,7 @@ function MobileSheet({ item, from, destinations, onMove, onMoveToNewList, onClos
                 }}
                 className={cn(
                   'flex h-14 w-full items-center gap-3 rounded-[14px] px-3 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                  selected && 'bg-brand-tint',
+                  selected ? 'bg-brand-tint' : 'enabled:hover:bg-fill',
                   here && 'opacity-50',
                 )}
               >
@@ -179,7 +179,7 @@ function MobileSheet({ item, from, destinations, onMove, onMoveToNewList, onClos
           onClose()
           onMove(item, chosen)
         }}
-        className="h-13 rounded-2xl bg-primary font-display text-base font-bold text-primary-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
+        className="h-13 rounded-2xl bg-primary font-display text-base font-bold text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
       >
         {chosen ? `Mover a ${chosen.name}` : 'Elige una lista'}
       </button>

@@ -83,7 +83,7 @@ describe('mutaciones de ítems', () => {
   it('si añadir falla, el ítem desaparece y los contadores vuelven', async () => {
     vi.mocked(api.createItem).mockRejectedValue(new Error('new row violates row-level security'))
     const { wrapper, items, counters } = setup()
-    const { result } = renderHook(() => useCreateItem('casa'), { wrapper })
+    const { result } = renderHook(() => useCreateItem(), { wrapper })
 
     act(() => {
       result.current.mutate({

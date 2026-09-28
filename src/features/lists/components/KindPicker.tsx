@@ -54,7 +54,9 @@ export function KindPicker({ value, onChange, locked = false }: KindPickerProps)
               }}
               className={cn(
                 'relative flex flex-col gap-1.5 rounded-[18px] border bg-card p-3.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                selected ? 'border-2 border-primary bg-brand-tint p-[13px]' : 'border-border-soft',
+                selected
+                  ? 'border-2 border-primary bg-brand-tint p-[13px]'
+                  : 'border-border-soft enabled:hover:border-border enabled:hover:bg-fill/50',
                 soon && 'opacity-60',
               )}
             >

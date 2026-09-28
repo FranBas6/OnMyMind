@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { useSession } from '@/features/auth'
+import { CaptureProvider } from '@/features/capture'
 import { ListActionsProvider } from '@/features/lists'
 
 /**
@@ -33,9 +34,11 @@ function AuthenticatedLayout() {
 
   return (
     <ListActionsProvider>
-      <AppShell>
-        <Outlet />
-      </AppShell>
+      <CaptureProvider>
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      </CaptureProvider>
     </ListActionsProvider>
   )
 }

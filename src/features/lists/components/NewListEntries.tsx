@@ -12,7 +12,7 @@ export function NewListRoundButton() {
       onClick={() => {
         openCreate()
       }}
-      className="grid size-11 shrink-0 place-items-center rounded-full border border-border bg-card text-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:hidden"
+      className="grid size-11 shrink-0 place-items-center rounded-full border border-border bg-card text-foreground outline-none hover:bg-fill focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:hidden"
     >
       <ListPlus aria-hidden className="size-[22px]" strokeWidth={2.2} />
     </button>
@@ -45,7 +45,7 @@ export function NewListCard() {
       onClick={() => {
         openCreate()
       }}
-      className="flex min-h-[150px] w-full flex-col items-center justify-center gap-2.5 rounded-[22px] border-[1.5px] border-dashed border-control p-4 text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="flex min-h-[150px] w-full flex-col items-center justify-center gap-2.5 rounded-[22px] border-[1.5px] border-dashed border-control p-4 text-primary outline-none hover:border-primary/50 hover:bg-brand-tint/40 focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       <span className="grid size-10 place-items-center rounded-[13px] bg-brand-tint">
         <Plus aria-hidden className="size-[18px]" strokeWidth={2.6} />
@@ -64,7 +64,7 @@ export function NewListEmptyButton() {
       onClick={() => {
         openCreate()
       }}
-      className="h-12 rounded-[14px] bg-primary px-6 font-display text-[15px] font-bold text-primary-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="h-12 rounded-[14px] bg-primary px-6 font-display text-[15px] font-bold text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       Nueva lista
     </button>

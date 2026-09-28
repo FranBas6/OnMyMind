@@ -177,7 +177,7 @@ export function ItemDetail({
           onClick={() => {
             onDelete(item)
           }}
-          className="-mr-1 flex h-11 items-center gap-1.5 rounded-xl px-1 text-destructive outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="-mr-1 flex h-11 items-center gap-1.5 rounded-xl px-1 text-destructive outline-none hover:opacity-80 focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <Trash2 aria-hidden className="size-4" strokeWidth={2.2} />
           Borrar
@@ -221,7 +221,7 @@ function DueDateField({ item, isDesktop, onChange }: DueDateFieldProps) {
         setOpen(true)
       }}
       className={cn(
-        'flex h-13 w-full items-center justify-between gap-3 rounded-2xl border border-border-soft bg-card px-4 text-[15px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'flex h-13 w-full items-center justify-between gap-3 rounded-2xl border border-border-soft bg-card px-4 text-[15px] outline-none hover:border-border hover:bg-fill/50 focus-visible:ring-[3px] focus-visible:ring-ring/50',
         open && isDesktop && 'border-primary',
       )}
     >
@@ -285,7 +285,7 @@ function DueDateField({ item, isDesktop, onChange }: DueDateFieldProps) {
           onClick={() => {
             setOpen(false)
           }}
-          className="mt-1 h-13 rounded-2xl bg-primary font-display text-base font-bold text-primary-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="mt-1 h-13 rounded-2xl bg-primary font-display text-base font-bold text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           Listo
         </button>

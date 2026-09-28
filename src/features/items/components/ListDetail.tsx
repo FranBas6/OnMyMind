@@ -68,12 +68,12 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
     ...movedFromInboxQueryOptions(list.id),
     enabled: list.kind === 'inbox',
   })
-  const createItem = useCreateItem(list.id)
+  const createItem = useCreateItem()
   const statusMutation = useSetItemStatus(list.id)
   const updateItem = useUpdateItem(list.id)
   const moveItem = useMoveItem()
-  const deleteItem = useDeleteItem(list.id)
-  const restoreItem = useRestoreItem(list.id)
+  const deleteItem = useDeleteItem()
+  const restoreItem = useRestoreItem()
   const { openCreate } = useListActions()
   const { lingering, hold } = useLingering(LINGER_MS)
   const [menuItemId, setMenuItemId] = useState<string | undefined>(undefined)

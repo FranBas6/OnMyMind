@@ -13,7 +13,7 @@ export const Route = createFileRoute('/login')({
   component: LoginPage,
 })
 
-const footerLinkClassName = 'font-semibold text-primary'
+const footerLinkClassName = 'font-semibold text-primary hover:text-primary-hover'
 
 /** Acceso: «Entrar» por defecto y «Crear cuenta» con `?mode=signup`; ambas conservan `redirect`. */
 function LoginPage() {

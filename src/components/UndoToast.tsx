@@ -18,7 +18,7 @@ export function UndoToast({ icon: Icon, message, onUndo }: UndoToastProps) {
       <button
         type="button"
         onClick={onUndo}
-        className="ml-auto font-bold text-toast-action outline-none focus-visible:underline"
+        className="ml-auto font-bold text-toast-action outline-none hover:underline focus-visible:underline"
       >
         Deshacer
       </button>

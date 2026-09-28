@@ -129,7 +129,7 @@ export function ArchivedListsSection() {
                   unarchive(selected)
                   setSelected(undefined)
                 }}
-                className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-primary font-display text-base font-bold text-primary-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-primary font-display text-base font-bold text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 <ArchiveRestore aria-hidden className="size-[18px]" strokeWidth={2} />
                 Desarchivar

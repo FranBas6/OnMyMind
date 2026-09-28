@@ -37,10 +37,11 @@ export function StatusCheckbox({
       className={cn(
         'relative grid shrink-0 place-items-center rounded-full outline-none before:absolute before:-inset-2.5 before:content-[""] focus-visible:ring-[3px] focus-visible:ring-ring/50',
         large ? 'size-7 md:size-[26px]' : 'size-6',
-        state === 'empty' && 'border-2 border-control',
+        state === 'empty' && 'border-2 border-control hover:border-primary',
         state === 'half' &&
-          'border-2 border-in-progress bg-[linear-gradient(90deg,var(--in-progress)_50%,transparent_50%)]',
-        state === 'full' && 'bg-primary text-primary-foreground motion-safe:animate-check-pop',
+          'border-2 border-in-progress bg-[linear-gradient(90deg,var(--in-progress)_50%,transparent_50%)] hover:brightness-110',
+        state === 'full' &&
+          'bg-primary text-primary-foreground hover:bg-primary-hover motion-safe:animate-check-pop',
         className,
       )}
     >

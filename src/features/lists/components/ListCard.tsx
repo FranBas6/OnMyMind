@@ -29,7 +29,7 @@ export function ListCard({ list }: { list: List }) {
         params={{ listId: list.id }}
         {...longPress}
         className={cn(
-          'flex w-full min-w-0 flex-col gap-3 rounded-[22px] border border-border-soft bg-card p-4 shadow-card outline-none select-none [-webkit-touch-callout:none] focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          'flex w-full min-w-0 flex-col gap-3 rounded-[22px] border border-border-soft bg-card p-4 shadow-card outline-none select-none [-webkit-touch-callout:none] hover:border-border hover:shadow-md focus-visible:ring-[3px] focus-visible:ring-ring/50',
           menuOpen && 'outline-2 outline-offset-2 outline-primary outline-solid md:outline-none',
         )}
       >
