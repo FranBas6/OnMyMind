@@ -40,7 +40,6 @@ function renderHome({ desktop = false } = {}) {
       queryClient.setQueryData(queryKeys.lists.all, [inbox, casa])
       queryClient.setQueryData(queryKeys.lists.archived, [viejas])
       queryClient.setQueryData(queryKeys.items.latest('i', 3), [])
-      queryClient.setQueryData(['profile', session.user.id, 'display_name'], 'fran')
     },
   })
 }

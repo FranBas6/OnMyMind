@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from 'react'
 
 import { useCapture } from '@/features/capture'
 import { ARCHIVED_SECTION_ID, useArchivedLists, useLists, useListActions } from '@/features/lists'
+import { ProfileLink } from '@/features/profile'
 import { focusSearchField, SidebarSearchField } from '@/features/search'
 import { useTodayCount } from '@/features/today'
 import { LIST_COLOR_BG } from '@/lib/listColors'
@@ -14,7 +15,7 @@ import { isDestinationActive } from './navigation'
 /**
  * Sidebar de escritorio (diseño, pantalla D1): marca, buscador (⌘K), accesos a «En mente» y
  * «Hoy» (con lo que queda por hacer hoy), «Mis listas» con su color y contador, la mención de las
- * archivadas y «+ Nueva lista».
+ * archivadas, «+ Nueva lista» y, al pie, tu avatar, que abre Perfil (diseño 09).
  */
 export function Sidebar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
@@ -125,16 +126,19 @@ export function Sidebar() {
         )}
       </section>
 
-      <button
-        type="button"
-        onClick={() => {
-          openCreate()
-        }}
-        className="mt-auto flex h-11 shrink-0 items-center gap-2.5 rounded-[14px] px-3 text-sm font-semibold text-primary outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      >
-        <Plus aria-hidden className="size-4" />
-        Nueva lista
-      </button>
+      <div className="mt-auto flex flex-col gap-0.5">
+        <button
+          type="button"
+          onClick={() => {
+            openCreate()
+          }}
+          className="flex h-11 shrink-0 items-center gap-2.5 rounded-[14px] px-3 text-sm font-semibold text-primary outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <Plus aria-hidden className="size-4" />
+          Nueva lista
+        </button>
+        <ProfileLink />
+      </div>
     </aside>
   )
 }

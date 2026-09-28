@@ -26,7 +26,6 @@ function renderHome(lists: List[], captures: RecentCapture[] = []) {
     seed: (queryClient) => {
       queryClient.setQueryData(queryKeys.lists.all, lists)
       queryClient.setQueryData(queryKeys.items.latest('i', 3), captures)
-      queryClient.setQueryData(['profile', session.user.id, 'display_name'], 'fran')
     },
   })
 }

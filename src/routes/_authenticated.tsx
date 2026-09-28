@@ -5,6 +5,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { useSession } from '@/features/auth'
 import { CaptureProvider } from '@/features/capture'
 import { ListActionsProvider } from '@/features/lists'
+import { ThemeSync } from '@/features/profile'
 
 /**
  * Layout de todas las rutas privadas (el `_` hace que no añada segmento a la URL).
@@ -34,6 +35,8 @@ function AuthenticatedLayout() {
 
   return (
     <ListActionsProvider>
+      {/* El tema viaja con la cuenta: se aplica al llegar el perfil (08 B.14). */}
+      <ThemeSync />
       <CaptureProvider>
         <AppShell>
           <Outlet />

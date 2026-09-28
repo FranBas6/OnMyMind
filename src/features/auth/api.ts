@@ -30,6 +30,12 @@ export async function signOut(): Promise<void> {
   if (error) throw new AuthFailure(authErrorMessage(error), { cause: error })
 }
 
+/** Cambia la contraseña de la cuenta con la sesión abierta (Perfil, 1.13). */
+export async function updatePassword(password: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) throw new AuthFailure(authErrorMessage(error), { cause: error })
+}
+
 /** Sesión guardada en este navegador (renueva el access token si ha caducado), o `null`. */
 export async function getSession(): Promise<Session | null> {
   const { data } = await supabase.auth.getSession()
@@ -47,15 +53,4 @@ export function onAuthStateChange(callback: (session: Session | null) => void): 
   return () => {
     data.subscription.unsubscribe()
   }
-}
-
-/** Provisional hasta la feature de perfil (1.13): el nombre que se muestra en Inicio. */
-export async function fetchDisplayName(userId: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('display_name')
-    .eq('id', userId)
-    .single()
-  if (error) throw error
-  return data.display_name
 }

@@ -20,6 +20,20 @@ export const signUpSchema = z.object({
   }),
 })
 
+/** Cambiar la contraseña desde Perfil (1.13): la nueva, con el mínimo de siempre, y repetida. */
+export const changePasswordSchema = z
+  .object({
+    password: z.string().min(PASSWORD_MIN_LENGTH, {
+      error: `La contraseña necesita al menos ${PASSWORD_MIN_LENGTH} caracteres.`,
+    }),
+    confirm: z.string(),
+  })
+  .refine((values) => values.password === values.confirm, {
+    error: 'Las contraseñas no coinciden.',
+    path: ['confirm'],
+  })
+
+export type ChangePasswordValues = z.infer<typeof changePasswordSchema>
 export type SignInValues = z.infer<typeof signInSchema>
 export type SignUpValues = z.infer<typeof signUpSchema>
 

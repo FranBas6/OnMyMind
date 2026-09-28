@@ -20,6 +20,8 @@ const MESSAGES_BY_CODE: Record<string, string> = {
   over_request_rate_limit: 'Demasiados intentos seguidos. Espera un momento y prueba otra vez.',
   over_email_send_rate_limit: 'Demasiados intentos seguidos. Espera un momento y prueba otra vez.',
   signup_disabled: 'Ahora mismo no se pueden crear cuentas.',
+  same_password: 'Es la misma que ya tienes. Elige otra.',
+  reauthentication_needed: 'Por seguridad, sal y vuelve a entrar antes de cambiarla.',
 }
 
 const OFFLINE_MESSAGE = 'No hay conexión. Prueba otra vez cuando vuelva.'

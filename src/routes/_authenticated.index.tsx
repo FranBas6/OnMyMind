@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 
 import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { useDisplayName } from '@/features/auth'
 import {
   ArchivedListsSection,
   InboxCard,
@@ -16,6 +15,7 @@ import {
   NewListRoundButton,
   useLists,
 } from '@/features/lists'
+import { initialOf, useProfile } from '@/features/profile'
 import { formatHeaderDate } from '@/lib/date'
 
 export const Route = createFileRoute('/_authenticated/')({
@@ -36,12 +36,13 @@ export const Route = createFileRoute('/_authenticated/')({
 
 /** Inicio (pantalla 2 y diseño 03 Inicio): «En mente» fijada y la rejilla del resto de listas. */
 function HomePage() {
-  const { session } = Route.useRouteContext()
-  const displayName = useDisplayName(session.user.id)
+  const profile = useProfile()
   const lists = useLists()
 
   return (
-    <HomeLayout avatar={<Avatar initial={displayName.data?.charAt(0).toUpperCase() ?? ''} />}>
+    <HomeLayout
+      avatar={<Avatar initial={profile.data ? initialOf(profile.data.displayName) : ''} />}
+    >
       {lists.isPending && <ListsSkeleton />}
       {lists.isError && (
         <p role="alert" className="px-1 text-[15px] text-muted-foreground">

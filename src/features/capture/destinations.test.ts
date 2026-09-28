@@ -79,6 +79,18 @@ describe('destinationChips', () => {
     ])
   })
 
+  it('con lista por defecto en Perfil, va primera y «En mente» detrás', () => {
+    expect(
+      ids(
+        destinationChips(all, { chosenId: regalos.id, originId: undefined, defaultId: regalos.id }),
+      ),
+    ).toEqual(['regalos', 'en-mente', 'trabajo', 'casa'])
+    // Dentro de otra lista, la de origen sigue delante.
+    expect(
+      ids(destinationChips(all, { chosenId: casa.id, originId: casa.id, defaultId: regalos.id })),
+    ).toEqual(['casa', 'regalos', 'en-mente', 'trabajo'])
+  })
+
   it('a igual uso, manda el orden de las listas', () => {
     expect(
       ids(destinationChips([inbox, regalos, libros], { chosenId: undefined, originId: undefined })),
@@ -91,5 +103,12 @@ describe('defaultDestination', () => {
     expect(defaultDestination(all, casa.id)?.id).toBe('casa')
     expect(defaultDestination(all, undefined)?.id).toBe('en-mente')
     expect(defaultDestination(all, 'borrada')?.id).toBe('en-mente')
+  })
+
+  it('sin origen, la lista por defecto de Perfil, si sigue ahí', () => {
+    expect(defaultDestination(all, undefined, casa.id)?.id).toBe('casa')
+    expect(defaultDestination(all, undefined, 'archivada')?.id).toBe('en-mente')
+    // Dentro de una lista, manda la de origen.
+    expect(defaultDestination(all, 'en-mente', casa.id)?.id).toBe('en-mente')
   })
 })

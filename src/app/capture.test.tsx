@@ -77,7 +77,6 @@ function renderAt(path: string) {
       queryClient.setQueryData(queryKeys.lists.archived, [])
       queryClient.setQueryData(queryKeys.items.latest('i', 3), [])
       queryClient.setQueryData(queryKeys.items.byList('casa'), [])
-      queryClient.setQueryData(['profile', session.user.id, 'display_name'], 'fran')
     },
   })
 }

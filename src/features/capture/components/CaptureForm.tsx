@@ -20,6 +20,8 @@ interface CaptureFormProps {
   initialText: string
   /** La lista en la que se abrió (sale elegida y con «Desde Casa»). */
   origin: List | undefined
+  /** La lista por defecto de Perfil: sale elegida si no se abre desde una lista. */
+  defaultListId: string | null
   onSave: (title: string, list: List) => void
   onClose: () => void
 }
@@ -35,18 +37,27 @@ export function CaptureForm({
   lists,
   initialText,
   origin,
+  defaultListId,
   onSave,
   onClose,
 }: CaptureFormProps) {
   const [text, setText] = useState(initialText)
-  const [chosenId, setChosenId] = useState(() => defaultDestination(lists, origin?.id)?.id)
+  const [chosenId, setChosenId] = useState(
+    () => defaultDestination(lists, origin?.id, defaultListId)?.id,
+  )
   const [picking, setPicking] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
   const online = useOnline()
   const dialog = variant === 'dialog'
 
-  const chosen = lists.find((list) => list.id === chosenId) ?? defaultDestination(lists, origin?.id)
-  const chips = destinationChips(lists, { chosenId: chosen?.id, originId: origin?.id })
+  const chosen =
+    lists.find((list) => list.id === chosenId) ??
+    defaultDestination(lists, origin?.id, defaultListId)
+  const chips = destinationChips(lists, {
+    chosenId: chosen?.id,
+    originId: origin?.id,
+    defaultId: defaultListId,
+  })
   const title = text.trim()
 
   const save = () => {

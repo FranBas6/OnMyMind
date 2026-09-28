@@ -93,6 +93,7 @@ src/
     capture/        captura rápida y detección de URLs
     today/          vista Hoy
     search/         Buscar: búsqueda en cliente sobre todos los ítems
+    profile/        Perfil: nombre, ajustes en `profiles.settings` (tema, lista por defecto)
     reminders/      recordatorios y push
     prices/         histórico de precios y gráficas
   components/
