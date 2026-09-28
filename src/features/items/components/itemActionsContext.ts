@@ -5,10 +5,12 @@ import type { List } from '@/features/lists'
 import type { Item, ItemStatus } from '../types'
 
 /**
- * Lo que se puede hacer con un ítem desde su fila, su menú o su detalle. Lo da `ListDetail` a
- * todas las filas, para no pasar media docena de callbacks por cada una.
+ * Lo que se puede hacer con un ítem desde su fila, su menú o su detalle. Lo da `ItemWorkspace` a
+ * todas las filas, para no pasar media docena de callbacks por cada una; `list` lo pone
+ * `ListScope` encima de cada grupo de filas (una en el detalle de lista, una por sección en Hoy).
  */
 export interface ItemActions {
+  /** La lista de estas filas: decide su aspecto (chips, acciones al deslizar). */
   list: List
   isDesktop: boolean
   /** El ítem con el detalle abierto (`?item=`): su fila va resaltada en escritorio. */
@@ -25,6 +27,17 @@ export interface ItemActions {
   /** La fila abierta a la izquierda al deslizar («Mover» y «Borrar»): solo una a la vez. */
   swipeOpenId: string | undefined
   setSwipeOpenId: (itemId: string | undefined) => void
+}
+
+/** Todo menos la lista: las acciones valen para ítems de cualquier lista (cada uno usa la suya). */
+export type WorkspaceActions = Omit<ItemActions, 'list'>
+
+export const ItemWorkspaceContext = createContext<WorkspaceActions | null>(null)
+
+export function useWorkspaceActions(): WorkspaceActions {
+  const actions = use(ItemWorkspaceContext)
+  if (!actions) throw new Error('useWorkspaceActions necesita un ItemWorkspace por encima')
+  return actions
 }
 
 export const ItemActionsContext = createContext<ItemActions | null>(null)

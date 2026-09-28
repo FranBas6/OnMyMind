@@ -1,8 +1,20 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as listsApi from '@/features/lists/api'
+import * as todayApi from '@/features/today/api'
 import { fakeSession, renderRoute } from '@/test/render-route'
+
+// `/today` hace de ruta privada cualquiera: su loader pide Hoy y las listas, aquí vacías.
+vi.mock('@/features/lists/api')
+vi.mock('@/features/today/api')
+
+beforeEach(() => {
+  vi.mocked(listsApi.fetchLists).mockResolvedValue([])
+  vi.mocked(listsApi.fetchArchivedLists).mockResolvedValue([])
+  vi.mocked(todayApi.fetchToday).mockResolvedValue([])
+})
 
 describe('App shell (móvil)', () => {
   it('barra inferior con cuatro destinos y solo el activo marcado', async () => {

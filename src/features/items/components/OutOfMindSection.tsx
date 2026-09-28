@@ -1,5 +1,5 @@
 import { ArrowRightLeft, ChevronDown } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 
 import { formatCaptureAge } from '@/lib/date'
 import { cn } from '@/lib/utils'
@@ -66,28 +66,15 @@ export function OutOfMindSection({
 
   return (
     <section aria-label="Fuera de la cabeza" className={cn('flex flex-col', className)}>
-      <h2 className="text-sm tracking-normal text-muted-foreground">
-        {collapsible ? (
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={listId}
-            onClick={() => {
-              setOpen((current) => !current)
-            }}
-            className="flex h-9 items-center gap-1.5 rounded-lg px-1 outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            <ChevronDown
-              aria-hidden
-              className={cn('size-3.5 transition-transform duration-200', !open && '-rotate-90')}
-              strokeWidth={2.2}
-            />
-            {label}
-          </button>
-        ) : (
-          <span className="flex h-9 items-center px-1">{label}</span>
-        )}
-      </h2>
+      <FoldHeading
+        open={collapsible ? open : undefined}
+        controls={listId}
+        onToggle={() => {
+          setOpen((current) => !current)
+        }}
+      >
+        {label}
+      </FoldHeading>
       {expanded && (
         <ul id={listId} className="flex flex-col gap-0.5">
           {entries.map((entry) =>
@@ -103,10 +90,50 @@ export function OutOfMindSection({
   )
 }
 
+/**
+ * Cabecera de 36 px de una sección plegable de lo terminado, con el chevron que gira. Sin `open`,
+ * no se pliega: solo el texto.
+ */
+export function FoldHeading({
+  open,
+  controls,
+  onToggle,
+  children,
+}: {
+  open: boolean | undefined
+  controls: string
+  onToggle: () => void
+  children: ReactNode
+}) {
+  return (
+    <h2 className="text-sm tracking-normal text-muted-foreground">
+      {open === undefined ? (
+        <span className="flex h-9 items-center px-1">{children}</span>
+      ) : (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={controls}
+          onClick={onToggle}
+          className="flex h-9 items-center gap-1.5 rounded-lg px-1 outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <ChevronDown
+            aria-hidden
+            className={cn('size-3.5 transition-transform duration-200', !open && '-rotate-90')}
+            strokeWidth={2.2}
+          />
+          {children}
+        </button>
+      )}
+    </h2>
+  )
+}
+
 const ROW =
   'relative flex min-h-10 animate-in items-center gap-3.5 rounded-[18px] px-4 py-1 duration-200 fade-in md:gap-4 md:rounded-2xl md:px-[18px] md:py-2'
 
-function DoneRow({ item }: { item: Item }) {
+/** Una fila terminada: tachada, con el checkbox atenuado; `aside`, a la derecha (en Hoy, su lista). */
+export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
   const actions = useItemActions()
   return (
     <SwipeableRow
@@ -125,6 +152,7 @@ function DoneRow({ item }: { item: Item }) {
         item={item}
         className="truncate text-[15px] font-normal text-subtle-foreground line-through"
       />
+      {aside}
     </SwipeableRow>
   )
 }

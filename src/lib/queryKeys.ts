@@ -16,7 +16,12 @@ export const queryKeys = {
     byList: (listId: string) => ['items', { listId }] as const,
     /** Últimas capturas pendientes de una lista (la tarjeta de «En mente» en escritorio). */
     latest: (listId: string, limit: number) => ['items', { listId, latest: limit }] as const,
-    today: () => ['items', { today: true }] as const,
+    /**
+     * Hoy, con el día en la clave (`2026-09-28`): a medianoche es otra consulta y no se reutiliza
+     * la de ayer. `todayAll` las abarca todas, para que las mutaciones de ítems las actualicen.
+     */
+    todayAll: ['items', 'today'] as const,
+    today: (day: string) => ['items', 'today', day] as const,
     /** Lo que salió de una inbox y sigue en otra lista («Fuera de la cabeza» de «En mente»). */
     movedFrom: (inboxId: string) => ['items', { movedFrom: inboxId }] as const,
     detail: (itemId: string) => ['items', itemId] as const,

@@ -1,7 +1,19 @@
 import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as listsApi from '@/features/lists/api'
+import * as todayApi from '@/features/today/api'
 import { fakeSession, renderRoute } from '@/test/render-route'
+
+// `/today` hace de ruta privada cualquiera: su loader pide Hoy y las listas, aquí vacías.
+vi.mock('@/features/lists/api')
+vi.mock('@/features/today/api')
+
+beforeEach(() => {
+  vi.mocked(listsApi.fetchLists).mockResolvedValue([])
+  vi.mocked(listsApi.fetchArchivedLists).mockResolvedValue([])
+  vi.mocked(todayApi.fetchToday).mockResolvedValue([])
+})
 
 describe('Guarda de sesión', () => {
   it('sin sesión, una ruta privada lleva a /login recordando a dónde ibas', async () => {

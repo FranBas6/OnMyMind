@@ -138,6 +138,8 @@
   --priority-low-bg: #f4f2ee;
   --overdue: #d32429;
   --overdue-bg: #fdecec;
+  /* Borde de la fila atrasada en Hoy (pantalla 7) */
+  --overdue-border: #f5c6c8;
   --price-down: #1f7b72;
   --price-down-bg: #e4f5f2;
   --price-up: #d32429;
@@ -214,6 +216,8 @@
   --priority-low-bg: #262434;
   --overdue: #ff8a8e;
   --overdue-bg: #3a2226;
+  /* Sin valor oscuro en el diseño: el rojo del texto a un 35 % sobre la superficie. */
+  --overdue-border: #6b3a42;
   --price-down: #4fd1c1;
   --price-down-bg: #17302e;
   --price-up: #ff8a8e;
@@ -284,6 +288,7 @@
   --color-priority-low-bg: var(--priority-low-bg);
   --color-overdue: var(--overdue);
   --color-overdue-bg: var(--overdue-bg);
+  --color-overdue-border: var(--overdue-border);
   --color-price-down: var(--price-down);
   --color-price-down-bg: var(--price-down-bg);
   --color-price-up: var(--price-up);

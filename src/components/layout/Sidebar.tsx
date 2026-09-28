@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from 'react'
 
 import { useCapture } from '@/features/capture'
 import { ARCHIVED_SECTION_ID, useArchivedLists, useLists, useListActions } from '@/features/lists'
+import { useTodayCount } from '@/features/today'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
@@ -11,8 +12,8 @@ import { isDestinationActive } from './navigation'
 
 /**
  * Sidebar de escritorio (diseño, pantalla D1): marca, buscador (⌘K), accesos a «En mente» y
- * «Hoy», «Mis listas» con su color y contador, la mención de las archivadas y «+ Nueva lista».
- * El contador de «Hoy» llega con la vista Hoy (1.11).
+ * «Hoy» (con lo que queda por hacer hoy), «Mis listas» con su color y contador, la mención de las
+ * archivadas y «+ Nueva lista».
  */
 export function Sidebar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
@@ -21,6 +22,7 @@ export function Sidebar() {
   const archivedCount = archived.data?.length ?? 0
   const { openCreate } = useListActions()
   const capture = useCapture()
+  const todayCount = useTodayCount()
   const inbox = lists.data?.inbox
   useSearchShortcut()
 
@@ -75,7 +77,12 @@ export function Sidebar() {
             {inbox.name}
           </SidebarLink>
         )}
-        <SidebarLink to="/today" icon={Sun} active={isDestinationActive('/today', pathname)}>
+        <SidebarLink
+          to="/today"
+          icon={Sun}
+          active={isDestinationActive('/today', pathname)}
+          count={todayCount}
+        >
           Hoy
         </SidebarLink>
       </nav>

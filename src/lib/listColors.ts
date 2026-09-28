@@ -74,3 +74,14 @@ export const LIST_COLOR_TINT: Record<ListColor, string> = {
   green: 'bg-list-green/13 dark:bg-list-green/20',
   indigo: 'bg-list-indigo/13 dark:bg-list-indigo/20',
 }
+
+/** Borde en el color de la lista: el checkbox de las filas de Hoy (pantalla 7). */
+export const LIST_COLOR_BORDER: Record<ListColor, string> = {
+  coral: 'border-list-coral',
+  amber: 'border-list-amber',
+  teal: 'border-list-teal',
+  blue: 'border-list-blue',
+  pink: 'border-list-pink',
+  green: 'border-list-green',
+  indigo: 'border-list-indigo',
+}

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import type { List } from '@/features/lists'
@@ -43,6 +43,8 @@ const OFFLINE_TOLERANT = {
 interface Snapshot {
   items: Map<string, Item[] | undefined>
   moved: Map<string, MovedItem[] | undefined>
+  /** Hoy (una entrada por día en caché; normalmente solo la de hoy). */
+  today: [QueryKey, Item[] | undefined][]
   lists: List[] | undefined
 }
 
@@ -56,13 +58,15 @@ interface OptimisticChange {
   items: Record<string, (items: Item[]) => Item[]>
   /** Cambios en lo movido desde cada inbox (por id de la inbox). */
   moved?: Record<string, (moved: MovedItem[]) => MovedItem[]>
+  /** Cambio en Hoy, que mezcla ítems de todas las listas (`features/today` los vuelve a filtrar). */
+  today?: (items: Item[]) => Item[]
   /** Cuánto cambian los contadores de Inicio y del sidebar, por lista. */
   counters: Record<string, Counts>
 }
 
 /**
  * Paso 1 del patrón optimista: para las consultas en vuelo, guarda la foto y escribe lo que
- * esperamos que pase, en los ítems, en lo movido y en los contadores.
+ * esperamos que pase, en los ítems, en lo movido, en Hoy y en los contadores.
  */
 async function applyOptimistic(
   queryClient: QueryClient,
@@ -73,6 +77,7 @@ async function applyOptimistic(
   const snapshot: Snapshot = {
     items: new Map(),
     moved: new Map(),
+    today: queryClient.getQueriesData<Item[]>({ queryKey: queryKeys.items.todayAll }),
     lists: queryClient.getQueryData<List[]>(queryKeys.lists.all),
   }
 
@@ -87,6 +92,12 @@ async function applyOptimistic(
     const moved = queryClient.getQueryData<MovedItem[]>(key)
     snapshot.moved.set(inboxId, moved)
     if (moved) queryClient.setQueryData(key, update(moved))
+  }
+  const { today } = change
+  if (today) {
+    for (const [key, items] of snapshot.today) {
+      if (items) queryClient.setQueryData(key, today(items))
+    }
   }
   if (snapshot.lists) {
     queryClient.setQueryData(
@@ -117,6 +128,7 @@ function rollback(queryClient: QueryClient, snapshot: Snapshot | undefined, mess
     snapshot.moved.forEach((moved, inboxId) => {
       queryClient.setQueryData(queryKeys.items.movedFrom(inboxId), moved)
     })
+    for (const [key, items] of snapshot.today) queryClient.setQueryData(key, items)
     queryClient.setQueryData(queryKeys.lists.all, snapshot.lists)
   }
   toast.error(message)
@@ -126,7 +138,7 @@ function rollback(queryClient: QueryClient, snapshot: Snapshot | undefined, mess
  * Paso 4: el servidor manda (los triggers ponen `completed_at`, `updated_at` y el rastro de «En
  * mente»), así que se vuelve a pedir. Pero solo cuando termina la última mutación en fila: si se
  * pidiera con otras en vuelo, la respuesta aún no las tendría y los cambios optimistas
- * parpadearían. `['items']` cubre todas las listas, lo movido y la vista previa de Inicio; solo se
+ * parpadearían. `['items']` cubre todas las listas, lo movido, Hoy y la vista previa de Inicio; solo se
  * vuelven a pedir las que están en pantalla.
  */
 function settle(queryClient: QueryClient) {
@@ -218,8 +230,15 @@ export function useCreateItem() {
   })
 }
 
-/** Cambiar el estado desde el checkbox o el menú de la fila (optimista). */
-export function useSetItemStatus(listId: string) {
+/** Cambia un ítem en una lista de ítems, si está. */
+const patchIn = (items: Item[], itemId: string, patch: ItemPatch) =>
+  items.map((entry) => (entry.id === itemId ? patchItem(entry, patch) : entry))
+
+/**
+ * Cambiar el estado desde el checkbox o el menú de la fila (optimista). La lista es la del ítem:
+ * en Hoy cada fila es de una lista distinta.
+ */
+export function useSetItemStatus() {
   const queryClient = useQueryClient()
   return useMutation({
     ...OFFLINE_TOLERANT,
@@ -227,11 +246,9 @@ export function useSetItemStatus(listId: string) {
       updateItemStatus(item.id, status),
     onMutate: ({ item, status }) =>
       applyOptimistic(queryClient, {
-        items: {
-          [listId]: (items) =>
-            items.map((entry) => (entry.id === item.id ? patchItem(entry, { status }) : entry)),
-        },
-        counters: { [listId]: statusDelta(item.status, status) },
+        items: { [item.listId]: (items) => patchIn(items, item.id, { status }) },
+        today: (items) => patchIn(items, item.id, { status }),
+        counters: { [item.listId]: statusDelta(item.status, status) },
       }),
     onError: (error, _variables, snapshot) => {
       rollback(queryClient, snapshot, `No se ha podido cambiar. ${errorMessage(error)}`)
@@ -245,17 +262,21 @@ export function useSetItemStatus(listId: string) {
 /**
  * Guardar un campo del detalle (optimista). Si falla, se deshace **solo ese campo** con lo que
  * tenía antes: lo que se haya guardado mientras tanto en otros campos no se pierde, como pasaría
- * al restaurar la foto entera de la lista.
+ * al restaurar la foto entera de la lista. Se aplica en su lista y en Hoy.
  */
-export function useUpdateItem(listId: string) {
+export function useUpdateItem() {
   const queryClient = useQueryClient()
-  const key = queryKeys.items.byList(listId)
-  const replace = (itemId: string, update: (item: Item) => Item) => {
-    queryClient.setQueryData<Item[]>(key, (items) =>
-      items?.map((entry) => (entry.id === itemId ? update(entry) : entry)),
+  const replace = (item: Item, patch: ItemPatch) => {
+    queryClient.setQueryData<Item[]>(
+      queryKeys.items.byList(item.listId),
+      (items) => items && patchIn(items, item.id, patch),
+    )
+    queryClient.setQueriesData<Item[]>(
+      { queryKey: queryKeys.items.todayAll },
+      (items) => items && patchIn(items, item.id, patch),
     )
   }
-  const adjustCounters = (delta: Counts) => {
+  const adjustCounters = (listId: string, delta: Counts) => {
     queryClient.setQueryData<List[]>(queryKeys.lists.all, (lists) =>
       lists?.map((list) =>
         list.id === listId
@@ -276,7 +297,9 @@ export function useUpdateItem(listId: string) {
     ...OFFLINE_TOLERANT,
     mutationFn: ({ item, patch }: { item: Item; patch: ItemPatch }) => updateItem(item.id, patch),
     onMutate: async ({ item, patch }) => {
+      const key = queryKeys.items.byList(item.listId)
       await queryClient.cancelQueries({ queryKey: key })
+      await queryClient.cancelQueries({ queryKey: queryKeys.items.todayAll })
       const before =
         queryClient.getQueryData<Item[]>(key)?.find((entry) => entry.id === item.id) ?? item
       // Lo que había en los campos que se tocan, para devolverlo si falla.
@@ -289,14 +312,14 @@ export function useUpdateItem(listId: string) {
       const delta = patch.status
         ? statusDelta(before.status, patch.status)
         : { pending: 0, done: 0 }
-      replace(item.id, (entry) => patchItem(entry, patch))
-      adjustCounters(delta)
+      replace(item, patch)
+      adjustCounters(item.listId, delta)
       return { previous, delta }
     },
     onError: (error, { item }, context) => {
       if (context) {
-        replace(item.id, (entry) => patchItem(entry, context.previous))
-        adjustCounters(negate(context.delta))
+        replace(item, context.previous)
+        adjustCounters(item.listId, negate(context.delta))
       }
       toast.error(`No se ha podido guardar. ${errorMessage(error)}`)
     },
@@ -349,6 +372,8 @@ export function useMoveItem() {
           [from.id]: (items) => items.filter((entry) => entry.id !== item.id),
           [to.id]: (items) => [...items, moved],
         },
+        // En Hoy se queda si la lista destino también es de tareas (lo decide `groupToday`).
+        today: (items) => items.map((entry) => (entry.id === item.id ? moved : entry)),
         moved: movedChanges,
         counters: { [from.id]: negate(counted(item.status)), [to.id]: counted(patch.status) },
       })
@@ -378,6 +403,7 @@ export function useDeleteItem() {
     onMutate: (item) =>
       applyOptimistic(queryClient, {
         items: { [item.listId]: (items) => items.filter((entry) => entry.id !== item.id) },
+        today: (items) => items.filter((entry) => entry.id !== item.id),
         counters: { [item.listId]: negate(counted(item.status)) },
       }),
     onError: (error, item, snapshot) => {
@@ -393,6 +419,9 @@ export function useDeleteItem() {
   })
 }
 
+const withItem = (items: Item[], item: Item) =>
+  items.some((entry) => entry.id === item.id) ? items : [...items, item]
+
 /** «Deshacer» un borrado (optimista): el ítem vuelve a su sitio con todo lo que tenía. */
 export function useRestoreItem() {
   const queryClient = useQueryClient()
@@ -401,10 +430,8 @@ export function useRestoreItem() {
     mutationFn: (item: Item) => restoreItem(item),
     onMutate: (item) =>
       applyOptimistic(queryClient, {
-        items: {
-          [item.listId]: (items) =>
-            items.some((entry) => entry.id === item.id) ? items : [...items, item],
-        },
+        items: { [item.listId]: (items) => withItem(items, item) },
+        today: (items) => withItem(items, item),
         counters: { [item.listId]: counted(item.status) },
       }),
     onError: (error, item, snapshot) => {

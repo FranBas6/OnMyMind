@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react'
 
+import { LIST_COLOR_BORDER, type ListColor } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
 import type { CheckboxState } from '../status'
@@ -11,6 +12,8 @@ interface StatusCheckboxProps {
   onToggle: () => void
   /** El del detalle (diseño 06): 28 px en móvil y 26 en escritorio. */
   large?: boolean
+  /** En Hoy, vacío lleva el borde en el color de su lista (pantalla 7). */
+  tone?: ListColor
   className?: string
 }
 
@@ -25,6 +28,7 @@ export function StatusCheckbox({
   label,
   onToggle,
   large = false,
+  tone,
   className,
 }: StatusCheckboxProps) {
   return (
@@ -37,7 +41,10 @@ export function StatusCheckbox({
       className={cn(
         'relative grid shrink-0 place-items-center rounded-full outline-none before:absolute before:-inset-2.5 before:content-[""] focus-visible:ring-[3px] focus-visible:ring-ring/50',
         large ? 'size-7 md:size-[26px]' : 'size-6',
-        state === 'empty' && 'border-2 border-control hover:border-primary',
+        state === 'empty' &&
+          (tone
+            ? cn('border-2 hover:bg-fill', LIST_COLOR_BORDER[tone])
+            : 'border-2 border-control hover:border-primary'),
         state === 'half' &&
           'border-2 border-in-progress bg-[linear-gradient(90deg,var(--in-progress)_50%,transparent_50%)] hover:brightness-110',
         state === 'full' &&
