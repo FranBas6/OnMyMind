@@ -1,9 +1,10 @@
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { Archive, Inbox, Plus, Search, Sun, type LucideIcon } from 'lucide-react'
+import { Link, useNavigate, useRouter, useRouterState } from '@tanstack/react-router'
+import { Archive, Inbox, Plus, Sun, type LucideIcon } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 
 import { useCapture } from '@/features/capture'
 import { ARCHIVED_SECTION_ID, useArchivedLists, useLists, useListActions } from '@/features/lists'
+import { focusSearchField, SidebarSearchField } from '@/features/search'
 import { useTodayCount } from '@/features/today'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -54,16 +55,7 @@ export function Sidebar() {
         </kbd>
       </button>
 
-      <Link
-        to="/search"
-        className="flex h-11 items-center gap-2.5 rounded-[14px] border border-border bg-card px-3.5 text-sm text-subtle-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      >
-        <Search aria-hidden className="size-4" />
-        Buscar
-        <kbd className="ml-auto rounded-[5px] bg-secondary px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground">
-          ⌘K
-        </kbd>
-      </Link>
+      <SidebarSearchField />
 
       <nav aria-label="Accesos" className="flex flex-col gap-0.5">
         {inbox && (
@@ -177,20 +169,25 @@ function Count({ value }: { value: number }) {
   return <span className="ml-auto text-xs font-normal text-subtle-foreground">{value}</span>
 }
 
-/** ⌘K (Ctrl+K fuera de Mac) lleva a Buscar desde cualquier pantalla de escritorio. */
+/**
+ * ⌘K (Ctrl+K fuera de Mac) lleva a Buscar desde cualquier pantalla de escritorio, con el foco en
+ * su campo grande (diseño 08, D1); ya en Buscar, solo le devuelve el foco.
+ */
 function useSearchShortcut() {
   const navigate = useNavigate()
+  const router = useRouter()
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault()
-        void navigate({ to: '/search' })
+        if (router.state.location.pathname === '/search') focusSearchField()
+        else void navigate({ to: '/search' }).then(focusSearchField)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [navigate])
+  }, [navigate, router])
 }

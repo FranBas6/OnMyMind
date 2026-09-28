@@ -25,6 +25,16 @@ import type { Item, ItemPatch, ItemStatus, MovedItem } from '../types'
  * cuántas quedan en vuelo.
  */
 const ITEM_MUTATION_KEY = ['items'] as const
+
+/**
+ * Las consultas que mezclan ítems de varias listas: Hoy (una por día) y Buscar. Cada pantalla
+ * vuelve a filtrar lo suyo (`groupToday`, `searchItems`), así que basta con aplicarles el cambio.
+ */
+const MIXED_QUERIES = [queryKeys.items.todayAll, queryKeys.items.all] as const
+
+function mixedQueries(queryClient: QueryClient): [QueryKey, Item[] | undefined][] {
+  return MIXED_QUERIES.flatMap((queryKey) => queryClient.getQueriesData<Item[]>({ queryKey }))
+}
 const ITEM_MUTATION_SCOPE = { id: 'items' }
 
 /**
@@ -43,8 +53,8 @@ const OFFLINE_TOLERANT = {
 interface Snapshot {
   items: Map<string, Item[] | undefined>
   moved: Map<string, MovedItem[] | undefined>
-  /** Hoy (una entrada por día en caché; normalmente solo la de hoy). */
-  today: [QueryKey, Item[] | undefined][]
+  /** Hoy y Buscar. */
+  mixed: [QueryKey, Item[] | undefined][]
   lists: List[] | undefined
 }
 
@@ -58,15 +68,15 @@ interface OptimisticChange {
   items: Record<string, (items: Item[]) => Item[]>
   /** Cambios en lo movido desde cada inbox (por id de la inbox). */
   moved?: Record<string, (moved: MovedItem[]) => MovedItem[]>
-  /** Cambio en Hoy, que mezcla ítems de todas las listas (`features/today` los vuelve a filtrar). */
-  today?: (items: Item[]) => Item[]
+  /** Cambio en Hoy y en Buscar, que mezclan ítems de todas las listas. */
+  mixed?: (items: Item[]) => Item[]
   /** Cuánto cambian los contadores de Inicio y del sidebar, por lista. */
   counters: Record<string, Counts>
 }
 
 /**
  * Paso 1 del patrón optimista: para las consultas en vuelo, guarda la foto y escribe lo que
- * esperamos que pase, en los ítems, en lo movido, en Hoy y en los contadores.
+ * esperamos que pase, en los ítems, en lo movido, en Hoy y Buscar, y en los contadores.
  */
 async function applyOptimistic(
   queryClient: QueryClient,
@@ -77,7 +87,7 @@ async function applyOptimistic(
   const snapshot: Snapshot = {
     items: new Map(),
     moved: new Map(),
-    today: queryClient.getQueriesData<Item[]>({ queryKey: queryKeys.items.todayAll }),
+    mixed: mixedQueries(queryClient),
     lists: queryClient.getQueryData<List[]>(queryKeys.lists.all),
   }
 
@@ -93,10 +103,10 @@ async function applyOptimistic(
     snapshot.moved.set(inboxId, moved)
     if (moved) queryClient.setQueryData(key, update(moved))
   }
-  const { today } = change
-  if (today) {
-    for (const [key, items] of snapshot.today) {
-      if (items) queryClient.setQueryData(key, today(items))
+  const { mixed } = change
+  if (mixed) {
+    for (const [key, items] of snapshot.mixed) {
+      if (items) queryClient.setQueryData(key, mixed(items))
     }
   }
   if (snapshot.lists) {
@@ -128,7 +138,7 @@ function rollback(queryClient: QueryClient, snapshot: Snapshot | undefined, mess
     snapshot.moved.forEach((moved, inboxId) => {
       queryClient.setQueryData(queryKeys.items.movedFrom(inboxId), moved)
     })
-    for (const [key, items] of snapshot.today) queryClient.setQueryData(key, items)
+    for (const [key, items] of snapshot.mixed) queryClient.setQueryData(key, items)
     queryClient.setQueryData(queryKeys.lists.all, snapshot.lists)
   }
   toast.error(message)
@@ -247,7 +257,7 @@ export function useSetItemStatus() {
     onMutate: ({ item, status }) =>
       applyOptimistic(queryClient, {
         items: { [item.listId]: (items) => patchIn(items, item.id, { status }) },
-        today: (items) => patchIn(items, item.id, { status }),
+        mixed: (items) => patchIn(items, item.id, { status }),
         counters: { [item.listId]: statusDelta(item.status, status) },
       }),
     onError: (error, _variables, snapshot) => {
@@ -271,10 +281,12 @@ export function useUpdateItem() {
       queryKeys.items.byList(item.listId),
       (items) => items && patchIn(items, item.id, patch),
     )
-    queryClient.setQueriesData<Item[]>(
-      { queryKey: queryKeys.items.todayAll },
-      (items) => items && patchIn(items, item.id, patch),
-    )
+    for (const queryKey of MIXED_QUERIES) {
+      queryClient.setQueriesData<Item[]>(
+        { queryKey },
+        (items) => items && patchIn(items, item.id, patch),
+      )
+    }
   }
   const adjustCounters = (listId: string, delta: Counts) => {
     queryClient.setQueryData<List[]>(queryKeys.lists.all, (lists) =>
@@ -299,7 +311,7 @@ export function useUpdateItem() {
     onMutate: async ({ item, patch }) => {
       const key = queryKeys.items.byList(item.listId)
       await queryClient.cancelQueries({ queryKey: key })
-      await queryClient.cancelQueries({ queryKey: queryKeys.items.todayAll })
+      for (const queryKey of MIXED_QUERIES) await queryClient.cancelQueries({ queryKey })
       const before =
         queryClient.getQueryData<Item[]>(key)?.find((entry) => entry.id === item.id) ?? item
       // Lo que había en los campos que se tocan, para devolverlo si falla.
@@ -373,7 +385,7 @@ export function useMoveItem() {
           [to.id]: (items) => [...items, moved],
         },
         // En Hoy se queda si la lista destino también es de tareas (lo decide `groupToday`).
-        today: (items) => items.map((entry) => (entry.id === item.id ? moved : entry)),
+        mixed: (items) => items.map((entry) => (entry.id === item.id ? moved : entry)),
         moved: movedChanges,
         counters: { [from.id]: negate(counted(item.status)), [to.id]: counted(patch.status) },
       })
@@ -403,7 +415,7 @@ export function useDeleteItem() {
     onMutate: (item) =>
       applyOptimistic(queryClient, {
         items: { [item.listId]: (items) => items.filter((entry) => entry.id !== item.id) },
-        today: (items) => items.filter((entry) => entry.id !== item.id),
+        mixed: (items) => items.filter((entry) => entry.id !== item.id),
         counters: { [item.listId]: negate(counted(item.status)) },
       }),
     onError: (error, item, snapshot) => {
@@ -431,7 +443,7 @@ export function useRestoreItem() {
     onMutate: (item) =>
       applyOptimistic(queryClient, {
         items: { [item.listId]: (items) => withItem(items, item) },
-        today: (items) => withItem(items, item),
+        mixed: (items) => withItem(items, item),
         counters: { [item.listId]: counted(item.status) },
       }),
     onError: (error, item, snapshot) => {

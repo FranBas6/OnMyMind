@@ -92,6 +92,7 @@ src/
     items/          ítems, estados y campos flexibles
     capture/        captura rápida y detección de URLs
     today/          vista Hoy
+    search/         Buscar: búsqueda en cliente sobre todos los ítems
     reminders/      recordatorios y push
     prices/         histórico de precios y gráficas
   components/

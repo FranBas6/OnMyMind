@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 
 import { LIST_COLOR_BORDER, type ListColor } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -19,7 +19,8 @@ interface StatusCheckboxProps {
 
 /**
  * Checkbox de tres estados (diseño, pantallas 4 y D1): círculo de 24 px vacío con borde `control`
- * (sin empezar), medio relleno en verde azulado (en curso) o índigo con el check (terminado). Al
+ * (sin empezar), medio relleno en verde azulado (en curso), índigo con el check (terminado) o, si
+ * se terminó sin hacerse (descartado, cancelado), gris con una × (diseño 08). Al
  * llenarse hace una escala 0,9 → 1 si el sistema no pide menos movimiento. La zona táctil llega a
  * 44 px con un pseudoelemento, sin agrandar el círculo.
  */
@@ -35,7 +36,7 @@ export function StatusCheckbox({
     <button
       type="button"
       role="checkbox"
-      aria-checked={state === 'full' ? true : state === 'half' ? 'mixed' : false}
+      aria-checked={state === 'half' ? 'mixed' : state === 'full' || state === 'crossed'}
       aria-label={label}
       onClick={onToggle}
       className={cn(
@@ -47,11 +48,16 @@ export function StatusCheckbox({
             : 'border-2 border-control hover:border-primary'),
         state === 'half' &&
           'border-2 border-in-progress bg-[linear-gradient(90deg,var(--in-progress)_50%,transparent_50%)] hover:brightness-110',
+        state === 'crossed' &&
+          'border border-border bg-fill text-subtle-foreground hover:border-control',
         state === 'full' &&
           'bg-primary text-primary-foreground hover:bg-primary-hover motion-safe:animate-check-pop',
         className,
       )}
     >
+      {state === 'crossed' && (
+        <X aria-hidden className={large ? 'size-3.5' : 'size-3'} strokeWidth={2.6} />
+      )}
       {state === 'full' && (
         <Check aria-hidden className={large ? 'size-4' : 'size-[13px]'} strokeWidth={3.5} />
       )}

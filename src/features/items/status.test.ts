@@ -83,7 +83,9 @@ describe('tocar el checkbox', () => {
     expect(checkboxState('upcoming')).toBe('empty')
     expect(checkboxState('in_progress')).toBe('half')
     expect(checkboxState('done')).toBe('full')
-    expect(checkboxState('discarded')).toBe('full')
+    expect(checkboxState('bought')).toBe('full')
+    expect(checkboxState('discarded')).toBe('crossed')
+    expect(checkboxState('cancelled')).toBe('crossed')
   })
 })
 

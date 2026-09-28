@@ -1,3 +1,4 @@
+export { ArchivedListSheet, DimmedIcon } from './components/ArchivedListSheet'
 export { ArchivedListsSection, ARCHIVED_SECTION_ID } from './components/ArchivedListsSection'
 export { InboxCard } from './components/InboxCard'
 export { InboxHeader } from './components/InboxHeader'
@@ -13,6 +14,6 @@ export {
 } from './components/NewListEntries'
 export { useArchivedLists } from './hooks/useArchivedLists'
 export { useLists, type ListsByRole } from './hooks/useLists'
-export { listsQueryOptions } from './queries'
+export { archivedListsQueryOptions, listsQueryOptions } from './queries'
 export { counterLabel, doneLabel, KIND_TEMPLATES, pendingTotal } from './templates'
 export type { List, ListColor, ListCounters, ListKind, RecentCapture } from './types'

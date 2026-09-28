@@ -22,6 +22,8 @@ export const queryKeys = {
      */
     todayAll: ['items', 'today'] as const,
     today: (day: string) => ['items', 'today', day] as const,
+    /** Todos los ítems de todas las listas, archivadas incluidas (Buscar, fase 1). */
+    all: ['items', 'all'] as const,
     /** Lo que salió de una inbox y sigue en otra lista («Fuera de la cabeza» de «En mente»). */
     movedFrom: (inboxId: string) => ['items', { movedFrom: inboxId }] as const,
     detail: (itemId: string) => ['items', itemId] as const,

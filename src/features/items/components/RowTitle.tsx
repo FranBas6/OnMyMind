@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import { cn } from '@/lib/utils'
 
 import type { Item } from '../types'
@@ -8,7 +10,16 @@ import { useItemActions } from './itemActionsContext'
  * entera: tocar en cualquier sitio abre el detalle, salvo en el checkbox y en los botones, que
  * van por encima (`z-10`). Así hay un solo elemento enfocable por fila para abrirla.
  */
-export function RowTitle({ item, className }: { item: Item; className?: string }) {
+export function RowTitle({
+  item,
+  className,
+  children,
+}: {
+  item: Item
+  className?: string
+  /** Otro contenido en vez del título tal cual (Buscar lo pinta con el término resaltado). */
+  children?: ReactNode
+}) {
   const { openDetail } = useItemActions()
   return (
     <button
@@ -21,7 +32,7 @@ export function RowTitle({ item, className }: { item: Item; className?: string }
         className,
       )}
     >
-      {item.title}
+      {children ?? item.title}
     </button>
   )
 }

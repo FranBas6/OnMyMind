@@ -67,10 +67,14 @@ export function nextStatusOnToggle(kind: ListKind, status: ItemStatus): ItemStat
   return isFinalStatus(status) ? initialStatus(kind) : firstFinalStatus(kind)
 }
 
-/** Aspecto del checkbox: vacío (sin empezar), medio (en curso) o lleno (terminado). */
-export type CheckboxState = 'empty' | 'half' | 'full'
+/**
+ * Aspecto del checkbox: vacío (sin empezar), medio (en curso), lleno (terminado) o con una × en
+ * gris (descartado o cancelado: terminado sin hacerse, diseño 08).
+ */
+export type CheckboxState = 'empty' | 'half' | 'full' | 'crossed'
 
 export function checkboxState(status: ItemStatus): CheckboxState {
+  if (status === 'discarded' || status === 'cancelled') return 'crossed'
   if (isFinalStatus(status)) return 'full'
   return status === 'in_progress' ? 'half' : 'empty'
 }

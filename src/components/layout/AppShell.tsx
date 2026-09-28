@@ -28,6 +28,9 @@ export function AppShell({ children }: AppShellProps) {
   const addBar = useMatches({
     select: (matches) => matches.some((match) => match.staticData.addBar),
   })
+  const noFab = useMatches({
+    select: (matches) => matches.some((match) => match.staticData.noFab),
+  })
   const [panel, setPanel] = useState<HTMLElement | null>(null)
   const capture = useCapture()
 
@@ -63,8 +66,8 @@ export function AppShell({ children }: AppShellProps) {
       >
         {children}
       </main>
-      {/* En el detalle de lista el campo de añadir sustituye al + (06 §Layout). */}
-      {!addBar && (
+      {/* En el detalle de lista el campo de añadir sustituye al + (06 §Layout); Buscar no lo lleva. */}
+      {!addBar && !noFab && (
         <Fab
           onClick={() => {
             capture.open()

@@ -41,5 +41,7 @@ declare module '@tanstack/react-router' {
      * lista): sin hueco para el FAB y con la columna a toda la altura para que el campo quede abajo.
      */
     addBar?: boolean
+    /** Sin el + de captura en móvil (Buscar, diseño 08: la pantalla es el campo de búsqueda). */
+    noFab?: boolean
   }
 }
