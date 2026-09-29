@@ -5,16 +5,26 @@ import { Button } from '@/components/ui/button'
 
 import { authErrorMessage } from '../errors'
 import { useSignUp } from '../hooks/useAuthMutations'
+import { useGoogleSignIn } from '../hooks/useGoogleSignIn'
 import { PASSWORD_MIN_LENGTH, signUpSchema } from '../schemas'
 import { AuthField, FormError, PasswordField } from './AuthField'
+import { GoogleButton, OrSeparator } from './GoogleButton'
 
 interface SignUpFormProps {
   onSuccess: () => void
+  /** A dónde volver tras entrar con Google (el `?redirect=` del acceso). */
+  redirect?: string | undefined
+  /** Google devolvió al acceso sin sesión: se avisa encima de «Crear cuenta». */
+  googleFailed: boolean
 }
 
-/** Crear cuenta (diseño Acceso, A6–A9): email y contraseña, sin nombre. */
-export function SignUpForm({ onSuccess }: SignUpFormProps) {
+/**
+ * Crear cuenta (diseño Acceso, A6–A9, y diseño 11, G2): Google primero, porque crea la cuenta sola
+ * con nombre y foto; tras el «o», email y contraseña, sin nombre.
+ */
+export function SignUpForm({ onSuccess, redirect, googleFailed }: SignUpFormProps) {
   const signUp = useSignUp()
+  const google = useGoogleSignIn({ redirect, mode: 'signup', returnedWithError: googleFailed })
   const {
     register,
     handleSubmit,
@@ -28,37 +38,64 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
     signUp.mutate(values, { onSuccess })
   })
 
+  const serverError = signUp.error ? authErrorMessage(signUp.error) : google.error
+
   return (
-    <form onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-3">
-      <AuthField
-        label="Email"
-        type="email"
-        placeholder="Email"
-        autoComplete="email"
-        inputMode="email"
-        autoCapitalize="none"
-        spellCheck={false}
-        error={errors.email?.message}
-        {...register('email')}
-      />
-      <PasswordField
-        label="Contraseña"
-        placeholder="Contraseña"
-        autoComplete="new-password"
-        hint={`Mínimo ${PASSWORD_MIN_LENGTH} caracteres.`}
-        error={errors.password?.message}
-        {...register('password')}
-      />
+    <>
+      <div className="flex flex-col gap-3">
+        <GoogleButton
+          opening={google.opening}
+          onClick={() => {
+            signUp.reset()
+            google.start()
+          }}
+        />
+        <p className="text-center text-[13px] leading-[1.4] text-subtle-foreground">
+          Se crea la cuenta sola, con tu nombre y tu foto.
+        </p>
+      </div>
 
-      {signUp.error && <FormError message={authErrorMessage(signUp.error)} />}
+      <OrSeparator />
 
-      <Button
-        type="submit"
-        disabled={signUp.isPending}
-        className="mt-1 h-13 w-full font-display text-base font-bold"
+      <form
+        onSubmit={(event) => {
+          // Cualquier intento nuevo, aunque no pase la validación, se lleva el error de Google.
+          google.dismiss()
+          void onSubmit(event)
+        }}
+        noValidate
+        className="flex flex-col gap-3"
       >
-        {signUp.isPending ? 'Creando tu cuenta…' : 'Crear cuenta'}
-      </Button>
-    </form>
+        <AuthField
+          label="Email"
+          type="email"
+          placeholder="Email"
+          autoComplete="email"
+          inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          error={errors.email?.message}
+          {...register('email')}
+        />
+        <PasswordField
+          label="Contraseña"
+          placeholder="Contraseña"
+          autoComplete="new-password"
+          hint={`Mínimo ${PASSWORD_MIN_LENGTH} caracteres.`}
+          error={errors.password?.message}
+          {...register('password')}
+        />
+
+        {serverError && <FormError message={serverError} />}
+
+        <Button
+          type="submit"
+          disabled={signUp.isPending}
+          className="h-13 w-full font-display text-base font-bold"
+        >
+          {signUp.isPending ? 'Creando tu cuenta…' : 'Crear cuenta'}
+        </Button>
+      </form>
+    </>
   )
 }

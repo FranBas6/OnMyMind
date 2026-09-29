@@ -37,8 +37,22 @@ export type ChangePasswordValues = z.infer<typeof changePasswordSchema>
 export type SignInValues = z.infer<typeof signInSchema>
 export type SignUpValues = z.infer<typeof signUpSchema>
 
-/** Búsqueda de `/login` y `/auth/callback`: a dónde volver tras entrar y, en `/login`, la variante. */
+/** Búsqueda de `/login`: a dónde volver tras entrar, la variante y si Google volvió sin sesión. */
 export const authSearchSchema = z.object({
   redirect: z.string().optional(),
   mode: z.enum(['signup']).optional(),
+  error: z.enum(['google']).optional().catch(undefined),
+})
+
+export type AuthMode = NonNullable<z.infer<typeof authSearchSchema>['mode']>
+
+/**
+ * Búsqueda de `/auth/callback`: lo que la app puso en `redirectTo` y lo que añade Supabase. Con
+ * PKCE vuelve `?code=` (supabase-js lo canjea al arrancar) o, si algo falla, `?error=`.
+ */
+export const callbackSearchSchema = z.object({
+  redirect: z.string().optional(),
+  mode: z.enum(['signup']).optional().catch(undefined),
+  code: z.string().optional(),
+  error: z.string().optional(),
 })

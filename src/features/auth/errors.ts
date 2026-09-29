@@ -24,7 +24,10 @@ const MESSAGES_BY_CODE: Record<string, string> = {
   reauthentication_needed: 'Por seguridad, sal y vuelve a entrar antes de cambiarla.',
 }
 
-const OFFLINE_MESSAGE = 'No hay conexión. Prueba otra vez cuando vuelva.'
+export const OFFLINE_MESSAGE = 'No hay conexión. Prueba otra vez cuando vuelva.'
+
+/** Vuelta de Google sin sesión: cancelado, sin permiso o el canje del código falló (diseño 11, G4). */
+export const GOOGLE_FAILED_MESSAGE = 'No se ha podido entrar con Google. Prueba otra vez.'
 const FALLBACK_MESSAGE = 'Algo ha fallado. Prueba otra vez.'
 
 /** Traduce cualquier error del acceso a una frase para la interfaz, sin jerga técnica. */

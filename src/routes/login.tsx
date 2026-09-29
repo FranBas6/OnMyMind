@@ -15,7 +15,10 @@ export const Route = createFileRoute('/login')({
 
 const footerLinkClassName = 'font-semibold text-primary hover:text-primary-hover'
 
-/** Acceso: «Entrar» por defecto y «Crear cuenta» con `?mode=signup`; ambas conservan `redirect`. */
+/**
+ * Acceso: «Entrar» por defecto y «Crear cuenta» con `?mode=signup`; ambas conservan `redirect`.
+ * `?error=google` llega de `/auth/callback` cuando Google vuelve sin sesión.
+ */
 function LoginPage() {
   const search = Route.useSearch()
   const navigate = useNavigate()
@@ -40,7 +43,11 @@ function LoginPage() {
           </>
         }
       >
-        <SignUpForm onSuccess={goToDestination} />
+        <SignUpForm
+          onSuccess={goToDestination}
+          redirect={search.redirect}
+          googleFailed={search.error === 'google'}
+        />
       </AuthLayout>
     )
   }
@@ -52,7 +59,7 @@ function LoginPage() {
           ¿Primera vez?{' '}
           <Link
             to="/login"
-            search={(prev) => ({ ...prev, mode: 'signup' as const })}
+            search={(prev) => ({ redirect: prev.redirect, mode: 'signup' as const })}
             className={footerLinkClassName}
           >
             Crear cuenta
@@ -60,7 +67,11 @@ function LoginPage() {
         </>
       }
     >
-      <LoginForm onSuccess={goToDestination} />
+      <LoginForm
+        onSuccess={goToDestination}
+        redirect={search.redirect}
+        googleFailed={search.error === 'google'}
+      />
     </AuthLayout>
   )
 }

@@ -97,6 +97,9 @@
   --inbox-card-shadow: 0 12px 28px rgb(90 75 230 / 0.22);
   /* Tarjetas de lista e ítem */
   --card-shadow: 0 2px 8px rgb(28 27 34 / 0.04);
+  /* Botón secundario con borde (diseño 11, «Continuar con Google») y su insignia en «Entrando…» */
+  --button-border: #e6e2da;
+  --badge-shadow: 0 4px 12px rgb(28 27 34 / 0.1);
   /* Controles apagados: puntos del menú ···, borde del checkbox pendiente */
   --control: #c9c6d2;
   /* Bloques del esqueleto de carga */
@@ -187,6 +190,9 @@
   --inbox-card: #6a5cf0;
   --inbox-card-shadow: 0 12px 32px rgb(106 92 240 / 0.3);
   --card-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
+  /* Diseño 11: un punto más claro que el borde de los campos */
+  --button-border: #3a3948;
+  --badge-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
   --control: #4a485a;
   /* Sin valor en el diseño: el borde, que se distingue sobre las tarjetas */
   --skeleton: #2c2b39;
@@ -264,6 +270,8 @@
   --color-inbox-card: var(--inbox-card);
   --shadow-inbox-card: var(--inbox-card-shadow);
   --shadow-card: var(--card-shadow);
+  --shadow-badge: var(--badge-shadow);
+  --color-button-border: var(--button-border);
   --color-control: var(--control);
   --color-skeleton: var(--skeleton);
   --color-fill: var(--fill);

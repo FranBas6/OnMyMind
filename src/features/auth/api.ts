@@ -2,8 +2,8 @@ import type { Session } from '@supabase/supabase-js'
 
 import { supabase } from '@/lib/supabase/client'
 
-import { AuthFailure, authErrorMessage, UNCONFIRMED_EMAIL_MESSAGE } from './errors'
-import type { SignInValues, SignUpValues } from './schemas'
+import { AuthFailure, authErrorMessage, OFFLINE_MESSAGE, UNCONFIRMED_EMAIL_MESSAGE } from './errors'
+import type { AuthMode, SignInValues, SignUpValues } from './schemas'
 
 export async function signInWithPassword({ email, password }: SignInValues): Promise<void> {
   const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -18,6 +18,36 @@ export async function signUp({ email, password }: SignUpValues): Promise<void> {
   const { data, error } = await supabase.auth.signUp({ email, password })
   if (error) throw new AuthFailure(authErrorMessage(error), { cause: error })
   if (!data.session) throw new AuthFailure(UNCONFIRMED_EMAIL_MESSAGE)
+}
+
+export interface GoogleSignInOptions {
+  /** Ruta a la que volver tras entrar (el `?redirect=` del acceso). */
+  redirect?: string | undefined
+  /** Desde qué variante se salió, para volver a ella si Google no deja entrar. */
+  mode?: AuthMode | undefined
+}
+
+/**
+ * Sale a Google. Google devuelve a Supabase (`/auth/v1/callback`), que vuelve a
+ * `/auth/callback` con un código; supabase-js lo canjea al arrancar. La promesa se resuelve justo
+ * antes de que el navegador deje la página. Sin conexión no se sale: se avisa aquí.
+ */
+export async function signInWithGoogle({ redirect, mode }: GoogleSignInOptions): Promise<void> {
+  if (!navigator.onLine) throw new AuthFailure(OFFLINE_MESSAGE)
+
+  const callback = new URL('/auth/callback', window.location.origin)
+  if (redirect) callback.searchParams.set('redirect', redirect)
+  if (mode) callback.searchParams.set('mode', mode)
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: callback.href,
+      // Con varias cuentas de Google en el navegador, deja elegir en vez de entrar con la última.
+      queryParams: { prompt: 'select_account' },
+    },
+  })
+  if (error) throw new AuthFailure(authErrorMessage(error), { cause: error })
 }
 
 /**

@@ -6,6 +6,12 @@ export { SignUpForm } from './components/SignUpForm'
 export { useChangePassword, useSignOut } from './hooks/useAuthMutations'
 export { useSession, type SessionState } from './hooks/useSession'
 export { safeRedirect } from './redirect'
-export { authSearchSchema, changePasswordSchema, PASSWORD_MIN_LENGTH } from './schemas'
+export { SigningInScreen } from './components/SigningInScreen'
+export {
+  authSearchSchema,
+  callbackSearchSchema,
+  changePasswordSchema,
+  PASSWORD_MIN_LENGTH,
+} from './schemas'
 export type { ChangePasswordValues } from './schemas'
 export { authErrorMessage } from './errors'

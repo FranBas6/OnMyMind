@@ -25,6 +25,9 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      // Google (1.16) vuelve con un código de un solo uso que se canjea aquí con el verificador
+      // guardado al salir, en vez de con los tokens a la vista en la URL (flujo implícito).
+      flowType: 'pkce',
     },
   },
 )
