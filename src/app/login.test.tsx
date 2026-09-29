@@ -65,7 +65,11 @@ describe('Pantalla de acceso', () => {
     renderRoute('/login?redirect=%2Ftoday')
 
     const buttons = await screen.findAllByRole('button', { name: /Entrar|Google/ })
-    expect(buttons.map((button) => button.textContent)).toEqual(['Entrar', 'Continuar con Google'])
+    expect(buttons.map((button) => button.textContent)).toEqual([
+      'Entrar',
+      'Entrar con un código por email',
+      'Continuar con Google',
+    ])
     expect(screen.getByText('o')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Continuar con Google' }))
@@ -133,6 +137,7 @@ describe('Pantalla de acceso', () => {
     expect(buttons.map((button) => button.textContent)).toEqual([
       'Continuar con Google',
       'Crear cuenta',
+      'Crear cuenta con un código por email',
     ])
     expect(screen.getByText('Se crea la cuenta sola, con tu nombre y tu foto.')).toBeInTheDocument()
 

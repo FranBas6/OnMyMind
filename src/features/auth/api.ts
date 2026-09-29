@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 
 import { supabase } from '@/lib/supabase/client'
 
-import { AuthFailure, authErrorMessage, OFFLINE_MESSAGE, UNCONFIRMED_EMAIL_MESSAGE } from './errors'
+import { AuthFailure, authErrorMessage, EMAIL_TAKEN_MESSAGE, OFFLINE_MESSAGE } from './errors'
 import type { AuthMode, SignInValues, SignUpValues } from './schemas'
 
 export async function signInWithPassword({ email, password }: SignInValues): Promise<void> {
@@ -10,14 +10,50 @@ export async function signInWithPassword({ email, password }: SignInValues): Pro
   if (error) throw new AuthFailure(authErrorMessage(error), { cause: error })
 }
 
+export interface SignUpResult {
+  /**
+   * Con *Confirm email* activo (1.17), Supabase crea la cuenta sin sesión y manda el correo de
+   * confirmación, que lleva también el código: la app pasa a «Revisa tu email».
+   */
+  needsCode: boolean
+}
+
 /**
- * Crea la cuenta y entra. Sin nombre (diseño Acceso): `handle_new_user` usa la parte del email
- * antes de la @. Con la confirmación de email desactivada, Supabase devuelve ya la sesión.
+ * Crea la cuenta. Sin nombre (diseño Acceso): `handle_new_user` usa la parte del email antes de
+ * la @. Si el proyecto no pide confirmar el email, Supabase devuelve ya la sesión.
  */
-export async function signUp({ email, password }: SignUpValues): Promise<void> {
+export async function signUp({ email, password }: SignUpValues): Promise<SignUpResult> {
   const { data, error } = await supabase.auth.signUp({ email, password })
   if (error) throw new AuthFailure(authErrorMessage(error), { cause: error })
-  if (!data.session) throw new AuthFailure(UNCONFIRMED_EMAIL_MESSAGE)
+  // Con el email ya registrado y confirmado, Supabase no lo dice (para no revelar cuentas):
+  // devuelve un usuario sin identidades y no manda nada. Se trata como «ya hay una cuenta».
+  if (data.user?.identities?.length === 0) {
+    throw new AuthFailure(EMAIL_TAKEN_MESSAGE)
+  }
+  return { needsCode: !data.session }
+}
+
+/**
+ * Pide un código de seis dígitos por email (1.17). Si el email no tiene cuenta, Supabase la crea
+ * y la confirma al validar el código: el mismo camino sirve para entrar y para crear cuenta.
+ */
+export async function requestEmailCode(email: string): Promise<void> {
+  if (!navigator.onLine) throw new AuthFailure(OFFLINE_MESSAGE)
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: true },
+  })
+  if (error) throw new AuthFailure(authErrorMessage(error), { cause: error })
+}
+
+/**
+ * Canjea el código por la sesión, dentro de la app (también la instalada en el iPhone, donde un
+ * enlace del correo se abriría en Safari). `type: 'email'` vale para el código de entrar y para el
+ * del correo de confirmación. Lanza el error de Supabase tal cual: `codeErrorKind` lo interpreta.
+ */
+export async function verifyEmailCode({ email, token }: { email: string; token: string }) {
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+  if (error) throw error
 }
 
 export interface GoogleSignInOptions {

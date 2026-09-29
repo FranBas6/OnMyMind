@@ -16,18 +16,29 @@ interface SignUpFormProps {
   redirect?: string | undefined
   /** Google devolvió al acceso sin sesión: se avisa encima de «Crear cuenta». */
   googleFailed: boolean
+  /** «Crear cuenta con un código por email», con el email que ya se haya escrito. */
+  onUseCode: (email: string) => void
+  /** Cuenta creada pendiente de confirmar: el correo lleva el código y se pasa a las casillas. */
+  onNeedsCode: (email: string) => void
 }
 
 /**
  * Crear cuenta (diseño Acceso, A6–A9, y diseño 11, G2): Google primero, porque crea la cuenta sola
  * con nombre y foto; tras el «o», email y contraseña, sin nombre.
  */
-export function SignUpForm({ onSuccess, redirect, googleFailed }: SignUpFormProps) {
+export function SignUpForm({
+  onSuccess,
+  redirect,
+  googleFailed,
+  onUseCode,
+  onNeedsCode,
+}: SignUpFormProps) {
   const signUp = useSignUp()
   const google = useGoogleSignIn({ redirect, mode: 'signup', returnedWithError: googleFailed })
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(signUpSchema),
@@ -35,7 +46,12 @@ export function SignUpForm({ onSuccess, redirect, googleFailed }: SignUpFormProp
   })
 
   const onSubmit = handleSubmit((values) => {
-    signUp.mutate(values, { onSuccess })
+    signUp.mutate(values, {
+      onSuccess: ({ needsCode }) => {
+        if (needsCode) onNeedsCode(values.email)
+        else onSuccess()
+      },
+    })
   })
 
   const serverError = signUp.error ? authErrorMessage(signUp.error) : google.error
@@ -95,6 +111,15 @@ export function SignUpForm({ onSuccess, redirect, googleFailed }: SignUpFormProp
         >
           {signUp.isPending ? 'Creando tu cuenta…' : 'Crear cuenta'}
         </Button>
+        <button
+          type="button"
+          onClick={() => {
+            onUseCode(getValues('email').trim())
+          }}
+          className="rounded-md py-1.5 text-center text-sm font-semibold text-primary outline-none hover:text-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          Crear cuenta con un código por email
+        </button>
       </form>
     </>
   )

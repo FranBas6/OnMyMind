@@ -29,6 +29,9 @@ Object.defineProperty(window, 'matchMedia', {
 // jsdom tampoco implementa scrollTo (lo usa la restauración de scroll del router).
 Object.defineProperty(window, 'scrollTo', { writable: true, value: vi.fn() })
 
+// Ni `elementFromPoint` (lo usa input-otp para no chocar con los gestores de contraseñas).
+Object.defineProperty(document, 'elementFromPoint', { writable: true, value: vi.fn(() => null) })
+
 // Ni la captura de puntero (la usa vaul al arrastrar las hojas).
 Element.prototype.setPointerCapture = vi.fn()
 Element.prototype.releasePointerCapture = vi.fn()

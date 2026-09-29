@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const PASSWORD_MIN_LENGTH = 8
 
-const emailSchema = z
+export const emailSchema = z
   .string()
   .trim()
   .pipe(z.email({ error: 'Escribe un email válido.' }))
@@ -32,6 +32,9 @@ export const changePasswordSchema = z
     error: 'Las contraseñas no coinciden.',
     path: ['confirm'],
   })
+
+/** Paso 1 del código por email (1.17): solo el email. */
+export const emailCodeRequestSchema = z.object({ email: emailSchema })
 
 export type ChangePasswordValues = z.infer<typeof changePasswordSchema>
 export type SignInValues = z.infer<typeof signInSchema>

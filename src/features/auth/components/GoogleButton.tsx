@@ -1,6 +1,8 @@
 import googleMarkUrl from '@/assets/google-g.svg'
 import { cn } from '@/lib/utils'
 
+import { Spinner } from './Spinner'
+
 interface GoogleButtonProps {
   opening: boolean
   onClick: () => void
@@ -22,17 +24,7 @@ export function GoogleButton({ opening, onClick }: GoogleButtonProps) {
       )}
     >
       {opening ? (
-        <svg
-          aria-hidden
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          className="size-4 animate-spin text-subtle-foreground"
-        >
-          <path d="M12 3a9 9 0 1 1-6.36 2.64" />
-        </svg>
+        <Spinner className="text-subtle-foreground" />
       ) : (
         <GoogleMark className="size-[18px]" />
       )}

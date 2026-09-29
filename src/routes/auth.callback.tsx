@@ -36,5 +36,5 @@ function AuthCallbackPage() {
     }
   }, [sessionState.status, search, navigate])
 
-  return <SigningInScreen />
+  return <SigningInScreen via="google" />
 }

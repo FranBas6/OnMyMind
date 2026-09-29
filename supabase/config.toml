@@ -223,15 +223,32 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+# Activo desde 1.17, como en la nube: el correo de confirmación lleva el código de seis dígitos.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-max_frequency = "1s"
+# 60 s, como en la nube: la cuenta atrás de «Volver a enviar» (`RESEND_AFTER_SECONDS`) lo espera.
+max_frequency = "60s"
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
+# `CODE_EXPIRY_SECONDS` en `src/features/auth/emailCode.ts` debe coincidir.
 otp_expiry = 3600
+
+# Plantillas de 1.17, en español y con el código `{{ .Token }}`. Las mismas se pegan en la nube
+# (Authentication → Emails), con el mismo asunto.
+[auth.email.template.confirmation]
+subject = "Tu código de OnMyMind"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.magic_link]
+subject = "Tu código para entrar en OnMyMind"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.recovery]
+subject = "¿Has olvidado tu contraseña de OnMyMind?"
+content_path = "./supabase/templates/recovery.html"
 
 # Use a production-ready SMTP server
 # [auth.email.smtp]

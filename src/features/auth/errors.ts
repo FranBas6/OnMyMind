@@ -8,12 +8,14 @@ export class AuthFailure extends Error {
 /** Cuenta creada pero sin sesión: pasa si el proyecto exige confirmar el email. */
 export const UNCONFIRMED_EMAIL_MESSAGE = 'Te falta confirmar el email. Revisa tu correo.'
 
+export const EMAIL_TAKEN_MESSAGE = 'Ya hay una cuenta con ese email. Entra con ella.'
+
 /** Mensajes en la voz de la marca para los códigos de error de Supabase Auth que pueden salir en el acceso. */
 const MESSAGES_BY_CODE: Record<string, string> = {
   // Supabase no distingue email inexistente de contraseña incorrecta, a propósito.
   invalid_credentials: 'Ese email o esa contraseña no son. Prueba otra vez.',
-  user_already_exists: 'Ya hay una cuenta con ese email. Entra con ella.',
-  email_exists: 'Ya hay una cuenta con ese email. Entra con ella.',
+  user_already_exists: EMAIL_TAKEN_MESSAGE,
+  email_exists: EMAIL_TAKEN_MESSAGE,
   weak_password: 'Esa contraseña es fácil de adivinar. Prueba con otra más larga.',
   email_address_invalid: 'Ese email no parece válido.',
   email_not_confirmed: UNCONFIRMED_EMAIL_MESSAGE,

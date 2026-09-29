@@ -16,15 +16,21 @@ interface LoginFormProps {
   redirect?: string | undefined
   /** Google devolvió al acceso sin sesión: se avisa encima de «Entrar». */
   googleFailed: boolean
+  /** «Entrar con un código por email», con el email que ya se haya escrito. */
+  onUseCode: (email: string) => void
 }
 
-/** Entrar (diseño 11, G1): email y contraseña arriba, el «o» y Google como alternativa. */
-export function LoginForm({ onSuccess, redirect, googleFailed }: LoginFormProps) {
+/**
+ * Entrar (diseño 11, G1): email y contraseña arriba, el código como enlace bajo «Entrar» (una
+ * variante del mismo email, no un tercer botón), el «o» y Google como alternativa.
+ */
+export function LoginForm({ onSuccess, redirect, googleFailed, onUseCode }: LoginFormProps) {
   const signIn = useSignIn()
   const google = useGoogleSignIn({ redirect, returnedWithError: googleFailed })
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(signInSchema),
@@ -77,6 +83,15 @@ export function LoginForm({ onSuccess, redirect, googleFailed }: LoginFormProps)
         >
           {signIn.isPending ? 'Entrando…' : 'Entrar'}
         </Button>
+        <button
+          type="button"
+          onClick={() => {
+            onUseCode(getValues('email').trim())
+          }}
+          className="rounded-md py-1.5 text-center text-sm font-semibold text-primary outline-none hover:text-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          Entrar con un código por email
+        </button>
       </form>
 
       <OrSeparator />
