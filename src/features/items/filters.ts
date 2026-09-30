@@ -95,7 +95,7 @@ export function splitItems(items: readonly Item[], kind: ListKind, options: Spli
   const active: Item[] = []
   const outOfMind: Item[] = []
   for (const item of items) {
-    if (isOutOfMind(item, kind, now) && !lingering?.has(item.id)) outOfMind.push(item)
+    if (isOutOfMind(item, now) && !lingering?.has(item.id)) outOfMind.push(item)
     else active.push(item)
   }
   active.sort(kind === 'inbox' ? byCreated(sort) : byPosition)

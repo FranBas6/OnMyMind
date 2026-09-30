@@ -1,8 +1,6 @@
-import type { ListKind } from '@/features/lists'
-
 import { rowActions } from './rowActions'
 import { STATUS_LABELS } from './status'
-import type { ItemStatus } from './types'
+import type { ItemKind, ItemStatus } from './types'
 
 /** Movimiento a partir del cual se decide si el gesto es horizontal (deslizar) o vertical (scroll). */
 export const AXIS_LOCK_PX = 10
@@ -53,7 +51,7 @@ export interface SwipeStatusAction {
  * «Hecha». Lo terminado, volver a pendiente. Fuera de Tareas, un tramo: el final del tipo
  * («Hecha», «Comprado», «Cancelado»). Salen de `rowActions`, las mismas del menú de fila.
  */
-export function rightActions(kind: ListKind, status: ItemStatus): SwipeStatusAction[] {
+export function rightActions(kind: ItemKind, status: ItemStatus): SwipeStatusAction[] {
   const withStatus = rowActions(kind, status).filter((action) => action.status !== undefined)
   const finish = withStatus.find((action) => action.id === 'finish')
   const chosen = finish ? withStatus.filter((action) => action.id !== 'reopen') : withStatus

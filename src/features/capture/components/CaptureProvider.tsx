@@ -4,7 +4,7 @@ import { Dialog } from 'radix-ui'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 
 import { KeyboardSheetContent } from '@/components/KeyboardSheet'
-import { initialStatus, useCreateItem, useDeleteItem } from '@/features/items'
+import { newItemKindAndStatus, useCreateItem, useDeleteItem } from '@/features/items'
 import { useLists, type List } from '@/features/lists'
 import { useProfile } from '@/features/profile'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -76,7 +76,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       id: crypto.randomUUID(),
       listId: list.id,
       title,
-      status: initialStatus(list.kind),
+      ...newItemKindAndStatus(list.kind),
     }
     createItem.mutate(item)
     close()

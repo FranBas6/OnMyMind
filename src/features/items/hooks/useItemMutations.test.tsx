@@ -33,6 +33,7 @@ const casa: List = {
 const grifo: Item = {
   id: 'grifo',
   listId: 'casa',
+  kind: 'task',
   title: 'Arreglar el grifo',
   notes: null,
   status: 'pending',
@@ -133,6 +134,7 @@ describe('mutaciones de ítems', () => {
       result.current.mutate({
         id: 'nuevo',
         listId: 'casa',
+        kind: 'task',
         title: 'Pagar la comunidad',
         status: 'pending',
         position: 2000,

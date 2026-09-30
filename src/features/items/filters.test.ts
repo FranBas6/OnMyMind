@@ -9,6 +9,7 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
   return {
     id,
     listId: 'casa',
+    kind: 'task',
     title: id,
     notes: null,
     status: 'pending',
@@ -78,8 +79,8 @@ describe('splitItems', () => {
 
   it('los eventos pasados bajan aunque sigan «próximos»', () => {
     const items = [
-      item('cena', { status: 'upcoming', dueAt: new Date('2026-09-20T21:00:00') }),
-      item('viaje', { status: 'upcoming', dueAt: new Date('2026-10-04T08:00:00') }),
+      item('cena', { kind: 'event', status: 'upcoming', dueAt: new Date('2026-09-20T21:00:00') }),
+      item('viaje', { kind: 'event', status: 'upcoming', dueAt: new Date('2026-10-04T08:00:00') }),
     ]
     const { active, outOfMind } = splitItems(items, 'events', { now })
     expect(ids(active)).toEqual(['viaje'])

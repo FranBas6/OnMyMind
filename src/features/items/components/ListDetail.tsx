@@ -23,7 +23,7 @@ import { useItems } from '../hooks/useItems'
 import { nextItemPosition, useCreateItem } from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
 import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
-import { initialStatus, isOutOfMind } from '../status'
+import { isOutOfMind, newItemKindAndStatus } from '../status'
 import type { Item, MovedItem } from '../types'
 import { AddItemBar } from './AddItemBar'
 import { FilterChips } from './FilterChips'
@@ -75,7 +75,7 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
   const all = items.data
   const { active, outOfMind } = splitItems(all ?? [], list.kind, { lingering, sort })
   // El resumen no espera a la animación: cuenta lo que ya está hecho aunque aún se vea arriba.
-  const pending = all ? all.filter((item) => !isOutOfMind(item, list.kind)).length : 0
+  const pending = all ? all.filter((item) => !isOutOfMind(item)).length : 0
   const summary = all
     ? detailSummary(list.kind, pending, all.length - pending)
     : detailSummary(list.kind, list.counters.pending, list.counters.done)
@@ -93,7 +93,7 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
       id: crypto.randomUUID(),
       listId: list.id,
       title,
-      status: initialStatus(list.kind),
+      ...newItemKindAndStatus(list.kind),
       position: all ? nextItemPosition(all) : undefined,
     })
   }

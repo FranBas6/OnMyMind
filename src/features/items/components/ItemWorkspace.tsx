@@ -113,7 +113,7 @@ export function ItemWorkspace({
     },
     toggle: (item) => {
       const list = listOf(item)
-      if (list) setStatus(item, nextStatusOnToggle(list.kind, item.status))
+      if (list) setStatus(item, nextStatusOnToggle(item.kind, item.status))
     },
     setStatus,
     openMenu: (item) => {

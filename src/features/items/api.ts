@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client'
 
 import type { MovePatch } from './move'
 import { fieldsFor, ITEM_COLUMNS, itemTitleSchema, mapItemRow } from './schemas'
-import type { Item, ItemPatch, ItemStatus, MovedItem } from './types'
+import type { Item, ItemKind, ItemPatch, ItemStatus, MovedItem } from './types'
 
 type ItemUpdate = Database['public']['Tables']['items']['Update']
 
@@ -32,6 +32,8 @@ export interface NewItem {
   /** Lo genera el cliente (`crypto.randomUUID()`): el ítem optimista y el real son el mismo. */
   id: string
   listId: string
+  /** El tipo por defecto de la lista (`defaultItemKind`), salvo que se elija otro. */
+  kind: ItemKind
   title: string
   status: ItemStatus
   /** Sin posición (la captura rápida no tiene la lista destino en caché), va al final. */
@@ -54,6 +56,7 @@ export async function createItem(item: NewItem): Promise<void> {
       id: item.id,
       list_id: item.listId,
       created_by: createdBy,
+      kind: item.kind,
       title,
       status: item.status,
       position: item.position ?? (await lastPosition(item.listId)) + 1000,
@@ -89,9 +92,10 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
 }
 
 /**
- * Mueve un ítem al final de otra lista con su estado traducido y sin los campos que allí no
- * existen (`buildMovePatch`). La posición se pide al servidor, porque la lista destino puede no
- * estar en caché. El rastro de «En mente» lo pone el trigger `items_track_inbox`.
+ * Mueve un ítem al final de otra lista (`buildMovePatch`): conserva su tipo, salvo lo que sale de
+ * «En mente», que toma el del destino. La posición se pide al servidor, porque la lista destino
+ * puede no estar en caché. El rastro de «En mente» y el tipo adoptado los ponen también los
+ * triggers `items_track_inbox` e `items_adopt_kind`, para cualquier cliente.
  */
 export async function moveItem(itemId: string, patch: MovePatch): Promise<void> {
   const position = (await lastPosition(patch.listId)) + 1000
@@ -99,6 +103,7 @@ export async function moveItem(itemId: string, patch: MovePatch): Promise<void> 
     .from('items')
     .update({
       list_id: patch.listId,
+      kind: patch.kind,
       status: patch.status,
       fields: fieldsFor(patch.priority),
       due_at: patch.dueAt ? patch.dueAt.toISOString() : null,
@@ -142,6 +147,7 @@ export async function restoreItem(item: Item): Promise<void> {
       id: item.id,
       list_id: item.listId,
       created_by: createdBy,
+      kind: item.kind,
       title: item.title,
       notes: item.notes,
       status: item.status,

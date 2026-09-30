@@ -79,7 +79,7 @@ export function ItemRowMenuSheet({
             </div>
           </div>
           <div className="-mx-2 flex flex-col gap-0.5">
-            {rowActions(list.kind, shown.status).map((action) => {
+            {rowActions(shown.kind, shown.status).map((action) => {
               const Icon = ICONS[action.id]
               const destructive = action.id === 'delete'
               return (
@@ -114,11 +114,10 @@ export function ItemRowMenuSheet({
  * (o al llegar con el teclado) y abre un popover con atajos de una letra: E, H, M y ⌫.
  */
 export function ItemRowDotsMenu({ item }: { item: Item }) {
-  const { list } = useItemActions()
   const run = useRunAction()
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
-  const actions = rowActions(list.kind, item.status)
+  const actions = rowActions(item.kind, item.status)
 
   const onKeyDown = (event: KeyboardEvent) => {
     const key = event.key === 'Backspace' || event.key === 'Delete' ? '⌫' : event.key.toUpperCase()

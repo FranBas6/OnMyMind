@@ -12,5 +12,12 @@ export { useCreateItem, useDeleteItem } from './hooks/useItemMutations'
 export { useLingering } from './hooks/useLingering'
 export { itemsQueryOptions } from './queries'
 export { ITEM_COLUMNS, mapItemRow } from './schemas'
-export { checkboxState, initialStatus, isFinalStatus, isOutOfMind, STATUS_LABELS } from './status'
+export {
+  checkboxState,
+  initialStatus,
+  isFinalStatus,
+  isOutOfMind,
+  newItemKindAndStatus,
+  STATUS_LABELS,
+} from './status'
 export type { Item, ItemStatus, Priority } from './types'

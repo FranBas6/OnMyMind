@@ -48,7 +48,7 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
           )}
         </div>
         <p className="mt-[5px] text-xs font-semibold text-muted-foreground md:mt-0 md:text-[13px] md:whitespace-nowrap">
-          {resultMeta(item, actions.list, now)}
+          {resultMeta(item, now)}
         </p>
       </div>
     </SwipeableRow>

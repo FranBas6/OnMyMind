@@ -12,13 +12,35 @@ export const ITEM_STATUSES = [
 ] as const
 export type ItemStatus = (typeof ITEM_STATUSES)[number]
 
-/** Estados válidos de cada tipo; el primero es el inicial. */
-export const STATUSES_BY_KIND: Record<ListKind, readonly ItemStatus[]> = {
-  inbox: ['pending', 'done'],
-  tasks: ['pending', 'in_progress', 'done'],
+/**
+ * Tipos de ítem (enum `item_kind`, ADR-009): el tipo es de cada ítem, no de su lista. `note` es lo
+ * de «En mente», aún sin tipo; al moverse a otra lista toma el tipo por defecto de esa lista.
+ */
+export const ITEM_KINDS = ['note', 'task', 'shopping', 'event'] as const
+export type ItemKind = (typeof ITEM_KINDS)[number]
+
+/** Estados válidos de cada tipo; el primero es el inicial (función `item_statuses` de la base). */
+export const STATUSES_BY_KIND: Record<ItemKind, readonly ItemStatus[]> = {
+  note: ['pending', 'done'],
+  task: ['pending', 'in_progress', 'done'],
   shopping: ['pending', 'bought', 'discarded'],
-  events: ['upcoming', 'cancelled'],
-  custom: ['pending', 'done'],
+  event: ['upcoming', 'cancelled'],
+}
+
+const DEFAULT_ITEM_KIND: Record<ListKind, ItemKind> = {
+  inbox: 'note',
+  tasks: 'task',
+  shopping: 'shopping',
+  events: 'event',
+  custom: 'task',
+}
+
+/**
+ * El tipo con el que nace un ítem en una lista (`lists.kind` es su tipo por defecto; función
+ * `default_item_kind` de la base).
+ */
+export function defaultItemKind(listKind: ListKind): ItemKind {
+  return DEFAULT_ITEM_KIND[listKind]
 }
 
 /** Estados finales: el trigger rellena `completed_at` y el ítem va a «Fuera de la cabeza». */
@@ -43,17 +65,23 @@ export function isFinalStatus(status: ItemStatus): boolean {
   return FINAL_STATUSES.has(status)
 }
 
-export function isValidStatus(kind: ListKind, status: ItemStatus): boolean {
+export function isValidStatus(kind: ItemKind, status: ItemStatus): boolean {
   return STATUSES_BY_KIND[kind].includes(status)
 }
 
-/** Estado con el que nace un ítem en una lista de ese tipo. */
-export function initialStatus(kind: ListKind): ItemStatus {
+/** Estado con el que nace un ítem de ese tipo. */
+export function initialStatus(kind: ItemKind): ItemStatus {
   return STATUSES_BY_KIND[kind][0] ?? 'pending'
 }
 
+/** Tipo y estado de un ítem recién creado en una lista: los de su tipo por defecto. */
+export function newItemKindAndStatus(listKind: ListKind): { kind: ItemKind; status: ItemStatus } {
+  const kind = defaultItemKind(listKind)
+  return { kind, status: initialStatus(kind) }
+}
+
 /** El primer estado final del tipo: el que pone el checkbox. */
-function firstFinalStatus(kind: ListKind): ItemStatus {
+export function firstFinalStatus(kind: ItemKind): ItemStatus {
   return STATUSES_BY_KIND[kind].find(isFinalStatus) ?? 'done'
 }
 
@@ -63,7 +91,7 @@ function firstFinalStatus(kind: ListKind): ItemStatus {
  * vuelve al inicial. «En curso» no se pone con el checkbox: llega deslizando (1.9) o desde el
  * detalle (1.8).
  */
-export function nextStatusOnToggle(kind: ListKind, status: ItemStatus): ItemStatus {
+export function nextStatusOnToggle(kind: ItemKind, status: ItemStatus): ItemStatus {
   return isFinalStatus(status) ? initialStatus(kind) : firstFinalStatus(kind)
 }
 
@@ -85,10 +113,11 @@ export function checkboxState(status: ItemStatus): CheckboxState {
  * la misma regla que la vista `list_counters`.
  */
 export function isOutOfMind(
-  item: { status: ItemStatus; dueAt: Date | null; recurrence: string | null },
-  kind: ListKind,
+  item: { kind: ItemKind; status: ItemStatus; dueAt: Date | null; recurrence: string | null },
   now: Date = new Date(),
 ): boolean {
   if (isFinalStatus(item.status)) return true
-  return kind === 'events' && item.recurrence === null && item.dueAt !== null && item.dueAt < now
+  return (
+    item.kind === 'event' && item.recurrence === null && item.dueAt !== null && item.dueAt < now
+  )
 }

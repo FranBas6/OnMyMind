@@ -39,27 +39,27 @@ describe('rightActions', () => {
     rightActions(...args).map((action) => action.label)
 
   it('una tarea pendiente tiene dos tramos: en curso y hecha', () => {
-    expect(labels('tasks', 'pending')).toEqual(['En curso', 'Hecha'])
+    expect(labels('task', 'pending')).toEqual(['En curso', 'Hecha'])
   })
 
   it('en curso, solo terminarla; hecha, volver a pendiente', () => {
-    expect(labels('tasks', 'in_progress')).toEqual(['Hecha'])
-    expect(labels('tasks', 'done')).toEqual(['Pendiente'])
+    expect(labels('task', 'in_progress')).toEqual(['Hecha'])
+    expect(labels('task', 'done')).toEqual(['Pendiente'])
   })
 
   it('fuera de Tareas, un tramo con el final del tipo', () => {
-    expect(labels('inbox', 'pending')).toEqual(['Hecha'])
+    expect(labels('note', 'pending')).toEqual(['Hecha'])
     expect(labels('shopping', 'pending')).toEqual(['Comprado'])
-    expect(labels('events', 'upcoming')).toEqual(['Cancelado'])
+    expect(labels('event', 'upcoming')).toEqual(['Cancelado'])
     expect(labels('shopping', 'bought')).toEqual(['Pendiente'])
   })
 
   it('cada acción lleva su color', () => {
-    expect(rightActions('tasks', 'pending').map((action) => action.tone)).toEqual([
+    expect(rightActions('task', 'pending').map((action) => action.tone)).toEqual([
       'progress',
       'done',
     ])
-    expect(rightActions('tasks', 'done')[0]?.tone).toBe('reopen')
+    expect(rightActions('task', 'done')[0]?.tone).toBe('reopen')
   })
 })
 

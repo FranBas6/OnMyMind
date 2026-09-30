@@ -1,7 +1,5 @@
-import type { ListKind } from '@/features/lists'
-
 import { initialStatus, isFinalStatus, STATUSES_BY_KIND } from './status'
-import type { ItemStatus } from './types'
+import type { ItemKind, ItemStatus } from './types'
 
 export type RowActionId = 'progress' | 'reopen' | 'finish' | 'move' | 'delete'
 
@@ -14,20 +12,18 @@ export interface RowAction {
   status?: ItemStatus
 }
 
-const FINISH_LABEL: Record<ListKind, string> = {
-  inbox: 'Hecha',
-  tasks: 'Hecha',
+const FINISH_LABEL: Record<ItemKind, string> = {
+  note: 'Hecha',
+  task: 'Hecha',
   shopping: 'Comprado',
-  events: 'Cancelado',
-  custom: 'Hecha',
+  event: 'Cancelado',
 }
 
-const REOPEN_LABEL: Record<ListKind, string> = {
-  inbox: 'Marcar pendiente',
-  tasks: 'Marcar pendiente',
+const REOPEN_LABEL: Record<ItemKind, string> = {
+  note: 'Marcar pendiente',
+  task: 'Marcar pendiente',
   shopping: 'Marcar pendiente',
-  events: 'Marcar próximo',
-  custom: 'Marcar pendiente',
+  event: 'Marcar próximo',
 }
 
 /**
@@ -35,12 +31,12 @@ const REOPEN_LABEL: Record<ListKind, string> = {
  * tareas, la primera alterna «Marcar en curso» y «Marcar pendiente» según el estado; después
  * «Hecha» (o el final del tipo) si aún no lo está, «Mover a…» y «Borrar».
  */
-export function rowActions(kind: ListKind, status: ItemStatus): RowAction[] {
+export function rowActions(kind: ItemKind, status: ItemStatus): RowAction[] {
   const actions: RowAction[] = []
   const initial = initialStatus(kind)
   const final = STATUSES_BY_KIND[kind].find(isFinalStatus) ?? initial
 
-  if (kind === 'tasks' && status === 'pending') {
+  if (kind === 'task' && status === 'pending') {
     actions.push({ id: 'progress', label: 'Marcar en curso', shortcut: 'E', status: 'in_progress' })
   } else if (status !== initial) {
     actions.push({ id: 'reopen', label: REOPEN_LABEL[kind], shortcut: 'E', status: initial })

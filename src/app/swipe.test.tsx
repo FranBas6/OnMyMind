@@ -26,6 +26,7 @@ const casa: List = {
 const grifo: Item = {
   id: '00000000-0000-4000-8000-000000000001',
   listId: 'casa',
+  kind: 'task',
   title: 'Arreglar el grifo',
   notes: null,
   status: 'pending',

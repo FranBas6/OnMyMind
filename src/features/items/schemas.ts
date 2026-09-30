@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { parseTaskFields } from './fields'
-import { ITEM_STATUSES } from './status'
+import { ITEM_KINDS, ITEM_STATUSES } from './status'
 import type { Item } from './types'
 
 /** Mismo límite que el `check` de `items.title` (03 §items). */
@@ -11,10 +11,11 @@ export const ITEM_TITLE_MAX_LENGTH = 300
 export const itemTitleSchema = z.string().trim().min(1).max(ITEM_TITLE_MAX_LENGTH)
 
 const itemStatusSchema = z.enum(ITEM_STATUSES)
+const itemKindSchema = z.enum(ITEM_KINDS)
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at'
+  'id, list_id, kind, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at'
 
 /** Límite de las notas: el `check` de `items.notes`. */
 export const ITEM_NOTES_MAX_LENGTH = 5000
@@ -22,6 +23,7 @@ export const ITEM_NOTES_MAX_LENGTH = 5000
 export interface ItemRow {
   id: string
   list_id: string
+  kind: string
   title: string
   notes: string | null
   status: string
@@ -43,6 +45,7 @@ export function mapItemRow(row: ItemRow): Item {
   return {
     id: row.id,
     listId: row.list_id,
+    kind: itemKindSchema.parse(row.kind),
     title: row.title,
     notes: row.notes,
     status: itemStatusSchema.parse(row.status),

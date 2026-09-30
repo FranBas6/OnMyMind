@@ -1,7 +1,7 @@
-import type { ItemStatus } from './status'
+import type { ItemKind, ItemStatus } from './status'
 import type { Priority } from './fields'
 
-export type { ItemStatus } from './status'
+export type { ItemKind, ItemStatus } from './status'
 export type { Priority, TaskFields } from './fields'
 
 /**
@@ -12,6 +12,8 @@ export type { Priority, TaskFields } from './fields'
 export interface Item {
   id: string
   listId: string
+  /** El tipo es del ítem, no de la lista (ADR-009): una lista puede mezclar tipos. */
+  kind: ItemKind
   title: string
   notes: string | null
   status: ItemStatus

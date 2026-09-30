@@ -210,6 +210,7 @@ export function useCreateItem() {
             {
               id: item.id,
               listId: item.listId,
+              kind: item.kind,
               title: item.title.trim(),
               notes: null,
               status: item.status,

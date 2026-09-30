@@ -27,6 +27,7 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
   return {
     id,
     listId: 'casa',
+    kind: 'task',
     title: id,
     notes: null,
     status: 'pending',
@@ -83,17 +84,25 @@ describe('groupToday', () => {
     ])
   })
 
-  it('solo listas de tareas que sigan en caché (no la inbox, ni compras, ni archivadas)', () => {
+  it('solo tareas de listas que sigan en caché (no capturas, ni compras, ni archivadas)', () => {
     const inbox = list('inbox', { kind: 'inbox' })
     const compras = list('compras', { kind: 'shopping' })
     const items = [
-      item('captura', { listId: 'inbox' }),
-      item('leche', { listId: 'compras' }),
+      item('captura', { listId: 'inbox', kind: 'note' }),
+      item('leche', { listId: 'compras', kind: 'shopping' }),
       item('archivada', { listId: 'otra' }),
       item('grifo'),
     ]
     expect(titles(groupToday(items, [...lists, inbox, compras], { now }))).toEqual([
       ['casa', ['grifo']],
+    ])
+  })
+
+  it('una tarea con fecha sale en Hoy aunque viva en una lista de otro tipo (ADR-009)', () => {
+    const compras = list('compras', { kind: 'shopping' })
+    const items = [item('pedir presupuesto', { listId: 'compras' })]
+    expect(titles(groupToday(items, [...lists, compras], { now }))).toEqual([
+      ['compras', ['pedir presupuesto']],
     ])
   })
 

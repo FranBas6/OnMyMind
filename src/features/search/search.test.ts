@@ -34,6 +34,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
   return {
     id,
     listId: 'casa',
+    kind: 'task',
     title,
     notes: null,
     status: 'pending',
@@ -218,30 +219,28 @@ describe('searchLists', () => {
 describe('textos', () => {
   it('la línea de estado y fecha de cada resultado', () => {
     expect(
-      resultMeta(
-        item('a', 'a', { status: 'in_progress', dueAt: new Date(2026, 8, 29) }),
-        casa,
-        now,
-      ),
+      resultMeta(item('a', 'a', { status: 'in_progress', dueAt: new Date(2026, 8, 29) }), now),
     ).toBe('En curso · Mañana')
-    expect(resultMeta(item('b', 'b', { dueAt: new Date(2026, 9, 15) }), casa, now)).toBe(
+    expect(resultMeta(item('b', 'b', { dueAt: new Date(2026, 9, 15) }), now)).toBe(
       'Pendiente · 15 oct',
     )
-    expect(resultMeta(item('c', 'c'), casa, now)).toBe('Pendiente')
+    expect(resultMeta(item('c', 'c'), now)).toBe('Pendiente')
     expect(
-      resultMeta(item('d', 'd', { status: 'done', completedAt: new Date(2026, 8, 2) }), casa, now),
+      resultMeta(item('d', 'd', { status: 'done', completedAt: new Date(2026, 8, 2) }), now),
     ).toBe('Hecha · 2 sep')
     expect(
       resultMeta(
-        item('e', 'e', { status: 'discarded', completedAt: new Date(2026, 7, 12) }),
-        tech,
+        item('e', 'e', {
+          kind: 'shopping',
+          status: 'discarded',
+          completedAt: new Date(2026, 7, 12),
+        }),
         now,
       ),
     ).toBe('Descartado · 12 ago')
     expect(
       resultMeta(
-        item('f', 'f', { listId: 'inbox', createdAt: new Date(2026, 8, 27, 9) }),
-        inbox,
+        item('f', 'f', { listId: 'inbox', kind: 'note', createdAt: new Date(2026, 8, 27, 9) }),
         now,
       ),
     ).toBe('Sin ordenar · ayer')

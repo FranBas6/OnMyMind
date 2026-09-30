@@ -165,7 +165,7 @@ export function searchItems(
     ) {
       continue
     }
-    const isDone = isOutOfMind(item, list.kind, now) && !lingering?.has(item.id)
+    const isDone = isOutOfMind(item, now) && !lingering?.has(item.id)
     if (isDone) done++
     else open++
     if ((filter === 'open' && isDone) || (filter === 'done' && !isDone)) continue
@@ -235,14 +235,14 @@ const shortDate = (date: Date, now: Date) =>
  * «En curso · Mañana», «Pendiente · 15 oct», «Hecha · 2 sep», «Descartado · 12 ago» y, en «En
  * mente», «Sin ordenar · hace 3 días». Lo terminado lleva la fecha en que se terminó.
  */
-export function resultMeta(item: Item, list: List, now: Date = new Date()): string {
-  if (list.kind === 'inbox' && item.status === 'pending') {
+export function resultMeta(item: Item, now: Date = new Date()): string {
+  if (item.kind === 'note' && item.status === 'pending') {
     return `Sin ordenar · ${formatCaptureAge(item.createdAt, now)}`
   }
   const label = STATUS_LABELS[item.status]
   const date = item.completedAt
     ? shortDate(item.completedAt, now)
-    : item.dueAt && list.kind === 'tasks'
+    : item.dueAt && item.kind === 'task'
       ? formatDueDate(item.dueAt, now).text
       : null
   return date ? `${label} · ${date}` : label

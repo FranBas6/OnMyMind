@@ -40,6 +40,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
   return {
     id,
     listId: 'casa',
+    kind: 'task',
     title,
     notes: null,
     status: 'pending',
@@ -65,7 +66,7 @@ const grifo = item(ID.grifo, 'Arreglar el grifo de la cocina', {
   priority: 'high',
 })
 const pilas = item(ID.pilas, 'Comprar pilas AA', { listId: 'i' })
-const camiseta = item(ID.camiseta, 'Camiseta', { listId: 'compras' })
+const camiseta = item(ID.camiseta, 'Camiseta', { listId: 'compras', kind: 'shopping' })
 
 function setDesktop(on: boolean) {
   Object.defineProperty(window, 'matchMedia', {

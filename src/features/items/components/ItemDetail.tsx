@@ -59,11 +59,11 @@ export function ItemDetail({
   onClose,
 }: ItemDetailProps) {
   const done = isFinalStatus(item.status)
-  const statusOptions = STATUSES_BY_KIND[list.kind].map((status) => ({
+  const statusOptions = STATUSES_BY_KIND[item.kind].map((status) => ({
     value: status,
     label: STATUS_LABELS[status],
   }))
-  const note = upcomingFieldsNote(list.kind)
+  const note = upcomingFieldsNote(item.kind)
 
   const origin = (
     <span className="flex min-w-0 items-center gap-2 text-[13px] text-subtle-foreground">
@@ -125,7 +125,7 @@ export function ItemDetail({
         }}
       />
 
-      {list.kind === 'tasks' && (
+      {item.kind === 'task' && (
         <>
           <Field label="Prioridad">
             <SegmentedControl

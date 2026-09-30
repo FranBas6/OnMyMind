@@ -113,7 +113,7 @@ export function groupToday(
 
   for (const item of items) {
     const list = byId.get(item.listId)
-    if (list?.kind !== 'tasks' || !item.dueAt || item.dueAt >= end) continue
+    if (!list || item.kind !== 'task' || !item.dueAt || item.dueAt >= end) continue
     if (isFinalStatus(item.status) && !lingering?.has(item.id)) {
       if (item.completedAt && item.completedAt >= start) done.push({ item, list })
       continue

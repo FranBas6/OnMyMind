@@ -31,7 +31,7 @@ interface SwipeableRowProps {
  */
 export function SwipeableRow({ item, surfaceClassName, children }: SwipeableRowProps) {
   const actions = useItemActions()
-  const right = rightActions(actions.list.kind, item.status)
+  const right = rightActions(item.kind, item.status)
   const open = actions.swipeOpenId === item.id
   const setOpen = (next: boolean) => {
     actions.setSwipeOpenId(next ? item.id : undefined)
