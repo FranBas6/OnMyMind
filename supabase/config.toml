@@ -84,7 +84,9 @@ allowed_cidrs_v6 = ["::/0"]
 # enabled = true
 
 [realtime]
-enabled = true
+# Apagado mientras la app no se suscribe a nada (ahorra ~580 MB de imagen y ~230 MiB de RAM).
+# Se enciende con «compartir listas» (fase 3), que es lo primero que lo usa.
+enabled = false
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
 # ip_version = "IPv6"
 # The maximum length in bytes of HTTP request headers. (default: 4096)
@@ -401,7 +403,8 @@ authorization_url_path = "/oauth/consent"
 allow_dynamic_registration = false
 
 [edge_runtime]
-enabled = true
+# Apagado hasta que exista la primera Edge Function (`fetch-metadata`, sesión 2.5): ~1 GB de imagen.
+enabled = false
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.
 # `oneshot` — fallback mode if hot reload causes issues (e.g. in large repos or with symlinks).
@@ -415,7 +418,9 @@ deno_version = 2
 # secret_key = "env(SECRET_VALUE)"
 
 [analytics]
-enabled = true
+# Apagado: logflare y vector solo alimentan la pestaña de logs de Studio (~1,1 GB de imágenes y
+# ~610 MiB de RAM). Para mirar logs en local, `docker logs supabase_<servicio>_onmymind`.
+enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
