@@ -2,6 +2,7 @@ import { Archive, Pencil, Trash, type LucideIcon } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 
 import { BottomSheet } from '@/components/BottomSheet'
+import { SublistGlyph } from '@/components/SublistGlyph'
 import { ListIcon } from '@/components/ListIcon'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
@@ -19,17 +20,29 @@ interface ListCardMenuProps {
    * cabecera del detalle, de 44 px con puntos en `foreground` (6 px en móvil, 5 en escritorio).
    */
   variant?: 'card' | 'header'
+  /** «Nueva sublista», la primera opción en la cabecera de su detalle (diseño 12, S7). */
+  onNewSublist?: () => void
 }
 
 /**
- * Menú ··· de una tarjeta (diseño 04 Listas): Editar, Archivar y Borrar. En escritorio, popover de
+ * Menú ··· de una tarjeta (diseño 04 Listas): Editar, Archivar y Borrar; en la cabecera del detalle,
+ * antes, «Nueva sublista» (diseño 12, S7). En escritorio, popover de
  * 200 px bajo el botón (D1); en móvil, hoja inferior con la lista en la cabecera (L3), que también
  * abre la pulsación larga.
  */
-export function ListCardMenu({ list, open, onOpenChange, variant = 'card' }: ListCardMenuProps) {
+export function ListCardMenu({
+  list,
+  open,
+  onOpenChange,
+  variant = 'card',
+  onNewSublist,
+}: ListCardMenuProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const actions = useListActions()
   const items: readonly MenuEntry[] = [
+    ...(onNewSublist
+      ? [{ label: 'Nueva sublista', icon: SublistGlyph, accent: true, onSelect: onNewSublist }]
+      : []),
     {
       label: 'Editar',
       icon: Pencil,
@@ -129,6 +142,8 @@ interface MenuEntry {
   label: string
   icon: LucideIcon
   destructive?: boolean
+  /** «Nueva sublista»: en índigo y con un filete debajo que la separa del resto (S7). */
+  accent?: boolean
   onSelect: () => void
 }
 
@@ -138,7 +153,9 @@ function rowClass(item: MenuEntry, height: string) {
     'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 text-[15px] font-medium outline-none select-none',
     item.destructive
       ? 'mt-1 h-12 rounded-none border-t border-border-soft pt-1 text-destructive'
-      : [height, 'text-foreground [&_svg]:text-muted-foreground'],
+      : item.accent
+        ? [height, 'mb-1 rounded-b-none border-b border-border-soft text-primary-strong']
+        : [height, 'text-foreground [&_svg]:text-muted-foreground'],
   )
 }
 

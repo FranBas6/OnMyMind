@@ -8,14 +8,15 @@ import { queryKeys } from '@/lib/queryKeys'
 import {
   createItem,
   deleteItem,
+  insertItems,
   moveItem,
-  restoreItem,
   updateItem,
   updateItemStatus,
   type NewItem,
 } from '../api'
 import { buildMovePatch } from '../move'
 import { isFinalStatus, isOutOfMind } from '../status'
+import { countItems, type Counts } from '../sublists'
 import type { Item, ItemPatch, ItemStatus, MovedItem } from '../types'
 
 /**
@@ -58,11 +59,6 @@ interface Snapshot {
   lists: List[] | undefined
 }
 
-interface Counts {
-  pending: number
-  done: number
-}
-
 interface OptimisticChange {
   /** Cambios en los ítems de cada lista (por id de lista). */
   items: Record<string, (items: Item[]) => Item[]>
@@ -70,8 +66,19 @@ interface OptimisticChange {
   moved?: Record<string, (moved: MovedItem[]) => MovedItem[]>
   /** Cambio en Hoy y en Buscar, que mezclan ítems de todas las listas. */
   mixed?: (items: Item[]) => Item[]
-  /** Cuánto cambian los contadores de Inicio y del sidebar, por lista. */
-  counters: Record<string, Counts>
+  /**
+   * Cuánto cambian los contadores de Inicio y del sidebar, por lista, cuando sus ítems no están en
+   * caché. Si lo están, el cambio se calcula comparando lo que cuentan antes y después
+   * (`countItems`, las reglas de `list_counters`): así cuadra también con las sublistas.
+   */
+  counters?: Record<string, Counts>
+}
+
+/** Lo que cambian los contadores de una lista entre dos versiones de sus ítems. */
+function countsDelta(before: readonly Item[], after: readonly Item[]): Counts {
+  const was = countItems(before)
+  const is = countItems(after)
+  return { pending: is.pending - was.pending, done: is.done - was.done }
 }
 
 /**
@@ -91,11 +98,16 @@ async function applyOptimistic(
     lists: queryClient.getQueryData<List[]>(queryKeys.lists.all),
   }
 
+  const deltas: Record<string, Counts> = { ...change.counters }
   for (const [listId, update] of Object.entries(change.items)) {
     const key = queryKeys.items.byList(listId)
     const items = queryClient.getQueryData<Item[]>(key)
     snapshot.items.set(listId, items)
-    if (items) queryClient.setQueryData(key, update(items))
+    if (items) {
+      const next = update(items)
+      queryClient.setQueryData(key, next)
+      deltas[listId] = countsDelta(items, next)
+    }
   }
   for (const [inboxId, update] of Object.entries(change.moved ?? {})) {
     const key = queryKeys.items.movedFrom(inboxId)
@@ -113,7 +125,7 @@ async function applyOptimistic(
     queryClient.setQueryData(
       queryKeys.lists.all,
       snapshot.lists.map((list) => {
-        const delta = change.counters[list.id]
+        const delta = deltas[list.id]
         if (!delta) return list
         return {
           ...list,
@@ -224,7 +236,7 @@ export function useCreateItem() {
               id: item.id,
               listId: item.listId,
               kind: item.kind,
-              parentId: null,
+              parentId: item.parentId ?? null,
               title: item.title.trim(),
               notes: null,
               status: item.status,
@@ -338,7 +350,10 @@ export function useUpdateItem() {
       if (patch.status !== undefined) previous.status = before.status
       if (patch.kind !== undefined) previous.kind = before.kind
       if (patch.recurrence !== undefined) previous.recurrence = before.recurrence
-      const delta = itemDelta(before, patchItem(before, patch))
+      const cached = queryClient.getQueryData<Item[]>(key)
+      const delta = cached
+        ? countsDelta(cached, patchIn(cached, item.id, patch))
+        : itemDelta(before, patchItem(before, patch))
       replace(item, patch)
       adjustCounters(item.listId, delta)
       return { previous, delta }
@@ -394,13 +409,23 @@ export function useMoveItem() {
       if (entersInbox) {
         movedChanges[to.id] = (entries) => entries.filter((entry) => entry.id !== item.id)
       }
+      // Una sublista se va con lo de dentro (trigger `items_follow_parent`).
+      const children =
+        item.kind === 'sublist'
+          ? (queryClient.getQueryData<Item[]>(queryKeys.items.byList(from.id)) ?? [])
+              .filter((entry) => entry.parentId === item.id)
+              .map((entry) => ({ ...entry, listId: to.id }))
+          : []
+      const goes = new Set([item.id, ...children.map((entry) => entry.id)])
+      const follow = (entry: Item) =>
+        entry.id === item.id ? moved : goes.has(entry.id) ? { ...entry, listId: to.id } : entry
       return applyOptimistic(queryClient, {
         items: {
-          [from.id]: (items) => items.filter((entry) => entry.id !== item.id),
-          [to.id]: (items) => [...items, moved],
+          [from.id]: (items) => items.filter((entry) => !goes.has(entry.id)),
+          [to.id]: (items) => [...items, moved, ...children],
         },
         // En Hoy se queda si la lista destino también es de tareas (lo decide `groupToday`).
-        mixed: (items) => items.map((entry) => (entry.id === item.id ? moved : entry)),
+        mixed: (items) => items.map(follow),
         moved: movedChanges,
         counters: { [from.id]: negate(counted(item.status)), [to.id]: counted(patch.status) },
       })
@@ -420,19 +445,23 @@ export function useMoveItem() {
 
 /**
  * Borrar (optimista y sin confirmación, diseño 06): desaparece al instante y quien llama enseña
- * el aviso «Deshacer». Deshacer es `useRestoreItem`, que lo vuelve a crear igual.
+ * el aviso «Deshacer». Deshacer es `useInsertItems`, que lo vuelve a crear igual (una sublista,
+ * con lo de dentro).
  */
 export function useDeleteItem() {
   const queryClient = useQueryClient()
   return useMutation({
     ...OFFLINE_TOLERANT,
     mutationFn: (item: Pick<Item, 'id' | 'listId' | 'status' | 'title'>) => deleteItem(item.id),
-    onMutate: (item) =>
-      applyOptimistic(queryClient, {
-        items: { [item.listId]: (items) => items.filter((entry) => entry.id !== item.id) },
-        mixed: (items) => items.filter((entry) => entry.id !== item.id),
+    onMutate: (item) => {
+      // Borrar una sublista borra lo de dentro (`on delete cascade`).
+      const gone = (entry: Item) => entry.id === item.id || entry.parentId === item.id
+      return applyOptimistic(queryClient, {
+        items: { [item.listId]: (items) => items.filter((entry) => !gone(entry)) },
+        mixed: (items) => items.filter((entry) => !gone(entry)),
         counters: { [item.listId]: negate(counted(item.status)) },
-      }),
+      })
+    },
     onError: (error, item, snapshot) => {
       rollback(
         queryClient,
@@ -446,27 +475,40 @@ export function useDeleteItem() {
   })
 }
 
-const withItem = (items: Item[], item: Item) =>
-  items.some((entry) => entry.id === item.id) ? items : [...items, item]
+const withItems = (items: Item[], added: readonly Item[]) => [
+  ...items,
+  ...added.filter((item) => !items.some((entry) => entry.id === item.id)),
+]
 
-/** «Deshacer» un borrado (optimista): el ítem vuelve a su sitio con todo lo que tenía. */
-export function useRestoreItem() {
+export interface InsertVariables {
+  /** De una misma lista; si hay una sublista, con lo suyo. */
+  items: readonly Item[]
+  /** «Deshacer» un borrado o duplicar una sublista: solo cambia el aviso si falla. */
+  reason: 'restore' | 'duplicate'
+}
+
+/**
+ * Vuelve a poner ítems tal cual (optimista): «Deshacer» un borrado, que devuelve una sublista con
+ * todo lo suyo, y duplicar una sublista, que inserta la copia con sus ids ya generados.
+ */
+export function useInsertItems() {
   const queryClient = useQueryClient()
   return useMutation({
     ...OFFLINE_TOLERANT,
-    mutationFn: (item: Item) => restoreItem(item),
-    onMutate: (item) =>
-      applyOptimistic(queryClient, {
-        items: { [item.listId]: (items) => withItem(items, item) },
-        mixed: (items) => withItem(items, item),
-        counters: { [item.listId]: counted(item.status) },
-      }),
-    onError: (error, item, snapshot) => {
-      rollback(
-        queryClient,
-        snapshot,
-        `No se ha podido recuperar «${item.title}». ${errorMessage(error)}`,
-      )
+    mutationFn: ({ items }: InsertVariables) => insertItems(items),
+    onMutate: ({ items }) => {
+      const listId = items[0]?.listId
+      if (!listId) return undefined
+      return applyOptimistic(queryClient, {
+        items: { [listId]: (cached) => withItems(cached, items) },
+        mixed: (cached) => withItems(cached, items),
+        counters: { [listId]: countItems(items) },
+      })
+    },
+    onError: (error, { items, reason }, snapshot) => {
+      const title = items[0]?.title ?? ''
+      const what = reason === 'restore' ? 'recuperar' : 'duplicar'
+      rollback(queryClient, snapshot, `No se ha podido ${what} «${title}». ${errorMessage(error)}`)
     },
     onSettled: () => {
       settle(queryClient)

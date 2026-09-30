@@ -34,3 +34,32 @@ describe('rowActions', () => {
     expect(rowActions('task', 'pending')[0]).toMatchObject({ status: 'in_progress' })
   })
 })
+
+describe('acciones de una sublista (diseño 12, S4)', () => {
+  it('en curso: pendiente, pausar y hecha; luego edición y borrar', () => {
+    expect(labels('sublist', 'in_progress')).toEqual([
+      'Marcar pendiente',
+      'Pausar',
+      'Hecha',
+      'Renombrar',
+      'Duplicar',
+      'Mover a…',
+      'Borrar',
+    ])
+    expect(rowActions('sublist', 'in_progress').find((a) => a.id === 'rename')?.separated).toBe(
+      true,
+    )
+  })
+
+  it('pausada se reanuda en curso; hecha solo se reabre', () => {
+    expect(rowActions('sublist', 'paused').slice(0, 2)).toMatchObject([
+      { label: 'Reanudar', status: 'in_progress' },
+      { label: 'Hecha', status: 'done' },
+    ])
+    expect(labels('sublist', 'done').slice(0, 2)).toEqual(['Marcar pendiente', 'Renombrar'])
+  })
+
+  it('pendiente se pone en curso, como una tarea', () => {
+    expect(labels('sublist', 'pending').slice(0, 3)).toEqual(['Marcar en curso', 'Pausar', 'Hecha'])
+  })
+})

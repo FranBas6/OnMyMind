@@ -18,6 +18,7 @@ import { Route as AuthenticatedSearchRouteImport } from './../routes/_authentica
 import { Route as AuthenticatedTodayRouteImport } from './../routes/_authenticated.today'
 import { Route as AuthCallbackRouteImport } from './../routes/auth.callback'
 import { Route as AuthenticatedListsListIdRouteImport } from './../routes/_authenticated.lists.$listId'
+import { Route as AuthenticatedListsListIdSublistIdRouteImport } from './../routes/_authenticated.lists.$listId_.$sublistId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -64,6 +65,12 @@ const AuthenticatedListsListIdRoute =
     path: '/lists/$listId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedListsListIdSublistIdRoute =
+  AuthenticatedListsListIdSublistIdRouteImport.update({
+    id: '/lists/$listId_/$sublistId',
+    path: '/lists/$listId/$sublistId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/today': typeof AuthenticatedTodayRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/lists/$listId': typeof AuthenticatedListsListIdRoute
+  '/lists/$listId/$sublistId': typeof AuthenticatedListsListIdSublistIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -84,6 +92,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AuthenticatedIndexRoute
   '/lists/$listId': typeof AuthenticatedListsListIdRoute
+  '/lists/$listId/$sublistId': typeof AuthenticatedListsListIdSublistIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,6 +105,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/lists/$listId': typeof AuthenticatedListsListIdRoute
+  '/_authenticated/lists/$listId_/$sublistId': typeof AuthenticatedListsListIdSublistIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/auth/callback'
     | '/lists/$listId'
+    | '/lists/$listId/$sublistId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/'
     | '/lists/$listId'
+    | '/lists/$listId/$sublistId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -129,6 +141,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/_authenticated/'
     | '/_authenticated/lists/$listId'
+    | '/_authenticated/lists/$listId_/$sublistId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -202,6 +215,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedListsListIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/lists/$listId_/$sublistId': {
+      id: '/_authenticated/lists/$listId_/$sublistId'
+      path: '/lists/$listId/$sublistId'
+      fullPath: '/lists/$listId/$sublistId'
+      preLoaderRoute: typeof AuthenticatedListsListIdSublistIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -212,6 +232,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedListsListIdRoute: typeof AuthenticatedListsListIdRoute
+  AuthenticatedListsListIdSublistIdRoute: typeof AuthenticatedListsListIdSublistIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -221,6 +242,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedListsListIdRoute: AuthenticatedListsListIdRoute,
+  AuthenticatedListsListIdSublistIdRoute:
+    AuthenticatedListsListIdSublistIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

@@ -133,6 +133,7 @@ describe('marca del tipo y prefijos', () => {
     ['> Cable HDMI', { kind: 'shopping', title: 'Cable HDMI' }],
     ['@ Dentista', { kind: 'event', title: 'Dentista' }],
     ['  @ Dentista', { kind: 'event', title: 'Dentista' }],
+    ['/ Lisboa', { kind: 'sublist', title: 'Lisboa' }],
     ['>sin espacio', null],
     ['Revisar @ Lucía', null],
     ['Tarea normal', null],

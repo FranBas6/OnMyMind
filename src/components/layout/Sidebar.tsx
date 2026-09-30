@@ -90,7 +90,9 @@ export function Sidebar() {
         </h2>
         <ul className="flex flex-col gap-0.5">
           {lists.data?.lists.map((list) => {
-            const active = pathname === `/lists/${list.id}`
+            // También dentro de una de sus sublistas (diseño 12, D5).
+            const active =
+              pathname === `/lists/${list.id}` || pathname.startsWith(`/lists/${list.id}/`)
             return (
               <li key={list.id}>
                 <Link

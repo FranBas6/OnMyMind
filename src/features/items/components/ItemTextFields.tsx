@@ -65,6 +65,10 @@ interface TitleFieldProps {
   title: string
   done: boolean
   onSave: (title: string) => void
+  /** Enfocado y con el texto seleccionado al aparecer: «Renombrar» una sublista. */
+  selectOnMount?: boolean
+  /** El nombre para lectores de pantalla («Nombre de la sublista»). */
+  label?: string
   className?: string
 }
 
@@ -73,12 +77,29 @@ interface TitleFieldProps {
  * está hecho. Intro termina la edición (no hay saltos de línea en un título) y un título vacío
  * vuelve al que había.
  */
-export function ItemTitleField({ title, done, onSave, className }: TitleFieldProps) {
+export function ItemTitleField({
+  title,
+  done,
+  onSave,
+  selectOnMount = false,
+  label = 'Título',
+  className,
+}: TitleFieldProps) {
   const save = (value: string) => {
     const parsed = itemTitleSchema.safeParse(value)
     if (parsed.success && parsed.data !== title) onSave(parsed.data)
   }
   const draft = useDraft(title, save)
+  const field = useRef<HTMLTextAreaElement | null>(null)
+
+  // Solo al aparecer: al volver a pintar mientras se escribe no se toca la selección.
+  const selectOnce = useRef(selectOnMount)
+  useEffect(() => {
+    if (!selectOnce.current) return
+    selectOnce.current = false
+    field.current?.focus()
+    field.current?.select()
+  }, [])
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter') {
@@ -89,9 +110,12 @@ export function ItemTitleField({ title, done, onSave, className }: TitleFieldPro
 
   return (
     <textarea
-      ref={autoGrow}
+      ref={(element) => {
+        field.current = element
+        autoGrow(element)
+      }}
       data-vaul-no-drag
-      aria-label="Título"
+      aria-label={label}
       rows={1}
       value={draft.value}
       maxLength={ITEM_TITLE_MAX_LENGTH}

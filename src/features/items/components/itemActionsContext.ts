@@ -24,6 +24,10 @@ export interface ItemActions {
   openMenu: (item: Item) => void
   startMove: (item: Item, anchor: HTMLElement | null) => void
   remove: (item: Item) => void
+  /** Duplicar una sublista con lo de dentro (diseño 12, S6). */
+  duplicate: (item: Item) => void
+  /** Renombrar una sublista: se abre con el nombre listo para editar (su título es editable). */
+  rename: (item: Item) => void
   /** La fila abierta a la izquierda al deslizar («Mover» y «Borrar»): solo una a la vez. */
   swipeOpenId: string | undefined
   setSwipeOpenId: (itemId: string | undefined) => void

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { checkboxState } from '../status'
 import type { Item } from '../types'
 import { StatusCheckbox } from './StatusCheckbox'
+import { SublistIcon } from './SublistIcon'
 
 interface ItemControlProps {
   item: Pick<Item, 'kind' | 'status' | 'title'>
@@ -23,6 +24,15 @@ interface ItemControlProps {
  * deslizando). Es la misma forma en cualquier lista, también en Buscar.
  */
 export function ItemControl({ item, onToggle, large = false, tone, className }: ItemControlProps) {
+  if (item.kind === 'sublist') {
+    return (
+      <SublistIcon
+        color={tone}
+        state={item.status === 'paused' ? 'paused' : item.status === 'done' ? 'done' : 'active'}
+        className={cn(large && 'size-7 md:size-[26px]', className)}
+      />
+    )
+  }
   if (item.kind === 'event') {
     return (
       <span

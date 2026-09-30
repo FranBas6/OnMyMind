@@ -11,6 +11,9 @@ import type { Item, ItemKind, ItemPatch } from './types'
 export const CHOOSABLE_KINDS = ['task', 'shopping', 'event'] as const
 export type ChoosableKind = (typeof CHOOSABLE_KINDS)[number]
 
+/** Lo que se puede añadir desde el campo de una lista: los tipos y, fuera de una sublista, otra. */
+export type AddableKind = ChoosableKind | 'sublist'
+
 export function isChoosableKind(kind: ItemKind): kind is ChoosableKind {
   return (CHOOSABLE_KINDS as readonly ItemKind[]).includes(kind)
 }
@@ -25,10 +28,11 @@ export const KIND_LABELS: Record<ItemKind, string> = {
 }
 
 /** Qué trae cada tipo, en una línea (diseño 12, T2 y T5). */
-export const KIND_DESCRIPTIONS: Record<ChoosableKind, string> = {
+export const KIND_DESCRIPTIONS: Record<AddableKind, string> = {
   task: 'Prioridad, fecha y estado.',
   shopping: 'Precio, tienda y foto.',
   event: 'Fecha y hora.',
+  sublist: 'Un grupo con sus propias cosas dentro.',
 }
 
 /** Los campos que usa cada tipo hoy. Lo que el tipo nuevo no usa se quita al cambiar. */
@@ -132,17 +136,18 @@ export function kindMark(kind: ItemKind, listKind: ListKind): string | null {
   return KIND_LABELS[kind]
 }
 
-/** Prefijos rápidos del campo de añadir en escritorio (diseño 12, D2); «/ » sublista, en la 2a.4. */
-const KIND_PREFIXES: [prefix: string, kind: ChoosableKind][] = [
+/** Prefijos rápidos del campo de añadir en escritorio (diseño 12, D2). */
+const KIND_PREFIXES: [prefix: string, kind: AddableKind][] = [
   ['> ', 'shopping'],
   ['@ ', 'event'],
+  ['/ ', 'sublist'],
 ]
 
 /**
- * Lee un prefijo rápido al principio del texto: «> cable HDMI» es una compra y «@ dentista», un
- * evento. Devuelve el tipo y el título sin el prefijo, o `null` si no lleva ninguno.
+ * Lee un prefijo rápido al principio del texto: «> cable HDMI» es una compra, «@ dentista», un
+ * evento, y «/ Lisboa», una sublista. Devuelve el tipo y el título sin el prefijo, o `null` si no lleva ninguno.
  */
-export function parseKindPrefix(text: string): { kind: ChoosableKind; title: string } | null {
+export function parseKindPrefix(text: string): { kind: AddableKind; title: string } | null {
   const start = text.trimStart()
   for (const [prefix, kind] of KIND_PREFIXES) {
     if (start.startsWith(prefix)) return { kind, title: start.slice(prefix.length) }

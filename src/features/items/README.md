@@ -7,4 +7,6 @@ al entrar o salir de «En mente» (`move.ts`) y se cambia desde el detalle (`kin
 la prioridad de las tareas), consulta y mutaciones optimistas (`api.ts`, `hooks/`) y el detalle de
 lista (`components/ListDetail.tsx`) con sus filas (`ItemRow` por el tipo del ítem, `ItemControl`
 con su círculo, cuadrado o calendario), filtros, «Fuera de la cabeza» y el campo de añadir con su
-selector de tipo. Desde la sesión 1.7; tipos mezclados desde la 2a.2 (diseño 12).
+selector de tipo. Las sublistas (`sublists.ts`: contadores con las reglas de `list_counters`,
+textos y duplicar) se ven con `SublistRow` y se abren en el mismo `ListDetail` con `sublist`.
+Desde la sesión 1.7; tipos mezclados desde la 2a.2 y sublistas desde la 2a.4 (diseño 12).

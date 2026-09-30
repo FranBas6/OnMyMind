@@ -10,6 +10,7 @@ import type { Item, MovedItem } from '../types'
 import { ItemControl } from './ItemControl'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { RowTitle } from './RowTitle'
+import { SublistRow } from './SublistRow'
 import { SwipeableRow } from './SwipeableRow'
 
 interface OutOfMindSectionProps {
@@ -80,7 +81,11 @@ export function OutOfMindSection({
         <ul id={listId} className="flex flex-col gap-0.5">
           {entries.map((entry) =>
             entry.kind === 'done' ? (
-              <DoneRow key={entry.item.id} item={entry.item} />
+              entry.item.kind === 'sublist' ? (
+                <SublistRow key={entry.item.id} item={entry.item} done />
+              ) : (
+                <DoneRow key={entry.item.id} item={entry.item} />
+              )
             ) : (
               <MovedRow key={entry.moved.id} moved={entry.moved} />
             ),

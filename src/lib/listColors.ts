@@ -85,3 +85,17 @@ export const LIST_COLOR_BORDER: Record<ListColor, string> = {
   green: 'border-list-green',
   indigo: 'border-list-indigo',
 }
+
+/**
+ * Fondo del icono de una sublista (diseño 12, S1): el color de su lista al 18 % (al 10 % si está
+ * pausada). En oscuro, algo más para que no se pierda sobre la superficie.
+ */
+export const LIST_COLOR_SUBLIST: Record<ListColor, { active: string; paused: string }> = {
+  coral: { active: 'bg-list-coral/18 dark:bg-list-coral/24', paused: 'bg-list-coral/10' },
+  amber: { active: 'bg-list-amber/18 dark:bg-list-amber/24', paused: 'bg-list-amber/10' },
+  teal: { active: 'bg-list-teal/18 dark:bg-list-teal/24', paused: 'bg-list-teal/10' },
+  blue: { active: 'bg-list-blue/18 dark:bg-list-blue/24', paused: 'bg-list-blue/10' },
+  pink: { active: 'bg-list-pink/18 dark:bg-list-pink/24', paused: 'bg-list-pink/10' },
+  green: { active: 'bg-list-green/18 dark:bg-list-green/24', paused: 'bg-list-green/10' },
+  indigo: { active: 'bg-list-indigo/18 dark:bg-list-indigo/24', paused: 'bg-list-indigo/10' },
+}

@@ -1,11 +1,26 @@
 import { Plus } from 'lucide-react'
 import { Popover } from 'radix-ui'
-import { useRef, useState, type MouseEvent, type ReactNode, type SubmitEvent } from 'react'
+import {
+  useImperativeHandle,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+  type Ref,
+  type SubmitEvent,
+} from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import { cn } from '@/lib/utils'
 
-import { KIND_ARTICLE_NOUN, KIND_LABELS, parseKindPrefix, type ChoosableKind } from '../kind'
+import {
+  CHOOSABLE_KINDS,
+  KIND_ARTICLE_NOUN,
+  KIND_LABELS,
+  parseKindPrefix,
+  type AddableKind,
+  type ChoosableKind,
+} from '../kind'
 import { ITEM_TITLE_MAX_LENGTH, itemTitleSchema } from '../schemas'
 import { KindOptions } from './KindOptions'
 import { KIND_ICONS } from './kindIcons'
@@ -13,7 +28,7 @@ import { KIND_ICONS } from './kindIcons'
 interface AddItemBarProps {
   placeholder: string
   /** `kind` es el tipo elegido o, si no se ha tocado nada, el tipo por defecto de la lista. */
-  onAdd: (title: string, kind: ChoosableKind | undefined) => void
+  onAdd: (title: string, kind: AddableKind | undefined) => void
   /**
    * `docked`: móvil, pegado encima de la barra de navegación y siempre visible (pantalla 4).
    * `inline`: escritorio, un campo de 56 px arriba de la lista con la pista ↩ (D1).
@@ -25,7 +40,19 @@ interface AddItemBarProps {
    * Con él, el + abre el selector de tipo (diseño 12, T2 y D2). Sin él («En mente», que no tiene
    * tipos), el + solo añade.
    */
-  kinds?: { defaultKind: ChoosableKind; listName: string }
+  kinds?: {
+    defaultKind: ChoosableKind
+    listName: string
+    /** «Sublista» al final del selector y el prefijo «/ » (no dentro de una sublista). */
+    sublists?: boolean
+  }
+  /** Para empezar con un tipo desde fuera: «Nueva sublista» del menú de la lista (diseño 12, S7). */
+  handle?: Ref<AddItemBarHandle>
+}
+
+export interface AddItemBarHandle {
+  /** Pone el tipo (sale su chip) y enfoca el campo. */
+  startWith: (kind: AddableKind) => void
 }
 
 // Que tocar el + o el chip no le quite el foco al campo: en iOS eso cerraría el teclado.
@@ -47,14 +74,26 @@ export function AddItemBar({
   variant,
   autoFocus = false,
   kinds,
+  handle,
 }: AddItemBarProps) {
   const [title, setTitle] = useState('')
-  const [chosen, setChosen] = useState<ChoosableKind | null>(null)
+  const [chosen, setChosen] = useState<AddableKind | null>(null)
   const [picking, setPicking] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const inline = variant === 'inline'
+  const offered: readonly AddableKind[] = kinds?.sublists
+    ? [...CHOOSABLE_KINDS, 'sublist']
+    : CHOOSABLE_KINDS
 
-  const prefixed = kinds && inline ? parseKindPrefix(title) : null
+  useImperativeHandle(handle, () => ({
+    startWith: (kind) => {
+      setChosen(kind)
+      input.current?.focus()
+    },
+  }))
+
+  const parsed = kinds && inline ? parseKindPrefix(title) : null
+  const prefixed = parsed && offered.includes(parsed.kind) ? parsed : null
   const kind = kinds ? (prefixed?.kind ?? chosen ?? kinds.defaultKind) : undefined
   const chip = kinds && kind && kind !== kinds.defaultKind ? kind : null
 
@@ -68,7 +107,7 @@ export function AddItemBar({
     input.current?.focus()
   }
 
-  const choose = (next: ChoosableKind) => {
+  const choose = (next: AddableKind) => {
     setChosen(next)
     setPicking(false)
     input.current?.focus()
@@ -156,9 +195,10 @@ export function AddItemBar({
 
   const heading = `Añadir a ${kinds.listName}`
   const options = (compact: boolean) => (
-    <KindOptions
+    <KindOptions<AddableKind>
       label={heading}
       value={kind}
+      kinds={offered}
       defaultKind={kinds.defaultKind}
       compact={compact}
       onChange={choose}
@@ -185,7 +225,7 @@ export function AddItemBar({
             {options(true)}
             <p className="px-3 pt-2 pb-1.5 text-xs leading-normal text-subtle-foreground">
               Escribe y pulsa ↩ para {KIND_ARTICLE_NOUN[kinds.defaultKind]}. Prefijos rápidos: «&gt;
-              » compra, «@ » evento.
+              » compra, «@ » evento{kinds.sublists ? ', «/ » sublista' : ''}.
             </p>
           </Popover.Content>
         </Popover.Portal>

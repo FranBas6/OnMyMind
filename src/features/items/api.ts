@@ -34,6 +34,8 @@ export interface NewItem {
   listId: string
   /** El tipo por defecto de la lista (`defaultItemKind`), salvo que se elija otro. */
   kind: ItemKind
+  /** Dentro de una sublista (ADR-010), de la misma lista. */
+  parentId?: string | null
   title: string
   status: ItemStatus
   /** Sin posición (la captura rápida no tiene la lista destino en caché), va al final. */
@@ -57,6 +59,7 @@ export async function createItem(item: NewItem): Promise<void> {
       list_id: item.listId,
       created_by: createdBy,
       kind: item.kind,
+      parent_id: item.parentId ?? null,
       title,
       status: item.status,
       position: item.position ?? (await lastPosition(item.listId)) + 1000,
@@ -138,16 +141,22 @@ export async function deleteItem(itemId: string): Promise<void> {
 }
 
 /**
- * «Deshacer» un borrado: vuelve a insertar el ítem tal cual era, con su mismo id, sus fechas y su
- * rastro de «En mente». Idempotente como `createItem`.
+ * Inserta ítems tal cual son, con sus ids, sus fechas y su rastro de «En mente»: «Deshacer» un
+ * borrado (una sublista vuelve con todo lo de dentro) y duplicar una sublista. Va en una sola
+ * llamada, con la sublista delante de lo suyo: los triggers de cada fila ven las anteriores del
+ * mismo `insert`, así que `items_validate_parent` encuentra a la madre. Idempotente como
+ * `createItem`.
  */
-export async function restoreItem(item: Item): Promise<void> {
+export async function insertItems(items: readonly Item[]): Promise<void> {
   const { data: auth } = await supabase.auth.getSession()
   const createdBy = auth.session?.user.id
   if (!createdBy) throw new Error('Sin sesión')
 
+  const ordered = [...items].sort(
+    (a, b) => Number(a.parentId !== null) - Number(b.parentId !== null),
+  )
   const { error } = await supabase.from('items').upsert(
-    {
+    ordered.map((item) => ({
       id: item.id,
       list_id: item.listId,
       created_by: createdBy,
@@ -165,7 +174,7 @@ export async function restoreItem(item: Item): Promise<void> {
       created_at: item.createdAt.toISOString(),
       left_inbox_id: item.leftInboxId,
       left_inbox_at: item.leftInboxAt?.toISOString() ?? null,
-    },
+    })),
     { onConflict: 'id', ignoreDuplicates: true },
   )
   if (error) throw error

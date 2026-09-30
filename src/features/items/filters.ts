@@ -3,6 +3,7 @@ import { subDays } from 'date-fns'
 import { counterLabel, doneLabel, KIND_TEMPLATES, type ListKind } from '@/features/lists'
 
 import { isOutOfMind } from './status'
+import { countItems, openSublistsLabel } from './sublists'
 import type { Item } from './types'
 
 /** Filtro por estado de las listas normales: todo, lo pendiente o lo que ya está fuera. */
@@ -110,5 +111,18 @@ export function splitItems(items: readonly Item[], kind: ListKind, options: Spli
 export function detailSummary(kind: ListKind, pending: number, done: number): string {
   if (kind === 'inbox') return counterLabel('inbox', pending)
   if (pending === 0 && done === 0) return `${KIND_TEMPLATES[kind].label} · recién creada`
+  return `${counterLabel(kind, pending)} · ${doneLabel(kind, done)}`
+}
+
+/**
+ * Subtítulo de una lista con sus ítems ya cargados. Cuenta como la vista `list_counters`
+ * (`countItems`): lo de dentro de las sublistas activas suma y la sublista en sí no. Con sublistas
+ * abiertas, en vez de lo hecho dice cuántas hay: «9 pendientes · 3 sublistas» (diseño 12, S1).
+ */
+export function listSummary(kind: ListKind, items: readonly Item[]): string {
+  const { pending, done } = countItems(items)
+  if (kind === 'inbox' || items.length === 0) return detailSummary(kind, pending, done)
+  const sublists = openSublistsLabel(items)
+  if (sublists) return `${counterLabel(kind, pending)} · ${sublists}`
   return `${counterLabel(kind, pending)} · ${doneLabel(kind, done)}`
 }

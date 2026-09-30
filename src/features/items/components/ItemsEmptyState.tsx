@@ -6,6 +6,8 @@ import { LIST_COLOR_TEXT, LIST_COLOR_TINT } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
 import { firstItemNoun } from '../copy'
+import type { Item } from '../types'
+import { SublistIcon } from './SublistIcon'
 
 interface EmptyProps {
   /** El campo de añadir está abajo en móvil y arriba en escritorio: el texto lo dice. */
@@ -45,6 +47,21 @@ export function NewListEmpty({ list, isDesktop }: EmptyProps & { list: List }) {
           </>
         )}
       </Description>
+    </Centered>
+  )
+}
+
+/**
+ * Sublista recién creada (diseño 12, S3): su icono grande en el color de la lista y «Aún no hay
+ * nada en Lisboa.». El diseño explicaba con un viaje («lugares, la maleta, el vuelo»); el texto va
+ * general, porque una sublista también es un proyecto.
+ */
+export function SublistEmpty({ sublist, list }: { sublist: Item; list: List }) {
+  return (
+    <Centered>
+      <SublistIcon color={list.color} size="empty" />
+      <Title>Aún no hay nada en {sublist.title}.</Title>
+      <Description>Añade tareas, compras o eventos: cada cosa con su tipo.</Description>
     </Centered>
   )
 }

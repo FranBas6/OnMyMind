@@ -8,7 +8,9 @@ import { KIND_TEMPLATES, useLists, type List } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import { destinationSummary, moveHint } from '../copy'
+import { useItems } from '../hooks/useItems'
 import { moveLoss } from '../move'
+import { childrenOf } from '../sublists'
 import type { Item } from '../types'
 import { DateChip } from './DateChip'
 import { PriorityChip } from './PriorityChip'
@@ -47,7 +49,12 @@ export function MoveToList({
   const all = lists.data
     ? [...(lists.data.inbox ? [lists.data.inbox] : []), ...lists.data.lists]
     : []
-  const destinations = from.kind === 'inbox' ? all.filter((list) => list.id !== from.id) : all
+  // Una sublista no puede ir a «En mente» (`items_validate_parent`): allí no hay sublistas.
+  const destinations = all.filter(
+    (list) =>
+      !(from.kind === 'inbox' && list.id === from.id) &&
+      !(target?.item.kind === 'sublist' && list.kind === 'inbox'),
+  )
   const props = { from, destinations, onMove, onMoveToNewList, onClose }
 
   if (isDesktop) {
@@ -98,7 +105,8 @@ interface MenuProps {
 
 function MobileSheet({ item, from, destinations, onMove, onMoveToNewList, onClose }: MenuProps) {
   const [chosen, setChosen] = useState<List | null>(null)
-  const hint = chosen ? moveHint(from.kind, chosen, moveLoss(item, chosen.kind)) : null
+  const inside = useInside(item)
+  const hint = chosen ? (inside ?? moveHint(from.kind, chosen, moveLoss(item, chosen.kind))) : null
 
   return (
     <>
@@ -189,7 +197,10 @@ function MobileSheet({ item, from, destinations, onMove, onMoveToNewList, onClos
 
 function DesktopMenu({ item, from, destinations, onMove, onMoveToNewList, onClose }: MenuProps) {
   const [hovered, setHovered] = useState<List | null>(null)
-  const hint = hovered ? moveHint(from.kind, hovered, moveLoss(item, hovered.kind)) : null
+  const inside = useInside(item)
+  const hint = hovered
+    ? (inside ?? moveHint(from.kind, hovered, moveLoss(item, hovered.kind)))
+    : null
   const choose = (list: List) => {
     onClose()
     onMove(item, list)
@@ -309,4 +320,13 @@ function DestinationIcon({ list, size }: { list: List; size: 'row' | 'xs' }): Re
       <img src="/logos/svg/omm-mark-dark.svg" alt="" className="hidden size-[18px] dark:block" />
     </span>
   )
+}
+
+/** Al mover una sublista con cosas dentro: «Se va con las 7 cosas de dentro.» (ADR-010). */
+function useInside(item: Item): string | null {
+  const { data: items = [] } = useItems(item.listId)
+  if (item.kind !== 'sublist') return null
+  const count = childrenOf(items, item.id).length
+  if (count === 0) return null
+  return count === 1 ? 'Se va con la cosa de dentro.' : `Se va con las ${count} cosas de dentro.`
 }

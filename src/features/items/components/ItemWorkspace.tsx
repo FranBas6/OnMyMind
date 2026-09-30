@@ -1,18 +1,28 @@
-import { Trash2 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Copy, Trash2 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useListActions, type List } from '@/features/lists'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { queryKeys } from '@/lib/queryKeys'
 import { showUndoToast } from '@/lib/undoToast'
 
 import {
   useDeleteItem,
+  useInsertItems,
   useMoveItem,
-  useRestoreItem,
   useSetItemStatus,
   useUpdateItem,
 } from '../hooks/useItemMutations'
 import { isFinalStatus, nextStatusOnToggle } from '../status'
+import {
+  childrenOf,
+  deleteSublistLabel,
+  deleteSublistMessage,
+  duplicateSublist,
+  positionAfter,
+} from '../sublists'
 import type { Item, ItemStatus } from '../types'
 import {
   ItemActionsContext,
@@ -35,7 +45,17 @@ interface ItemWorkspaceProps {
   onOpenItem: (itemId: string | undefined) => void
   /** Al terminar un ítem, para que se quede un momento en su sitio (`useLingering`). */
   onFinish: (itemId: string) => void
+  /**
+   * Abrir una sublista: tocar su fila entra en ella en vez de abrir su detalle (diseño 12). Con
+   * `rename`, entra con el nombre listo para editar. Sin él (Hoy), no hay sublistas en pantalla.
+   */
+  onOpenSublist?: (item: Item, options?: { rename?: boolean }) => void
   children: ReactNode
+}
+
+interface PendingDelete {
+  item: Item
+  children: Item[]
 }
 
 /**
@@ -50,6 +70,7 @@ export function ItemWorkspace({
   openItemId,
   onOpenItem,
   onFinish,
+  onOpenSublist,
   children,
 }: ItemWorkspaceProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -57,7 +78,11 @@ export function ItemWorkspace({
   const updateItem = useUpdateItem()
   const moveItem = useMoveItem()
   const deleteItem = useDeleteItem()
-  const restoreItem = useRestoreItem()
+  const insertItems = useInsertItems()
+  const queryClient = useQueryClient()
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const [shownDelete, setShownDelete] = useState<PendingDelete | null>(null)
+  if (pendingDelete && pendingDelete !== shownDelete) setShownDelete(pendingDelete)
   const { openCreate } = useListActions()
   const [menuItemId, setMenuItemId] = useState<string | undefined>(undefined)
   const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null)
@@ -92,14 +117,43 @@ export function ItemWorkspace({
     moveItem.mutate({ item, from, to })
   }
 
-  const remove = (item: Item) => {
+  /** Los ítems de la lista del ítem, de la caché: ahí está lo de dentro de cada sublista. */
+  const listItems = (item: Item) =>
+    queryClient.getQueryData<Item[]>(queryKeys.items.byList(item.listId)) ?? items ?? []
+
+  const deleteNow = (item: Item, inside: readonly Item[]) => {
     if (item.id === openItemId) onOpenItem(undefined)
     deleteItem.mutate(item)
     showUndoToast({
       icon: Trash2,
       message: `«${item.title}» borrada`,
       onUndo: () => {
-        restoreItem.mutate(item)
+        insertItems.mutate({ items: [item, ...inside], reason: 'restore' })
+      },
+    })
+  }
+
+  // Una sublista con cosas dentro pide confirmación con el recuento (diseño 12, S5).
+  const remove = (item: Item) => {
+    const inside = item.kind === 'sublist' ? childrenOf(listItems(item), item.id) : []
+    if (inside.length > 0) setPendingDelete({ item, children: inside })
+    else deleteNow(item, inside)
+  }
+
+  const duplicate = (item: Item) => {
+    const all = listItems(item)
+    const copies = duplicateSublist(item, childrenOf(all, item.id), {
+      newId: () => crypto.randomUUID(),
+      position: positionAfter(all, item),
+    })
+    const [copy] = copies
+    if (!copy) return
+    insertItems.mutate({ items: copies, reason: 'duplicate' })
+    showUndoToast({
+      icon: Copy,
+      message: `Duplicada como «${copy.title}»`,
+      onUndo: () => {
+        deleteItem.mutate(copy)
       },
     })
   }
@@ -109,7 +163,8 @@ export function ItemWorkspace({
     selectedId: openItemId,
     menuItemId,
     openDetail: (item) => {
-      onOpenItem(item.id)
+      if (item.kind === 'sublist' && onOpenSublist) onOpenSublist(item)
+      else onOpenItem(item.id)
     },
     toggle: (item) => {
       const list = listOf(item)
@@ -129,6 +184,10 @@ export function ItemWorkspace({
       setMoveTarget({ item, anchor })
     },
     remove,
+    duplicate,
+    rename: (item) => {
+      onOpenSublist?.(item, { rename: true })
+    },
     swipeOpenId,
     setSwipeOpenId,
   }
@@ -181,6 +240,20 @@ export function ItemWorkspace({
                 move(item, created)
               },
             })
+          }}
+        />
+      )}
+      {shownDelete && (
+        <ConfirmDialog
+          open={pendingDelete !== null}
+          onOpenChange={(open) => {
+            if (!open) setPendingDelete(null)
+          }}
+          title={`¿Borrar «${shownDelete.item.title}»?`}
+          description={deleteSublistMessage(shownDelete.children)}
+          confirmLabel={deleteSublistLabel(shownDelete.children)}
+          onConfirm={() => {
+            deleteNow(shownDelete.item, shownDelete.children)
           }}
         />
       )}

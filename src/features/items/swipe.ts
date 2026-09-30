@@ -49,10 +49,14 @@ export interface SwipeStatusAction {
  * Acciones de la derecha según el tipo y el estado (decisión de Fran en 1.9: dos tramos en
  * tareas). Una tarea pendiente tiene dos: a 80 px «En curso» y a 160 px «Hecha». En curso, solo
  * «Hecha». Lo terminado, volver a pendiente. Fuera de Tareas, un tramo: el final del tipo
- * («Hecha», «Comprado», «Cancelado»). Salen de `rowActions`, las mismas del menú de fila.
+ * («Hecha», «Comprado», «Cancelado»). Salen de `rowActions`, las mismas del menú de fila. Una
+ * sublista se desliza como una tarea; pausada, «En curso» la reanuda.
  */
 export function rightActions(kind: ItemKind, status: ItemStatus): SwipeStatusAction[] {
-  const withStatus = rowActions(kind, status).filter((action) => action.status !== undefined)
+  // Pausar una sublista no se hace deslizando: se hace a propósito, desde el menú.
+  const withStatus = rowActions(kind, status).filter(
+    (action) => action.status !== undefined && action.id !== 'pause',
+  )
   const finish = withStatus.find((action) => action.id === 'finish')
   const chosen = finish ? withStatus.filter((action) => action.id !== 'reopen') : withStatus
   return chosen.flatMap((action) =>
@@ -62,7 +66,11 @@ export function rightActions(kind: ItemKind, status: ItemStatus): SwipeStatusAct
             status: action.status,
             label: STATUS_LABELS[action.status],
             tone:
-              action.id === 'progress' ? 'progress' : action.id === 'finish' ? 'done' : 'reopen',
+              action.id === 'progress' || action.id === 'resume'
+                ? 'progress'
+                : action.id === 'finish'
+                  ? 'done'
+                  : 'reopen',
           } satisfies SwipeStatusAction,
         ]
       : [],

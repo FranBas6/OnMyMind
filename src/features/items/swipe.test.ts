@@ -63,6 +63,19 @@ describe('rightActions', () => {
   })
 })
 
+describe('rightActions de una sublista', () => {
+  it('pendiente, como una tarea: «En curso» y «Hecha»; pausar no se desliza', () => {
+    expect(rightActions('sublist', 'pending').map((a) => a.label)).toEqual(['En curso', 'Hecha'])
+  })
+
+  it('pausada: «En curso» la reanuda y después «Hecha»', () => {
+    expect(rightActions('sublist', 'paused')).toMatchObject([
+      { status: 'in_progress', tone: 'progress' },
+      { status: 'done', tone: 'done' },
+    ])
+  })
+})
+
 describe('al soltar', () => {
   const task = { rightStages: 2, hasLeft: true }
 

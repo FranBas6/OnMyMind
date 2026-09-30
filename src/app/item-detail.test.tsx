@@ -210,7 +210,7 @@ describe('detalle de una tarea', () => {
   it('borrar lo quita al instante y «Deshacer» lo recupera tal cual', async () => {
     const user = userEvent.setup()
     vi.mocked(itemsApi.deleteItem).mockResolvedValue()
-    vi.mocked(itemsApi.restoreItem).mockResolvedValue()
+    vi.mocked(itemsApi.insertItems).mockResolvedValue()
     renderAt(`/lists/casa?item=${ID.grifo}`, { casa: [grifo] }, { casa: [] })
     const sheet = await screen.findByRole('dialog', { name: /Detalle de/ })
 
@@ -220,7 +220,7 @@ describe('detalle de una tarea', () => {
     expect(itemsApi.deleteItem).toHaveBeenCalledWith(ID.grifo)
     await user.click(await screen.findByRole('button', { name: 'Deshacer' }))
     await waitFor(() => {
-      expect(itemsApi.restoreItem).toHaveBeenCalledWith(expect.objectContaining({ id: ID.grifo }))
+      expect(itemsApi.insertItems).toHaveBeenCalledWith([expect.objectContaining({ id: ID.grifo })])
     })
   })
 

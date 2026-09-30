@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownUp } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { InboxHeader, ListDetailHeader, type List } from '@/features/lists'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -11,6 +11,7 @@ import { addPlaceholder } from '../copy'
 import {
   AGE_FILTER_OPTIONS,
   detailSummary,
+  listSummary,
   matchesAge,
   SORT_LABELS,
   splitItems,
@@ -20,13 +21,14 @@ import {
   type StatusFilter,
 } from '../filters'
 import { useItems } from '../hooks/useItems'
-import { nextItemPosition, useCreateItem } from '../hooks/useItemMutations'
+import { nextItemPosition, useCreateItem, useUpdateItem } from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
 import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
-import { isChoosableKind, type ChoosableKind } from '../kind'
-import { defaultItemKind, initialStatus, isOutOfMind } from '../status'
+import { isChoosableKind, type AddableKind } from '../kind'
+import { defaultItemKind, initialStatus } from '../status'
+import { childrenOf, sublistSummary, topLevel } from '../sublists'
 import type { Item, MovedItem } from '../types'
-import { AddItemBar } from './AddItemBar'
+import { AddItemBar, type AddItemBarHandle } from './AddItemBar'
 import { FilterChips } from './FilterChips'
 import { ItemRow } from './ItemRow'
 import {
@@ -35,19 +37,34 @@ import {
   InboxEmpty,
   NewListEmpty,
   NotDownloadedEmpty,
+  SublistEmpty,
 } from './ItemsEmptyState'
 import { ItemWorkspace, ListScope } from './ItemWorkspace'
 import { OutOfMindSection } from './OutOfMindSection'
+import { SublistHeader } from './SublistHeader'
 
 /** Lo que tarda un ítem recién completado en bajar a «Fuera de la cabeza» (06 §Interacción). */
 const LINGER_MS = 400
 
 interface ListDetailProps {
   list: List
+  /**
+   * La pantalla de una sublista de esta lista (diseño 12, S2): la misma pantalla con lo de dentro,
+   * su cabecera con «‹ Viajes» y su campo de añadir, que mete lo nuevo dentro. Quien la monta
+   * comprueba que existe (si no, vuelve a la lista).
+   */
+  sublist?: Item
   /** El ítem abierto en el detalle (`?item=` de la ruta). */
   openItemId: string | undefined
   /** Abre (con id) o cierra (sin él) el detalle: la ruta lo refleja en `?item=`. */
   onOpenItem: (itemId: string | undefined) => void
+  /** Entra en una sublista; con `rename`, con el nombre listo para editar. */
+  onOpenSublist: (sublistId: string, options?: { rename?: boolean }) => void
+  /**
+   * Se entró con «Renombrar» (`?rename=` de la ruta, un número distinto cada vez): el nombre de la
+   * sublista aparece enfocado y seleccionado.
+   */
+  renameKey?: number
 }
 
 /**
@@ -56,7 +73,14 @@ interface ListDetailProps {
  * ítem, «Mover a…» y el menú de fila. «En mente» tiene su propia cabecera y filtra por antigüedad
  * en vez de por estado. Montarlo con `key={list.id}` reinicia filtros y orden al cambiar de lista.
  */
-export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
+export function ListDetail({
+  list,
+  sublist,
+  openItemId,
+  onOpenItem,
+  onOpenSublist,
+  renameKey,
+}: ListDetailProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const items = useItems(list.id)
   const movedQuery = useQuery({
@@ -64,6 +88,8 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
     enabled: list.kind === 'inbox',
   })
   const createItem = useCreateItem()
+  const updateItem = useUpdateItem()
+  const addBarRef = useRef<AddItemBarHandle>(null)
   const queryClient = useQueryClient()
   const online = useOnline()
   const { lingering, hold } = useLingering(LINGER_MS)
@@ -74,42 +100,55 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
   const inbox = list.kind === 'inbox'
 
   const all = items.data
-  const { active, outOfMind } = splitItems(all ?? [], list.kind, { lingering, sort })
+  // Lo de dentro de una sublista sale en su pantalla, no suelto en la lista (ADR-010).
+  const shown = all && (sublist ? childrenOf(all, sublist.id) : topLevel(all))
+  const { active, outOfMind } = splitItems(shown ?? [], list.kind, { lingering, sort })
   // El resumen no espera a la animación: cuenta lo que ya está hecho aunque aún se vea arriba.
-  const pending = all ? all.filter((item) => !isOutOfMind(item)).length : 0
-  const summary = all
-    ? detailSummary(list.kind, pending, all.length - pending)
-    : detailSummary(list.kind, list.counters.pending, list.counters.done)
-  const empty = all?.length === 0
+  const summary = !all
+    ? detailSummary(list.kind, list.counters.pending, list.counters.done)
+    : sublist
+      ? sublistSummary(sublist, shown ?? [], list.name)
+      : listSummary(list.kind, all)
+  const empty = shown?.length === 0
 
   // Sin red y sin nada de esta lista en caché (nunca se abrió aquí): se puede añadir igual.
   // (Sin esperar a que la consulta quede en pausa, que tarda lo que su primer intento.)
   const notDownloaded = items.isPending && (items.fetchStatus === 'paused' || !online)
 
   const defaultKind = defaultItemKind(list.kind)
-  const add = (title: string, chosen: ChoosableKind | undefined) => {
+  const add = (title: string, chosen: AddableKind | undefined) => {
     const kind = chosen ?? defaultKind
     // Una lista aún sin descargar empieza vacía en caché, para que lo añadido se vea; al volver
     // la red se descarga entera. La posición la pone el servidor (no sabemos cuál es la última).
     if (!all) queryClient.setQueryData(itemsQueryOptions(list.id).queryKey, [])
+    const id = crypto.randomUUID()
     createItem.mutate({
-      id: crypto.randomUUID(),
+      id,
       listId: list.id,
+      parentId: sublist?.id ?? null,
       title,
       kind,
       status: initialStatus(kind),
       position: all ? nextItemPosition(all) : undefined,
     })
+    // Una sublista se crea para meterle cosas: se entra en ella (decisión de Fran; diseño 12, S3).
+    if (kind === 'sublist') onOpenSublist(id)
   }
 
   const showFilters = all !== undefined && (inbox ? active.length > 0 : !empty)
   const addBar = (all ?? notDownloaded) && (
     <AddItemBar
+      key={sublist?.id ?? list.id}
+      handle={addBarRef}
       variant={isDesktop ? 'inline' : 'docked'}
-      placeholder={addPlaceholder(list, empty)}
-      autoFocus={empty}
+      placeholder={sublist ? `Añadir a ${sublist.title}…` : addPlaceholder(list, empty)}
+      autoFocus={empty && renameKey === undefined}
       onAdd={add}
-      kinds={isChoosableKind(defaultKind) ? { defaultKind, listName: list.name } : undefined}
+      kinds={
+        isChoosableKind(defaultKind)
+          ? { defaultKind, listName: sublist?.title ?? list.name, sublists: !sublist }
+          : undefined
+      }
     />
   )
 
@@ -120,6 +159,9 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
       openItemId={openItemId}
       onOpenItem={onOpenItem}
       onFinish={hold}
+      onOpenSublist={(item, options) => {
+        onOpenSublist(item.id, options)
+      }}
     >
       <ListScope list={list}>
         <div
@@ -130,8 +172,27 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
         >
           {inbox ? (
             <InboxHeader inbox={list} summary={summary} />
+          ) : sublist ? (
+            <SublistHeader
+              sublist={sublist}
+              list={list}
+              summary={summary}
+              renameKey={renameKey}
+              onRename={(title) => {
+                updateItem.mutate({ item: sublist, patch: { title } })
+              }}
+            />
           ) : (
-            <ListDetailHeader list={list} summary={summary} />
+            <ListDetailHeader
+              list={list}
+              summary={summary}
+              onNewSublist={() => {
+                // Después de que el menú se cierre y devuelva el foco a su botón.
+                window.setTimeout(() => {
+                  addBarRef.current?.startWith('sublist')
+                }, 350)
+              }}
+            />
           )}
 
           {showFilters && (
@@ -199,6 +260,7 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
             ) : (
               <ListContent
                 list={list}
+                sublist={sublist}
                 active={active}
                 outOfMind={outOfMind}
                 filter={statusFilter}
@@ -229,7 +291,9 @@ function ListContent({
   filter,
   empty,
   isDesktop,
-}: ContentProps & { list: List; filter: StatusFilter }) {
+  sublist,
+}: ContentProps & { list: List; sublist: Item | undefined; filter: StatusFilter }) {
+  if (empty && sublist) return <SublistEmpty sublist={sublist} list={list} />
   if (empty) return <NewListEmpty list={list} isDesktop={isDesktop} />
 
   if (filter === 'closed') {

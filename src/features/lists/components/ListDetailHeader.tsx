@@ -11,6 +11,8 @@ interface ListDetailHeaderProps {
   list: List
   /** «4 pendientes · 2 hechas», calculado con los ítems ya cargados. */
   summary: string
+  /** «Nueva sublista» en el menú (diseño 12, S7). */
+  onNewSublist?: () => void
 }
 
 /**
@@ -19,11 +21,17 @@ interface ListDetailHeaderProps {
  * móvil el menú ··· va en esa fila y el icono es de 52 px; en escritorio el icono es de 56 px y el
  * menú va a la derecha del título. El menú es el de las tarjetas de Inicio.
  */
-export function ListDetailHeader({ list, summary }: ListDetailHeaderProps) {
+export function ListDetailHeader({ list, summary, onNewSublist }: ListDetailHeaderProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [menuOpen, setMenuOpen] = useState(false)
   const menu = (
-    <ListCardMenu list={list} open={menuOpen} onOpenChange={setMenuOpen} variant="header" />
+    <ListCardMenu
+      list={list}
+      open={menuOpen}
+      onOpenChange={setMenuOpen}
+      variant="header"
+      onNewSublist={onNewSublist}
+    />
   )
 
   return (

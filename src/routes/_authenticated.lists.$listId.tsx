@@ -3,7 +3,7 @@ import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { z } from 'zod'
 
-import { itemsQueryOptions, ListDetail } from '@/features/items'
+import { itemsQueryOptions, ListDetail, useOpenSublist } from '@/features/items'
 import { listsQueryOptions, useLists } from '@/features/lists'
 
 /**
@@ -51,6 +51,7 @@ function ListDetailPage() {
     },
     [navigate],
   )
+  const openSublist = useOpenSublist(listId)
 
   if (lists.isError) {
     return (
@@ -67,5 +68,13 @@ function ListDetailPage() {
   // de esta pantalla acaban aquí, y el aviso «Deshacer» sale ya en Inicio).
   if (!list) return <Navigate to="/" replace />
 
-  return <ListDetail key={list.id} list={list} openItemId={item} onOpenItem={openItem} />
+  return (
+    <ListDetail
+      key={list.id}
+      list={list}
+      openItemId={item}
+      onOpenItem={openItem}
+      onOpenSublist={openSublist}
+    />
+  )
 }
