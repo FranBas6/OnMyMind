@@ -91,6 +91,14 @@ describe('destinationChips', () => {
     ).toEqual(['casa', 'regalos', 'en-mente', 'trabajo'])
   })
 
+  it('«En mente» sale una sola vez si es la lista por defecto o la de origen', () => {
+    const chips = ['en-mente', 'trabajo', 'casa', 'tech']
+    expect(
+      ids(destinationChips(all, { chosenId: inbox.id, originId: undefined, defaultId: inbox.id })),
+    ).toEqual(chips)
+    expect(ids(destinationChips(all, { chosenId: inbox.id, originId: inbox.id }))).toEqual(chips)
+  })
+
   it('a igual uso, manda el orden de las listas', () => {
     expect(
       ids(destinationChips([inbox, regalos, libros], { chosenId: undefined, originId: undefined })),

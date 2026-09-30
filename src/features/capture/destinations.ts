@@ -9,7 +9,7 @@ const usage = (list: List) => list.counters.pending + list.counters.done
 interface ChipOptions {
   chosenId: string | undefined
   originId: string | undefined
-  /** La lista por defecto de Perfil (1.13), si no es «En mente». */
+  /** La lista por defecto de Perfil (1.13); puede ser la propia «En mente». */
   defaultId?: string | null | undefined
 }
 
@@ -31,12 +31,22 @@ export function destinationChips(
     .filter((list) => list.kind !== 'inbox' && list.id !== originId && list.id !== preferred?.id)
     .sort((a, b) => usage(b) - usage(a) || a.position - b.position)
 
-  const base = [origin, preferred, inbox, ...others]
-    .filter((list): list is List => list !== undefined)
-    .slice(0, CHIP_COUNT)
+  // Una lista sale una sola vez aunque sea a la vez origen, la de por defecto y «En mente» (si
+  // en Perfil la lista por defecto es «En mente», o la captura se abre desde dentro de ella).
+  const base = unique([origin, preferred, inbox, ...others]).slice(0, CHIP_COUNT)
   const chosen = lists.find((list) => list.id === chosenId)
   if (!chosen || base.some((list) => list.id === chosen.id)) return base
   return [chosen, ...base].slice(0, CHIP_COUNT)
+}
+
+/** Las listas en su orden, sin huecos ni repetidas. */
+function unique(lists: readonly (List | undefined)[]): List[] {
+  const seen = new Set<string>()
+  return lists.filter((list): list is List => {
+    if (!list || seen.has(list.id)) return false
+    seen.add(list.id)
+    return true
+  })
 }
 
 /**
