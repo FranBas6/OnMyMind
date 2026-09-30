@@ -211,6 +211,7 @@ export function useCreateItem() {
               id: item.id,
               listId: item.listId,
               kind: item.kind,
+              parentId: null,
               title: item.title.trim(),
               notes: null,
               status: item.status,

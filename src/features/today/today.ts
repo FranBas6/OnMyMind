@@ -1,6 +1,12 @@
 import { addDays, differenceInCalendarDays, format, isSameYear, startOfDay } from 'date-fns'
 
-import { isFinalStatus, PRIORITY_LABELS, type Item, type Priority } from '@/features/items'
+import {
+  isActiveSublistStatus,
+  isFinalStatus,
+  PRIORITY_LABELS,
+  type Item,
+  type Priority,
+} from '@/features/items'
 import type { List } from '@/features/lists'
 
 /**
@@ -93,6 +99,14 @@ function byUrgency(a: Item, b: Item): number {
     rank(a) - rank(b) ||
     a.position - b.position
   )
+}
+
+/**
+ * Si una fila de la consulta de Hoy sale: lo de dentro de una sublista pausada o hecha se calla
+ * (ADR-010). `parent` es el estado de su sublista (`parent:parent_id(status)`), o `null`.
+ */
+export function showsInToday(row: { parent: { status: string } | null }): boolean {
+  return !row.parent || isActiveSublistStatus(row.parent.status)
 }
 
 /**

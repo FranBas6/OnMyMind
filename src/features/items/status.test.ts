@@ -4,6 +4,7 @@ import {
   checkboxState,
   defaultItemKind,
   initialStatus,
+  isActiveSublistStatus,
   isFinalStatus,
   isOutOfMind,
   isValidStatus,
@@ -20,6 +21,7 @@ describe('estados por tipo', () => {
     ['task', ['pending', 'in_progress', 'done']],
     ['shopping', ['pending', 'bought', 'discarded']],
     ['event', ['upcoming', 'cancelled']],
+    ['sublist', ['pending', 'in_progress', 'paused', 'done']],
   ] as const)('%s admite %j (los de la función item_statuses)', (kind, statuses) => {
     expect(STATUSES_BY_KIND[kind]).toEqual(statuses)
   })
@@ -62,6 +64,19 @@ describe('estados por tipo', () => {
     ['upcoming', false],
   ] as const)('%s es final: %s', (status, final) => {
     expect(isFinalStatus(status)).toBe(final)
+  })
+})
+
+describe('sublistas', () => {
+  it('pausada no es terminada: no baja a «Fuera de la cabeza»', () => {
+    expect(isFinalStatus('paused')).toBe(false)
+  })
+
+  it('lo de dentro solo cuenta con la sublista pendiente o en curso', () => {
+    expect(isActiveSublistStatus('pending')).toBe(true)
+    expect(isActiveSublistStatus('in_progress')).toBe(true)
+    expect(isActiveSublistStatus('paused')).toBe(false)
+    expect(isActiveSublistStatus('done')).toBe(false)
   })
 })
 

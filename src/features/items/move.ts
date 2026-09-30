@@ -58,6 +58,8 @@ export function moveLossLabel(loss: MoveLoss): string | null {
 /** Los cambios que se escriben en `items` al mover (el cliente calcula; los triggers validan). */
 export interface MovePatch {
   listId: string
+  /** Mover a otra lista saca el ítem de su sublista (ADR-010): allí queda como ítem normal. */
+  parentId: null
   kind: ItemKind
   status: ItemStatus
   priority: Item['priority']
@@ -79,6 +81,7 @@ export function buildMovePatch(
   const toInbox = to.kind === 'inbox'
   return {
     listId: to.id,
+    parentId: null,
     kind,
     status: kind === item.kind ? item.status : translateStatus(item.status, kind),
     priority: toInbox ? null : item.priority,

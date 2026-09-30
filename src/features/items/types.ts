@@ -14,6 +14,8 @@ export interface Item {
   listId: string
   /** El tipo es del ítem, no de la lista (ADR-009): una lista puede mezclar tipos. */
   kind: ItemKind
+  /** La sublista en la que está (ADR-010), de su misma lista; `null` si está suelta en la lista. */
+  parentId: string | null
   title: string
   notes: string | null
   status: ItemStatus

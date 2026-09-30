@@ -39,6 +39,7 @@ export type Database = {
           left_inbox_id: string | null
           list_id: string
           notes: string | null
+          parent_id: string | null
           position: number
           price_cents: number | null
           recurrence: string | null
@@ -62,6 +63,7 @@ export type Database = {
           left_inbox_id?: string | null
           list_id: string
           notes?: string | null
+          parent_id?: string | null
           position?: number
           price_cents?: number | null
           recurrence?: string | null
@@ -85,6 +87,7 @@ export type Database = {
           left_inbox_id?: string | null
           list_id?: string
           notes?: string | null
+          parent_id?: string | null
           position?: number
           price_cents?: number | null
           recurrence?: string | null
@@ -127,6 +130,13 @@ export type Database = {
             columns: ['list_id']
             isOneToOne: false
             referencedRelation: 'lists'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'items_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'items'
             referencedColumns: ['id']
           },
         ]
@@ -274,6 +284,7 @@ export type Database = {
         Args: { p_kind: Database['public']['Enums']['list_kind'] }
         Returns: Database['public']['Enums']['item_kind']
       }
+      is_active_sublist_status: { Args: { p_status: string }; Returns: boolean }
       is_final_status: { Args: { p_status: string }; Returns: boolean }
       is_list_member: { Args: { p_list_id: string }; Returns: boolean }
       item_statuses: {
@@ -286,7 +297,7 @@ export type Database = {
       }
     }
     Enums: {
-      item_kind: 'note' | 'task' | 'shopping' | 'event'
+      item_kind: 'note' | 'task' | 'shopping' | 'event' | 'sublist'
       list_kind: 'inbox' | 'tasks' | 'shopping' | 'events' | 'custom'
       member_role: 'owner' | 'editor'
     }
@@ -403,7 +414,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      item_kind: ['note', 'task', 'shopping', 'event'],
+      item_kind: ['note', 'task', 'shopping', 'event', 'sublist'],
       list_kind: ['inbox', 'tasks', 'shopping', 'events', 'custom'],
       member_role: ['owner', 'editor'],
     },

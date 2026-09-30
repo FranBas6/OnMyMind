@@ -15,6 +15,7 @@ export { ITEM_COLUMNS, mapItemRow } from './schemas'
 export {
   checkboxState,
   initialStatus,
+  isActiveSublistStatus,
   isFinalStatus,
   isOutOfMind,
   newItemKindAndStatus,

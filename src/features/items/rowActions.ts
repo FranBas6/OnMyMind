@@ -17,6 +17,7 @@ const FINISH_LABEL: Record<ItemKind, string> = {
   task: 'Hecha',
   shopping: 'Comprado',
   event: 'Cancelado',
+  sublist: 'Hecha',
 }
 
 const REOPEN_LABEL: Record<ItemKind, string> = {
@@ -24,6 +25,7 @@ const REOPEN_LABEL: Record<ItemKind, string> = {
   task: 'Marcar pendiente',
   shopping: 'Marcar pendiente',
   event: 'Marcar próximo',
+  sublist: 'Marcar pendiente',
 }
 
 /**

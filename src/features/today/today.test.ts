@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Item } from '@/features/items'
 import type { List } from '@/features/lists'
 
-import { dayKey, doneTodayLabel, groupToday, overdueLabel, todayMeta } from './today'
+import { dayKey, doneTodayLabel, groupToday, overdueLabel, showsInToday, todayMeta } from './today'
 
 // Fechas locales (`new Date(año, mes, día…)`): el test vale en cualquier zona horaria.
 const now = new Date(2026, 8, 28, 10, 0)
@@ -28,6 +28,7 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
     id,
     listId: 'casa',
     kind: 'task',
+    parentId: null,
     title: id,
     notes: null,
     status: 'pending',
@@ -171,5 +172,14 @@ describe('textos', () => {
     expect(dayKey(now)).toBe('2026-09-28')
     expect(doneTodayLabel(1)).toBe('1 hecha hoy')
     expect(doneTodayLabel(3)).toBe('3 hechas hoy')
+  })
+})
+
+describe('showsInToday', () => {
+  it('lo suelto en la lista y lo de sublistas activas sale; lo de pausadas o hechas, no', () => {
+    expect(showsInToday({ parent: null })).toBe(true)
+    expect(showsInToday({ parent: { status: 'in_progress' } })).toBe(true)
+    expect(showsInToday({ parent: { status: 'paused' } })).toBe(false)
+    expect(showsInToday({ parent: { status: 'done' } })).toBe(false)
   })
 })

@@ -104,6 +104,7 @@ export async function moveItem(itemId: string, patch: MovePatch): Promise<void> 
     .update({
       list_id: patch.listId,
       kind: patch.kind,
+      parent_id: patch.parentId,
       status: patch.status,
       fields: fieldsFor(patch.priority),
       due_at: patch.dueAt ? patch.dueAt.toISOString() : null,
@@ -148,6 +149,7 @@ export async function restoreItem(item: Item): Promise<void> {
       list_id: item.listId,
       created_by: createdBy,
       kind: item.kind,
+      parent_id: item.parentId,
       title: item.title,
       notes: item.notes,
       status: item.status,

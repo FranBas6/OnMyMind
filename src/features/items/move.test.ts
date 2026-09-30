@@ -58,6 +58,7 @@ describe('buildMovePatch', () => {
   it('una tarea en curso que va a «En mente» queda como captura pendiente, sin prioridad ni fecha', () => {
     expect(buildMovePatch(tarea, { id: 'i', kind: 'inbox' })).toEqual({
       listId: 'i',
+      parentId: null,
       kind: 'note',
       status: 'pending',
       priority: null,
@@ -71,7 +72,12 @@ describe('buildMovePatch', () => {
     expect(buildMovePatch(tarea, { id: 'c', kind: 'shopping' })).toEqual({
       ...tarea,
       listId: 'c',
+      parentId: null,
     })
+  })
+
+  it('mover algo de dentro de una sublista a otra lista lo saca de ella (ADR-010)', () => {
+    expect(buildMovePatch(tarea, { id: 'c', kind: 'shopping' }).parentId).toBeNull()
   })
 
   it('«leche», de «En mente» a Compras, pasa a ser una compra pendiente', () => {

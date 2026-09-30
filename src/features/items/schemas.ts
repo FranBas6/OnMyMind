@@ -15,7 +15,7 @@ const itemKindSchema = z.enum(ITEM_KINDS)
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, kind, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at'
+  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at'
 
 /** Límite de las notas: el `check` de `items.notes`. */
 export const ITEM_NOTES_MAX_LENGTH = 5000
@@ -24,6 +24,7 @@ export interface ItemRow {
   id: string
   list_id: string
   kind: string
+  parent_id: string | null
   title: string
   notes: string | null
   status: string
@@ -46,6 +47,7 @@ export function mapItemRow(row: ItemRow): Item {
     id: row.id,
     listId: row.list_id,
     kind: itemKindSchema.parse(row.kind),
+    parentId: row.parent_id,
     title: row.title,
     notes: row.notes,
     status: itemStatusSchema.parse(row.status),

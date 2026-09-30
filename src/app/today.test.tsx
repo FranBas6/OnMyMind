@@ -38,6 +38,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     id,
     listId: 'casa',
     kind: 'task',
+    parentId: null,
     title,
     notes: null,
     status: 'pending',

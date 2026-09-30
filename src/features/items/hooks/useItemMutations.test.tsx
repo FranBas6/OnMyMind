@@ -34,6 +34,7 @@ const grifo: Item = {
   id: 'grifo',
   listId: 'casa',
   kind: 'task',
+  parentId: null,
   title: 'Arreglar el grifo',
   notes: null,
   status: 'pending',

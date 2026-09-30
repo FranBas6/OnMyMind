@@ -10,6 +10,7 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
     id,
     listId: 'casa',
     kind: 'task',
+    parentId: null,
     title: id,
     notes: null,
     status: 'pending',

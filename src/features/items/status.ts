@@ -9,14 +9,16 @@ export const ITEM_STATUSES = [
   'discarded',
   'upcoming',
   'cancelled',
+  'paused',
 ] as const
 export type ItemStatus = (typeof ITEM_STATUSES)[number]
 
 /**
  * Tipos de ítem (enum `item_kind`, ADR-009): el tipo es de cada ítem, no de su lista. `note` es lo
  * de «En mente», aún sin tipo; al moverse a otra lista toma el tipo por defecto de esa lista.
+ * `sublist` es una sublista (ADR-010): un ítem que se abre y tiene cosas dentro (`parentId`).
  */
-export const ITEM_KINDS = ['note', 'task', 'shopping', 'event'] as const
+export const ITEM_KINDS = ['note', 'task', 'shopping', 'event', 'sublist'] as const
 export type ItemKind = (typeof ITEM_KINDS)[number]
 
 /** Estados válidos de cada tipo; el primero es el inicial (función `item_statuses` de la base). */
@@ -25,6 +27,7 @@ export const STATUSES_BY_KIND: Record<ItemKind, readonly ItemStatus[]> = {
   task: ['pending', 'in_progress', 'done'],
   shopping: ['pending', 'bought', 'discarded'],
   event: ['upcoming', 'cancelled'],
+  sublist: ['pending', 'in_progress', 'paused', 'done'],
 }
 
 const DEFAULT_ITEM_KIND: Record<ListKind, ItemKind> = {
@@ -59,6 +62,15 @@ export const STATUS_LABELS: Record<ItemStatus, string> = {
   discarded: 'Descartado',
   upcoming: 'Próximo',
   cancelled: 'Cancelado',
+  paused: 'Pausada',
+}
+
+/**
+ * Si lo de dentro de una sublista cuenta: solo mientras está pendiente o en curso. Pausada o
+ * hecha, se calla en Hoy y en los contadores (ADR-010; función `is_active_sublist_status`).
+ */
+export function isActiveSublistStatus(status: string): boolean {
+  return status === 'pending' || status === 'in_progress'
 }
 
 export function isFinalStatus(status: ItemStatus): boolean {
