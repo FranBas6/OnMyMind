@@ -4,11 +4,12 @@ import { useId, useState, type ReactNode } from 'react'
 import { formatCaptureAge } from '@/lib/date'
 import { cn } from '@/lib/utils'
 
-import { checkboxState } from '../status'
+import { kindMark } from '../kind'
+import { STATUS_LABELS } from '../status'
 import type { Item, MovedItem } from '../types'
+import { ItemControl } from './ItemControl'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { RowTitle } from './RowTitle'
-import { StatusCheckbox } from './StatusCheckbox'
 import { SwipeableRow } from './SwipeableRow'
 
 interface OutOfMindSectionProps {
@@ -132,17 +133,21 @@ export function FoldHeading({
 const ROW =
   'relative flex min-h-10 animate-in items-center gap-3.5 rounded-[18px] px-4 py-1 duration-200 fade-in md:gap-4 md:rounded-2xl md:px-[18px] md:py-2'
 
-/** Una fila terminada: tachada, con el checkbox atenuado; `aside`, a la derecha (en Hoy, su lista). */
+/**
+ * Una fila terminada: tachada, con el control de su tipo atenuado; `aside`, a la derecha (en Hoy,
+ * su lista). Si no es del tipo por defecto de la lista, lleva su estado («Cable HDMI · Comprado»,
+ * diseño 12), porque el título solo no dice cómo terminó.
+ */
 export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
   const actions = useItemActions()
+  const status = kindMark(item.kind, actions.list.kind) ? STATUS_LABELS[item.status] : null
   return (
     <SwipeableRow
       item={item}
       surfaceClassName={cn(ROW, 'bg-background hover:bg-fill', rowHighlight(actions, item))}
     >
-      <StatusCheckbox
-        state={checkboxState(item.status)}
-        label={item.title}
+      <ItemControl
+        item={item}
         onToggle={() => {
           actions.toggle(item)
         }}
@@ -151,7 +156,9 @@ export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
       <RowTitle
         item={item}
         className="truncate text-[15px] font-normal text-subtle-foreground line-through"
-      />
+      >
+        {status ? `${item.title} · ${status}` : undefined}
+      </RowTitle>
       {aside}
     </SwipeableRow>
   )

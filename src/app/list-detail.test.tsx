@@ -274,9 +274,10 @@ describe('detalle de «En mente»', () => {
     expect(screen.getByRole('button', { name: /Ordenar: más antigua/ })).toBeInTheDocument()
   })
 
-  const pilas = item('pilas', 'Comprar pilas AA', { listId: 'i' })
+  const pilas = item('pilas', 'Comprar pilas AA', { listId: 'i', kind: 'note' })
   const dni = item('dni-i', 'Renovar el DNI', {
     listId: 'i',
+    kind: 'note',
     createdAt: new Date(Date.now() - 20 * 24 * HOUR),
   })
 

@@ -49,10 +49,10 @@ const grifo: Item = {
   leftInboxAt: null,
 }
 
-function setup() {
+function setup(listItems: Item[] = [grifo]) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   queryClient.setQueryData(queryKeys.lists.all, [casa])
-  queryClient.setQueryData(queryKeys.items.byList('casa'), [grifo])
+  queryClient.setQueryData(queryKeys.items.byList('casa'), listItems)
   queryClient.setQueryData(queryKeys.items.today('2026-09-28'), [grifo])
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -124,6 +124,37 @@ describe('mutaciones de ítems', () => {
     await waitFor(() => {
       expect(today()).toEqual([])
     })
+  })
+
+  it('cambiar el tipo cambia la fila y, si la vuelve pasada, el contador; si falla, vuelve', async () => {
+    let reject: (error: Error) => void = () => undefined
+    vi.mocked(api.updateItem).mockReturnValue(
+      new Promise((_, fail) => {
+        reject = fail
+      }),
+    )
+    const atrasada = { ...grifo, priority: 'high' as const, dueAt: new Date('2026-09-01T00:00:00') }
+    const { wrapper, items, counters } = setup([atrasada])
+    const { result } = renderHook(() => useUpdateItem(), { wrapper })
+
+    act(() => {
+      result.current.mutate({
+        item: atrasada,
+        patch: { kind: 'event', status: 'upcoming', priority: null },
+      })
+    })
+    await waitFor(() => {
+      expect(items()?.[0]).toMatchObject({ kind: 'event', status: 'upcoming', priority: null })
+    })
+    // Un evento con la fecha pasada ya está fuera de la cabeza, como en `list_counters`.
+    expect(counters()).toMatchObject({ pending: 0, done: 1 })
+
+    reject(new Error('Estado no válido'))
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true)
+    })
+    expect(items()?.[0]).toMatchObject({ kind: 'task', status: 'pending' })
+    expect(counters()).toMatchObject({ pending: 1, done: 0 })
   })
 
   it('si añadir falla, el ítem desaparece y los contadores vuelven', async () => {

@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils'
 
 import { useCreateList, useUpdateList } from '../hooks/useListMutations'
 import { CREATABLE_KINDS, listFormSchema, type ListFormValues } from '../schemas'
-import { itemCount } from '../templates'
 import type { List } from '../types'
 import { ColorPicker } from './ColorPicker'
 import { KindPicker } from './KindPicker'
@@ -93,7 +92,7 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
   const name = useWatch({ control, name: 'name' })
   const color = useWatch({ control, name: 'color' })
   const initial = name.trim().charAt(0).toUpperCase() || '·'
-  const kindLocked = list ? itemCount(list) > 0 : false
+  const kindLabelId = useId()
 
   const onSubmit = handleSubmit((values: ListFormValues) => {
     if (list) {
@@ -212,17 +211,29 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
           render={({ field }) => <ColorPicker value={field.value} onChange={field.onChange} />}
         />
 
-        <div className="flex flex-col gap-2.5">
-          <p className="px-1 text-xs font-bold tracking-[0.06em] text-subtle-foreground uppercase">
-            Tipo de lista
+        {/* El tipo es de cada ítem (diseño 12, T6): la lista solo dice con cuál nacen. */}
+        <div className="flex flex-col">
+          <p
+            id={kindLabelId}
+            className="px-1 pb-1 text-xs font-bold tracking-[0.06em] text-subtle-foreground uppercase"
+          >
+            Tipo por defecto
+          </p>
+          <p className="px-1 pb-2.5 text-[13px] leading-[1.4] text-subtle-foreground">
+            Con el que nacen las cosas nuevas. Cada una puede cambiar el suyo después.
           </p>
           <Controller
             control={control}
             name="kind"
             render={({ field }) => (
-              <KindPicker value={field.value} onChange={field.onChange} locked={kindLocked} />
+              <KindPicker labelledBy={kindLabelId} value={field.value} onChange={field.onChange} />
             )}
           />
+          {list && (
+            <p className="px-1 pt-3 text-[13px] leading-[1.4] text-subtle-foreground">
+              Cambiarlo no toca lo que ya hay en la lista.
+            </p>
+          )}
         </div>
 
         {isDesktop && (

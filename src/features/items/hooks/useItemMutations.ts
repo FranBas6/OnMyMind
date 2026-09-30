@@ -15,7 +15,7 @@ import {
   type NewItem,
 } from '../api'
 import { buildMovePatch } from '../move'
-import { isFinalStatus } from '../status'
+import { isFinalStatus, isOutOfMind } from '../status'
 import type { Item, ItemPatch, ItemStatus, MovedItem } from '../types'
 
 /**
@@ -190,7 +190,20 @@ function patchItem(item: Item, patch: ItemPatch): Item {
     next.status = patch.status
     next.completedAt = isFinalStatus(patch.status) ? (item.completedAt ?? new Date()) : null
   }
+  if (patch.kind !== undefined) next.kind = patch.kind
+  if (patch.recurrence !== undefined) next.recurrence = patch.recurrence
   return next
+}
+
+/**
+ * Diferencia en los contadores entre dos versiones de un ítem. Mira si está fuera de la cabeza
+ * (`isOutOfMind`) y no solo el estado: una tarea con la fecha pasada que se convierte en evento
+ * pasa a contar como hecha, igual que en la vista `list_counters`.
+ */
+function itemDelta(before: Item, after: Item): Counts {
+  const was = isOutOfMind(before) ? 1 : 0
+  const is = isOutOfMind(after) ? 1 : 0
+  return { pending: was - is, done: is - was }
 }
 
 /**
@@ -323,9 +336,9 @@ export function useUpdateItem() {
       if (patch.priority !== undefined) previous.priority = before.priority
       if (patch.dueAt !== undefined) previous.dueAt = before.dueAt
       if (patch.status !== undefined) previous.status = before.status
-      const delta = patch.status
-        ? statusDelta(before.status, patch.status)
-        : { pending: 0, done: 0 }
+      if (patch.kind !== undefined) previous.kind = before.kind
+      if (patch.recurrence !== undefined) previous.recurrence = before.recurrence
+      const delta = itemDelta(before, patchItem(before, patch))
       replace(item, patch)
       adjustCounters(item.listId, delta)
       return { previous, delta }

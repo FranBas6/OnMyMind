@@ -77,3 +77,12 @@ export function formatMonthCaption(month: Date): string {
   const text = format(month, 'LLLL yyyy')
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
+
+/**
+ * Fecha de un evento en su fila (diseño 12): «Mañana · 10:00», «12 oct · 07:45» o, si es de día
+ * entero, solo el día («Hoy», «3 oct»). Nunca en rojo: un evento pasado ya está fuera de la cabeza.
+ */
+export function formatEventDate(date: Date, allDay: boolean, now: Date = new Date()): string {
+  const day = formatDueDate(date, now).text
+  return allDay ? day : `${day} · ${format(date, 'HH:mm')}`
+}

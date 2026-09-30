@@ -1,6 +1,7 @@
 export { rowHighlight, useItemActions } from './components/itemActionsContext'
 export { ItemRowDotsMenu } from './components/ItemRowMenu'
 export { FilterChips } from './components/FilterChips'
+export { ItemControl } from './components/ItemControl'
 export { ItemWorkspace, ListScope } from './components/ItemWorkspace'
 export { ListDetail } from './components/ListDetail'
 export { DoneRow, FoldHeading } from './components/OutOfMindSection'

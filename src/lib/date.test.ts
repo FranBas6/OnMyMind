@@ -4,6 +4,7 @@ import {
   formatCaptureAge,
   formatDueDate,
   formatDueDateLong,
+  formatEventDate,
   formatHeaderDate,
   formatMonthCaption,
 } from './date'
@@ -66,5 +67,18 @@ describe('formatDueDateLong', () => {
 
   it('mes del calendario con mayúscula', () => {
     expect(formatMonthCaption(new Date(2026, 8, 1))).toBe('Septiembre 2026')
+  })
+})
+
+describe('formatEventDate', () => {
+  const now = new Date(2026, 8, 30, 9, 0)
+
+  it('el día relativo y la hora (diseño 12: «Mañana · 10:00»)', () => {
+    expect(formatEventDate(new Date(2026, 9, 1, 10, 0), false, now)).toBe('Mañana · 10:00')
+    expect(formatEventDate(new Date(2026, 9, 12, 7, 45), false, now)).toBe('12 oct · 07:45')
+  })
+
+  it('de día entero, solo el día', () => {
+    expect(formatEventDate(new Date(2026, 8, 30), true, now)).toBe('Hoy')
   })
 })

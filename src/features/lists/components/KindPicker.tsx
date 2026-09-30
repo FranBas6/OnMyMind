@@ -21,80 +21,69 @@ const isCreatable = (kind: ListKind): kind is CreatableKind =>
 interface KindPickerProps {
   value: CreatableKind
   onChange: (kind: CreatableKind) => void
-  /** Con ítems el tipo no se puede cambiar (02 §Crear / editar lista). */
-  locked?: boolean
+  /** La etiqueta visible del grupo («Tipo por defecto»). */
+  labelledBy: string
 }
 
 /**
- * Cuatro tarjetas de tipo en rejilla 2 × 2 (diseño 04 Listas). «Personalizada» se ve pero no se
- * puede elegir hasta la 1.14 («Pronto»). Si la lista ya tiene ítems, todo se atenúa y se explica.
+ * Cuatro tarjetas de tipo en rejilla 2 × 2 (diseño 04 Listas). Es el tipo por defecto de la lista
+ * (diseño 12, T6): se puede cambiar aunque tenga ítems, porque cada uno guarda el suyo.
+ * «Personalizada» se ve pero no se puede elegir hasta la 2a.7 («Pronto»).
  */
-export function KindPicker({ value, onChange, locked = false }: KindPickerProps) {
+export function KindPicker({ value, onChange, labelledBy }: KindPickerProps) {
   return (
-    <div className="flex flex-col gap-3">
-      <div
-        role="radiogroup"
-        aria-label="Tipo de lista"
-        aria-disabled={locked || undefined}
-        className={cn('grid grid-cols-2 gap-2.5', locked && 'opacity-55')}
-      >
-        {OPTIONS.map(({ kind, icon: Icon }) => {
-          const template = KIND_TEMPLATES[kind]
-          const selected = kind === value
-          const soon = !isCreatable(kind)
-          return (
-            <button
-              key={kind}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              disabled={locked || soon}
-              onClick={() => {
-                if (isCreatable(kind)) onChange(kind)
-              }}
+    <div role="radiogroup" aria-labelledby={labelledBy} className="grid grid-cols-2 gap-2.5">
+      {OPTIONS.map(({ kind, icon: Icon }) => {
+        const template = KIND_TEMPLATES[kind]
+        const selected = kind === value
+        const soon = !isCreatable(kind)
+        return (
+          <button
+            key={kind}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            disabled={soon}
+            onClick={() => {
+              if (isCreatable(kind)) onChange(kind)
+            }}
+            className={cn(
+              'relative flex flex-col gap-1.5 rounded-[18px] border bg-card p-3.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              selected
+                ? 'border-2 border-primary bg-brand-tint p-[13px]'
+                : 'border-border-soft enabled:hover:border-border enabled:hover:bg-fill/50',
+              soon && 'opacity-60',
+            )}
+          >
+            <Icon
+              aria-hidden
+              className={cn('size-[22px]', selected ? 'text-primary' : 'text-foreground')}
+              strokeWidth={2}
+            />
+            <span
               className={cn(
-                'relative flex flex-col gap-1.5 rounded-[18px] border bg-card p-3.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                selected
-                  ? 'border-2 border-primary bg-brand-tint p-[13px]'
-                  : 'border-border-soft enabled:hover:border-border enabled:hover:bg-fill/50',
-                soon && 'opacity-60',
+                'font-display text-sm font-bold',
+                selected ? 'text-primary-strong' : 'text-foreground',
               )}
             >
-              <Icon
-                aria-hidden
-                className={cn('size-[22px]', selected ? 'text-primary' : 'text-foreground')}
-                strokeWidth={2}
-              />
-              <span
-                className={cn(
-                  'font-display text-sm font-bold',
-                  selected ? 'text-primary-strong' : 'text-foreground',
-                )}
-              >
-                {template.label}
-              </span>
-              <span
-                className={cn(
-                  'text-xs leading-[1.4]',
-                  selected ? 'text-primary' : 'text-muted-foreground',
-                )}
-              >
-                {template.description}
-              </span>
-              {soon && (
-                <span className="absolute top-3 right-3 rounded-[7px] bg-fill px-2 py-[3px] text-[11px] font-bold text-subtle-foreground">
-                  Pronto
-                </span>
+              {template.label}
+            </span>
+            <span
+              className={cn(
+                'text-xs leading-[1.4]',
+                selected ? 'text-primary' : 'text-muted-foreground',
               )}
-            </button>
-          )
-        })}
-      </div>
-      {locked && (
-        <p className="-mt-1.5 text-[13px] leading-[1.4] text-subtle-foreground">
-          El tipo no se puede cambiar: la lista ya tiene ítems.
-        </p>
-      )}
+            >
+              {template.description}
+            </span>
+            {soon && (
+              <span className="absolute top-3 right-3 rounded-[7px] bg-fill px-2 py-[3px] text-[11px] font-bold text-subtle-foreground">
+                Pronto
+              </span>
+            )}
+          </button>
+        )
+      })}
     </div>
   )
 }

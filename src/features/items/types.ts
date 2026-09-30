@@ -52,4 +52,8 @@ export interface ItemPatch {
   priority?: Priority | null
   dueAt?: Date | null
   status?: ItemStatus
+  /** Cambiar el tipo (fila «Tipo», `changeKindPatch`): llega con su estado traducido. */
+  kind?: ItemKind
+  /** Se quita al pasar a un tipo que no la usa (y vuelve si el cambio falla). */
+  recurrence?: string | null
 }

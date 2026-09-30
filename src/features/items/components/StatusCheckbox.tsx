@@ -14,12 +14,14 @@ interface StatusCheckboxProps {
   large?: boolean
   /** En Hoy, vacío lleva el borde en el color de su lista (pantalla 7). */
   tone?: ListColor
+  /** Las compras llevan un cuadrado redondeado en vez del círculo (diseño 12). */
+  shape?: 'circle' | 'square'
   className?: string
 }
 
 /**
- * Checkbox de tres estados (diseño, pantallas 4 y D1): círculo de 24 px vacío con borde `control`
- * (sin empezar), medio relleno en verde azulado (en curso), índigo con el check (terminado) o, si
+ * Checkbox de tres estados (diseño, pantallas 4 y D1): círculo de 24 px (en compras, un cuadrado
+ * de radio 7, diseño 12) vacío con borde `control` (sin empezar), medio relleno en verde azulado (en curso), índigo con el check (terminado) o, si
  * se terminó sin hacerse (descartado, cancelado), gris con una × (diseño 08). Al
  * llenarse hace una escala 0,9 → 1 si el sistema no pide menos movimiento. La zona táctil llega a
  * 44 px con un pseudoelemento, sin agrandar el círculo.
@@ -30,6 +32,7 @@ export function StatusCheckbox({
   onToggle,
   large = false,
   tone,
+  shape = 'circle',
   className,
 }: StatusCheckboxProps) {
   return (
@@ -40,8 +43,9 @@ export function StatusCheckbox({
       aria-label={label}
       onClick={onToggle}
       className={cn(
-        'relative grid shrink-0 place-items-center rounded-full outline-none before:absolute before:-inset-2.5 before:content-[""] focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'relative grid shrink-0 place-items-center outline-none before:absolute before:-inset-2.5 before:content-[""] focus-visible:ring-[3px] focus-visible:ring-ring/50',
         large ? 'size-7 md:size-[26px]' : 'size-6',
+        shape === 'circle' ? 'rounded-full' : large ? 'rounded-[8px]' : 'rounded-[7px]',
         state === 'empty' &&
           (tone
             ? cn('border-2 hover:bg-fill', LIST_COLOR_BORDER[tone])

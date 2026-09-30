@@ -13,10 +13,10 @@ import { BottomSheet } from '@/components/BottomSheet'
 import { cn } from '@/lib/utils'
 
 import { rowActions, type RowAction, type RowActionId } from '../rowActions'
-import { checkboxState, STATUS_LABELS } from '../status'
+import { STATUS_LABELS } from '../status'
 import type { Item } from '../types'
+import { ItemControl } from './ItemControl'
 import { useItemActions } from './itemActionsContext'
-import { StatusCheckbox } from './StatusCheckbox'
 
 const ICONS: Record<RowActionId, LucideIcon> = {
   progress: Contrast,
@@ -63,12 +63,7 @@ export function ItemRowMenuSheet({
       {shown && (
         <>
           <div className="flex items-center gap-3">
-            <StatusCheckbox
-              state={checkboxState(shown.status)}
-              label={shown.title}
-              onToggle={() => undefined}
-              className="pointer-events-none"
-            />
+            <ItemControl item={shown} onToggle={() => undefined} className="pointer-events-none" />
             <div className="min-w-0 flex-1">
               <p className="font-display text-lg leading-[1.25] font-extrabold tracking-[-0.02em]">
                 {shown.title}

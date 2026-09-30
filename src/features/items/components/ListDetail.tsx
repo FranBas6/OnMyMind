@@ -23,7 +23,8 @@ import { useItems } from '../hooks/useItems'
 import { nextItemPosition, useCreateItem } from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
 import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
-import { isOutOfMind, newItemKindAndStatus } from '../status'
+import { isChoosableKind, type ChoosableKind } from '../kind'
+import { defaultItemKind, initialStatus, isOutOfMind } from '../status'
 import type { Item, MovedItem } from '../types'
 import { AddItemBar } from './AddItemBar'
 import { FilterChips } from './FilterChips'
@@ -85,7 +86,9 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
   // (Sin esperar a que la consulta quede en pausa, que tarda lo que su primer intento.)
   const notDownloaded = items.isPending && (items.fetchStatus === 'paused' || !online)
 
-  const add = (title: string) => {
+  const defaultKind = defaultItemKind(list.kind)
+  const add = (title: string, chosen: ChoosableKind | undefined) => {
+    const kind = chosen ?? defaultKind
     // Una lista aún sin descargar empieza vacía en caché, para que lo añadido se vea; al volver
     // la red se descarga entera. La posición la pone el servidor (no sabemos cuál es la última).
     if (!all) queryClient.setQueryData(itemsQueryOptions(list.id).queryKey, [])
@@ -93,7 +96,8 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
       id: crypto.randomUUID(),
       listId: list.id,
       title,
-      ...newItemKindAndStatus(list.kind),
+      kind,
+      status: initialStatus(kind),
       position: all ? nextItemPosition(all) : undefined,
     })
   }
@@ -105,6 +109,7 @@ export function ListDetail({ list, openItemId, onOpenItem }: ListDetailProps) {
       placeholder={addPlaceholder(list, empty)}
       autoFocus={empty}
       onAdd={add}
+      kinds={isChoosableKind(defaultKind) ? { defaultKind, listName: list.name } : undefined}
     />
   )
 

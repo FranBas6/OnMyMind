@@ -12,7 +12,7 @@ interface Plural {
 interface KindTemplate {
   /** Nombre del tipo en la interfaz («Tareas»). */
   label: string
-  /** Descripción corta del selector de tipo (diseño, pantalla 8). */
+  /** Descripción corta del selector de tipo (diseño 12, T6). */
   description: string
   /** Qué cuenta la lista cuando ya no queda nada pendiente («31 hechas»). */
   doneCounter: Plural
@@ -40,13 +40,13 @@ export const KIND_TEMPLATES: Record<ListKind, KindTemplate> = {
   },
   shopping: {
     label: 'Compras',
-    description: 'Precio, tienda e histórico de precios.',
+    description: 'Precio, tienda e histórico.',
     doneCounter: { one: 'comprada', other: 'compradas' },
     counter: { one: 'pendiente', other: 'pendientes' },
   },
   events: {
     label: 'Eventos',
-    description: 'Fecha y hora, recordatorio, repetición.',
+    description: 'Fecha y hora, recordatorio.',
     doneCounter: { one: 'pasado', other: 'pasados' },
     counter: { one: 'próximo', other: 'próximos' },
   },

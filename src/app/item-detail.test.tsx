@@ -66,7 +66,7 @@ const grifo = item(ID.grifo, 'Arreglar el grifo de la cocina', {
   notes: 'Gotea por la junta de abajo.',
   priority: 'high',
 })
-const pilas = item(ID.pilas, 'Comprar pilas AA', { listId: 'i' })
+const pilas = item(ID.pilas, 'Comprar pilas AA', { listId: 'i', kind: 'note' })
 const camiseta = item(ID.camiseta, 'Camiseta', { listId: 'compras', kind: 'shopping' })
 
 function setDesktop(on: boolean) {

@@ -141,6 +141,9 @@
   --priority-low-bg: #f4f2ee;
   --overdue: #d32429;
   --overdue-bg: #fdecec;
+  /* Aviso de lo que se pierde al cambiar el tipo (diseño 12, T5): el ámbar de prioridad media */
+  --warning: var(--priority-medium);
+  --warning-bg: var(--priority-medium-bg);
   /* Borde de la fila atrasada en Hoy (pantalla 7) */
   --overdue-border: #f5c6c8;
   --price-down: #1f7b72;
@@ -302,6 +305,8 @@
   --color-overdue: var(--overdue);
   --color-overdue-bg: var(--overdue-bg);
   --color-overdue-border: var(--overdue-border);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
   --color-price-down: var(--price-down);
   --color-price-down-bg: var(--price-down-bg);
   --color-success: var(--success);

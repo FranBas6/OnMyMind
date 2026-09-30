@@ -74,7 +74,8 @@ export async function updateItemStatus(itemId: string, status: ItemStatus): Prom
 
 /**
  * Guarda un cambio del detalle. Cada campo va en su propia llamada (guardado por campo): título,
- * notas, prioridad (en `fields`), fecha límite o estado. Una fecha sin hora se guarda como las
+ * notas, prioridad (en `fields`), fecha límite o estado. Cambiar el tipo manda juntos el tipo, su
+ * estado traducido y lo que se quita (`changeKindPatch`), para que el trigger los valide a la vez. Una fecha sin hora se guarda como las
  * 00:00 locales con `all_day = true` (04 §Fechas).
  */
 export async function updateItem(itemId: string, patch: ItemPatch): Promise<void> {
@@ -87,6 +88,8 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
     row.all_day = patch.dueAt !== null
   }
   if (patch.status !== undefined) row.status = patch.status
+  if (patch.kind !== undefined) row.kind = patch.kind
+  if (patch.recurrence !== undefined) row.recurrence = patch.recurrence
   const { error } = await supabase.from('items').update(row).eq('id', itemId)
   if (error) throw error
 }

@@ -1,27 +1,52 @@
+import { formatEventDate } from '@/lib/date'
 import { cn } from '@/lib/utils'
 
-import { checkboxState } from '../status'
+import { kindMark } from '../kind'
 import type { Item } from '../types'
 import { DateChip } from './DateChip'
+import { ItemControl } from './ItemControl'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { ItemRowDotsMenu } from './ItemRowMenu'
 import { PriorityChip } from './PriorityChip'
 import { RowTitle } from './RowTitle'
-import { StatusCheckbox } from './StatusCheckbox'
 import { SwipeableRow } from './SwipeableRow'
 
+const META = 'text-xs font-semibold whitespace-nowrap text-muted-foreground md:text-[13px]'
+
 /**
- * Fila de una tarea (pantalla 4 v1 y D1). En móvil, el título y debajo los chips de prioridad y
- * fecha; en escritorio, una rejilla con los chips en sus columnas a la derecha, alineados entre
- * filas (un hueco vacío cuando falta uno), y el ··· del menú al final (diseño 06, D8). Tocar la
- * fila abre el detalle; mantenerla pulsada, el menú; deslizarla, sus acciones (`SwipeableRow`). En fase 1 también es la fila básica de
- * Compras y Eventos, sin chips: sus pantallas llegan en la fase 2.
+ * Fila de tarea (pantalla 4 v1 y D1), que también es la de las compras y los eventos hasta sus
+ * pantallas (2.1 y 2.3). El tipo es del ítem, no de la lista (diseño 12): cambia el control de la
+ * izquierda (`ItemControl`) y lo de debajo del título. La tarea lleva sus chips de prioridad y
+ * fecha; el evento, su día y su hora; y si no hay nada que enseñar y el ítem no es del tipo por
+ * defecto de su lista, el nombre del tipo («Compra»). En escritorio, una rejilla con eso en sus
+ * columnas a la derecha, alineadas entre filas, y el ··· del menú al final (diseño 06, D8). Tocar
+ * la fila abre el detalle; mantenerla pulsada, el menú; deslizarla, sus acciones (`SwipeableRow`).
  */
 export function TaskRow({ item }: { item: Item }) {
   const actions = useItemActions()
   const { list, isDesktop } = actions
-  const priority = list.kind === 'tasks' ? item.priority : null
-  const dueAt = list.kind === 'tasks' ? item.dueAt : null
+  const task = item.kind === 'task'
+  const priority = task ? item.priority : null
+  const dueAt = task ? item.dueAt : null
+  const eventDate =
+    item.kind === 'event' && item.dueAt ? formatEventDate(item.dueAt, item.allDay) : null
+  const mark =
+    priority === null && dueAt === null && eventDate === null
+      ? kindMark(item.kind, list.kind)
+      : null
+  const first = priority ? (
+    <PriorityChip priority={priority} />
+  ) : mark ? (
+    <span className={META}>{mark}</span>
+  ) : null
+  const second = dueAt ? (
+    <DateChip date={dueAt} />
+  ) : eventDate ? (
+    <span className={cn(META, 'md:min-w-16 md:text-right')}>
+      <span className="sr-only">Fecha: </span>
+      {eventDate}
+    </span>
+  ) : null
   return (
     <SwipeableRow
       item={item}
@@ -30,9 +55,8 @@ export function TaskRow({ item }: { item: Item }) {
         rowHighlight(actions, item),
       )}
     >
-      <StatusCheckbox
-        state={checkboxState(item.status)}
-        label={item.title}
+      <ItemControl
+        item={item}
         onToggle={() => {
           actions.toggle(item)
         }}
@@ -40,10 +64,10 @@ export function TaskRow({ item }: { item: Item }) {
       />
       <div className="min-w-0 flex-1 md:contents">
         <RowTitle item={item} />
-        {(priority !== null || dueAt !== null) && (
+        {(first ?? second) && (
           <div className="mt-1.5 flex items-center gap-2 md:contents">
-            {priority ? <PriorityChip priority={priority} /> : <span className="hidden md:block" />}
-            {dueAt ? <DateChip date={dueAt} /> : <span className="hidden md:block" />}
+            {first ?? <span className="hidden md:block" />}
+            {second ?? <span className="hidden md:block" />}
           </div>
         )}
       </div>

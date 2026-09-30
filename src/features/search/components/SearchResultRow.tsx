@@ -1,18 +1,12 @@
-import {
-  checkboxState,
-  RowTitle,
-  rowHighlight,
-  StatusCheckbox,
-  SwipeableRow,
-  useItemActions,
-} from '@/features/items'
+import { ItemControl, RowTitle, rowHighlight, SwipeableRow, useItemActions } from '@/features/items'
 import { cn } from '@/lib/utils'
 
 import { resultMeta, type SearchResult } from '../search'
 import { Highlight } from './Highlight'
 
 /**
- * Un resultado (pantalla 13 y diseño 08): la fila de tarea con el término resaltado, el fragmento
+ * Un resultado (pantalla 13 y diseño 08): la fila de tarea, con el control de su tipo (diseño 12) y
+ * el término resaltado, el fragmento
  * de la nota si la coincidencia está ahí, y el estado con su fecha («En curso · Mañana»). Lo
  * terminado va tachado en `subtle`. En escritorio, rejilla con el estado a la derecha. Se toca,
  * se completa y se desliza como en su lista.
@@ -28,9 +22,8 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
         rowHighlight(actions, item),
       )}
     >
-      <StatusCheckbox
-        state={checkboxState(item.status)}
-        label={item.title}
+      <ItemControl
+        item={item}
         onToggle={() => {
           actions.toggle(item)
         }}

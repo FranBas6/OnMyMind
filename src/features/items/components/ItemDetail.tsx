@@ -10,12 +10,14 @@ import { cn } from '@/lib/utils'
 
 import { itemMoment, upcomingFieldsNote } from '../copy'
 import { PRIORITY_LABELS, PRIORITIES, type Priority } from '../fields'
-import { checkboxState, isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
+import { isChoosableKind, type ChoosableKind } from '../kind'
+import { isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
 import type { Item, ItemPatch, ItemStatus } from '../types'
 import { DueDatePicker } from './DueDatePicker'
+import { ItemControl } from './ItemControl'
 import { ItemTitleField, NotesField } from './ItemTextFields'
+import { KindField } from './KindField'
 import { SegmentedControl, type SegmentOption } from './SegmentedControl'
-import { StatusCheckbox } from './StatusCheckbox'
 
 const PRIORITY_SELECTED: Record<Priority, string> = {
   high: 'bg-priority-high-bg font-bold text-priority-high',
@@ -42,8 +44,13 @@ export interface ItemDetailProps {
   onClose: () => void
 }
 
+/** Lo de «En mente» no tiene tipo que cambiar, y la sublista (2a.4) no se convierte desde aquí. */
+const isChoosable = (item: Item): item is Item & { kind: ChoosableKind } =>
+  isChoosableKind(item.kind)
+
 /**
- * Contenido del detalle de un ítem (pantalla 11 y diseño 06). Cada campo se guarda por su cuenta
+ * Contenido del detalle de un ítem (pantalla 11 y diseño 06). Debajo de las notas, la fila «Tipo»
+ * (diseño 12) para convertirlo en otra cosa. Cada campo se guarda por su cuenta
  * al cambiarlo, sin botón «Guardar». Las tareas tienen prioridad y fecha límite; el resto de
  * tipos, en fase 1, la hoja básica: título, notas, estado, mover y borrar, con una línea que
  * anticipa su ficha completa. Sin «Recordatorio» (fase 2).
@@ -96,10 +103,9 @@ export function ItemDetail({
       )}
 
       <div className="flex items-start gap-3.5 md:gap-3">
-        <StatusCheckbox
+        <ItemControl
           large
-          state={checkboxState(item.status)}
-          label={item.title}
+          item={item}
           onToggle={() => {
             onToggle(item)
           }}
@@ -124,6 +130,17 @@ export function ItemDetail({
           onUpdate(item, { notes })
         }}
       />
+
+      {isChoosable(item) && (
+        <KindField
+          key={`kind-${item.id}`}
+          item={item}
+          isDesktop={isDesktop}
+          onChange={(patch) => {
+            onUpdate(item, patch)
+          }}
+        />
+      )}
 
       {item.kind === 'task' && (
         <>

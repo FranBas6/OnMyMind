@@ -111,7 +111,7 @@ describe('acciones sobre listas', () => {
     ).toBeInTheDocument()
   })
 
-  it('editar con ítems: el tipo está bloqueado y se explica', async () => {
+  it('editar con ítems: el tipo por defecto se puede cambiar y no toca lo que ya hay', async () => {
     const user = userEvent.setup()
     renderHome({ desktop: true })
 
@@ -120,10 +120,15 @@ describe('acciones sobre listas', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Editar lista' })
     expect(within(dialog).getByLabelText('Nombre de la lista')).toHaveValue('Casa')
+    const kinds = within(dialog).getByRole('radiogroup', { name: 'Tipo por defecto' })
     expect(
-      within(dialog).getByText('El tipo no se puede cambiar: la lista ya tiene ítems.'),
+      within(dialog).getByText('Cambiarlo no toca lo que ya hay en la lista.'),
     ).toBeInTheDocument()
-    expect(within(dialog).getByRole('radio', { name: /Compras/ })).toBeDisabled()
+    await user.click(within(kinds).getByRole('radio', { name: /Compras/ }))
+    expect(within(kinds).getByRole('radio', { name: /Compras/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
   })
 
   it('archivar: sale de la rejilla al instante y ofrece «Deshacer»', async () => {
