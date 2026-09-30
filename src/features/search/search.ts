@@ -2,7 +2,7 @@ import { format, isSameYear } from 'date-fns'
 
 import { isOutOfMind, STATUS_LABELS, type Item } from '@/features/items'
 import type { List } from '@/features/lists'
-import { formatCaptureAge, formatDueDate } from '@/lib/date'
+import { formatCaptureAge, formatDueDate, formatEventDate } from '@/lib/date'
 
 /** Todo / Pendientes / Hechas (pantalla 13). «Hechas» es lo que está fuera de la cabeza. */
 export type SearchFilter = 'all' | 'open' | 'done'
@@ -107,6 +107,10 @@ export interface SearchResult {
   snippet: Snippet | null
   /** Terminado (fuera de la cabeza): va tachado y cuenta para «Hechas». */
   done: boolean
+  /** La sublista en la que está, para su ruta («Viajes › Lisboa», diseño 12, A2). */
+  parent: Item | null
+  /** Si el resultado es una sublista: lo que tiene dentro («Sublista · 5 pendientes»). */
+  children: Item[]
 }
 
 export interface SearchSection {
@@ -153,6 +157,10 @@ export function searchItems(
   let open = 0
   let done = 0
   if (terms.length === 0) return { sections: [], count: 0, otherCount: 0 }
+  const sublists = new Map(
+    items.filter((item) => item.kind === 'sublist').map((item) => [item.id, item]),
+  )
+  const inside = (sublistId: string) => items.filter((item) => item.parentId === sublistId)
 
   for (const item of items) {
     const list = byId.get(item.listId)
@@ -176,6 +184,8 @@ export function searchItems(
       titleRanges: findRanges(item.title, terms),
       snippet: rest.length > 0 && item.notes ? noteSnippet(item.notes, terms) : null,
       done: isDone,
+      parent: item.parentId ? (sublists.get(item.parentId) ?? null) : null,
+      children: item.kind === 'sublist' ? inside(item.id) : [],
     })
     sections.set(list.id, section)
   }
@@ -231,13 +241,23 @@ const shortDate = (date: Date, now: Date) =>
   format(date, isSameYear(date, now) ? 'd MMM' : 'd MMM yyyy')
 
 /**
- * La línea bajo el título de un resultado (pantalla 13 y diseño 08): el estado y su fecha.
+ * La línea bajo el título de un resultado (pantalla 13 y diseño 08): el estado y su fecha, y lo de
+ * dentro de una sublista, con su ruta delante («Viajes › Lisboa · En curso · Mañana»).
  * «En curso · Mañana», «Pendiente · 15 oct», «Hecha · 2 sep», «Descartado · 12 ago» y, en «En
  * mente», «Sin ordenar · hace 3 días». Lo terminado lleva la fecha en que se terminó.
  */
-export function resultMeta(item: Item, now: Date = new Date()): string {
+export function resultMeta(item: Item, now: Date = new Date(), route?: string): string {
+  const meta = statusMeta(item, now)
+  return route ? `${route} · ${meta}` : meta
+}
+
+function statusMeta(item: Item, now: Date): string {
   if (item.kind === 'note' && item.status === 'pending') {
     return `Sin ordenar · ${formatCaptureAge(item.createdAt, now)}`
+  }
+  // Un evento próximo dice cuándo es, como en su fila («12 oct · 07:45», diseño 12, A2).
+  if (item.kind === 'event' && item.dueAt && !item.completedAt && !isOutOfMind(item, now)) {
+    return formatEventDate(item.dueAt, item.allDay, now)
   }
   const label = STATUS_LABELS[item.status]
   const date = item.completedAt

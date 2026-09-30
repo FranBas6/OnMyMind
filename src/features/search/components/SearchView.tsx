@@ -146,6 +146,12 @@ export function SearchView({ query, onQueryChange, openItemId, onOpenItem }: Sea
       openItemId={openItemId}
       onOpenItem={onOpenItem}
       onFinish={hold}
+      onOpenSublist={(sublist) => {
+        void navigate({
+          to: '/lists/$listId/$sublistId',
+          params: { listId: sublist.listId, sublistId: sublist.id },
+        })
+      }}
     >
       <div className="flex min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-7.75rem)] flex-col gap-3.5 md:min-h-[calc(100dvh-4.5rem)] md:gap-5">
         {isDesktop ? (

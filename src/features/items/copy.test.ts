@@ -51,12 +51,12 @@ describe('itemMoment', () => {
 })
 
 describe('moveHint', () => {
-  const none = { priority: false, dueAt: false }
+  const none = { kind: null, priority: false, dueAt: false }
 
   it('lo que se pierde manda sobre todo lo demás', () => {
-    expect(moveHint('tasks', list('inbox', 'En mente'), { priority: true, dueAt: true })).toBe(
-      'Se quitan la prioridad y la fecha.',
-    )
+    expect(
+      moveHint('tasks', list('inbox', 'En mente'), { kind: null, priority: true, dueAt: true }),
+    ).toBe('Se quitan la prioridad y la fecha.')
   })
 
   it('desde «En mente», cómo se guardará', () => {

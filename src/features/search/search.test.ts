@@ -258,3 +258,36 @@ describe('textos', () => {
     expect(otherFilterNote('open', 0)).toBeNull()
   })
 })
+
+describe('sublistas en Buscar (diseño 12, A2)', () => {
+  const viajes = list('viajes', { position: 2500 })
+  const lisboa = item('lisboa', 'Lisboa', {
+    listId: 'viajes',
+    kind: 'sublist',
+    status: 'in_progress',
+  })
+  const vuelo = item('vuelo', 'Vuelo IB3110 a Lisboa', {
+    listId: 'viajes',
+    parentId: 'lisboa',
+    kind: 'event',
+    status: 'upcoming',
+    dueAt: new Date(2026, 9, 12, 7, 45),
+  })
+  const tranvia = item('tranvia', 'Tranvía 28', { listId: 'viajes', parentId: 'lisboa' })
+
+  it('la sublista es un resultado con lo de dentro, y lo de dentro trae su sublista', () => {
+    const { sections } = searchItems([lisboa, vuelo, tranvia], [...lists, viajes], 'lisboa', {
+      filter: 'all',
+      now,
+    })
+    const results = sections[0]?.results ?? []
+    expect(results.map((result) => result.item.id)).toEqual(['lisboa', 'vuelo'])
+    expect(results[0]?.children.map((child) => child.id)).toEqual(['vuelo', 'tranvia'])
+    expect(results[1]?.parent?.id).toBe('lisboa')
+  })
+
+  it('la ruta va delante; un evento próximo dice su día y su hora', () => {
+    expect(resultMeta(vuelo, now, 'Viajes › Lisboa')).toBe('Viajes › Lisboa · 12 oct · 07:45')
+    expect(resultMeta(tranvia, now, 'Viajes › Lisboa')).toBe('Viajes › Lisboa · Pendiente')
+  })
+})

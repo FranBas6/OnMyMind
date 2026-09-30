@@ -375,6 +375,8 @@ export interface MoveVariables {
   item: Item
   from: List
   to: List
+  /** La sublista de destino (2a.5); sin ella va suelto a `to` («Sacar de Lisboa» si es la misma). */
+  parentId?: string | null
 }
 
 /**
@@ -386,9 +388,10 @@ export function useMoveItem() {
   const queryClient = useQueryClient()
   return useMutation({
     ...OFFLINE_TOLERANT,
-    mutationFn: ({ item, to }: MoveVariables) => moveItem(item.id, buildMovePatch(item, to)),
-    onMutate: ({ item, from, to }) => {
-      const patch = buildMovePatch(item, to)
+    mutationFn: ({ item, to, parentId = null }: MoveVariables) =>
+      moveItem(item.id, buildMovePatch(item, to, parentId)),
+    onMutate: ({ item, from, to, parentId = null }) => {
+      const patch = buildMovePatch(item, to, parentId)
       const leavesInbox = from.kind === 'inbox'
       const entersInbox = to.kind === 'inbox'
       const moved: Item = {
@@ -420,14 +423,22 @@ export function useMoveItem() {
       const follow = (entry: Item) =>
         entry.id === item.id ? moved : goes.has(entry.id) ? { ...entry, listId: to.id } : entry
       return applyOptimistic(queryClient, {
-        items: {
-          [from.id]: (items) => items.filter((entry) => !goes.has(entry.id)),
-          [to.id]: (items) => [...items, moved, ...children],
-        },
+        // Dentro de la misma lista (a una sublista, o fuera de ella) el ítem cambia de sitio sin
+        // salir de su caché; entre listas sale de una y entra al final de la otra.
+        items:
+          from.id === to.id
+            ? { [from.id]: (items) => items.map((entry) => (entry.id === item.id ? moved : entry)) }
+            : {
+                [from.id]: (items) => items.filter((entry) => !goes.has(entry.id)),
+                [to.id]: (items) => [...items, moved, ...children],
+              },
         // En Hoy se queda si la lista destino también es de tareas (lo decide `groupToday`).
         mixed: (items) => items.map(follow),
         moved: movedChanges,
-        counters: { [from.id]: negate(counted(item.status)), [to.id]: counted(patch.status) },
+        counters:
+          from.id === to.id
+            ? {}
+            : { [from.id]: negate(counted(item.status)), [to.id]: counted(patch.status) },
       })
     },
     onError: (error, { to }, snapshot) => {

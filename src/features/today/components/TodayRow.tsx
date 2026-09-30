@@ -6,11 +6,10 @@ import {
   StatusCheckbox,
   SwipeableRow,
   useItemActions,
-  type Item,
 } from '@/features/items'
 import { cn } from '@/lib/utils'
 
-import { todayMeta } from '../today'
+import { todayMeta, type TodayItem } from '../today'
 
 /**
  * Fila de Hoy (pantalla 7): la de tarea, con el checkbox en el color de su lista y la meta en
@@ -18,9 +17,9 @@ import { todayMeta } from '../today'
  * chip «Atrasada · ayer». En escritorio, la rejilla del detalle de lista con la meta a la derecha
  * y el ···. Se toca, se mantiene pulsada y se desliza igual que en su lista.
  */
-export function TodayRow({ item, now }: { item: Item; now: Date }) {
+export function TodayRow({ item, now }: { item: TodayItem; now: Date }) {
   const actions = useItemActions()
-  const { overdue, detail } = todayMeta(item, now)
+  const { overdue, detail } = todayMeta(item, now, actions.list.name)
   return (
     <SwipeableRow
       item={item}

@@ -1,7 +1,7 @@
-import { ITEM_COLUMNS, mapItemRow, type Item } from '@/features/items'
+import { ITEM_COLUMNS, mapItemRow } from '@/features/items'
 import { supabase } from '@/lib/supabase/client'
 
-import { showsInToday, todayBounds } from './today'
+import { todayBounds, type TodayItem } from './today'
 
 /**
  * Lo que sale en Hoy (03 §Consultas clave): tareas que vencen hoy o antes, estén en la lista que
@@ -11,21 +11,24 @@ import { showsInToday, todayBounds } from './today'
  * para filtrar por su archivo: el nombre y el color se leen de las listas en caché, que se
  * mantienen al día solas al renombrar o mover.
  *
- * Lo de dentro de una sublista pausada o hecha se calla (ADR-010): cada fila trae el estado de su
- * sublista (`parent:parent_id`, el padre; `items!parent_id` serían los hijos) y se descarta aquí.
- * Son pocas filas (las tareas con fecha de hoy o antes), así que filtrarlas en el cliente no
- * cuesta nada y la consulta sigue usando `items_due_idx`.
+ * Lo de dentro de una sublista trae su nombre y su estado (`parent:parent_id`, el padre;
+ * `items!parent_id` serían los hijos): el nombre es la ruta de la fila («Develop › OnMyMind»,
+ * diseño 12, A1) y el estado decide si se calla (ADR-010). Lo callado no se descarta aquí sino en
+ * `groupToday`, que así puede decir «Lo de «Roma» no sale: la sublista está pausada.». Son pocas
+ * filas (las tareas con fecha de hoy o antes) y la consulta sigue usando `items_due_idx`.
  *
  * Son dos peticiones en paralelo: lo pendiente, que usa `items_due_idx` (parcial, `completed_at is
  * null`), y lo terminado hoy, para «2 hechas hoy». Juntas en un `or` el índice ya no serviría.
  * Los eventos (con hora) se añaden en fase 2 ampliando el filtro de `kind` (2.3).
  */
-export async function fetchToday(now: Date): Promise<Item[]> {
+export async function fetchToday(now: Date): Promise<TodayItem[]> {
   const { start, end } = todayBounds(now)
   const base = () =>
     supabase
       .from('items')
-      .select(`${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id), parent:parent_id(status)`)
+      .select(
+        `${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id), parent:parent_id(status, title)`,
+      )
       .eq('kind', 'task')
       .is('list.archived_at', null)
       .lt('due_at', end.toISOString())
@@ -37,5 +40,5 @@ export async function fetchToday(now: Date): Promise<Item[]> {
   ])
   if (pending.error) throw pending.error
   if (done.error) throw done.error
-  return [...pending.data, ...done.data].filter(showsInToday).map(mapItemRow)
+  return [...pending.data, ...done.data].map((row) => ({ ...mapItemRow(row), parent: row.parent }))
 }

@@ -3,7 +3,15 @@ import { describe, expect, it } from 'vitest'
 import type { Item } from '@/features/items'
 import type { List } from '@/features/lists'
 
-import { dayKey, doneTodayLabel, groupToday, overdueLabel, showsInToday, todayMeta } from './today'
+import {
+  dayKey,
+  doneTodayLabel,
+  groupToday,
+  overdueLabel,
+  pausedNote,
+  showsInToday,
+  todayMeta,
+} from './today'
 
 // Fechas locales (`new Date(año, mes, día…)`): el test vale en cualquier zona horaria.
 const now = new Date(2026, 8, 28, 10, 0)
@@ -181,5 +189,43 @@ describe('showsInToday', () => {
     expect(showsInToday({ parent: { status: 'in_progress' } })).toBe(true)
     expect(showsInToday({ parent: { status: 'paused' } })).toBe(false)
     expect(showsInToday({ parent: { status: 'done' } })).toBe(false)
+  })
+})
+
+describe('sublistas en Hoy (diseño 12, A1)', () => {
+  const dentro = (id: string, status: string, title = 'OnMyMind') => ({
+    ...item(id, { parentId: `p-${id}` }),
+    parent: { status, title },
+  })
+
+  it('lo de dentro de una sublista activa sale; de una pausada, no, y se dice', () => {
+    const groups = groupToday(
+      [
+        dentro('publicar', 'in_progress'),
+        dentro('coliseo', 'paused', 'Roma'),
+        dentro('x', 'done', 'Oporto'),
+      ],
+      lists,
+      { now },
+    )
+    expect(titles(groups)).toEqual([['casa', ['publicar']]])
+    expect(groups.pending).toBe(1)
+    expect(groups.paused).toEqual(['Roma'])
+  })
+
+  it('la meta empieza por la ruta', () => {
+    expect(todayMeta(dentro('publicar', 'in_progress'), now, 'Develop').detail).toBe(
+      'Develop › OnMyMind · Vence hoy',
+    )
+    const atrasada = { ...dentro('a', 'pending'), dueAt: at(27), priority: 'high' as const }
+    expect(todayMeta(atrasada, now, 'Develop').detail).toBe('Develop › OnMyMind · Prioridad alta')
+  })
+
+  it('la línea de las pausadas', () => {
+    expect(pausedNote(['Roma'])).toBe('Lo de «Roma» no sale: la sublista está pausada.')
+    expect(pausedNote(['Roma', 'Oporto'])).toBe(
+      'Lo de «Roma» y «Oporto» no sale: las sublistas están pausadas.',
+    )
+    expect(pausedNote([])).toBeNull()
   })
 })

@@ -28,6 +28,22 @@ export async function fetchItems(listId: string): Promise<Item[]> {
   return data.map(mapItemRow)
 }
 
+/**
+ * Las sublistas no hechas de todas tus listas (RLS deja solo las tuyas): los destinos de la captura
+ * y de «Mover a…» en listas que aún no se han abierto. Son pocas filas.
+ */
+export async function fetchSublists(): Promise<Item[]> {
+  const { data, error } = await supabase
+    .from('items')
+    .select(ITEM_COLUMNS)
+    .eq('kind', 'sublist')
+    .neq('status', 'done')
+    .order('position')
+
+  if (error) throw error
+  return data.map(mapItemRow)
+}
+
 export interface NewItem {
   /** Lo genera el cliente (`crypto.randomUUID()`): el ítem optimista y el real son el mismo. */
   id: string

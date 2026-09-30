@@ -110,11 +110,12 @@ export function ItemWorkspace({
     statusMutation.mutate({ item, status })
   }
 
-  const move = (item: Item, to: List) => {
+  const move = (item: Item, to: List, parentId: string | null = null) => {
     const from = listOf(item)
     if (!from) return
-    if (item.id === openItemId) onOpenItem(undefined)
-    moveItem.mutate({ item, from, to })
+    // Dentro de la misma lista (a una sublista o «Sacar de…») el detalle puede seguir abierto.
+    if (item.id === openItemId && to.id !== from.id) onOpenItem(undefined)
+    moveItem.mutate({ item, from, to, parentId })
   }
 
   /** Los ítems de la lista del ítem, de la caché: ahí está lo de dentro de cada sublista. */
@@ -233,7 +234,9 @@ export function ItemWorkspace({
           onClose={() => {
             setMoveTarget(null)
           }}
-          onMove={move}
+          onMove={(item, destination) => {
+            move(item, destination.list, destination.sublist?.id ?? null)
+          }}
           onMoveToNewList={(item) => {
             openCreate({
               onCreated: (created) => {

@@ -80,6 +80,11 @@ describe('buildMovePatch', () => {
     expect(buildMovePatch(tarea, { id: 'c', kind: 'shopping' }).parentId).toBeNull()
   })
 
+  it('a una sublista va con su id; a «En mente», nunca dentro de nada', () => {
+    expect(buildMovePatch(tarea, { id: 'v', kind: 'tasks' }, 'lisboa').parentId).toBe('lisboa')
+    expect(buildMovePatch(tarea, { id: 'i', kind: 'inbox' }, 'lisboa').parentId).toBeNull()
+  })
+
   it('«leche», de «En mente» a Compras, pasa a ser una compra pendiente', () => {
     expect(buildMovePatch(captura, { id: 'c', kind: 'shopping' })).toMatchObject({
       kind: 'shopping',
@@ -112,12 +117,26 @@ describe('aviso de lo que se pierde', () => {
   })
 
   it('solo la fecha', () => {
-    expect(moveLossLabel(moveLoss({ priority: null, dueAt: new Date() }, 'inbox'))).toBe(
-      'Se quita la fecha.',
-    )
+    expect(
+      moveLossLabel(moveLoss({ kind: 'task', priority: null, dueAt: new Date() }, 'inbox')),
+    ).toBe('Se quita la fecha.')
   })
 
   it('una captura sin campos no pierde nada', () => {
-    expect(moveLossLabel(moveLoss({ priority: null, dueAt: null }, 'shopping'))).toBeNull()
+    expect(
+      moveLossLabel(moveLoss({ kind: 'note', priority: null, dueAt: null }, 'shopping')),
+    ).toBeNull()
+  })
+
+  it('una compra o un evento que vuelve a «En mente» pierde su tipo (diseño 12, A5)', () => {
+    expect(
+      moveLossLabel(moveLoss({ kind: 'shopping', priority: null, dueAt: null }, 'inbox')),
+    ).toBe('Se quita el tipo Compra.')
+    expect(
+      moveLossLabel(moveLoss({ kind: 'event', priority: null, dueAt: new Date() }, 'inbox')),
+    ).toBe('Se quitan el tipo Evento y la fecha.')
+    expect(
+      moveLossLabel(moveLoss({ kind: 'shopping', priority: null, dueAt: null }, 'tasks')),
+    ).toBeNull()
   })
 })

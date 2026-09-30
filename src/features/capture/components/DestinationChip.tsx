@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
-import type { List } from '@/features/lists'
+import { destinationName, type Destination } from '@/features/items'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
@@ -10,16 +10,19 @@ import { cn } from '@/lib/utils'
  * lista sobre `fill`. «En mente» elegida va en `primary` con su símbolo. Una lista elegida va
  * rellena de su color con un check; el diseño pone el texto en blanco, pero sobre casi todos los
  * colores de lista no llega a AA (coral 3:1, ámbar 2,2:1): va en `foreground`, salvo el índigo.
+ * Una sublista dice «Viajes › Lisboa», con la lista más suave (diseño 12, A4), en el color de su
+ * lista como las demás (el diseño la pinta en índigo).
  */
 export function DestinationChip({
-  list,
+  destination,
   selected,
   onClick,
 }: {
-  list: List
+  destination: Destination
   selected: boolean
   onClick: () => void
 }) {
+  const { list, sublist } = destination
   const inbox = list.kind === 'inbox'
   const lightText = inbox || list.color === 'indigo'
 
@@ -28,6 +31,7 @@ export function DestinationChip({
       type="button"
       role="radio"
       aria-checked={selected}
+      aria-label={destinationName(destination)}
       onClick={onClick}
       className={cn(
         'inline-flex h-9 shrink-0 items-center gap-[7px] rounded-full px-3.5 text-[13px] font-semibold whitespace-nowrap outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
@@ -44,7 +48,14 @@ export function DestinationChip({
       ) : (
         <span aria-hidden className={cn('size-2 rounded-full', LIST_COLOR_BG[list.color])} />
       )}
-      {list.name}
+      {sublist ? (
+        <span aria-hidden>
+          <span className="font-medium opacity-70">{list.name} › </span>
+          {sublist.title}
+        </span>
+      ) : (
+        list.name
+      )}
     </button>
   )
 }

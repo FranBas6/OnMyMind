@@ -4,6 +4,7 @@ import { formatHeaderDate } from '@/lib/date'
 import { OFFLINE_MESSAGE } from '@/lib/errors'
 
 import { useToday } from '../hooks/useToday'
+import { pausedNote } from '../today'
 import { DoneTodaySection } from './DoneTodaySection'
 import { TodayEmpty } from './TodayEmpty'
 import { TodaySection } from './TodaySection'
@@ -58,6 +59,11 @@ export function TodayView({ openItemId, onOpenItem }: TodayViewProps) {
               ))}
             </div>
           ))}
+        {groups && pausedNote(groups.paused) && (
+          <p className="-mt-2 px-1 text-[13px] text-subtle-foreground">
+            {pausedNote(groups.paused)}
+          </p>
+        )}
         {groups && groups.done.length > 0 && <DoneTodaySection done={groups.done} />}
       </div>
     </ItemWorkspace>

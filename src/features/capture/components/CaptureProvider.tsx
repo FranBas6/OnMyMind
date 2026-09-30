@@ -4,7 +4,15 @@ import { Dialog } from 'radix-ui'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 
 import { KeyboardSheetContent } from '@/components/KeyboardSheet'
-import { newItemKindAndStatus, useCreateItem, useDeleteItem } from '@/features/items'
+import {
+  destinationShortName,
+  destinationsOf,
+  newItemKindAndStatus,
+  useCreateItem,
+  useDeleteItem,
+  useSublists,
+  type Destination,
+} from '@/features/items'
 import { useLists, type List } from '@/features/lists'
 import { useProfile } from '@/features/profile'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -17,13 +25,16 @@ import { CaptureForm } from './CaptureForm'
 interface CaptureState {
   open: boolean
   text: string
-  /** La lista abierta al capturar (su id sale de la URL `/lists/$listId`). */
+  /**
+   * La lista o sublista abierta al capturar: el id sale de la URL (`/lists/$listId`, o
+   * `/lists/$listId/$sublistId` dentro de una sublista, que sale elegida: diseño 12, A4).
+   */
   originId: string | undefined
   /** Cada apertura empieza de cero: texto, lista elegida, «···» cerrado. */
   session: number
 }
 
-const LIST_PATH = /^\/lists\/([^/]+)/
+const LIST_PATH = /^\/lists\/([^/]+)(?:\/([^/]+))?/
 
 /**
  * Captura rápida para toda la zona privada (02 §Captura rápida, pantalla 3 y diseño 07). La abren
@@ -35,6 +46,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const lists = useLists()
+  const sublists = useSublists()
   const profile = useProfile()
   const createItem = useCreateItem()
   const deleteItem = useDeleteItem()
@@ -47,7 +59,8 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
 
   const open = useCallback(
     (options?: OpenCaptureOptions) => {
-      const originId = LIST_PATH.exec(pathname)?.[1]
+      const match = LIST_PATH.exec(pathname)
+      const originId = match?.[2] ?? match?.[1]
       setState((current) => ({
         open: true,
         text: options?.text ?? '',
@@ -69,12 +82,16 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
   const all: List[] = lists.data
     ? [...(lists.data.inbox ? [lists.data.inbox] : []), ...lists.data.lists]
     : []
-  const origin = all.find((list) => list.id === state.originId)
+  const destinations = destinationsOf(all, sublists)
+  const origin = destinations.find((destination) => destination.id === state.originId)
 
-  const save = (title: string, list: List) => {
+  // Dentro de una sublista, lo capturado nace con el tipo por defecto de su lista.
+  const save = (title: string, destination: Destination) => {
+    const { list, sublist } = destination
     const item = {
       id: crypto.randomUUID(),
       listId: list.id,
+      parentId: sublist?.id ?? null,
       title,
       ...newItemKindAndStatus(list.kind),
     }
@@ -82,7 +99,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
     close()
     showUndoToast({
       icon: Check,
-      message: `Guardado en ${list.name}`,
+      message: `Guardado en ${destinationShortName(destination)}`,
       onUndo: () => {
         deleteItem.mutate(item)
       },
@@ -95,7 +112,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
     <CaptureForm
       key={state.session}
       variant={isDesktop ? 'dialog' : 'sheet'}
-      lists={all}
+      destinations={destinations}
       initialText={state.text}
       origin={origin}
       defaultListId={profile.data?.settings.defaultListId ?? null}

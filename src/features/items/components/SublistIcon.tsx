@@ -6,6 +6,10 @@ import { SublistGlyph } from '@/components/SublistGlyph'
 const SIZES = {
   // Fila (S1): 24 px, radio 7, líneas de 12.
   row: { box: 'size-6 rounded-[7px]', glyph: 'size-3' },
+  // Destino en un popover (D6): 30 px, como el icono de lista `xs`.
+  xs: { box: 'size-[30px] rounded-[9px]', glyph: 'size-3.5' },
+  // Destino en una hoja (A3, A5): 36 px, radio 11.
+  md: { box: 'size-9 rounded-[11px]', glyph: 'size-4' },
   // Cabecera de su pantalla (S2): como el icono de lista, 52 px (56 en escritorio).
   header: { box: 'size-[52px] rounded-[17px] md:size-14 md:rounded-[18px]', glyph: 'size-6' },
   // Vacía (S3): 88 px.

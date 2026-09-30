@@ -2,7 +2,7 @@ import { queryOptions } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/queryKeys'
 
-import { fetchItems, fetchMovedFromInbox } from './api'
+import { fetchItems, fetchMovedFromInbox, fetchSublists } from './api'
 
 /** Ítems de una lista. La usan `useItems` y el `loader` del detalle, con la misma entrada de caché. */
 export function itemsQueryOptions(listId: string) {
@@ -19,3 +19,9 @@ export function movedFromInboxQueryOptions(inboxId: string) {
     queryFn: () => fetchMovedFromInbox(inboxId),
   })
 }
+
+/** Las sublistas de todas las listas (`useSublists` las junta con lo que ya hay en caché). */
+export const sublistsQueryOptions = queryOptions({
+  queryKey: queryKeys.items.sublists,
+  queryFn: fetchSublists,
+})

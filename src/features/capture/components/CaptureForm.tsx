@@ -1,13 +1,13 @@
 import { ChevronLeft, WifiOff, X } from 'lucide-react'
 import { useRef, useState, type KeyboardEvent } from 'react'
 
-import type { List } from '@/features/lists'
+import { destinationShortName, type Destination } from '@/features/items'
 import { useOnline } from '@/hooks/useOnline'
 import { cn } from '@/lib/utils'
 
 import { defaultDestination, destinationChips } from '../destinations'
 import { DestinationChip, InboxMark, MoreButton } from './DestinationChip'
-import { AllListsPanel, AllListsPopover } from './AllLists'
+import { AllListsPopover, SaveInSheet } from './AllLists'
 
 /** Límite del título, como el de `items.title`. */
 const TITLE_MAX_LENGTH = 300
@@ -16,13 +16,14 @@ const LONG_TEXT = 48
 
 interface CaptureFormProps {
   variant: 'sheet' | 'dialog'
-  lists: readonly List[]
+  /** Listas y sublistas (`destinationsOf`), en su orden. */
+  destinations: readonly Destination[]
   initialText: string
-  /** La lista en la que se abrió (sale elegida y con «Desde Casa»). */
-  origin: List | undefined
+  /** La lista o sublista en la que se abrió (sale elegida y con «Desde Lisboa»). */
+  origin: Destination | undefined
   /** La lista por defecto de Perfil: sale elegida si no se abre desde una lista. */
   defaultListId: string | null
-  onSave: (title: string, list: List) => void
+  onSave: (title: string, destination: Destination) => void
   onClose: () => void
 }
 
@@ -34,7 +35,7 @@ interface CaptureFormProps {
  */
 export function CaptureForm({
   variant,
-  lists,
+  destinations,
   initialText,
   origin,
   defaultListId,
@@ -43,7 +44,7 @@ export function CaptureForm({
 }: CaptureFormProps) {
   const [text, setText] = useState(initialText)
   const [chosenId, setChosenId] = useState(
-    () => defaultDestination(lists, origin?.id, defaultListId)?.id,
+    () => defaultDestination(destinations, origin?.id, defaultListId)?.id,
   )
   const [picking, setPicking] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
@@ -51,9 +52,9 @@ export function CaptureForm({
   const dialog = variant === 'dialog'
 
   const chosen =
-    lists.find((list) => list.id === chosenId) ??
-    defaultDestination(lists, origin?.id, defaultListId)
-  const chips = destinationChips(lists, {
+    destinations.find((destination) => destination.id === chosenId) ??
+    defaultDestination(destinations, origin?.id, defaultListId)
+  const chips = destinationChips(destinations, {
     chosenId: chosen?.id,
     originId: origin?.id,
     defaultId: defaultListId,
@@ -65,8 +66,8 @@ export function CaptureForm({
     onSave(title, chosen)
   }
 
-  const choose = (list: List) => {
-    setChosenId(list.id)
+  const choose = (destination: Destination) => {
+    setChosenId(destination.id)
     setPicking(false)
     field.current?.focus()
   }
@@ -88,13 +89,29 @@ export function CaptureForm({
     '⌘↩ para guardar'
   ) : null
 
+  // Móvil: «···» cambia la captura por «Guardar en» en la misma hoja (diseño 12, A3). El texto
+  // escrito se queda: el formulario vuelve con él al elegir o con «Listo».
+  if (!dialog && picking) {
+    return (
+      <SaveInSheet
+        destinations={destinations}
+        chosenId={chosen?.id}
+        onChoose={choose}
+        onDone={() => {
+          setPicking(false)
+          field.current?.focus()
+        }}
+      />
+    )
+  }
+
   return (
     <div className="flex flex-col gap-3.5 md:gap-4">
       {dialog ? (
         <div className="flex items-center justify-between gap-3 text-xs text-subtle-foreground">
           <span className="flex items-center gap-2">
             <InboxMark className="size-3.5" />
-            Captura rápida{origin ? ` · desde ${origin.name}` : ''}
+            Captura rápida{origin ? ` · desde ${destinationShortName(origin)}` : ''}
           </span>
           <span className="flex items-center gap-2">
             {/* La pista va aquí y no junto a «Guardar»: allí le quitaba sitio al cuarto chip. */}
@@ -116,7 +133,7 @@ export function CaptureForm({
         origin && (
           <p className="-mb-1.5 flex items-center gap-1 text-xs text-subtle-foreground">
             <ChevronLeft aria-hidden className="size-3.5" strokeWidth={2.2} />
-            Desde {origin.name}
+            Desde {destinationShortName(origin)}
           </p>
         )
       )}
@@ -161,20 +178,20 @@ export function CaptureForm({
             aria-label="Guardar en"
             className="flex min-w-0 flex-1 [scrollbar-width:none] gap-2 overflow-x-auto [mask-image:linear-gradient(90deg,black_88%,transparent)]"
           >
-            {chips.map((list) => (
+            {chips.map((destination) => (
               <DestinationChip
-                key={list.id}
-                list={list}
-                selected={list.id === chosen?.id}
+                key={destination.id}
+                destination={destination}
+                selected={destination.id === chosen?.id}
                 onClick={() => {
-                  setChosenId(list.id)
+                  setChosenId(destination.id)
                 }}
               />
             ))}
           </div>
           {dialog ? (
             <AllListsPopover
-              lists={lists}
+              destinations={destinations}
               chosenId={chosen?.id}
               open={picking}
               onOpenChange={setPicking}
@@ -184,7 +201,7 @@ export function CaptureForm({
             <MoreButton
               active={picking}
               onClick={() => {
-                // El teclado se va y en su sitio salen todas las listas; «Teclado» lo devuelve.
+                // En su sitio sale «Guardar en», con todas las listas y sublistas (A3).
                 field.current?.blur()
                 setPicking(true)
               }}
@@ -199,17 +216,6 @@ export function CaptureForm({
           <span className="text-[13px] text-subtle-foreground">{hint}</span>
           <SaveButton disabled={!title} onClick={save} />
         </div>
-      )}
-
-      {!dialog && picking && (
-        <AllListsPanel
-          lists={lists}
-          chosenId={chosen?.id}
-          onChoose={choose}
-          onKeyboard={() => {
-            field.current?.focus()
-          }}
-        />
       )}
     </div>
   )

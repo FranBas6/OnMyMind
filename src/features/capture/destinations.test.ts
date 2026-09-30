@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { destinationsOf, listDestination, type Destination, type Item } from '@/features/items'
 import type { List } from '@/features/lists'
 
 import { defaultDestination, destinationChips } from './destinations'
@@ -39,8 +40,8 @@ const libros = list('libros', {
   position: 5000,
   counters: { pending: 1, done: 0, pendingPriceCents: 0 },
 })
-const all = [inbox, casa, trabajo, tech, regalos, libros]
-const ids = (lists: List[]) => lists.map((entry) => entry.id)
+const all = [inbox, casa, trabajo, tech, regalos, libros].map(listDestination)
+const ids = (destinations: Destination[]) => destinations.map((entry) => entry.id)
 
 describe('destinationChips', () => {
   it('«En mente» y las tres más usadas por número de ítems', () => {
@@ -101,7 +102,12 @@ describe('destinationChips', () => {
 
   it('a igual uso, manda el orden de las listas', () => {
     expect(
-      ids(destinationChips([inbox, regalos, libros], { chosenId: undefined, originId: undefined })),
+      ids(
+        destinationChips([inbox, regalos, libros].map(listDestination), {
+          chosenId: undefined,
+          originId: undefined,
+        }),
+      ),
     ).toEqual(['en-mente', 'regalos', 'libros'])
   })
 })
@@ -118,5 +124,37 @@ describe('defaultDestination', () => {
     expect(defaultDestination(all, undefined, 'archivada')?.id).toBe('en-mente')
     // Dentro de una lista, manda la de origen.
     expect(defaultDestination(all, 'en-mente', casa.id)?.id).toBe('en-mente')
+  })
+})
+
+describe('con sublistas (diseño 12, A4)', () => {
+  const lisboa = {
+    id: 'lisboa',
+    listId: 'casa',
+    kind: 'sublist',
+    parentId: null,
+    title: 'Lisboa',
+    status: 'in_progress',
+    position: 1000,
+  } as Item
+  const destinations = destinationsOf([inbox, casa, trabajo, tech, regalos, libros], [lisboa])
+
+  it('las sublistas van bajo su lista y no compiten entre las más usadas', () => {
+    expect(ids(destinations).slice(0, 3)).toEqual(['en-mente', 'casa', 'lisboa'])
+    expect(
+      ids(destinationChips(destinations, { chosenId: inbox.id, originId: undefined })),
+    ).toEqual(['en-mente', 'trabajo', 'casa', 'tech'])
+  })
+
+  it('abierta desde dentro de una sublista, sale elegida y primera', () => {
+    expect(defaultDestination(destinations, 'lisboa')?.sublist?.title).toBe('Lisboa')
+    expect(ids(destinationChips(destinations, { chosenId: 'lisboa', originId: 'lisboa' }))).toEqual(
+      ['lisboa', 'en-mente', 'trabajo', 'casa'],
+    )
+  })
+
+  it('una sublista hecha ya no es destino', () => {
+    const hecha = { ...lisboa, status: 'done' } as Item
+    expect(ids(destinationsOf([casa], [hecha]))).toEqual(['casa'])
   })
 })

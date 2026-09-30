@@ -7,6 +7,7 @@ export { ListDetail } from './components/ListDetail'
 export { DoneRow, FoldHeading } from './components/OutOfMindSection'
 export { RowTitle } from './components/RowTitle'
 export { StatusCheckbox } from './components/StatusCheckbox'
+export { SublistIcon } from './components/SublistIcon'
 export { SwipeableRow } from './components/SwipeableRow'
 export { PRIORITY_LABELS } from './fields'
 export { useCreateItem, useDeleteItem } from './hooks/useItemMutations'
@@ -15,6 +16,16 @@ export { useLingering } from './hooks/useLingering'
 export { useOpenSublist } from './hooks/useOpenSublist'
 export { itemsQueryOptions } from './queries'
 export { ITEM_COLUMNS, mapItemRow } from './schemas'
+export { sublistMeta } from './sublists'
+export {
+  destinationName,
+  destinationShortName,
+  destinationsOf,
+  filterDestinations,
+  listDestination,
+  type Destination,
+} from './destinations'
+export { useSublists } from './hooks/useSublists'
 export {
   checkboxState,
   initialStatus,
