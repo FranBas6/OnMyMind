@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { ArrowUp, ChevronDown } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import {
   useImperativeHandle,
@@ -55,18 +55,20 @@ export interface AddItemBarHandle {
   startWith: (kind: AddableKind) => void
 }
 
-// Que tocar el + o el chip no le quite el foco al campo: en iOS eso cerraría el teclado.
+// Que tocar el tipo o «Añadir» no le quite el foco al campo: en iOS eso cerraría el teclado.
 const keepFocus = (event: MouseEvent) => {
   event.preventDefault()
 }
 
 /**
  * Campo para añadir ítems. Al enviar limpia el texto y conserva el foco, para encadenar varios
- * seguidos sin que se cierre el teclado. Escribir y pulsar ↩ crea un ítem del tipo por defecto de
- * la lista, como siempre. El + abre un selector pequeño de tipo (hoja en móvil, popover en
- * escritorio); en escritorio, además, los prefijos «> » (compra) y «@ » (evento). Un tipo distinto
- * del de por defecto sale como chip a la derecha hasta guardar (diseño 12, T3). El texto va a 16 px
- * en móvil (el diseño dice 15): por debajo de 16, Safari en iOS amplía la página al enfocar.
+ * seguidos sin que se cierre el teclado. Se añade con el botón redondo ↑ de la derecha (gris hasta
+ * que hay texto) o con Intro. A la izquierda, el icono del tipo con el que se va a añadir y una
+ * flechita: abre un selector pequeño de tipo (hoja en móvil, popover en escritorio), y si se elige
+ * uno que no es el de por defecto, el icono se resalta hasta guardar (decisión de Fran del
+ * 2026-10-01: antes era un «+» que confundía, y el tipo distinto salía como chip, diseño 12 T3).
+ * En escritorio, además, los prefijos «> » (compra) y «@ » (evento). El texto va a 16 px en móvil
+ * (el diseño dice 15): por debajo de 16, Safari en iOS amplía la página al enfocar.
  */
 export function AddItemBar({
   placeholder,
@@ -113,42 +115,47 @@ export function AddItemBar({
     input.current?.focus()
   }
 
-  const plusClassName = cn(
-    'grid size-9 shrink-0 place-items-center rounded-[11px] text-primary outline-none hover:bg-brand-tint focus-visible:ring-[3px] focus-visible:ring-ring/50',
-    picking && 'bg-brand-tint',
-  )
-  const plusIcon = <Plus aria-hidden className="size-5 md:size-[22px]" strokeWidth={2.6} />
-  const plus = kinds ? (
+  const empty = title.trim() === ''
+  // El tipo con el que se va a añadir, a la izquierda (decisión de Fran, 2026-10-01): su icono y
+  // una flechita, para que se lea «tipo» y no «añadir». Resaltado si no es el de por defecto.
+  const KindIcon = kind ? KIND_ICONS[kind] : null
+  const kindButton = kinds && kind && KindIcon && (
     <button
       type="button"
-      aria-label="Elegir el tipo"
+      aria-label={`Tipo: ${KIND_LABELS[kind]}. Cambiar`}
       aria-haspopup="dialog"
       aria-expanded={picking}
       onMouseDown={keepFocus}
       onClick={() => {
         setPicking((open) => !open)
       }}
-      className={plusClassName}
+      className={cn(
+        'flex h-9 shrink-0 items-center gap-0.5 rounded-[11px] pr-1.5 pl-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        chip ? 'bg-brand-tint text-primary-strong' : 'text-muted-foreground hover:bg-fill',
+        picking && !chip && 'bg-fill',
+      )}
     >
-      {plusIcon}
-    </button>
-  ) : (
-    <button type="submit" aria-label="Añadir" onMouseDown={keepFocus} className={plusClassName}>
-      {plusIcon}
+      <KindIcon
+        aria-hidden
+        className={kind === 'sublist' ? 'size-4' : 'size-[18px]'}
+        strokeWidth={kind === 'sublist' ? 3 : 2.2}
+      />
+      <ChevronDown aria-hidden className="size-3.5 opacity-70" strokeWidth={2.4} />
     </button>
   )
 
-  const ChipIcon = chip ? KIND_ICONS[chip] : null
   const field = (
     <form
       onSubmit={submit}
       className={cn(
-        'flex items-center gap-3 border border-border bg-card focus-within:border-primary focus-within:shadow-[0_0_0_0.5px_var(--primary)] hover:border-control',
-        inline ? 'h-14 rounded-[18px] pr-4 pl-2.5' : 'h-[50px] rounded-2xl pr-3 pl-2',
+        'flex items-center gap-2 border border-border bg-card focus-within:border-primary focus-within:shadow-[0_0_0_0.5px_var(--primary)] hover:border-control',
+        inline ? 'h-14 rounded-[18px] pr-2.5 pl-2.5' : 'h-[50px] rounded-2xl pr-[7px] pl-2',
+        !kindButton && (inline ? 'pl-[18px]' : 'pl-4'),
         picking && 'border-primary',
       )}
     >
-      {kinds && inline ? <Popover.Trigger asChild>{plus}</Popover.Trigger> : plus}
+      {kindButton &&
+        (inline ? <Popover.Trigger asChild>{kindButton}</Popover.Trigger> : kindButton)}
       <input
         ref={input}
         value={title}
@@ -163,28 +170,16 @@ export function AddItemBar({
         enterKeyHint="enter"
         className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-subtle-foreground"
       />
-      {chip && ChipIcon && (
-        <button
-          type="button"
-          aria-label={`Tipo: ${KIND_LABELS[chip]}. Cambiar`}
-          onMouseDown={keepFocus}
-          onClick={() => {
-            setPicking(true)
-          }}
-          className="inline-flex h-7 shrink-0 items-center gap-[5px] rounded-[9px] bg-brand-tint px-2.5 text-xs font-bold text-primary-strong outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
-          <ChipIcon aria-hidden className="size-[13px]" strokeWidth={2.2} />
-          {KIND_LABELS[chip]}
-        </button>
-      )}
-      {inline && (
-        <kbd
-          aria-hidden
-          className="rounded-md bg-fill px-2 py-[3px] font-sans text-xs text-muted-foreground"
-        >
-          ↩
-        </kbd>
-      )}
+      {/* Añadir sin tener que saber lo de Intro (decisión de Fran): gris hasta que hay texto. */}
+      <button
+        type="submit"
+        aria-label="Añadir"
+        disabled={empty}
+        onMouseDown={keepFocus}
+        className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:bg-control disabled:text-white"
+      >
+        <ArrowUp aria-hidden className="size-[18px]" strokeWidth={2.6} />
+      </button>
     </form>
   )
 

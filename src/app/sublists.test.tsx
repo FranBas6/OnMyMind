@@ -229,7 +229,7 @@ describe('sublistas en pantalla (diseño 12)', () => {
     vi.mocked(itemsApi.createItem).mockResolvedValue()
     const { router } = renderAt('/lists/viajes')
 
-    await user.click(await screen.findByRole('button', { name: 'Elegir el tipo' }))
+    await user.click(await screen.findByRole('button', { name: 'Tipo: Tarea. Cambiar' }))
     const picker = await screen.findByRole('radiogroup', { name: 'Añadir a Viajes' })
     await user.click(within(picker).getByRole('radio', { name: /Sublista/ }))
     await user.type(screen.getByRole('textbox', { name: 'Añadir a Viajes…' }), 'Oporto{Enter}')
@@ -241,7 +241,7 @@ describe('sublistas en pantalla (diseño 12)', () => {
       expect.objectContaining({ title: 'Oporto', kind: 'sublist', status: 'pending' }),
     )
     // Dentro de una sublista no hay otra: el selector no la ofrece.
-    await user.click(screen.getByRole('button', { name: 'Elegir el tipo' }))
+    await user.click(screen.getByRole('button', { name: 'Tipo: Tarea. Cambiar' }))
     const inside = await screen.findByRole('radiogroup', { name: 'Añadir a Oporto' })
     expect(within(inside).queryByRole('radio', { name: /Sublista/ })).not.toBeInTheDocument()
   })

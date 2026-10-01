@@ -285,6 +285,27 @@ describe('detalle de «En mente»', () => {
     createdAt: new Date(Date.now() - 20 * 24 * HOUR),
   })
 
+  it('«En mente»: sin tipo a la izquierda, y «Añadir» captura lo escrito', async () => {
+    const user = userEvent.setup()
+    vi.mocked(itemsApi.createItem).mockResolvedValue()
+    renderDetail('i', [dni])
+
+    const field = await screen.findByRole('textbox', { name: '¿Qué tienes en mente?' })
+    expect(screen.queryByRole('button', { name: /^Tipo: / })).not.toBeInTheDocument()
+    const add = screen.getByRole('button', { name: 'Añadir' })
+    expect(add).toBeDisabled()
+    await user.type(field, 'Llamar al fontanero')
+    expect(add).toBeEnabled()
+    await user.click(add)
+
+    await waitFor(() => {
+      expect(itemsApi.createItem).toHaveBeenCalledWith(
+        expect.objectContaining({ listId: 'i', title: 'Llamar al fontanero', kind: 'note' }),
+      )
+    })
+    expect(field).toHaveValue('')
+  })
+
   it('cabecera índigo sin menú, antigüedad de cada captura y filtros por antigüedad', async () => {
     const user = userEvent.setup()
     renderDetail('i', [dni, pilas])

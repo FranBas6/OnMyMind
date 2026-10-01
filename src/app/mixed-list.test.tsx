@@ -174,13 +174,15 @@ describe('lista con tipos mezclados (diseño 12)', () => {
     expect(screen.queryByText('Enviar informe trimestral')).not.toBeInTheDocument()
   })
 
-  it('el + elige el tipo: sale como chip y la compra nace como compra pendiente', async () => {
+  it('el tipo de la izquierda se cambia; la compra nace como compra pendiente con «Añadir»', async () => {
     const user = userEvent.setup()
     vi.mocked(itemsApi.createItem).mockResolvedValue()
     renderTrabajo()
 
     const field = await screen.findByRole('textbox', { name: 'Añadir a Trabajo…' })
-    await user.click(screen.getByRole('button', { name: 'Elegir el tipo' }))
+    // Sin texto, «Añadir» está en gris.
+    expect(screen.getByRole('button', { name: 'Añadir' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Tipo: Tarea. Cambiar' }))
     const picker = await screen.findByRole('radiogroup', { name: 'Añadir a Trabajo' })
     expect(within(picker).getByRole('radio', { name: /Tarea/ })).toHaveAttribute(
       'aria-checked',
@@ -190,7 +192,9 @@ describe('lista con tipos mezclados (diseño 12)', () => {
     await user.click(within(picker).getByRole('radio', { name: /Compra/ }))
 
     expect(await screen.findByRole('button', { name: 'Tipo: Compra. Cambiar' })).toBeVisible()
-    await user.type(field, 'Monitor para casa{Enter}')
+    await user.type(field, 'Monitor para casa')
+    // Se añade con el botón, sin tener que saber lo de Intro.
+    await user.click(screen.getByRole('button', { name: 'Añadir' }))
 
     await waitFor(() => {
       expect(itemsApi.createItem).toHaveBeenCalledWith(
@@ -201,8 +205,10 @@ describe('lista con tipos mezclados (diseño 12)', () => {
         }),
       )
     })
-    // Tras guardar vuelve al tipo por defecto.
-    expect(screen.queryByRole('button', { name: /Tipo: / })).not.toBeInTheDocument()
+    // Tras guardar vuelve al tipo por defecto, y el campo se queda vacío y con «Añadir» en gris.
+    expect(screen.getByRole('button', { name: 'Tipo: Tarea. Cambiar' })).toBeVisible()
+    expect(field).toHaveValue('')
+    expect(screen.getByRole('button', { name: 'Añadir' })).toBeDisabled()
   })
 
   it('en escritorio, «@ » delante crea un evento', async () => {
