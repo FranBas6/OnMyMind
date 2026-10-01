@@ -344,6 +344,7 @@ export type Database = {
         Args: { p_kind: Database['public']['Enums']['item_kind'] }
         Returns: string[]
       }
+      price_savings: { Args: Record<PropertyKey, never>; Returns: number }
       translate_item_status: {
         Args: { p_kind: Database['public']['Enums']['item_kind']; p_status: string }
         Returns: string

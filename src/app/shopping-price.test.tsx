@@ -129,7 +129,7 @@ describe('el precio de las compras (diseño 16)', () => {
     // El bloque (B7, a mano): el precio, de dónde y cuándo, y que es el primero.
     const block = await within(sheet).findByRole('region', { name: 'Precio' })
     expect(block).toHaveTextContent('9,99 €')
-    expect(within(block).getByText('puesto a mano · hoy')).toBeInTheDocument()
+    expect(within(block).getByText('puesto a mano · ahora')).toBeInTheDocument()
     expect(
       within(block).getByText('Es el primer precio. El histórico aparece cuando cambie.'),
     ).toBeInTheDocument()
@@ -184,7 +184,7 @@ describe('el precio de las compras (diseño 16)', () => {
     })
     const block = await within(sheet).findByRole('region', { name: 'Precio' })
     expect(block).toHaveTextContent('100 €')
-    expect(within(block).getByText('Real Madrid CF · de la web · hoy')).toBeInTheDocument()
+    expect(within(block).getByText('Real Madrid CF · de la web · ahora')).toBeInTheDocument()
   })
 
   it('lo escrito a mano no se pisa con el precio de la web', async () => {

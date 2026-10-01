@@ -1,15 +1,19 @@
-import { Euro, LoaderCircle, Pencil, WifiOff } from 'lucide-react'
+import { Check, Euro, LoaderCircle, Pencil, RefreshCw, WifiOff } from 'lucide-react'
 import { useId, useState, type KeyboardEvent } from 'react'
 
+import { firstPrice, PriceHistory, savedCents, usePriceHistory } from '@/features/prices'
 import { centsToInput, currencySymbol, formatCents, parsePriceInput } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 import type { WebPriceState } from '../hooks/useLinkMetadata'
+import { useRefreshPrice, type RefreshState } from '../hooks/useRefreshPrice'
 import { changeDescription, changeLabel, itemPrice, priceLine } from '../prices'
+import { isFinalStatus } from '../status'
 import type { Item, ItemPatch } from '../types'
 
 interface PriceBlockProps {
   item: Item
+  online: boolean
   /** Cómo va el precio de la web (`useLinkMetadata`). */
   webPrice: WebPriceState
   /** El nombre de la web, si ya se sabe, para «Amazon no da el precio.». */
@@ -17,31 +21,48 @@ interface PriceBlockProps {
   onUpdate: (item: Item, patch: ItemPatch) => void
 }
 
+/** Lo que dice el campo cuando «Actualizar precio» no tiene web que mirar (diseño 16, B16). */
+const NO_LINK_HINT = 'Sin enlace no hay web que mirar. Escribe el precio nuevo.'
+
 /**
- * El precio de una compra (diseño 16, B1–B9 y D3), debajo de la foto y del enlace, de donde sale
- * (decisión de Fran: el diseño lo ponía bajo el título). Con precio, el importe grande con su
- * variación («↓ 8 % desde 302 €»), una línea con la tienda, el origen y cuándo, y «Cambiar». Sin
- * precio, una fila gris «Añadir precio», como «+ Foto»; mientras se busca en la web, «Buscando
- * precio…»; si la web no lo da, se dice sin que suene a error. «Actualizar precio» y la gráfica
- * llegan en la 2.2.
+ * El precio de una compra (diseño 16, B1–B18 y D1–D4), debajo de la foto y del enlace, de donde
+ * sale (decisión de Fran: el diseño lo ponía bajo el título).
+ * - Con precio: el importe grande con su variación («↓ 8 % desde 302 €»), una línea con la tienda,
+ *   el origen y cuándo, la gráfica del histórico si ha cambiado alguna vez, y «Actualizar precio»
+ *   y «Cambiar».
+ * - Comprada: «Pagaste 259 €» y, si bajó desde el primer precio, «Ahorraste 43 €». Sin actualizar:
+ *   ya no hay nada que mirar, pero se puede corregir lo pagado.
+ * - Sin precio: una fila gris «Añadir precio», como «+ Foto»; mientras se busca en la web,
+ *   «Buscando precio…»; si la web no lo da, se dice sin que suene a error.
  */
-export function PriceBlock({ item, webPrice, siteName, onUpdate }: PriceBlockProps) {
-  const [editing, setEditing] = useState(false)
+export function PriceBlock({ item, online, webPrice, siteName, onUpdate }: PriceBlockProps) {
+  const [editing, setEditing] = useState<false | 'price' | 'no-link'>(false)
+  const refresh = useRefreshPrice(item, onUpdate)
   const price = itemPrice(item)
+  // Con un solo precio no hay gráfica (B7): el histórico se pide si ha cambiado alguna vez.
+  const changed = price !== null && item.previousPriceCents !== null
+  const history = usePriceHistory(item.id, item.priceCents, changed)
 
   if (editing) {
     return (
       <PriceInput
         item={item}
+        hint={editing === 'no-link' ? NO_LINK_HINT : undefined}
         onSave={(patch) => {
           setEditing(false)
-          if (patch) onUpdate(item, patch)
+          if (patch) {
+            refresh.reset()
+            onUpdate(item, patch)
+          }
         }}
       />
     )
   }
+  const edit = () => {
+    setEditing('price')
+  }
 
-  if (!price) {
+  if (!price || item.priceCents === null) {
     if (webPrice === 'searching') {
       return (
         <div
@@ -61,9 +82,7 @@ export function PriceBlock({ item, webPrice, siteName, onUpdate }: PriceBlockPro
       <div className="flex flex-col gap-2">
         <button
           type="button"
-          onClick={() => {
-            setEditing(true)
-          }}
+          onClick={edit}
           className="flex h-13 items-center gap-3 rounded-md bg-fill px-4 text-[15px] font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <Euro aria-hidden className="size-4" strokeWidth={2.2} />
@@ -84,17 +103,33 @@ export function PriceBlock({ item, webPrice, siteName, onUpdate }: PriceBlockPro
     )
   }
 
+  const bought = item.status === 'bought'
+  const first = history.data ? firstPrice(history.data, item.currency) : null
+  const saved = bought ? savedCents(first, item.priceCents) : 0
   const { change } = price
+  const chart = changed && history.data && (
+    <PriceHistory
+      records={history.data}
+      current={{
+        cents: item.priceCents,
+        currency: item.currency,
+        source: item.priceSource ?? 'manual',
+        checkedAt: item.priceCheckedAt,
+      }}
+    />
+  )
+
   return (
     <section
       aria-label="Precio"
       className="flex flex-col rounded-[20px] border border-border-soft bg-background p-4"
     >
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        {bought && <span className="text-[15px] font-semibold text-muted-foreground">Pagaste</span>}
         <p className="font-display text-[34px] leading-none font-extrabold tracking-[-0.03em]">
           {price.text}
         </p>
-        {change && item.previousPriceCents !== null && (
+        {!bought && change && item.previousPriceCents !== null && (
           <span
             className={cn(
               'rounded-[8px] px-2 py-0.5 text-[12.5px] font-bold',
@@ -112,25 +147,126 @@ export function PriceBlock({ item, webPrice, siteName, onUpdate }: PriceBlockPro
           </span>
         )}
       </div>
-      <p className="mt-2 text-[13px] text-muted-foreground">{priceLine(item)}</p>
-      {item.previousPriceCents === null && (
+      <p className="mt-2 text-[13px] text-muted-foreground">
+        {saved > 0 && first !== null
+          ? [item.urlSite, `desde ${formatCents(first, item.currency)}, su primer precio`]
+              .filter(Boolean)
+              .join(' · ')
+          : priceLine(item)}
+      </p>
+      {saved > 0 && (
+        <p className="mt-3 self-start rounded-[10px] bg-price-down-bg px-2.5 py-1 text-[13px] font-bold text-price-down">
+          Ahorraste {formatCents(saved, item.currency)}
+        </p>
+      )}
+      {item.previousPriceCents === null && !bought && (
         <p className="mt-3 text-[13px] leading-snug text-muted-foreground">
           Es el primer precio. El histórico aparece cuando cambie.
         </p>
       )}
-      <div className="mt-2 flex justify-end">
+      {chart}
+      {!bought && <RefreshNote state={refresh.state} onWrite={edit} />}
+      <div className="mt-3 flex items-center gap-2">
+        {!isFinalStatus(item.status) && (
+          <RefreshButton
+            searching={refresh.state.status === 'searching'}
+            offline={!online && item.url !== null}
+            onClick={() => {
+              if (item.url) void refresh.refresh()
+              else setEditing('no-link')
+            }}
+          />
+        )}
         <button
           type="button"
-          onClick={() => {
-            setEditing(true)
-          }}
-          className="-mr-1 flex h-10 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          onClick={edit}
+          className="-mr-1 ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <Pencil aria-hidden className="size-3.5" strokeWidth={2.2} />
           Cambiar
         </button>
       </div>
     </section>
+  )
+}
+
+/**
+ * «Actualizar precio» (diseño 16, B1 y B10): con borde en `primary`; mientras mira, «Buscando
+ * precio…»; sin conexión, gris y con «Necesita conexión» (B15). Sin enlace también sale: abre el
+ * campo (B16).
+ */
+function RefreshButton({
+  searching,
+  offline,
+  onClick,
+}: {
+  searching: boolean
+  offline: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      disabled={searching || offline}
+      onClick={onClick}
+      className={cn(
+        'flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-md px-3 font-display text-[15px] font-bold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        offline
+          ? 'bg-fill text-muted-foreground'
+          : 'border-[1.5px] border-primary text-primary hover:bg-brand-tint disabled:hover:bg-transparent',
+      )}
+    >
+      {searching ? (
+        <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin" strokeWidth={2.4} />
+      ) : (
+        <RefreshCw aria-hidden className="size-4 shrink-0" strokeWidth={2.4} />
+      )}
+      <span className="truncate">{searching ? 'Buscando precio…' : 'Actualizar precio'}</span>
+      {offline && (
+        <span className="shrink-0 font-sans text-xs font-medium text-subtle-foreground">
+          · Necesita conexión
+        </span>
+      )}
+    </button>
+  )
+}
+
+/**
+ * El resultado de «Actualizar precio», en una línea dentro del bloque y sin toast (diseño 16,
+ * B11–B14). Ninguno suena a error: lo que no se pudo mirar invita a escribirlo.
+ */
+function RefreshNote({ state, onWrite }: { state: RefreshState; onWrite: () => void }) {
+  const write = (label: string) => (
+    <button
+      type="button"
+      onClick={onWrite}
+      className="font-semibold text-primary outline-none hover:text-primary-hover focus-visible:underline"
+    >
+      {label}
+    </button>
+  )
+  const content =
+    state.status === 'new' ? (
+      <span className="flex items-center gap-1.5 text-success">
+        <Check aria-hidden className="size-3.5 shrink-0" strokeWidth={2.6} />
+        Precio nuevo de la web, ahora.
+      </span>
+    ) : state.status === 'same' ? (
+      <span className="flex items-center gap-1.5">
+        <Check aria-hidden className="size-3.5 shrink-0" strokeWidth={2.6} />
+        Sigue a {state.text}. Mirado ahora.
+      </span>
+    ) : state.status === 'none' ? (
+      <>Esta vez no vemos el precio en la web. Si lo sabes, {write('escríbelo')}.</>
+    ) : state.status === 'blocked' ? (
+      <>La web no nos deja mirar el precio. Puedes {write('escribirlo tú')}.</>
+    ) : state.status === 'failed' ? (
+      <>No hemos podido mirar la web ahora. Prueba otra vez en un momento.</>
+    ) : null
+  return (
+    <p role="status" className="mt-3 text-[13px] leading-snug text-muted-foreground empty:hidden">
+      {content}
+    </p>
   )
 }
 
@@ -142,9 +278,12 @@ export function PriceBlock({ item, webPrice, siteName, onUpdate }: PriceBlockPro
  */
 function PriceInput({
   item,
+  hint,
   onSave,
 }: {
   item: Item
+  /** Una línea sobre el campo que explica por qué se abre (B16: sin enlace no hay web). */
+  hint?: string | undefined
   /** El cambio que guardar, o `undefined` para salir sin cambiar nada. */
   onSave: (patch: ItemPatch | undefined) => void
 }) {
@@ -216,6 +355,7 @@ function PriceInput({
           {currencySymbol(item.currency)}
         </span>
       </div>
+      {hint && <p className="px-1 text-[13px] text-muted-foreground">{hint}</p>}
       <div className="flex items-start justify-between gap-3 px-1 text-[13px]">
         {invalid ? (
           <p id={`${id}-hint`} role="alert" className="text-error">

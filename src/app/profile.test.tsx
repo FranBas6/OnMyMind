@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as authApi from '@/features/auth/api'
 import * as listsApi from '@/features/lists/api'
+import * as pricesApi from '@/features/prices/api'
 import type { List } from '@/features/lists'
 import * as profileApi from '@/features/profile/api'
 import { parseSettings, type Profile } from '@/features/profile'
@@ -13,6 +14,7 @@ import { fakeSession, renderRoute, testProfile } from '@/test/render-route'
 vi.mock('@/features/auth/api')
 vi.mock('@/features/lists/api')
 vi.mock('@/features/profile/api')
+vi.mock('@/features/prices/api')
 
 const session = fakeSession()
 
@@ -64,7 +66,7 @@ function setDesktop(on: boolean) {
  * Perfil con la caché sembrada. `server` hace de Supabase: guardar el nombre o un ajuste se le
  * aplica, y `fetchProfile` devuelve lo que tenga, para que el refresco tras guardar sea realista.
  */
-function renderProfile(profile: Partial<Profile> = {}, path = '/profile') {
+function renderProfile(profile: Partial<Profile> = {}, path = '/profile', savings = 0) {
   let signedIn = true
   vi.mocked(authApi.signOut).mockImplementation(() => {
     signedIn = false
@@ -75,6 +77,7 @@ function renderProfile(profile: Partial<Profile> = {}, path = '/profile') {
   vi.mocked(listsApi.fetchLists).mockResolvedValue([inbox, casa, trabajo])
   vi.mocked(listsApi.fetchArchivedLists).mockResolvedValue([regalos])
   vi.mocked(listsApi.fetchRecentCaptures).mockResolvedValue([])
+  vi.mocked(pricesApi.fetchSavings).mockResolvedValue(savings)
   vi.mocked(profileApi.fetchProfile).mockImplementation(() => Promise.resolve(server))
   vi.mocked(profileApi.updateSettings).mockImplementation((_id, patch) => {
     server = {
@@ -116,7 +119,7 @@ describe('Perfil', () => {
     document.documentElement.classList.remove('dark')
   })
 
-  it('tu nombre (tomado del email), las dos cifras y los ajustes de la fase 1', async () => {
+  it('tu nombre (tomado del email), las tres cifras y los ajustes', async () => {
     renderProfile()
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Perfil' })).toBeInTheDocument()
@@ -130,7 +133,25 @@ describe('Perfil', () => {
     expect(
       within(region('Captura')).getByRole('button', { name: /Lista por defecto: En mente/ }),
     ).toBeInTheDocument()
-    expect(screen.queryByText(/Avisos|Exportar|ahorrados/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Avisos|Exportar/)).not.toBeInTheDocument()
+    // «Ahorrado» a cero (diseño 16, C2), en tinta normal y con lo que contará.
+    const saved = (await screen.findByText('ahorrado')).closest('div')
+    expect(saved).toHaveTextContent('0 €')
+    expect(
+      screen.getByText('Cuando compres algo que bajó desde su primer precio, lo verás aquí.'),
+    ).toBeInTheDocument()
+  })
+
+  it('«ahorrado» suma lo que bajaron tus compras (diseño 16, C1)', async () => {
+    renderProfile({}, '/profile', 12800)
+    const saved = (await screen.findByText('ahorrado')).closest('div')
+    expect(saved).toHaveTextContent('128 €')
+    expect(within(saved ?? document.body).getByText('128 €')).toHaveClass('text-price-down')
+    expect(
+      screen.getByText(
+        'Lo que bajaron tus compras desde su primer precio hasta que las compraste.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('cambiar el nombre en móvil: vacío no vale, y al guardar deja de decir «tomado del email»', async () => {

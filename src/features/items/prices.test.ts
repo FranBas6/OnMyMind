@@ -83,6 +83,12 @@ describe('priceLine', () => {
     ).toBe('PcComponentes · de la web · mirado el 30 jul')
     expect(
       priceLine({ urlSite: 'Real Madrid CF', priceSource: 'web', priceCheckedAt: NOW }, NOW),
+    ).toBe('Real Madrid CF · de la web · ahora')
+    expect(
+      priceLine(
+        { urlSite: 'Real Madrid CF', priceSource: 'web', priceCheckedAt: new Date(2026, 9, 1, 9) },
+        NOW,
+      ),
     ).toBe('Real Madrid CF · de la web · hoy')
     expect(
       priceLine(

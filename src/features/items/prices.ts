@@ -5,6 +5,9 @@ import { formatCents, priceChange, type PriceChange } from '@/lib/money'
 import { isActiveSublistStatus, isOutOfMind } from './status'
 import type { Item } from './types'
 
+/** Menos de esto es «ahora». */
+const JUST_NOW_MS = 2 * 60 * 1000
+
 /** Lo que suman las compras pendientes con precio: los euros y, aparte, otras monedas. */
 export interface PriceTotals {
   /** En céntimos de euro: es lo que dice el total («Total 627 €»). */
@@ -88,12 +91,16 @@ export function priceLine(
   parts.push(web ? 'de la web' : 'puesto a mano')
   const at = item.priceCheckedAt
   if (at) {
-    const day = isSameDay(at, now)
-      ? 'hoy'
-      : isSameDay(at, subDays(now, 1))
-        ? 'ayer'
-        : format(at, at.getFullYear() === now.getFullYear() ? 'd MMM' : 'd MMM yyyy')
-    parts.push(web && day !== 'hoy' && day !== 'ayer' ? `mirado el ${day}` : day)
+    // Recién mirado («de la web · ahora», diseño 16, B11 y B12).
+    const day =
+      now.getTime() - at.getTime() < JUST_NOW_MS
+        ? 'ahora'
+        : isSameDay(at, now)
+          ? 'hoy'
+          : isSameDay(at, subDays(now, 1))
+            ? 'ayer'
+            : format(at, at.getFullYear() === now.getFullYear() ? 'd MMM' : 'd MMM yyyy')
+    parts.push(web && !['ahora', 'hoy', 'ayer'].includes(day) ? `mirado el ${day}` : day)
   }
   return parts.join(' · ')
 }

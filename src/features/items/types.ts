@@ -89,4 +89,6 @@ export interface ItemPatch {
   priceCents?: number | null
   currency?: string
   priceSource?: PriceSource | null
+  /** «Sigue a 99 €. Mirado ahora.» (2.2): se miró y no cambió, así que el trigger no lo pone. */
+  priceCheckedAt?: Date | null
 }

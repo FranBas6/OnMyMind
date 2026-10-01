@@ -192,7 +192,7 @@ export function nextItemPosition(items: readonly Item[] | undefined): number {
  * Un cambio en la caché. Además de lo del detalle, al deshacer un precio fallido vuelven tal cual
  * el anterior y la fecha, que en un cambio normal calcula `patchItem` como el trigger.
  */
-type CachePatch = ItemPatch & Partial<Pick<Item, 'previousPriceCents' | 'priceCheckedAt'>>
+type CachePatch = ItemPatch & Partial<Pick<Item, 'previousPriceCents'>>
 
 /**
  * Aplica un cambio del detalle a un ítem, con lo que haría el trigger: `completed_at` y, si cambia
@@ -392,6 +392,7 @@ export function useUpdateItem() {
       if (patch.urlSite !== undefined) previous.urlSite = before.urlSite
       if (patch.currency !== undefined) previous.currency = before.currency
       if (patch.priceSource !== undefined) previous.priceSource = before.priceSource
+      if (patch.priceCheckedAt !== undefined) previous.priceCheckedAt = before.priceCheckedAt
       if (patch.priceCents !== undefined) {
         previous.priceCents = before.priceCents
         previous.priceSource = before.priceSource

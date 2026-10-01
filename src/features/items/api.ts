@@ -120,6 +120,8 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
   if (patch.priceCents !== undefined) row.price_cents = patch.priceCents
   if (patch.currency !== undefined) row.currency = patch.currency
   if (patch.priceSource !== undefined) row.price_source = patch.priceSource
+  if (patch.priceCheckedAt !== undefined)
+    row.price_checked_at = patch.priceCheckedAt?.toISOString() ?? null
   const { error } = await supabase.from('items').update(row).eq('id', itemId)
   if (error) throw error
 }

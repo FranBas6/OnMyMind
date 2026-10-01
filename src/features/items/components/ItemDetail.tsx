@@ -172,6 +172,7 @@ export function ItemDetail({
         <PriceBlock
           key={`price-${item.id}`}
           item={item}
+          online={online}
           webPrice={link.priceState}
           siteName={link.siteName}
           onUpdate={onUpdate}

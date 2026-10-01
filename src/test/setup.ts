@@ -36,3 +36,11 @@ Object.defineProperty(document, 'elementFromPoint', { writable: true, value: vi.
 Element.prototype.setPointerCapture = vi.fn()
 Element.prototype.releasePointerCapture = vi.fn()
 Element.prototype.hasPointerCapture = vi.fn(() => false)
+
+// Ni ResizeObserver (lo usa el `ResponsiveContainer` de Recharts, en la gráfica de precios).
+class NoopResizeObserver {
+  observe = vi.fn()
+  unobserve = vi.fn()
+  disconnect = vi.fn()
+}
+window.ResizeObserver = NoopResizeObserver
