@@ -2,9 +2,12 @@
 
 Las edge functions de Supabase (Deno), una carpeta por función:
 
-- **`fetch-metadata`** (2a.6): el título y la imagen de la página de un enlace, para la foto y el
-  enlace de cualquier ítem. La extracción vive en `metadata.ts`, que es puro y se prueba con Vitest
-  (`metadata.test.ts`). Sin precio todavía: llega con Compras (2.1).
+- **`fetch-metadata`** (2a.6 y 2.1): el título, la imagen, el nombre de la web y el precio de la
+  página de un enlace, para la foto y el enlace de cualquier ítem y el precio de una compra. El
+  precio sale por capas: JSON-LD `Product`, las meta `product:price` y los microdatos (ADR-007). Lee
+  hasta 2 MB, porque el JSON-LD suele ir en el cuerpo. Solo contesta a usuarios con sesión (la
+  clave `anon` recibe un 401). La extracción vive en `metadata.ts`, que es puro y se prueba con
+  Vitest (`metadata.test.ts`).
 - Más adelante: el envío de push (recordatorios) y el refresco de precios.
 
 Crear o servir una función en local (necesita `[edge_runtime] enabled = true` en `config.toml`,

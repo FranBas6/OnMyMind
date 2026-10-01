@@ -188,8 +188,17 @@ export function nextItemPosition(items: readonly Item[] | undefined): number {
   return Math.max(0, ...(items ?? []).map((item) => item.position)) + 1000
 }
 
-/** Aplica un cambio del detalle a un ítem, con lo que haría el trigger (`completed_at`). */
-function patchItem(item: Item, patch: ItemPatch): Item {
+/**
+ * Un cambio en la caché. Además de lo del detalle, al deshacer un precio fallido vuelven tal cual
+ * el anterior y la fecha, que en un cambio normal calcula `patchItem` como el trigger.
+ */
+type CachePatch = ItemPatch & Partial<Pick<Item, 'previousPriceCents' | 'priceCheckedAt'>>
+
+/**
+ * Aplica un cambio del detalle a un ítem, con lo que haría el trigger: `completed_at` y, si cambia
+ * el precio, el anterior y cuándo se puso (`items_price_before`).
+ */
+function patchItem(item: Item, patch: CachePatch): Item {
   const next: Item = { ...item }
   if (patch.title !== undefined) next.title = patch.title.trim()
   if (patch.notes !== undefined) next.notes = patch.notes?.trim() ? patch.notes.trim() : null
@@ -208,6 +217,18 @@ function patchItem(item: Item, patch: ItemPatch): Item {
   if (patch.imageUrl !== undefined) next.imageUrl = patch.imageUrl
   if (patch.imagePath !== undefined) next.imagePath = patch.imagePath
   if (patch.recurrence !== undefined) next.recurrence = patch.recurrence
+  if (patch.urlSite !== undefined) next.urlSite = patch.urlSite
+  if (patch.currency !== undefined) next.currency = patch.currency
+  if (patch.priceSource !== undefined) next.priceSource = patch.priceSource
+  if (patch.priceCents !== undefined && patch.priceCents !== item.priceCents) {
+    next.priceCents = patch.priceCents
+    const removed = patch.priceCents === null
+    next.previousPriceCents = removed ? null : item.priceCents
+    next.priceCheckedAt = removed ? null : new Date()
+    if (removed) next.priceSource = null
+  }
+  if (patch.previousPriceCents !== undefined) next.previousPriceCents = patch.previousPriceCents
+  if (patch.priceCheckedAt !== undefined) next.priceCheckedAt = patch.priceCheckedAt
   return next
 }
 
@@ -257,6 +278,12 @@ export function useCreateItem() {
               urlTitle: null,
               imageUrl: null,
               imagePath: null,
+              urlSite: null,
+              priceCents: null,
+              currency: 'EUR',
+              priceSource: null,
+              previousPriceCents: null,
+              priceCheckedAt: null,
             },
           ],
         },
@@ -276,7 +303,7 @@ export function useCreateItem() {
 }
 
 /** Cambia un ítem en una lista de ítems, si está. */
-const patchIn = (items: Item[], itemId: string, patch: ItemPatch) =>
+const patchIn = (items: Item[], itemId: string, patch: CachePatch) =>
   items.map((entry) => (entry.id === itemId ? patchItem(entry, patch) : entry))
 
 /**
@@ -311,7 +338,7 @@ export function useSetItemStatus() {
  */
 export function useUpdateItem() {
   const queryClient = useQueryClient()
-  const replace = (item: Item, patch: ItemPatch) => {
+  const replace = (item: Item, patch: CachePatch) => {
     queryClient.setQueryData<Item[]>(
       queryKeys.items.byList(item.listId),
       (items) => items && patchIn(items, item.id, patch),
@@ -350,7 +377,7 @@ export function useUpdateItem() {
       const before =
         queryClient.getQueryData<Item[]>(key)?.find((entry) => entry.id === item.id) ?? item
       // Lo que había en los campos que se tocan, para devolverlo si falla.
-      const previous: ItemPatch = {}
+      const previous: CachePatch = {}
       if (patch.title !== undefined) previous.title = before.title
       if (patch.notes !== undefined) previous.notes = before.notes
       if (patch.priority !== undefined) previous.priority = before.priority
@@ -362,6 +389,15 @@ export function useUpdateItem() {
       if (patch.imageUrl !== undefined) previous.imageUrl = before.imageUrl
       if (patch.imagePath !== undefined) previous.imagePath = before.imagePath
       if (patch.recurrence !== undefined) previous.recurrence = before.recurrence
+      if (patch.urlSite !== undefined) previous.urlSite = before.urlSite
+      if (patch.currency !== undefined) previous.currency = before.currency
+      if (patch.priceSource !== undefined) previous.priceSource = before.priceSource
+      if (patch.priceCents !== undefined) {
+        previous.priceCents = before.priceCents
+        previous.priceSource = before.priceSource
+        previous.previousPriceCents = before.previousPriceCents
+        previous.priceCheckedAt = before.priceCheckedAt
+      }
       const cached = queryClient.getQueryData<Item[]>(key)
       const delta = cached
         ? countsDelta(cached, patchIn(cached, item.id, patch))

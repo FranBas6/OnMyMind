@@ -7,13 +7,22 @@ import { DateChip } from './DateChip'
 import { ItemControl } from './ItemControl'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { ItemRowDotsMenu } from './ItemRowMenu'
+import { itemPrice } from '../prices'
 import { PriorityChip } from './PriorityChip'
 import { hasThumb } from '../photos'
-import { LinkMeta, RowThumb } from './RowMedia'
+import { LinkMeta, RowPrice, RowThumb } from './RowMedia'
 import { RowTitle } from './RowTitle'
 import { SwipeableRow } from './SwipeableRow'
 
 const META = 'text-xs font-semibold whitespace-nowrap text-muted-foreground md:text-[13px]'
+
+/** La rejilla de escritorio: con miniatura, una columna de 44 px; con precios, la de 96 px. */
+const GRID = {
+  plain: 'md:grid-cols-[24px_minmax(0,1fr)_auto_auto_32px]',
+  thumb: 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto_auto_32px]',
+  prices: 'md:grid-cols-[24px_minmax(0,1fr)_auto_auto_96px_32px]',
+  thumbPrices: 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto_auto_96px_32px]',
+} as const
 
 /**
  * Fila de tarea (pantalla 4 v1 y D1), que también es la de las compras y los eventos hasta sus
@@ -22,7 +31,9 @@ const META = 'text-xs font-semibold whitespace-nowrap text-muted-foreground md:t
  * fecha; el evento, su día y su hora; y si no hay nada que enseñar y el ítem no es del tipo por
  * defecto de su lista, el nombre del tipo («Compra»). En escritorio, una rejilla con eso en sus
  * columnas a la derecha, alineadas entre filas, y el ··· del menú al final (diseño 06, D8). Con
- * foto, su miniatura tras el control; con enlace, su dominio en la meta (diseño 15). Tocar
+ * foto, su miniatura tras el control; con enlace, su dominio en la meta (diseño 15). Una compra con
+ * precio lo lleva a la derecha, y en escritorio en la última columna, que reservan todas las filas
+ * de una lista con precios (diseño 16, A1 y D2). Tocar
  * la fila abre el detalle; mantenerla pulsada, el menú; deslizarla, sus acciones (`SwipeableRow`).
  */
 export function TaskRow({ item }: { item: Item }) {
@@ -57,9 +68,7 @@ export function TaskRow({ item }: { item: Item }) {
       item={item}
       surfaceClassName={cn(
         'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-3.5 duration-200 fade-in hover:border-border hover:shadow-card md:grid md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
-        thumb
-          ? 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto_auto_32px]'
-          : 'md:grid-cols-[24px_minmax(0,1fr)_auto_auto_32px]',
+        actions.prices ? (thumb ? GRID.thumbPrices : GRID.prices) : thumb ? GRID.thumb : GRID.plain,
         rowHighlight(actions, item),
       )}
     >
@@ -77,14 +86,22 @@ export function TaskRow({ item }: { item: Item }) {
           <RowTitle item={item} />
           {link && <p className="mt-0.5 hidden md:flex">{link}</p>}
         </div>
-        {(first ?? second ?? link) && (
+        {first || second || link ? (
           <div className="mt-1.5 flex min-w-0 items-center gap-2 md:contents">
             {first ?? <span className="hidden md:block" />}
             {link && <span className="flex min-w-0 md:hidden">{link}</span>}
             {second ?? <span className="hidden md:block" />}
           </div>
+        ) : (
+          // Sin nada debajo del título, sus dos columnas siguen ahí: lo de la derecha no se mueve.
+          <>
+            <span className="hidden md:block" />
+            <span className="hidden md:block" />
+          </>
         )}
       </div>
+      <RowPrice item={item} className="md:w-full" />
+      {actions.prices && !itemPrice(item) && <span className="hidden md:block" />}
       {isDesktop && <ItemRowDotsMenu item={item} />}
     </SwipeableRow>
   )

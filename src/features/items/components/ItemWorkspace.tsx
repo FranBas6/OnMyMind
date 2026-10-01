@@ -264,8 +264,19 @@ export function ItemWorkspace({
   )
 }
 
-/** Pone la lista de un grupo de filas encima de las acciones de `ItemWorkspace`. */
-export function ListScope({ list, children }: { list: List; children: ReactNode }) {
+/**
+ * Pone la lista de un grupo de filas encima de las acciones de `ItemWorkspace`, y si alguna de esas
+ * filas lleva precio (`hasPrices`).
+ */
+export function ListScope({
+  list,
+  prices = false,
+  children,
+}: {
+  list: List
+  prices?: boolean
+  children: ReactNode
+}) {
   const actions = useWorkspaceActions()
-  return <ItemActionsContext value={{ ...actions, list }}>{children}</ItemActionsContext>
+  return <ItemActionsContext value={{ ...actions, list, prices }}>{children}</ItemActionsContext>
 }

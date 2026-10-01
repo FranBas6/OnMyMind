@@ -59,6 +59,12 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     urlTitle: null,
     imageUrl: null,
     imagePath: null,
+    urlSite: null,
+    priceCents: null,
+    currency: 'EUR',
+    priceSource: null,
+    previousPriceCents: null,
+    priceCheckedAt: null,
     ...overrides,
   }
 }
@@ -121,12 +127,14 @@ describe('una foto y un enlace en cualquier ítem (diseño 15)', () => {
       expect(itemsApi.updateItem).toHaveBeenCalledWith(ID.camiseta, {
         url: URL_CAMISETA,
         urlTitle: null,
+        urlSite: null,
       })
     })
     expect(itemsApi.fetchLinkMetadata).toHaveBeenCalledWith(URL_CAMISETA)
     await waitFor(() => {
       expect(itemsApi.updateItem).toHaveBeenCalledWith(ID.camiseta, {
         urlTitle: 'Camiseta 1.ª equipación 25/26',
+        urlSite: null,
         imageUrl: 'https://cdn.realmadrid.com/camiseta.jpg',
       })
     })
@@ -154,7 +162,7 @@ describe('una foto y un enlace en cualquier ítem (diseño 15)', () => {
       'tiendamadridista.es/p/1024{Enter}',
     )
     await waitFor(() => {
-      expect(itemsApi.updateItem).toHaveBeenCalledWith(ID.camiseta, { urlTitle: '' })
+      expect(itemsApi.updateItem).toHaveBeenCalledWith(ID.camiseta, { urlTitle: '', urlSite: null })
     })
     expect(await within(sheet).findByText('tiendamadridista.es')).toBeInTheDocument()
     expect(within(sheet).getByText('tiendamadridista.es/p/1024')).toBeInTheDocument()
@@ -162,7 +170,11 @@ describe('una foto y un enlace en cualquier ítem (diseño 15)', () => {
     expect(within(sheet).getByRole('button', { name: '+ Foto' })).toBeInTheDocument()
 
     await user.click(within(sheet).getByRole('button', { name: 'Quitar el enlace' }))
-    expect(itemsApi.updateItem).toHaveBeenLastCalledWith(ID.camiseta, { url: null, urlTitle: null })
+    expect(itemsApi.updateItem).toHaveBeenLastCalledWith(ID.camiseta, {
+      url: null,
+      urlTitle: null,
+      urlSite: null,
+    })
     expect(await within(sheet).findByRole('button', { name: '+ Enlace' })).toBeInTheDocument()
   })
 
@@ -184,6 +196,7 @@ describe('una foto y un enlace en cualquier ítem (diseño 15)', () => {
     expect(itemsApi.updateItem).toHaveBeenCalledWith(ID.camiseta, {
       url: URL_CAMISETA,
       urlTitle: null,
+      urlSite: null,
     })
   })
 

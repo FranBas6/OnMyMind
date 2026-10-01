@@ -12,6 +12,11 @@ import type { Item, ItemStatus } from '../types'
 export interface ItemActions {
   /** La lista de estas filas: decide su aspecto (chips, acciones al deslizar). */
   list: List
+  /**
+   * Si alguna de estas filas lleva precio: en escritorio todas reservan su columna, para que no se
+   * muevan las de tareas (diseño 16, D2). Lo pone `ListScope`.
+   */
+  prices: boolean
   isDesktop: boolean
   /** El ítem con el detalle abierto (`?item=`): su fila va resaltada en escritorio. */
   selectedId: string | undefined
@@ -34,7 +39,7 @@ export interface ItemActions {
 }
 
 /** Todo menos la lista: las acciones valen para ítems de cualquier lista (cada uno usa la suya). */
-export type WorkspaceActions = Omit<ItemActions, 'list'>
+export type WorkspaceActions = Omit<ItemActions, 'list' | 'prices'>
 
 export const ItemWorkspaceContext = createContext<WorkspaceActions | null>(null)
 

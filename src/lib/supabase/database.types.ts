@@ -23,6 +23,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      item_prices: {
+        Row: {
+          currency: string
+          id: number
+          item_id: string
+          price_cents: number
+          recorded_at: string
+          source: Database['public']['Enums']['price_source']
+        }
+        Insert: {
+          currency?: string
+          id?: never
+          item_id: string
+          price_cents: number
+          recorded_at?: string
+          source?: Database['public']['Enums']['price_source']
+        }
+        Update: {
+          currency?: string
+          id?: never
+          item_id?: string
+          price_cents?: number
+          recorded_at?: string
+          source?: Database['public']['Enums']['price_source']
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'item_prices_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       items: {
         Row: {
           all_day: boolean
@@ -42,12 +77,16 @@ export type Database = {
           notes: string | null
           parent_id: string | null
           position: number
+          previous_price_cents: number | null
           price_cents: number | null
+          price_checked_at: string | null
+          price_source: Database['public']['Enums']['price_source'] | null
           recurrence: string | null
           status: string
           title: string
           updated_at: string
           url: string | null
+          url_site: string | null
           url_title: string | null
         }
         Insert: {
@@ -68,12 +107,16 @@ export type Database = {
           notes?: string | null
           parent_id?: string | null
           position?: number
+          previous_price_cents?: number | null
           price_cents?: number | null
+          price_checked_at?: string | null
+          price_source?: Database['public']['Enums']['price_source'] | null
           recurrence?: string | null
           status?: string
           title: string
           updated_at?: string
           url?: string | null
+          url_site?: string | null
           url_title?: string | null
         }
         Update: {
@@ -94,12 +137,16 @@ export type Database = {
           notes?: string | null
           parent_id?: string | null
           position?: number
+          previous_price_cents?: number | null
           price_cents?: number | null
+          price_checked_at?: string | null
+          price_source?: Database['public']['Enums']['price_source'] | null
           recurrence?: string | null
           status?: string
           title?: string
           updated_at?: string
           url?: string | null
+          url_site?: string | null
           url_title?: string | null
         }
         Relationships: [
@@ -306,6 +353,7 @@ export type Database = {
       item_kind: 'note' | 'task' | 'shopping' | 'event' | 'sublist'
       list_kind: 'inbox' | 'tasks' | 'shopping' | 'events' | 'custom'
       member_role: 'owner' | 'editor'
+      price_source: 'manual' | 'web' | 'auto'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -423,6 +471,7 @@ export const Constants = {
       item_kind: ['note', 'task', 'shopping', 'event', 'sublist'],
       list_kind: ['inbox', 'tasks', 'shopping', 'events', 'custom'],
       member_role: ['owner', 'editor'],
+      price_source: ['manual', 'web', 'auto'],
     },
   },
 } as const

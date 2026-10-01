@@ -61,13 +61,16 @@ describe('pendingTotal', () => {
     expect(pendingTotal(compras)).toBe('627\u00a0€')
   })
 
-  it('sin importe o en otro tipo de lista, nada', () => {
+  it('sin importe, nada', () => {
     expect(pendingTotal(list({ kind: 'shopping' }))).toBeNull()
+  })
+
+  it('en cualquier lista con compras con precio (plan 02-fase-2, decisión 6)', () => {
     expect(
       pendingTotal(
         list({ kind: 'tasks', counters: { pending: 1, done: 0, pendingPriceCents: 500 } }),
       ),
-    ).toBeNull()
+    ).toBe('5 €')
   })
 })
 

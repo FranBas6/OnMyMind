@@ -87,10 +87,11 @@ export function destinationSummary(list: List): string {
   return `${KIND_TEMPLATES[list.kind].label} · ${counterLabel(list.kind, list.counters.pending)}`
 }
 
-/** Línea del detalle básico que anticipa la ficha completa (diseño 06, T10 y T11). */
+/**
+ * Línea del detalle básico que anticipa la ficha completa (diseño 06, T10 y T11). Las compras ya
+ * tienen la suya desde la 2.1 (diseño 16).
+ */
 export function upcomingFieldsNote(kind: ItemKind): string | null {
-  if (kind === 'shopping')
-    return 'Precio, tienda e histórico llegarán con la ficha completa de Compras.'
   if (kind === 'event') {
     return 'Fecha, hora y recordatorio llegarán con la ficha completa de Eventos.'
   }

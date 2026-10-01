@@ -58,6 +58,12 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     urlTitle: null,
     imageUrl: null,
     imagePath: null,
+    urlSite: null,
+    priceCents: null,
+    currency: 'EUR',
+    priceSource: null,
+    previousPriceCents: null,
+    priceCheckedAt: null,
     ...overrides,
   }
 }
@@ -247,7 +253,7 @@ describe('detalle de una tarea', () => {
     expect(itemsApi.updateItemStatus).toHaveBeenCalledWith(ID.grifo, 'in_progress')
   })
 
-  it('la hoja básica de Compras: estados del tipo, sin prioridad ni fecha', async () => {
+  it('la ficha de una compra: estados del tipo, sin prioridad ni fecha, con «Añadir precio»', async () => {
     renderAt(`/lists/compras?item=${ID.camiseta}`, { compras: [camiseta] })
     const sheet = await screen.findByRole('dialog', { name: /Detalle de «Camiseta»/ })
 
@@ -258,7 +264,7 @@ describe('detalle de una tarea', () => {
     ).toEqual(['Pendiente', 'Comprado', 'Descartado'])
     expect(within(sheet).queryByText('Prioridad')).not.toBeInTheDocument()
     expect(within(sheet).queryByText('Fecha límite')).not.toBeInTheDocument()
-    expect(within(sheet).getByText(/llegarán con la ficha completa de Compras/)).toBeInTheDocument()
+    expect(within(sheet).getByRole('button', { name: 'Añadir precio' })).toBeInTheDocument()
   })
 })
 

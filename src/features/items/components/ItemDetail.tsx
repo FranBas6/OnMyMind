@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils'
 import { itemMoment, upcomingFieldsNote } from '../copy'
 import { PRIORITY_LABELS, PRIORITIES, type Priority } from '../fields'
 import { isChoosableKind, type ChoosableKind } from '../kind'
+import { useLinkMetadata } from '../hooks/useLinkMetadata'
 import { isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
 import type { Item, ItemPatch, ItemStatus } from '../types'
 import { DueDatePicker } from './DueDatePicker'
@@ -27,6 +28,7 @@ import { ItemControl } from './ItemControl'
 import { ItemMedia } from './ItemMedia'
 import { ItemTitleField, NotesField } from './ItemTextFields'
 import { KindField } from './KindField'
+import { PriceBlock } from './PriceBlock'
 import { SegmentedControl, type SegmentOption } from './SegmentedControl'
 
 const PRIORITY_SELECTED: Record<Priority, string> = {
@@ -60,7 +62,8 @@ const isChoosable = (item: Item): item is Item & { kind: ChoosableKind } =>
 
 /**
  * Contenido del detalle de un ítem (pantalla 11 y diseño 06). Debajo de las notas, la foto y el
- * enlace (diseño 15) y la fila «Tipo» (diseño 12) para convertirlo en otra cosa. Cada campo se guarda por su cuenta
+ * enlace (diseño 15); en una compra, su precio (diseño 16); y la fila «Tipo» (diseño 12) para
+ * convertirlo en otra cosa. Cada campo se guarda por su cuenta
  * al cambiarlo, sin botón «Guardar». Las tareas tienen prioridad y fecha límite; el resto de
  * tipos, en fase 1, la hoja básica: título, notas, estado, mover y borrar, con una línea que
  * anticipa su ficha completa. Sin «Recordatorio» (fase 2).
@@ -82,6 +85,9 @@ export function ItemDetail({
   }))
   const note = upcomingFieldsNote(item.kind)
   const online = useOnline()
+  // El enlace trae el título, la imagen y, en una compra, el precio: lo usan el bloque de precio y
+  // la fila del enlace (diseños 15 y 16).
+  const link = useLinkMetadata(item, online, onUpdate)
 
   const origin = (
     <span className="flex min-w-0 items-center gap-2 text-[13px] text-subtle-foreground">
@@ -155,6 +161,19 @@ export function ItemDetail({
           item={item}
           isDesktop={isDesktop}
           online={online}
+          linkState={link.linkState}
+          onUpdate={onUpdate}
+        />
+      )}
+
+      {/* Debajo de la foto y del enlace, de donde sale (Fran, 2026-10-01; el diseño 16 lo ponía
+          bajo el título). */}
+      {item.kind === 'shopping' && (
+        <PriceBlock
+          key={`price-${item.id}`}
+          item={item}
+          webPrice={link.priceState}
+          siteName={link.siteName}
           onUpdate={onUpdate}
         />
       )}

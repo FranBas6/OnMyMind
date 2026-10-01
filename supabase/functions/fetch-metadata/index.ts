@@ -1,16 +1,18 @@
-// fetch-metadata (04 §Backend, sesión 2a.6): el título y la imagen de una página, para enseñar un
-// enlace pegado en un ítem («Camiseta 1.ª equipación» y su foto). El navegador no puede leer otra
-// web (CORS), así que lo hace esta función.
+// fetch-metadata (04 §Backend, sesiones 2a.6 y 2.1): el título, la imagen y el precio de una
+// página, para enseñar un enlace pegado en un ítem («Camiseta 1.ª equipación», su foto y 100 €).
+// El navegador no puede leer otra web (CORS), así que lo hace esta función.
 //
-// Entrada `{ url }`; salida `{ title, image, siteName, domain }` (todo puede ser `null`). Sin
-// JavaScript, como mucho 8 s, 1 MB y tres redirecciones, cada una revisada (`allowedUrl`). Pide
-// sesión: la puerta de Supabase verifica el JWT (`verify_jwt`, por defecto), así no sirve de proxy
-// abierto. El precio (JSON-LD `Product`) llega con Compras (2.1).
+// Entrada `{ url }`; salida `{ title, image, siteName, price, domain }` (todo puede ser `null`).
+// Sin JavaScript, como mucho 8 s, 2 MB y tres redirecciones, cada una revisada (`allowedUrl`).
+// Pide la sesión de un usuario: la puerta de Supabase verifica la firma del JWT (`verify_jwt`), pero
+// también deja pasar la clave pública `anon`, que va en la app; por eso aquí se mira además que el
+// token sea de alguien con sesión (`role = authenticated`). Así no sirve de proxy abierto.
 
-import { allowedUrl, parseMetadata, type PageMetadata } from './metadata.ts'
+import { allowedUrl, isUserToken, parseMetadata, type PageMetadata } from './metadata.ts'
 
 const TIMEOUT_MS = 8000
-const MAX_BYTES = 1_000_000
+// IKEA pone su `Product` pasado el primer mega de la página (2.1).
+const MAX_BYTES = 2_000_000
 const MAX_REDIRECTS = 3
 const USER_AGENT = 'Mozilla/5.0 (compatible; OnMyMindBot/1.0; +https://onmymind.pages.dev)'
 
@@ -20,7 +22,7 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-const EMPTY: PageMetadata = { title: null, image: null, siteName: null }
+const EMPTY: PageMetadata = { title: null, image: null, siteName: null, price: null }
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -32,6 +34,7 @@ function json(body: unknown, status = 200): Response {
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (request.method !== 'POST') return json({ error: 'method' }, 405)
+  if (!isUserToken(request.headers.get('authorization'))) return json({ error: 'session' }, 401)
 
   let raw: unknown
   try {
@@ -96,7 +99,10 @@ async function fetchPage(
   return null
 }
 
-/** Lee hasta 1 MB, en la codificación que diga la cabecera (o UTF-8). */
+/**
+ * Lee hasta 2 MB, en la codificación que diga la cabecera (o UTF-8). Sigue tras el `<head>`: el
+ * JSON-LD del producto, con su precio, suele ir en el cuerpo (2.1).
+ */
 async function readLimited(response: Response, type: string): Promise<string> {
   const charset = /charset=([^;]+)/i.exec(type)?.[1]?.trim() ?? 'utf-8'
   let decoder: TextDecoder
@@ -114,8 +120,6 @@ async function readLimited(response: Response, type: string): Promise<string> {
     if (done) break
     bytes += value.byteLength
     html += decoder.decode(value, { stream: true })
-    // Con el `<head>` ya leído no hace falta el resto de la página.
-    if (/<\/head\s*>/i.test(html)) break
   }
   await reader.cancel()
   return html + decoder.decode()

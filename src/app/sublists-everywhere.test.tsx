@@ -66,6 +66,12 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     urlTitle: null,
     imageUrl: null,
     imagePath: null,
+    urlSite: null,
+    priceCents: null,
+    currency: 'EUR',
+    priceSource: null,
+    previousPriceCents: null,
+    priceCheckedAt: null,
     ...overrides,
   }
 }

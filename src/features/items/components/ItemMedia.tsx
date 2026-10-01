@@ -1,13 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
 import { Camera, CircleAlert, ExternalLink, Link2, LoaderCircle, WifiOff, X } from 'lucide-react'
-import { useEffect, useId, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
+import { useId, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 
-import { queryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
 
-import { fetchLinkMetadata } from '../api'
+import type { LinkState } from '../hooks/useLinkMetadata'
 import { usePhotoSrc, usePhotoUpload } from '../hooks/usePhoto'
-import { linkDomain, linkPath, normalizeLink, URL_TITLE_MAX_LENGTH } from '../links'
+import { linkDomain, linkPath, normalizeLink } from '../links'
 import type { Item, ItemPatch } from '../types'
 import { PhotoViewer } from './PhotoViewer'
 
@@ -15,6 +13,8 @@ interface ItemMediaProps {
   item: Item
   isDesktop: boolean
   online: boolean
+  /** Cómo va el título del enlace: lo busca `useLinkMetadata`, que comparte con el precio. */
+  linkState: LinkState
   onUpdate: (item: Item, patch: ItemPatch) => void
 }
 
@@ -22,59 +22,26 @@ interface ItemMediaProps {
  * La foto y el enlace de un ítem, debajo de las notas (diseño 15). Sin nada, dos botones a medias,
  * «+ Foto» y «+ Enlace». Lo que hay ocupa su sitio en orden fijo (la foto, un cuadrado de 96 px;
  * después la fila del enlace) y el botón que falta va debajo, a todo el ancho. Pegar un enlace lo
- * guarda al momento y busca solo el título y la imagen de la página (`fetch-metadata`): si la cosa
- * aún no tenía foto, esa imagen pasa a serlo, con «De la web».
+ * guarda al momento y busca solo el título y la imagen de la página (`useLinkMetadata`): si la
+ * cosa aún no tenía foto, esa imagen pasa a serlo, con «De la web».
  */
-export function ItemMedia({ item, isDesktop, online, onUpdate }: ItemMediaProps) {
+export function ItemMedia({ item, isDesktop, online, linkState, onUpdate }: ItemMediaProps) {
   const [editingLink, setEditingLink] = useState(false)
   const [viewing, setViewing] = useState(false)
   const picker = useRef<HTMLInputElement>(null)
   const upload = usePhotoUpload(item, onUpdate)
   const photo = usePhotoSrc(item, 'thumb')
 
-  // El título y la imagen de la página, una vez por enlace. Sin red, la consulta espera en pausa y
-  // sale sola al volver la conexión (diseño 15, M12).
-  const needsMetadata = item.url !== null && item.urlTitle === null
-  const metadata = useQuery({
-    queryKey: queryKeys.linkMetadata(item.url ?? ''),
-    queryFn: () => fetchLinkMetadata(item.url ?? ''),
-    enabled: needsMetadata,
-    // Sin red ni lo intenta (la app va en `offlineFirst`): espera en pausa y sale al volver.
-    networkMode: 'online',
-    staleTime: Infinity,
-    retry: 1,
-  })
-  // Una vez por enlace: si guardar falla y vuelve atrás, no se reintenta en bucle.
-  const applied = useRef<string | null>(null)
-  useEffect(() => {
-    if (!needsMetadata || !metadata.data || applied.current === item.url) return
-    applied.current = item.url
-    const patch: ItemPatch = {
-      urlTitle: metadata.data.title?.slice(0, URL_TITLE_MAX_LENGTH) ?? '',
-    }
-    if (!item.imagePath && !item.imageUrl && metadata.data.image)
-      patch.imageUrl = metadata.data.image
-    onUpdate(item, patch)
-  }, [needsMetadata, metadata.data, item, onUpdate])
-
   const hasPhoto =
     item.imagePath !== null || item.imageUrl !== null || upload.state.status !== 'idle'
   const hasLink = item.url !== null
-  const linkState: LinkState = !needsMetadata
-    ? 'ready'
-    : !online || metadata.fetchStatus === 'paused'
-      ? 'offline'
-      : metadata.isError && metadata.fetchStatus === 'idle'
-        ? // No se ha podido preguntar: se ve como sin título y se reintenta al volver a abrirlo.
-          'unavailable'
-        : 'searching'
 
   const pickPhoto = () => {
     picker.current?.click()
   }
   const saveLink = (url: string) => {
     setEditingLink(false)
-    onUpdate(item, { url, urlTitle: null })
+    onUpdate(item, { url, urlTitle: null, urlSite: null })
   }
 
   const photoButton = (
@@ -137,7 +104,7 @@ export function ItemMedia({ item, isDesktop, online, onUpdate }: ItemMediaProps)
               title={item.urlTitle}
               state={linkState}
               onRemove={() => {
-                onUpdate(item, { url: null, urlTitle: null })
+                onUpdate(item, { url: null, urlTitle: null, urlSite: null })
               }}
             />
           )}
@@ -282,8 +249,6 @@ function PhotoSquare({
     </div>
   )
 }
-
-type LinkState = 'ready' | 'searching' | 'offline' | 'unavailable'
 
 /**
  * La fila del enlace (diseño 15, M3 a M5 y M12): el título de la página y el dominio debajo, ↗ para

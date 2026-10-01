@@ -40,7 +40,22 @@ export interface Item {
   imageUrl: string | null
   /** Su foto propia en Storage (`item-images`); si la hay, manda sobre `imageUrl`. */
   imagePath: string | null
+  /** El nombre de la web del enlace (`og:site_name`): en una compra, la tienda (2.1). */
+  urlSite: string | null
+  /** El precio de una compra, en céntimos (2.1, diseño 16). Solo lo tienen las compras. */
+  priceCents: number | null
+  /** ISO 4217; el total de la lista solo suma euros. */
+  currency: string
+  /** De dónde salió el precio actual: escrito a mano o traído de la web. */
+  priceSource: PriceSource | null
+  /** El precio de antes, para la variación («↓ 8 %»). Lo pone el trigger, no el cliente. */
+  previousPriceCents: number | null
+  /** Cuándo se puso o se miró el precio («de la web · hoy»). Lo pone el trigger al cambiarlo. */
+  priceCheckedAt: Date | null
 }
+
+/** `manual`: escrito a mano; `web`: de la página, porque se pegó el enlace o se pidió; `auto`: fase 3. */
+export type PriceSource = 'manual' | 'web' | 'auto'
 
 /**
  * Algo que salió de «En mente» y vive ya en otra lista: la inbox lo enseña tachado en su «Fuera
@@ -69,4 +84,9 @@ export interface ItemPatch {
   urlTitle?: string | null
   imageUrl?: string | null
   imagePath?: string | null
+  urlSite?: string | null
+  /** El precio va siempre con su origen (y su moneda, si viene de la web): el trigger los copia. */
+  priceCents?: number | null
+  currency?: string
+  priceSource?: PriceSource | null
 }

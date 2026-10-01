@@ -40,28 +40,28 @@ interface KindFields {
   priority: boolean
   dueAt: boolean
   recurrence: boolean
+  price: boolean
 }
 
-const NONE: KindFields = { priority: false, dueAt: false, recurrence: false }
+const NONE: KindFields = { priority: false, dueAt: false, recurrence: false, price: false }
 
+/** La foto y el enlace (2a.6) los usan todos, así que no se pierden nunca. */
 const KIND_FIELDS: Record<ItemKind, KindFields> = {
   note: NONE,
-  task: { priority: true, dueAt: true, recurrence: false },
-  // El precio, la tienda y la foto llegan con la ficha de Compras (2.1).
-  shopping: NONE,
-  event: { priority: false, dueAt: true, recurrence: true },
+  task: { ...NONE, priority: true, dueAt: true },
+  // Solo las compras tienen precio (plan 02-fase-2, decisión 5).
+  shopping: { ...NONE, price: true },
+  event: { ...NONE, dueAt: true, recurrence: true },
   sublist: NONE,
 }
 
 /** Lo que se pierde al cambiar el tipo: lo que el ítem tiene y el tipo nuevo no usa. */
-export interface KindChangeLoss {
-  priority: boolean
-  dueAt: boolean
-  recurrence: boolean
-}
+export type KindChangeLoss = KindFields
+
+type KindChangeFields = Pick<Item, 'status' | 'priority' | 'dueAt' | 'recurrence' | 'priceCents'>
 
 export function kindChangeLoss(
-  item: Pick<Item, 'priority' | 'dueAt' | 'recurrence'>,
+  item: Omit<KindChangeFields, 'status'>,
   to: ItemKind,
 ): KindChangeLoss {
   const uses = KIND_FIELDS[to]
@@ -69,6 +69,7 @@ export function kindChangeLoss(
     priority: item.priority !== null && !uses.priority,
     dueAt: item.dueAt !== null && !uses.dueAt,
     recurrence: item.recurrence !== null && !uses.recurrence,
+    price: item.priceCents !== null && !uses.price,
   }
 }
 
@@ -77,15 +78,17 @@ export function kindChangeLoss(
  * misma regla que al mover (`translateStatus`) y lo que el tipo nuevo no usa se quita; lo demás se
  * queda como estaba: una tarea con fecha pasa a ser un evento ese mismo día.
  */
-export function changeKindPatch(
-  item: Pick<Item, 'status' | 'priority' | 'dueAt' | 'recurrence'>,
-  to: ItemKind,
-): ItemPatch {
+export function changeKindPatch(item: KindChangeFields, to: ItemKind): ItemPatch {
   const loss = kindChangeLoss(item, to)
   const patch: ItemPatch = { kind: to, status: translateStatus(item.status, to) }
   if (loss.priority) patch.priority = null
   if (loss.dueAt) patch.dueAt = null
   if (loss.recurrence) patch.recurrence = null
+  // El histórico se queda en la base: si vuelve a ser compra, vuelve con él.
+  if (loss.price) {
+    patch.priceCents = null
+    patch.priceSource = null
+  }
   return patch
 }
 
@@ -93,6 +96,7 @@ const LOSS_NOUNS: [keyof KindChangeLoss, string][] = [
   ['priority', 'la prioridad'],
   ['dueAt', 'la fecha'],
   ['recurrence', 'la repetición'],
+  ['price', 'el precio'],
 ]
 
 /** «la prioridad», «la prioridad y la fecha», «la prioridad, la fecha y la repetición». */
@@ -107,7 +111,7 @@ function joinNouns(nouns: string[]): string {
  * igual o cambie («En curso pasa a Pendiente.»).
  */
 export function kindChangeNotice(
-  item: Pick<Item, 'status' | 'priority' | 'dueAt' | 'recurrence'>,
+  item: KindChangeFields,
   to: ItemKind,
 ): { text: string; losesSomething: boolean } {
   const loss = kindChangeLoss(item, to)

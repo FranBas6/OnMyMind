@@ -4,6 +4,7 @@ import {
   hasThumb,
   ItemControl,
   LinkMeta,
+  RowPrice,
   RowThumb,
   RowTitle,
   rowHighlight,
@@ -35,9 +36,13 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
       item={item}
       surfaceClassName={cn(
         'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-[13px] duration-200 fade-in hover:border-border hover:shadow-card md:grid md:items-center md:rounded-2xl md:py-3 md:pr-[18px] md:pl-[18px]',
-        thumb
-          ? 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto]'
-          : 'md:grid-cols-[24px_minmax(0,1fr)_auto]',
+        actions.prices
+          ? thumb
+            ? 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto_96px]'
+            : 'md:grid-cols-[24px_minmax(0,1fr)_auto_96px]'
+          : thumb
+            ? 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto]'
+            : 'md:grid-cols-[24px_minmax(0,1fr)_auto]',
         rowHighlight(actions, item),
       )}
     >
@@ -65,6 +70,9 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
           <span>{resultMeta(item, now, route)}</span>
         </p>
       </div>
+      {/* Una compra con precio lo lleva a la derecha, como en su lista (diseño 16, A5 y D6). */}
+      <RowPrice item={item} className="md:w-full" />
+      {actions.prices && item.priceCents === null && <span className="hidden md:block" />}
     </SwipeableRow>
   )
 }

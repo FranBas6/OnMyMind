@@ -15,9 +15,16 @@ const tarea = {
   priority: 'high' as const,
   dueAt: new Date(2026, 9, 3),
   recurrence: null,
+  priceCents: null,
 }
 
-const sinNada = { status: 'pending' as const, priority: null, dueAt: null, recurrence: null }
+const sinNada = {
+  status: 'pending' as const,
+  priority: null,
+  dueAt: null,
+  recurrence: null,
+  priceCents: null,
+}
 
 describe('changeKindPatch', () => {
   it('una tarea en curso que pasa a compra queda pendiente, sin prioridad ni fecha', () => {
@@ -48,6 +55,7 @@ describe('changeKindPatch', () => {
       priority: null,
       dueAt: tarea.dueAt,
       recurrence: 'yearly',
+      priceCents: null,
     }
     expect(changeKindPatch(evento, 'task')).toEqual({
       kind: 'task',
@@ -61,6 +69,15 @@ describe('changeKindPatch', () => {
       status: 'bought',
     })
   })
+
+  it('una compra con precio que pasa a tarea pierde el precio (solo las compras lo tienen)', () => {
+    expect(changeKindPatch({ ...sinNada, priceCents: 27900 }, 'task')).toEqual({
+      kind: 'task',
+      status: 'pending',
+      priceCents: null,
+      priceSource: null,
+    })
+  })
 })
 
 describe('lo que se pierde', () => {
@@ -69,11 +86,13 @@ describe('lo que se pierde', () => {
       priority: false,
       dueAt: false,
       recurrence: false,
+      price: false,
     })
     expect(kindChangeLoss({ ...sinNada, priority: 'low' }, 'event')).toEqual({
       priority: true,
       dueAt: false,
       recurrence: false,
+      price: false,
     })
   })
 })
@@ -99,6 +118,12 @@ describe('aviso antes de cambiar (diseño 12, T5)', () => {
       'Al pasar a Tarea no se pierde nada. Comprado pasa a Hecha.',
       false,
     ],
+    [
+      { ...sinNada, priceCents: 9900 },
+      'event',
+      'Al pasar a Evento se quita el precio. Pendiente pasa a Próximo.',
+      true,
+    ],
   ] as const)('%j a %s: «%s»', (item, to, text, losesSomething) => {
     expect(kindChangeNotice(item, to)).toEqual({ text, losesSomething })
   })
@@ -109,6 +134,7 @@ describe('aviso antes de cambiar (diseño 12, T5)', () => {
       priority: 'high' as const,
       dueAt: new Date(),
       recurrence: 'weekly',
+      priceCents: null,
     }
     expect(kindChangeNotice(todo, 'shopping').text).toBe(
       'Al pasar a Compra se quitan la prioridad, la fecha y la repetición. Próximo pasa a Pendiente.',

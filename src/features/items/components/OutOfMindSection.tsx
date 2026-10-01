@@ -5,6 +5,7 @@ import { formatCaptureAge } from '@/lib/date'
 import { cn } from '@/lib/utils'
 
 import { kindMark } from '../kind'
+import { itemPrice } from '../prices'
 import { STATUS_LABELS } from '../status'
 import type { Item, MovedItem } from '../types'
 import { ItemControl } from './ItemControl'
@@ -141,11 +142,18 @@ const ROW =
 /**
  * Una fila terminada: tachada, con el control de su tipo atenuado; `aside`, a la derecha (en Hoy,
  * su lista). Si no es del tipo por defecto de la lista, lleva su estado («Cable HDMI · Comprado»,
- * diseño 12), porque el título solo no dice cómo terminó.
+ * diseño 12), porque el título solo no dice cómo terminó. Una compra con precio dice debajo cómo
+ * terminó y, si se compró, por cuánto («Comprado · 12 €», diseño 16, A1 y D2).
  */
 export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
   const actions = useItemActions()
-  const status = kindMark(item.kind, actions.list.kind) ? STATUS_LABELS[item.status] : null
+  const price = itemPrice(item)
+  const paid = price
+    ? item.status === 'bought'
+      ? `${STATUS_LABELS[item.status]} · ${price.text}`
+      : STATUS_LABELS[item.status]
+    : null
+  const status = !paid && kindMark(item.kind, actions.list.kind) ? STATUS_LABELS[item.status] : null
   return (
     <SwipeableRow
       item={item}
@@ -158,12 +166,15 @@ export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
         }}
         className="z-10 opacity-60"
       />
-      <RowTitle
-        item={item}
-        className="truncate text-[15px] font-normal text-subtle-foreground line-through"
-      >
-        {status ? `${item.title} · ${status}` : undefined}
-      </RowTitle>
+      <div className="min-w-0 flex-1">
+        <RowTitle
+          item={item}
+          className="truncate text-[15px] font-normal text-subtle-foreground line-through"
+        >
+          {status ? `${item.title} · ${status}` : undefined}
+        </RowTitle>
+        {paid && <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{paid}</p>}
+      </div>
       {aside}
     </SwipeableRow>
   )

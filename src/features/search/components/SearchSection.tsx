@@ -2,7 +2,7 @@ import { Archive } from 'lucide-react'
 import { useId } from 'react'
 
 import { InboxMark } from '@/features/capture'
-import { ListScope } from '@/features/items'
+import { hasPrices, ListScope } from '@/features/items'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
@@ -36,7 +36,7 @@ export function SearchSection({ section, now }: { section: Section; now: Date })
           </span>
         )}
       </h2>
-      <ListScope list={list}>
+      <ListScope list={list} prices={hasPrices(results.map((result) => result.item))}>
         <ul aria-label={list.name} className="flex flex-col gap-2">
           {results.map((result) => (
             <SearchResultRow key={result.item.id} result={result} now={now} />

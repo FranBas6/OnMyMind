@@ -26,6 +26,7 @@ import { useLingering } from '../hooks/useLingering'
 import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
 import { isChoosableKind, type AddableKind } from '../kind'
 import { defaultItemKind, initialStatus } from '../status'
+import { hasPrices, pendingTotals } from '../prices'
 import { childrenOf, sublistSummary, topLevel } from '../sublists'
 import type { Item, MovedItem } from '../types'
 import { AddItemBar, type AddItemBarHandle } from './AddItemBar'
@@ -41,6 +42,7 @@ import {
 } from './ItemsEmptyState'
 import { ItemWorkspace, ListScope } from './ItemWorkspace'
 import { OutOfMindSection } from './OutOfMindSection'
+import { PriceTotal } from './PriceTotal'
 import { SublistHeader } from './SublistHeader'
 
 /** Lo que tarda un ítem recién completado en bajar a «Fuera de la cabeza» (06 §Interacción). */
@@ -110,6 +112,16 @@ export function ListDetail({
       ? sublistSummary(sublist, shown ?? [], list.name)
       : listSummary(list.kind, all)
   const empty = shown?.length === 0
+  // Con los ítems ya cargados, el total sigue a lo optimista; mientras, el de la vista.
+  const total = !inbox && (
+    <PriceTotal
+      totals={
+        all && shown
+          ? pendingTotals(sublist ? shown : all)
+          : { euros: list.counters.pendingPriceCents, others: [] }
+      }
+    />
+  )
 
   // Sin red y sin nada de esta lista en caché (nunca se abrió aquí): se puede añadir igual.
   // (Sin esperar a que la consulta quede en pausa, que tarda lo que su primer intento.)
@@ -163,7 +175,7 @@ export function ListDetail({
         onOpenSublist(item.id, options)
       }}
     >
-      <ListScope list={list}>
+      <ListScope list={list} prices={hasPrices(shown ?? [])}>
         <div
           className={cn(
             'flex flex-1 flex-col md:min-h-[calc(100dvh-4.5rem)] md:gap-[22px]',
@@ -177,6 +189,7 @@ export function ListDetail({
               sublist={sublist}
               list={list}
               summary={summary}
+              total={total}
               renameKey={renameKey}
               onRename={(title) => {
                 updateItem.mutate({ item: sublist, patch: { title } })
@@ -186,6 +199,7 @@ export function ListDetail({
             <ListDetailHeader
               list={list}
               summary={summary}
+              total={total}
               onNewSublist={() => {
                 // Después de que el menú se cierre y devuelva el foco a su botón.
                 window.setTimeout(() => {

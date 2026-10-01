@@ -12,10 +12,11 @@ export const itemTitleSchema = z.string().trim().min(1).max(ITEM_TITLE_MAX_LENGT
 
 const itemStatusSchema = z.enum(ITEM_STATUSES)
 const itemKindSchema = z.enum(ITEM_KINDS)
+const priceSourceSchema = z.enum(['manual', 'web', 'auto']).nullable()
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path'
+  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at'
 
 /** Límite de las notas: el `check` de `items.notes`. */
 export const ITEM_NOTES_MAX_LENGTH = 5000
@@ -41,6 +42,12 @@ export interface ItemRow {
   url_title: string | null
   image_url: string | null
   image_path: string | null
+  url_site: string | null
+  price_cents: number | null
+  currency: string | null
+  price_source: string | null
+  previous_price_cents: number | null
+  price_checked_at: string | null
 }
 
 const toDate = (value: string | null) => (value === null ? null : new Date(value))
@@ -68,6 +75,12 @@ export function mapItemRow(row: ItemRow): Item {
     urlTitle: row.url_title,
     imageUrl: row.image_url,
     imagePath: row.image_path,
+    urlSite: row.url_site,
+    priceCents: row.price_cents,
+    currency: row.currency ?? 'EUR',
+    priceSource: priceSourceSchema.parse(row.price_source),
+    previousPriceCents: row.previous_price_cents,
+    priceCheckedAt: toDate(row.price_checked_at),
   }
 }
 

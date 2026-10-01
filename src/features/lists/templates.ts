@@ -71,9 +71,12 @@ export function doneLabel(kind: ListKind, count: number): string {
   return `${count} ${count === 1 ? doneCounter.one : doneCounter.other}`
 }
 
-/** Total pendiente de una lista de compras («627 €»), o `null` si no es de compras o no hay importe. */
+/**
+ * Total pendiente de una lista («627 €»), o `null` si no hay importe. Cuenta las compras de
+ * cualquier lista, no solo las de Compras (plan 02-fase-2, decisión 6), y solo en euros.
+ */
 export function pendingTotal(list: List): string | null {
-  if (list.kind !== 'shopping' || list.counters.pendingPriceCents <= 0) return null
+  if (list.counters.pendingPriceCents <= 0) return null
   return formatCents(list.counters.pendingPriceCents)
 }
 

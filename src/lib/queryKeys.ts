@@ -36,7 +36,8 @@ export const queryKeys = {
    */
   photo: (path: string, size: 'thumb' | 'full') => ['photo', path, size] as const,
   /** El título y la imagen de la página de un enlace (`fetch-metadata`). */
-  linkMetadata: (url: string) => ['link-metadata', url] as const,
+  // `2`: desde la 2.1 trae también el precio; lo guardado antes en caché no lo tenía.
+  linkMetadata: (url: string) => ['link-metadata', 2, url] as const,
   prices: (itemId: string) => ['prices', itemId] as const,
   profile: () => ['profile'] as const,
 }

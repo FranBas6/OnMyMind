@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import type { List } from '@/features/lists'
 
@@ -17,6 +18,8 @@ interface SublistHeaderProps {
   /** Entrar con el nombre listo para editar («Renombrar»): cada valor nuevo lo vuelve a enfocar. */
   renameKey: number | undefined
   onRename: (title: string) => void
+  /** El total de sus compras pendientes, a la derecha del nombre (diseño 16, A3). */
+  total?: ReactNode
 }
 
 /**
@@ -25,7 +28,14 @@ interface SublistHeaderProps {
  * «Renombrar», decisión de Fran). El ··· abre su menú, el mismo que el de su fila: una hoja en
  * móvil y un popover a la derecha del título en escritorio.
  */
-export function SublistHeader({ sublist, list, summary, renameKey, onRename }: SublistHeaderProps) {
+export function SublistHeader({
+  sublist,
+  list,
+  summary,
+  renameKey,
+  onRename,
+  total,
+}: SublistHeaderProps) {
   const actions = useItemActions()
   const menuLabel = `Opciones de «${sublist.title}»`
 
@@ -78,6 +88,7 @@ export function SublistHeader({ sublist, list, summary, renameKey, onRename }: S
             <p className="mt-0.5 text-[13px] text-muted-foreground md:text-sm">{summary}</p>
           </div>
         </div>
+        {total}
         {actions.isDesktop && <ItemRowDotsMenu item={sublist} variant="header" />}
       </div>
     </header>

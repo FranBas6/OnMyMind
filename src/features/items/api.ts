@@ -116,6 +116,10 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
   if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl
   if (patch.imagePath !== undefined) row.image_path = patch.imagePath
   if (patch.recurrence !== undefined) row.recurrence = patch.recurrence
+  if (patch.urlSite !== undefined) row.url_site = patch.urlSite
+  if (patch.priceCents !== undefined) row.price_cents = patch.priceCents
+  if (patch.currency !== undefined) row.currency = patch.currency
+  if (patch.priceSource !== undefined) row.price_source = patch.priceSource
   const { error } = await supabase.from('items').update(row).eq('id', itemId)
   if (error) throw error
 }
@@ -201,6 +205,12 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
       url_title: item.urlTitle,
       image_url: item.imageUrl,
       image_path: item.imagePath,
+      url_site: item.urlSite,
+      price_cents: item.priceCents,
+      currency: item.currency,
+      price_source: item.priceSource,
+      previous_price_cents: item.previousPriceCents,
+      price_checked_at: item.priceCheckedAt?.toISOString() ?? null,
     })),
     { onConflict: 'id', ignoreDuplicates: true },
   )
@@ -242,6 +252,11 @@ const linkMetadataSchema = z.object({
   image: z.string().nullable(),
   siteName: z.string().nullable().optional(),
   domain: z.string().optional(),
+  /** El precio de un producto (2.1); una función sin desplegar aún no lo manda. */
+  price: z
+    .object({ cents: z.number().int().positive(), currency: z.string().regex(/^[A-Z]{3}$/) })
+    .nullable()
+    .optional(),
 })
 export type LinkMetadata = z.infer<typeof linkMetadataSchema>
 
