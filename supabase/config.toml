@@ -403,7 +403,7 @@ authorization_url_path = "/oauth/consent"
 allow_dynamic_registration = false
 
 [edge_runtime]
-# Apagado hasta que exista la primera Edge Function (`fetch-metadata`, sesión 2.5): ~1 GB de imagen.
+# Apagado para ahorrar ~1 GB de imagen. `fetch-metadata` existe desde la 2a.6: enciéndelo para servirla en local.
 enabled = false
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.

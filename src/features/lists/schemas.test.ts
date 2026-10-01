@@ -61,7 +61,7 @@ describe('listFormSchema', () => {
     expect(result.error?.issues[0]?.message).toBe('Máximo 80 caracteres. Llevas 96.')
   })
 
-  it('«Personalizada» todavía no se puede crear', () => {
+  it('«Personalizada» no se puede crear (ADR-011)', () => {
     expect(
       listFormSchema.safeParse({ name: 'Libros', color: 'teal', kind: 'custom' }).success,
     ).toBe(false)

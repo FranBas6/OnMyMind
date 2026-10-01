@@ -1,7 +1,10 @@
 import { ChevronRight } from 'lucide-react'
 
 import {
+  hasThumb,
   ItemControl,
+  LinkMeta,
+  RowThumb,
   RowTitle,
   rowHighlight,
   SublistIcon,
@@ -26,11 +29,15 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
   const { item, titleRanges, snippet, done, parent } = result
   if (item.kind === 'sublist') return <SublistResultRow result={result} />
   const route = parent ? `${actions.list.name} › ${parent.title}` : undefined
+  const thumb = hasThumb(item)
   return (
     <SwipeableRow
       item={item}
       surfaceClassName={cn(
-        'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-[13px] duration-200 fade-in hover:border-border hover:shadow-card md:grid md:grid-cols-[24px_minmax(0,1fr)_auto] md:items-center md:rounded-2xl md:py-3 md:pr-[18px] md:pl-[18px]',
+        'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-[13px] duration-200 fade-in hover:border-border hover:shadow-card md:grid md:items-center md:rounded-2xl md:py-3 md:pr-[18px] md:pl-[18px]',
+        thumb
+          ? 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto]'
+          : 'md:grid-cols-[24px_minmax(0,1fr)_auto]',
         rowHighlight(actions, item),
       )}
     >
@@ -41,6 +48,7 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
         }}
         className="z-10 mt-px md:mt-0"
       />
+      <RowThumb item={item} />
       <div className="min-w-0 flex-1 md:contents">
         <div className="min-w-0">
           <RowTitle item={item} className={cn(done && 'text-subtle-foreground line-through')}>
@@ -52,8 +60,9 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
             </p>
           )}
         </div>
-        <p className="mt-[5px] text-xs font-semibold text-muted-foreground md:mt-0 md:text-[13px] md:whitespace-nowrap">
-          {resultMeta(item, now, route)}
+        <p className="mt-[5px] flex min-w-0 flex-wrap items-center gap-x-2 text-xs font-semibold text-muted-foreground md:mt-0 md:text-[13px] md:whitespace-nowrap">
+          {item.url && <LinkMeta url={item.url} />}
+          <span>{resultMeta(item, now, route)}</span>
         </p>
       </div>
     </SwipeableRow>

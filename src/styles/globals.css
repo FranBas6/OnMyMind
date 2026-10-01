@@ -31,6 +31,9 @@
   --color-swipe-move: #6e6b7a;
   --color-swipe-delete: #dc2d33;
 
+  /* Velo del visor de fotos (diseño 15, M11 y D4): casi negro en claro y en oscuro. */
+  --color-viewer-scrim: rgb(14 13 18 / 0.88);
+
   /* Radios: 16px controles (rounded-md), 20–28px tarjetas y hojas (rounded-lg … rounded-2xl) */
   --radius-sm: 0.75rem;
   --radius-md: 1rem;

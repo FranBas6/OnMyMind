@@ -15,7 +15,7 @@ const itemKindSchema = z.enum(ITEM_KINDS)
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at'
+  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path'
 
 /** Límite de las notas: el `check` de `items.notes`. */
 export const ITEM_NOTES_MAX_LENGTH = 5000
@@ -37,6 +37,10 @@ export interface ItemRow {
   created_at: string
   left_inbox_id: string | null
   left_inbox_at: string | null
+  url: string | null
+  url_title: string | null
+  image_url: string | null
+  image_path: string | null
 }
 
 const toDate = (value: string | null) => (value === null ? null : new Date(value))
@@ -60,6 +64,10 @@ export function mapItemRow(row: ItemRow): Item {
     createdAt: new Date(row.created_at),
     leftInboxId: row.left_inbox_id,
     leftInboxAt: toDate(row.left_inbox_at),
+    url: row.url,
+    urlTitle: row.url_title,
+    imageUrl: row.image_url,
+    imagePath: row.image_path,
   }
 }
 

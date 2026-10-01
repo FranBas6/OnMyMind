@@ -47,6 +47,10 @@ const grifo: Item = {
   createdAt: new Date('2026-09-20T10:00:00'),
   leftInboxId: null,
   leftInboxAt: null,
+  url: null,
+  urlTitle: null,
+  imageUrl: null,
+  imagePath: null,
 }
 
 function setup(listItems: Item[] = [grifo]) {

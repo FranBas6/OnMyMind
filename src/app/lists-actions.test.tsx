@@ -94,7 +94,8 @@ describe('acciones sobre listas', () => {
 
     await user.type(within(dialog).getByLabelText('Nombre de la lista'), 'Trabajo')
     await user.click(within(dialog).getByRole('radio', { name: 'Verde azulado' }))
-    expect(within(dialog).getByRole('radio', { name: /Personalizada/ })).toBeDisabled()
+    // «Personalizada» ya no se ofrece (ADR-011, descartada).
+    expect(within(dialog).queryByRole('radio', { name: /Personalizada/ })).not.toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Crear' }))
 
     await waitFor(() => {

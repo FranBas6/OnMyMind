@@ -111,7 +111,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // También la lógica pura de las edge functions (Deno), que se prueba igual que la app.
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'supabase/functions/**/*.test.ts'],
     css: false,
     // Valores ficticios: el cliente de Supabase lanza si faltan al importarse. Los tests no
     // hablan con Supabase (la sesión se inyecta en el contexto del router).

@@ -8,6 +8,8 @@ import { ItemControl } from './ItemControl'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { ItemRowDotsMenu } from './ItemRowMenu'
 import { PriorityChip } from './PriorityChip'
+import { hasThumb } from '../photos'
+import { LinkMeta, RowThumb } from './RowMedia'
 import { RowTitle } from './RowTitle'
 import { SwipeableRow } from './SwipeableRow'
 
@@ -19,7 +21,8 @@ const META = 'text-xs font-semibold whitespace-nowrap text-muted-foreground md:t
  * izquierda (`ItemControl`) y lo de debajo del título. La tarea lleva sus chips de prioridad y
  * fecha; el evento, su día y su hora; y si no hay nada que enseñar y el ítem no es del tipo por
  * defecto de su lista, el nombre del tipo («Compra»). En escritorio, una rejilla con eso en sus
- * columnas a la derecha, alineadas entre filas, y el ··· del menú al final (diseño 06, D8). Tocar
+ * columnas a la derecha, alineadas entre filas, y el ··· del menú al final (diseño 06, D8). Con
+ * foto, su miniatura tras el control; con enlace, su dominio en la meta (diseño 15). Tocar
  * la fila abre el detalle; mantenerla pulsada, el menú; deslizarla, sus acciones (`SwipeableRow`).
  */
 export function TaskRow({ item }: { item: Item }) {
@@ -47,11 +50,16 @@ export function TaskRow({ item }: { item: Item }) {
       {eventDate}
     </span>
   ) : null
+  const thumb = hasThumb(item)
+  const link = item.url ? <LinkMeta url={item.url} className={META} /> : null
   return (
     <SwipeableRow
       item={item}
       surfaceClassName={cn(
-        'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-3.5 duration-200 fade-in hover:border-border hover:shadow-card md:grid md:grid-cols-[24px_minmax(0,1fr)_auto_auto_32px] md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
+        'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-3.5 duration-200 fade-in hover:border-border hover:shadow-card md:grid md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
+        thumb
+          ? 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto_auto_32px]'
+          : 'md:grid-cols-[24px_minmax(0,1fr)_auto_auto_32px]',
         rowHighlight(actions, item),
       )}
     >
@@ -62,11 +70,17 @@ export function TaskRow({ item }: { item: Item }) {
         }}
         className="z-10 mt-px md:mt-0"
       />
+      <RowThumb item={item} />
       <div className="min-w-0 flex-1 md:contents">
-        <RowTitle item={item} />
-        {(first ?? second) && (
-          <div className="mt-1.5 flex items-center gap-2 md:contents">
+        {/* En escritorio el enlace va bajo el título; las columnas de la derecha no cambian. */}
+        <div className="min-w-0">
+          <RowTitle item={item} />
+          {link && <p className="mt-0.5 hidden md:flex">{link}</p>}
+        </div>
+        {(first ?? second ?? link) && (
+          <div className="mt-1.5 flex min-w-0 items-center gap-2 md:contents">
             {first ?? <span className="hidden md:block" />}
+            {link && <span className="flex min-w-0 md:hidden">{link}</span>}
             {second ?? <span className="hidden md:block" />}
           </div>
         )}

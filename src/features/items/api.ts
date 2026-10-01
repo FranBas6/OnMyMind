@@ -1,5 +1,8 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { startOfDay } from 'date-fns'
+import { z } from 'zod'
 
+import { isNetworkError } from '@/lib/errors'
 import type { Database } from '@/lib/supabase/database.types'
 import { supabase } from '@/lib/supabase/client'
 
@@ -108,6 +111,10 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
   }
   if (patch.status !== undefined) row.status = patch.status
   if (patch.kind !== undefined) row.kind = patch.kind
+  if (patch.url !== undefined) row.url = patch.url
+  if (patch.urlTitle !== undefined) row.url_title = patch.urlTitle
+  if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl
+  if (patch.imagePath !== undefined) row.image_path = patch.imagePath
   if (patch.recurrence !== undefined) row.recurrence = patch.recurrence
   const { error } = await supabase.from('items').update(row).eq('id', itemId)
   if (error) throw error
@@ -190,6 +197,10 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
       created_at: item.createdAt.toISOString(),
       left_inbox_id: item.leftInboxId,
       left_inbox_at: item.leftInboxAt?.toISOString() ?? null,
+      url: item.url,
+      url_title: item.urlTitle,
+      image_url: item.imageUrl,
+      image_path: item.imagePath,
     })),
     { onConflict: 'id', ignoreDuplicates: true },
   )
@@ -223,4 +234,42 @@ export async function fetchMovedFromInbox(inboxId: string): Promise<MovedItem[]>
         ]
       : [],
   )
+}
+
+/** Lo que trae `fetch-metadata` de la página de un enlace (04 §Backend). */
+const linkMetadataSchema = z.object({
+  title: z.string().nullable(),
+  image: z.string().nullable(),
+  siteName: z.string().nullable().optional(),
+  domain: z.string().optional(),
+})
+export type LinkMetadata = z.infer<typeof linkMetadataSchema>
+
+/**
+ * El título y la imagen de la página de un enlace, con la edge function `fetch-metadata`: el
+ * navegador no puede leer otra web (CORS). Si la función contesta pero la página no da nada,
+ * devuelve todo `null`: el enlace se queda con su dominio (diseño 15, M5). Si la función no
+ * contesta (sin red, caída o sin desplegar), lanza: no se guarda «sin título» y se vuelve a
+ * intentar la próxima vez.
+ */
+export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
+  const response = await supabase.functions.invoke<unknown>('fetch-metadata', { body: { url } })
+  const error: unknown = response.error
+  if (error) {
+    // Un 400 es la función diciendo que esa URL no vale: eso sí es «sin título».
+    if (error instanceof FunctionsHttpError && functionStatus(error) === 400) {
+      return { title: null, image: null }
+    }
+    throw new Error(isNetworkError(error) ? 'Failed to fetch' : 'fetch-metadata no contesta', {
+      cause: error,
+    })
+  }
+  const parsed = linkMetadataSchema.safeParse(response.data)
+  return parsed.success ? parsed.data : { title: null, image: null }
+}
+
+/** El código HTTP con el que contestó la función (supabase-js deja la `Response` en `context`). */
+function functionStatus(error: FunctionsHttpError): number | null {
+  const context: unknown = error.context
+  return context instanceof Response ? context.status : null
 }

@@ -203,6 +203,10 @@ function patchItem(item: Item, patch: ItemPatch): Item {
     next.completedAt = isFinalStatus(patch.status) ? (item.completedAt ?? new Date()) : null
   }
   if (patch.kind !== undefined) next.kind = patch.kind
+  if (patch.url !== undefined) next.url = patch.url
+  if (patch.urlTitle !== undefined) next.urlTitle = patch.urlTitle
+  if (patch.imageUrl !== undefined) next.imageUrl = patch.imageUrl
+  if (patch.imagePath !== undefined) next.imagePath = patch.imagePath
   if (patch.recurrence !== undefined) next.recurrence = patch.recurrence
   return next
 }
@@ -249,6 +253,10 @@ export function useCreateItem() {
               createdAt: new Date(),
               leftInboxId: null,
               leftInboxAt: null,
+              url: null,
+              urlTitle: null,
+              imageUrl: null,
+              imagePath: null,
             },
           ],
         },
@@ -349,6 +357,10 @@ export function useUpdateItem() {
       if (patch.dueAt !== undefined) previous.dueAt = before.dueAt
       if (patch.status !== undefined) previous.status = before.status
       if (patch.kind !== undefined) previous.kind = before.kind
+      if (patch.url !== undefined) previous.url = before.url
+      if (patch.urlTitle !== undefined) previous.urlTitle = before.urlTitle
+      if (patch.imageUrl !== undefined) previous.imageUrl = before.imageUrl
+      if (patch.imagePath !== undefined) previous.imagePath = before.imagePath
       if (patch.recurrence !== undefined) previous.recurrence = before.recurrence
       const cached = queryClient.getQueryData<Item[]>(key)
       const delta = cached

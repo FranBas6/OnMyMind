@@ -30,6 +30,13 @@ export const queryKeys = {
     movedFrom: (inboxId: string) => ['items', { movedFrom: inboxId }] as const,
     detail: (itemId: string) => ['items', itemId] as const,
   },
+  /**
+   * La URL firmada de una foto (2a.6). Va fuera de `['items']`: lo que recorre esas cachés
+   * espera listas de ítems.
+   */
+  photo: (path: string, size: 'thumb' | 'full') => ['photo', path, size] as const,
+  /** El título y la imagen de la página de un enlace (`fetch-metadata`). */
+  linkMetadata: (url: string) => ['link-metadata', url] as const,
   prices: (itemId: string) => ['prices', itemId] as const,
   profile: () => ['profile'] as const,
 }

@@ -15,7 +15,7 @@ export const listColorSchema = z.enum(LIST_COLORS)
 
 export const LIST_NAME_MAX_LENGTH = 80
 
-/** Tipos que se pueden crear desde el formulario; «Personalizada» llega en 1.14. */
+/** Tipos que se pueden crear desde el formulario; «Personalizada» se descartó (ADR-011). */
 export const CREATABLE_KINDS = ['tasks', 'shopping', 'events'] as const
 
 /**

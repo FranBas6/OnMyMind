@@ -36,3 +36,5 @@ export {
   STATUS_LABELS,
 } from './status'
 export type { Item, ItemStatus, Priority } from './types'
+export { LinkMeta, RowThumb } from './components/RowMedia'
+export { hasThumb } from './photos'

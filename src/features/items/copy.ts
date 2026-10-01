@@ -90,7 +90,7 @@ export function destinationSummary(list: List): string {
 /** Línea del detalle básico que anticipa la ficha completa (diseño 06, T10 y T11). */
 export function upcomingFieldsNote(kind: ItemKind): string | null {
   if (kind === 'shopping')
-    return 'Imagen, precio y tienda llegarán con la ficha completa de Compras.'
+    return 'Precio, tienda e histórico llegarán con la ficha completa de Compras.'
   if (kind === 'event') {
     return 'Fecha, hora y recordatorio llegarán con la ficha completa de Eventos.'
   }

@@ -1,9 +1,18 @@
-import { ArrowRightLeft, Calendar, ChevronDown, ChevronRight, Trash2, X } from 'lucide-react'
+import {
+  ArrowRightLeft,
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  WifiOff,
+  X,
+} from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { useState } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import type { List } from '@/features/lists'
+import { useOnline } from '@/hooks/useOnline'
 import { formatDueDateLong } from '@/lib/date'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -15,6 +24,7 @@ import { isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
 import type { Item, ItemPatch, ItemStatus } from '../types'
 import { DueDatePicker } from './DueDatePicker'
 import { ItemControl } from './ItemControl'
+import { ItemMedia } from './ItemMedia'
 import { ItemTitleField, NotesField } from './ItemTextFields'
 import { KindField } from './KindField'
 import { SegmentedControl, type SegmentOption } from './SegmentedControl'
@@ -49,8 +59,8 @@ const isChoosable = (item: Item): item is Item & { kind: ChoosableKind } =>
   isChoosableKind(item.kind)
 
 /**
- * Contenido del detalle de un ítem (pantalla 11 y diseño 06). Debajo de las notas, la fila «Tipo»
- * (diseño 12) para convertirlo en otra cosa. Cada campo se guarda por su cuenta
+ * Contenido del detalle de un ítem (pantalla 11 y diseño 06). Debajo de las notas, la foto y el
+ * enlace (diseño 15) y la fila «Tipo» (diseño 12) para convertirlo en otra cosa. Cada campo se guarda por su cuenta
  * al cambiarlo, sin botón «Guardar». Las tareas tienen prioridad y fecha límite; el resto de
  * tipos, en fase 1, la hoja básica: título, notas, estado, mover y borrar, con una línea que
  * anticipa su ficha completa. Sin «Recordatorio» (fase 2).
@@ -71,6 +81,7 @@ export function ItemDetail({
     label: STATUS_LABELS[status],
   }))
   const note = upcomingFieldsNote(item.kind)
+  const online = useOnline()
 
   const origin = (
     <span className="flex min-w-0 items-center gap-2 text-[13px] text-subtle-foreground">
@@ -78,6 +89,13 @@ export function ItemDetail({
       <span className="truncate">
         {list.name} · {itemMoment(item)}
       </span>
+      {/* Sin red, lo dice junto al origen (diseño 15, M12): la foto y el título del enlace esperan. */}
+      {!online && (
+        <span className="flex shrink-0 items-center gap-1 rounded-[7px] bg-fill px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground">
+          <WifiOff aria-hidden className="size-3" strokeWidth={2.4} />
+          Sin conexión
+        </span>
+      )}
     </span>
   )
 
@@ -130,6 +148,16 @@ export function ItemDetail({
           onUpdate(item, { notes })
         }}
       />
+
+      {item.kind !== 'sublist' && (
+        <ItemMedia
+          key={`media-${item.id}`}
+          item={item}
+          isDesktop={isDesktop}
+          online={online}
+          onUpdate={onUpdate}
+        />
+      )}
 
       {isChoosable(item) && (
         <KindField

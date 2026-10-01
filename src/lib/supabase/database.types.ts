@@ -33,6 +33,7 @@ export type Database = {
           due_at: string | null
           fields: NonNullable<Json>
           id: string
+          image_path: string | null
           image_url: string | null
           kind: Database['public']['Enums']['item_kind']
           left_inbox_at: string | null
@@ -47,6 +48,7 @@ export type Database = {
           title: string
           updated_at: string
           url: string | null
+          url_title: string | null
         }
         Insert: {
           all_day?: boolean
@@ -57,6 +59,7 @@ export type Database = {
           due_at?: string | null
           fields?: NonNullable<Json>
           id?: string
+          image_path?: string | null
           image_url?: string | null
           kind: Database['public']['Enums']['item_kind']
           left_inbox_at?: string | null
@@ -71,6 +74,7 @@ export type Database = {
           title: string
           updated_at?: string
           url?: string | null
+          url_title?: string | null
         }
         Update: {
           all_day?: boolean
@@ -81,6 +85,7 @@ export type Database = {
           due_at?: string | null
           fields?: NonNullable<Json>
           id?: string
+          image_path?: string | null
           image_url?: string | null
           kind?: Database['public']['Enums']['item_kind']
           left_inbox_at?: string | null
@@ -95,6 +100,7 @@ export type Database = {
           title?: string
           updated_at?: string
           url?: string | null
+          url_title?: string | null
         }
         Relationships: [
           {

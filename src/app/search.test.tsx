@@ -50,6 +50,10 @@ function item(n: number, title: string, overrides: Partial<Item> = {}): Item {
     createdAt: new Date(2026, 8, 20 - n),
     leftInboxId: null,
     leftInboxAt: null,
+    url: null,
+    urlTitle: null,
+    imageUrl: null,
+    imagePath: null,
     ...overrides,
   }
 }

@@ -40,6 +40,10 @@ const grifo: Item = {
   createdAt: new Date(),
   leftInboxId: null,
   leftInboxAt: null,
+  url: null,
+  urlTitle: null,
+  imageUrl: null,
+  imagePath: null,
 }
 
 function renderCasa() {

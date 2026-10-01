@@ -32,6 +32,14 @@ export interface Item {
   /** De qué «En mente» salió y cuándo (trigger `items_track_inbox`); `null` si no viene de una. */
   leftInboxId: string | null
   leftInboxAt: Date | null
+  /** Su enlace (2a.6, diseño 15), de cualquier tipo. */
+  url: string | null
+  /** El título de la página: `null` si aún no se ha buscado; `''` si la página no da ninguno. */
+  urlTitle: string | null
+  /** La imagen de la página enlazada («De la web»), sin descargar. */
+  imageUrl: string | null
+  /** Su foto propia en Storage (`item-images`); si la hay, manda sobre `imageUrl`. */
+  imagePath: string | null
 }
 
 /**
@@ -56,4 +64,9 @@ export interface ItemPatch {
   kind?: ItemKind
   /** Se quita al pasar a un tipo que no la usa (y vuelve si el cambio falla). */
   recurrence?: string | null
+  /** La foto y el enlace (2a.6): se guardan como el resto, campo a campo. */
+  url?: string | null
+  urlTitle?: string | null
+  imageUrl?: string | null
+  imagePath?: string | null
 }
