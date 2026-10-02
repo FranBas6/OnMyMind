@@ -6,8 +6,9 @@ import { useCapture } from '@/features/capture'
 
 /**
  * `/add?text=…&url=…` abre la captura con el contenido ya escrito y deja la URL en `/` (02
- * §Atajos en iOS): es la puerta para el Atajo de la hoja de compartir de iOS. La captura de URL
- * con vista previa llega en la fase 2; hasta entonces la URL se añade al texto.
+ * §Atajos en iOS): es la puerta del Atajo «Guardar en OnMyMind» de la hoja de compartir de iOS.
+ * El enlace va detrás del texto y la captura entra en modo enlace (2.3): con solo `url`, el título
+ * será el de la página; con `text`, ese texto.
  */
 const searchSchema = z.object({
   text: z.string().optional().catch(undefined),

@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 
-import { queryKeys } from '@/lib/queryKeys'
-
-import { fetchLinkMetadata } from '../api'
-import { URL_TITLE_MAX_LENGTH } from '../links'
+import { linkDomain, URL_TITLE_MAX_LENGTH } from '../links'
+import { linkMetadataQueryOptions } from '../queries'
+import { ITEM_TITLE_MAX_LENGTH } from '../schemas'
 import { hasStores } from '../stores'
+import type { LinkMetadata } from '../api'
 import type { Item, ItemPatch } from '../types'
 
 /** Cómo va el título del enlace (diseño 15). */
@@ -21,8 +21,9 @@ export type WebPriceState = 'searching' | 'offline' | 'none' | null
 /**
  * Lo que trae la página de un enlace, una vez por enlace (`fetch-metadata`): el título, el nombre
  * de la web y la imagen, si aún no se habían buscado (2a.6); y, en una compra sin precio, el precio
- * (2.1). Lo de la web nunca pisa lo que ya hay: ni la foto propia ni el precio escrito a mano. Sin
- * red, la consulta espera en pausa y sale sola al volver la conexión.
+ * (2.1). Lo de la web nunca pisa lo que ya hay: ni la foto propia ni el precio escrito a mano. Lo
+ * capturado sin red lleva el dominio como título hasta que llega el de la página (2.3). Sin red, la
+ * consulta espera en pausa y sale sola al volver la conexión.
  */
 export function useLinkMetadata(
   item: Item,
@@ -36,13 +37,8 @@ export function useLinkMetadata(
   const needsPrice =
     single && item.kind === 'shopping' && item.url !== null && item.priceCents === null
   const metadata = useQuery({
-    queryKey: queryKeys.linkMetadata(item.url ?? ''),
-    queryFn: () => fetchLinkMetadata(item.url ?? ''),
+    ...linkMetadataQueryOptions(item.url ?? ''),
     enabled: needsTitle || needsPrice,
-    // Sin red ni lo intenta (la app va en `offlineFirst`): espera en pausa y sale al volver.
-    networkMode: 'online',
-    staleTime: Infinity,
-    retry: 1,
   })
 
   // Una vez por enlace: si guardar falla y vuelve atrás, no se reintenta en bucle.
@@ -54,15 +50,11 @@ export function useLinkMetadata(
     const patch: ItemPatch = {}
     if (needsTitle && appliedTitle.current !== item.url) {
       appliedTitle.current = item.url
-      patch.urlTitle = data.title?.slice(0, URL_TITLE_MAX_LENGTH) ?? ''
-      patch.urlSite = data.siteName?.slice(0, URL_TITLE_MAX_LENGTH) ?? null
-      if (!item.imagePath && !item.imageUrl && data.image) patch.imageUrl = data.image
+      Object.assign(patch, titlePatch(item, data))
     }
     if (needsPrice && data.price && appliedPrice.current !== item.url) {
       appliedPrice.current = item.url
-      patch.priceCents = data.price.cents
-      patch.currency = data.price.currency
-      patch.priceSource = 'web'
+      Object.assign(patch, pricePatch(data.price))
     }
     if (Object.keys(patch).length > 0) onUpdate(item, patch)
   }, [needsTitle, needsPrice, metadata.data, item, onUpdate])
@@ -94,4 +86,26 @@ export function useLinkMetadata(
     priceState,
     siteName: item.urlSite ?? metadata.data?.siteName ?? null,
   }
+}
+
+/**
+ * El título, el nombre de la web y la imagen de la página, para un enlace que aún no los tiene. La
+ * imagen solo si no hay foto. Lo capturado sin red, o guardado antes de que llegara (2.3), lleva
+ * el dominio como título: pasa a ser el de la página.
+ */
+export function titlePatch(item: Item, data: LinkMetadata): ItemPatch {
+  const patch: ItemPatch = {
+    urlTitle: data.title?.slice(0, URL_TITLE_MAX_LENGTH) ?? '',
+    urlSite: data.siteName?.slice(0, URL_TITLE_MAX_LENGTH) ?? null,
+  }
+  if (!item.imagePath && !item.imageUrl && data.image) patch.imageUrl = data.image
+  if (data.title && item.url && item.title === linkDomain(item.url)) {
+    patch.title = data.title.slice(0, ITEM_TITLE_MAX_LENGTH)
+  }
+  return patch
+}
+
+/** El precio de la web para una compra que no tiene (2.1): lo escrito a mano nunca se pisa. */
+export function pricePatch(price: NonNullable<LinkMetadata['price']>): ItemPatch {
+  return { priceCents: price.cents, currency: price.currency, priceSource: 'web' }
 }

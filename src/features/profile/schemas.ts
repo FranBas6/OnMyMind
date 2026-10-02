@@ -17,7 +17,6 @@ const settingsRowSchema = z.object({
   theme: z.enum(THEMES).default('system').catch('system'),
   /** Sin valor, «En mente» (lo resuelve quien la usa: aquí no se sabe su id). */
   default_list_id: z.uuid().nullable().default(null).catch(null),
-  detect_store_links: z.boolean().default(true).catch(true),
   daily_summary_time: z
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
@@ -32,7 +31,6 @@ const settingsRowSchema = z.object({
 export interface Settings {
   theme: Theme
   defaultListId: string | null
-  detectStoreLinks: boolean
   dailySummaryTime: string | null
   priceDropAlerts: boolean
   timezone: string
@@ -50,7 +48,6 @@ export function parseSettings(raw: unknown): Settings {
   return {
     theme: row.theme,
     defaultListId: row.default_list_id,
-    detectStoreLinks: row.detect_store_links,
     dailySummaryTime: row.daily_summary_time,
     priceDropAlerts: row.price_drop_alerts,
     timezone: row.timezone,

@@ -247,6 +247,42 @@ function itemDelta(before: Item, after: Item): Counts {
   return { pending: was - is, done: is - was }
 }
 
+/** El ítem tal como se verá al añadirlo, antes de que conteste el servidor. */
+export function itemFromNew(item: NewItem, position: number): Item {
+  const { link } = item
+  return {
+    id: item.id,
+    listId: item.listId,
+    kind: item.kind,
+    parentId: item.parentId ?? null,
+    title: item.title.trim(),
+    notes: null,
+    status: item.status,
+    priority: null,
+    dueAt: null,
+    allDay: false,
+    recurrence: null,
+    position,
+    completedAt: null,
+    createdAt: new Date(),
+    leftInboxId: null,
+    leftInboxAt: null,
+    url: link?.url ?? null,
+    urlTitle: link?.urlTitle ?? null,
+    imageUrl: link?.imageUrl ?? null,
+    imagePath: null,
+    urlSite: link?.urlSite ?? null,
+    priceCents: link?.price?.cents ?? null,
+    currency: link?.price?.currency ?? 'EUR',
+    priceSource: link?.price ? 'web' : null,
+    previousPriceCents: null,
+    priceCheckedAt: link?.price ? new Date() : null,
+    links: [],
+    priceLinkId: null,
+    priceStore: null,
+  }
+}
+
 /**
  * Añadir (optimista): el ítem aparece al instante con un id generado en el cliente, que es
  * también el que se guarda, así que la fila real sustituye a la optimista sin saltos.
@@ -261,37 +297,7 @@ export function useCreateItem() {
         items: {
           [item.listId]: (items) => [
             ...items,
-            {
-              id: item.id,
-              listId: item.listId,
-              kind: item.kind,
-              parentId: item.parentId ?? null,
-              title: item.title.trim(),
-              notes: null,
-              status: item.status,
-              priority: null,
-              dueAt: null,
-              allDay: false,
-              recurrence: null,
-              position: item.position ?? nextItemPosition(items),
-              completedAt: null,
-              createdAt: new Date(),
-              leftInboxId: null,
-              leftInboxAt: null,
-              url: null,
-              urlTitle: null,
-              imageUrl: null,
-              imagePath: null,
-              urlSite: null,
-              priceCents: null,
-              currency: 'EUR',
-              priceSource: null,
-              previousPriceCents: null,
-              priceCheckedAt: null,
-              links: [],
-              priceLinkId: null,
-              priceStore: null,
-            },
+            itemFromNew(item, item.position ?? nextItemPosition(items)),
           ],
         },
         counters: { [item.listId]: { pending: 1, done: 0 } },

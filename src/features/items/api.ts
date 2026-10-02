@@ -67,6 +67,20 @@ export interface NewItem {
   status: ItemStatus
   /** Sin posición (la captura rápida no tiene la lista destino en caché), va al final. */
   position?: number
+  /** Lo pegado en la captura con lo que trajo su página (2.3). */
+  link?: NewItemLink
+}
+
+/**
+ * El enlace con el que nace un ítem capturado (2.3). `urlTitle` es `null` si aún no se sabe (sin
+ * red, o guardado mientras se buscaba): el detalle lo buscará. El precio, solo en una compra.
+ */
+export interface NewItemLink {
+  url: string
+  urlTitle: string | null
+  urlSite: string | null
+  imageUrl: string | null
+  price: { cents: number; currency: string } | null
 }
 
 /**
@@ -90,6 +104,18 @@ export async function createItem(item: NewItem): Promise<void> {
       title,
       status: item.status,
       position: item.position ?? (await lastPosition(item.listId)) + 1000,
+      ...(item.link && {
+        url: item.link.url,
+        url_title: item.link.urlTitle,
+        url_site: item.link.urlSite,
+        image_url: item.link.imageUrl,
+        // El trigger `items_track_price` apunta este primer precio en el histórico.
+        ...(item.link.price && {
+          price_cents: item.link.price.cents,
+          currency: item.link.price.currency,
+          price_source: 'web' as const,
+        }),
+      }),
     },
     { onConflict: 'id', ignoreDuplicates: true },
   )

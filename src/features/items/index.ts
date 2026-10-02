@@ -35,7 +35,11 @@ export {
   newItemKindAndStatus,
   STATUS_LABELS,
 } from './status'
-export type { Item, ItemStatus, Priority } from './types'
+export type { Item, ItemKind, ItemStatus, Priority } from './types'
 export { LinkMeta, RowPrice, RowThumb } from './components/RowMedia'
 export { hasThumb } from './photos'
 export { hasPrices } from './prices'
+export type { LinkMetadata, NewItemLink } from './api'
+export { useFillCapturedLink, useLinkPreview, type LinkPreviewState } from './hooks/useCapturedLink'
+export { linkDomain, linkPath, normalizeLink, URL_TITLE_MAX_LENGTH } from './links'
+export { ITEM_TITLE_MAX_LENGTH } from './schemas'

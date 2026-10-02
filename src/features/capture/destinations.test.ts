@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { destinationsOf, listDestination, type Destination, type Item } from '@/features/items'
 import type { List } from '@/features/lists'
 
-import { defaultDestination, destinationChips } from './destinations'
+import { defaultDestination, destinationChips, shoppingDestination } from './destinations'
 
 function list(id: string, overrides: Partial<List> = {}): List {
   return {
@@ -156,5 +156,36 @@ describe('con sublistas (diseño 12, A4)', () => {
   it('una sublista hecha ya no es destino', () => {
     const hecha = { ...lisboa, status: 'done' } as Item
     expect(ids(destinationsOf([casa], [hecha]))).toEqual(['casa'])
+  })
+})
+
+describe('un producto (2.3)', () => {
+  const compras = list('compras', {
+    kind: 'shopping',
+    position: 6000,
+    counters: { pending: 2, done: 9, pendingPriceCents: 0 },
+  })
+  const regalosCompras = list('regalos-compras', {
+    kind: 'shopping',
+    position: 7000,
+    counters: { pending: 1, done: 0, pendingPriceCents: 0 },
+  })
+  const destinations = [inbox, casa, trabajo, tech, compras, regalosCompras].map(listDestination)
+
+  it('se propone la lista de compras más usada', () => {
+    expect(shoppingDestination(destinations)?.id).toBe('compras')
+    expect(shoppingDestination([inbox, casa].map(listDestination))).toBeUndefined()
+  })
+
+  it('la propuesta sale la primera, aunque ya estuviera entre los chips', () => {
+    expect(
+      ids(
+        destinationChips(destinations, {
+          chosenId: 'compras',
+          originId: undefined,
+          proposedId: 'compras',
+        }),
+      ),
+    ).toEqual(['compras', 'en-mente', 'trabajo', 'casa'])
   })
 })

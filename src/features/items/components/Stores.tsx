@@ -5,13 +5,12 @@ import { format } from 'date-fns'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
-import { queryKeys } from '@/lib/queryKeys'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
-import { fetchLinkMetadata } from '../api'
 import type { RefreshState } from '../hooks/useRefreshPrice'
 import { linkDomain, URL_TITLE_MAX_LENGTH } from '../links'
+import { linkMetadataQueryOptions } from '../queries'
 import { cheapestLink, extraOver, sameLink, storeName } from '../stores'
 import type { Item, ItemLink, ItemLinkPatch } from '../types'
 import { LinkInput } from './LinkInput'
@@ -144,14 +143,7 @@ function useStoreMetadata(
   onNotice: (text: string) => void,
 ) {
   const needs = link.urlTitle === null
-  const metadata = useQuery({
-    queryKey: queryKeys.linkMetadata(link.url),
-    queryFn: () => fetchLinkMetadata(link.url),
-    enabled: needs,
-    networkMode: 'online',
-    staleTime: Infinity,
-    retry: 1,
-  })
+  const metadata = useQuery({ ...linkMetadataQueryOptions(link.url), enabled: needs })
   const applied = useRef(false)
   useEffect(() => {
     const data = metadata.data

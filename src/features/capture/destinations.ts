@@ -12,6 +12,8 @@ interface ChipOptions {
   originId: string | undefined
   /** La lista por defecto de Perfil (1.13); puede ser la propia «En mente». */
   defaultId?: string | null | undefined
+  /** La lista de compras propuesta para un producto (2.3): sale la primera (diseño 16, K1). */
+  proposedId?: string | undefined
 }
 
 /**
@@ -20,12 +22,17 @@ interface ChipOptions {
  * vista), después la lista por defecto de Perfil, «En mente» y, a continuación, las listas más
  * usadas por número de ítems (las sublistas no compiten ahí: se eligen con «···»). Un destino
  * elegido con «···» que no está entre ellos pasa a ser el primero; tocar un chip que ya está no
- * reordena nada.
+ * reordena nada. La lista de compras propuesta para un producto va siempre la primera.
  */
 export function destinationChips(
   destinations: readonly Destination[],
-  { chosenId, originId, defaultId }: ChipOptions,
+  { chosenId, originId, defaultId, proposedId }: ChipOptions,
 ): Destination[] {
+  const proposed = destinations.find((entry) => entry.id === proposedId)
+  if (proposed) {
+    const rest = destinationChips(destinations, { chosenId: undefined, originId, defaultId })
+    return unique([proposed, ...rest]).slice(0, CHIP_COUNT)
+  }
   const inbox = destinations.find((entry) => entry.list.kind === 'inbox' && !entry.sublist)
   const origin = destinations.find((entry) => entry.id === originId)
   const preferred = destinations.find((entry) => entry.id === defaultId && entry.id !== originId)
@@ -71,4 +78,14 @@ export function defaultDestination(
     destinations.find((entry) => entry.id === defaultId) ??
     destinations.find((entry) => entry.list.kind === 'inbox')
   )
+}
+
+/**
+ * Adonde se propone guardar un producto (2.3): la lista de compras más usada, con la misma regla
+ * que los chips. Sin ninguna, no se propone nada.
+ */
+export function shoppingDestination(destinations: readonly Destination[]): Destination | undefined {
+  return destinations
+    .filter((entry) => !entry.sublist && entry.list.kind === 'shopping')
+    .sort((a, b) => usage(b) - usage(a) || a.list.position - b.list.position)[0]
 }

@@ -10,7 +10,6 @@ describe('parseSettings', () => {
       parseSettings({
         theme: 'dark',
         default_list_id: INBOX,
-        detect_store_links: false,
         daily_summary_time: '08:30',
         price_drop_alerts: true,
         timezone: 'Atlantic/Canary',
@@ -18,7 +17,6 @@ describe('parseSettings', () => {
     ).toEqual({
       theme: 'dark',
       defaultListId: INBOX,
-      detectStoreLinks: false,
       dailySummaryTime: '08:30',
       priceDropAlerts: true,
       timezone: 'Atlantic/Canary',
@@ -29,7 +27,6 @@ describe('parseSettings', () => {
     expect(parseSettings({ default_list_id: INBOX })).toEqual({
       theme: 'system',
       defaultListId: INBOX,
-      detectStoreLinks: true,
       dailySummaryTime: null,
       priceDropAlerts: false,
       timezone: 'Europe/Madrid',
@@ -43,7 +40,6 @@ describe('parseSettings', () => {
       daily_summary_time: '25:99',
       price_drop_alerts: 'sí',
       timezone: '',
-      detect_store_links: false,
     })
     expect(settings).toMatchObject({
       theme: 'system',
@@ -51,7 +47,6 @@ describe('parseSettings', () => {
       dailySummaryTime: null,
       priceDropAlerts: false,
       timezone: 'Europe/Madrid',
-      detectStoreLinks: false,
     })
   })
 
