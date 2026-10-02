@@ -300,7 +300,7 @@ describe('sublistas en Buscar (diseño 12, A2)', () => {
   })
 
   it('la ruta va delante; un evento próximo dice su día y su hora', () => {
-    expect(resultMeta(vuelo, now, 'Viajes › Lisboa')).toBe('Viajes › Lisboa · 12 oct · 07:45')
+    expect(resultMeta(vuelo, now, 'Viajes › Lisboa')).toBe('Viajes › Lisboa · Lun 12 oct · 07:45')
     expect(resultMeta(tranvia, now, 'Viajes › Lisboa')).toBe('Viajes › Lisboa · Pendiente')
   })
 })

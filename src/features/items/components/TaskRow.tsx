@@ -1,6 +1,15 @@
-import { formatEventDate } from '@/lib/date'
+import { Repeat } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
+import {
+  eventTime,
+  eventWhen,
+  isRecurrence,
+  occurrence,
+  RECURRENCE_LABELS,
+  shortDay,
+} from '../events'
 import { kindMark } from '../kind'
 import type { Item } from '../types'
 import { DateChip } from './DateChip'
@@ -42,8 +51,16 @@ export function TaskRow({ item }: { item: Item }) {
   const task = item.kind === 'task'
   const priority = task ? item.priority : null
   const dueAt = task ? item.dueAt : null
-  const eventDate =
-    item.kind === 'event' && item.dueAt ? formatEventDate(item.dueAt, item.allDay) : null
+  const event = item.kind === 'event'
+  // El día y la hora (diseño 17, E8 y D3): en móvil en una línea, en escritorio en dos.
+  const eventDate = event ? eventWhen(item) : null
+  const at = event ? occurrence(item) : null
+  const repeat = event && isRecurrence(item.recurrence) && (
+    <span className={cn(META, 'flex items-center gap-1')}>
+      <Repeat aria-hidden className="size-3" strokeWidth={2.4} />
+      {RECURRENCE_LABELS[item.recurrence]}
+    </span>
+  )
   const mark =
     priority === null && dueAt === null && eventDate === null
       ? kindMark(item.kind, list.kind)
@@ -58,7 +75,13 @@ export function TaskRow({ item }: { item: Item }) {
   ) : eventDate ? (
     <span className={cn(META, 'md:min-w-16 md:text-right')}>
       <span className="sr-only">Fecha: </span>
-      {eventDate}
+      <span className="md:hidden">{eventDate}</span>
+      {at && (
+        <span className="hidden md:flex md:flex-col md:leading-tight">
+          <span>{shortDay(at)}</span>
+          <span className="text-xs font-medium">{eventTime(item) ?? 'Todo el día'}</span>
+        </span>
+      )}
     </span>
   ) : null
   const thumb = hasThumb(item)
@@ -85,12 +108,21 @@ export function TaskRow({ item }: { item: Item }) {
         <div className="min-w-0">
           <RowTitle item={item} />
           {link && <p className="mt-0.5 hidden md:flex">{link}</p>}
+          {repeat && <p className="mt-0.5 hidden md:flex">{repeat}</p>}
         </div>
         {first || second || link ? (
           <div className="mt-1.5 flex min-w-0 items-center gap-2 md:contents">
             {first ?? <span className="hidden md:block" />}
             {link && <span className="flex min-w-0 md:hidden">{link}</span>}
             {second ?? <span className="hidden md:block" />}
+            {repeat && (
+              <span className="flex items-center gap-2 md:hidden">
+                <span aria-hidden className={META}>
+                  ·
+                </span>
+                {repeat}
+              </span>
+            )}
           </div>
         ) : (
           // Sin nada debajo del título, sus dos columnas siguen ahí: lo de la derecha no se mueve.

@@ -131,15 +131,20 @@ export async function updateItemStatus(itemId: string, status: ItemStatus): Prom
 /**
  * Guarda un cambio del detalle. Cada campo va en su propia llamada (guardado por campo): título,
  * notas, prioridad (en `fields`), fecha límite o estado. Cambiar el tipo manda juntos el tipo, su
- * estado traducido y lo que se quita (`changeKindPatch`), para que el trigger los valide a la vez. Una fecha sin hora se guarda como las
- * 00:00 locales con `all_day = true` (04 §Fechas).
+ * estado traducido y lo que se quita (`changeKindPatch`), para que el trigger los valide a la vez.
+ * Una fecha límite se guarda como las 00:00 locales con `all_day = true` (04 §Fechas); la de un
+ * evento, con su hora, salvo que sea de todo el día (`allDay`, 2.4).
  */
 export async function updateItem(itemId: string, patch: ItemPatch): Promise<void> {
   const row: ItemUpdate = {}
   if (patch.title !== undefined) row.title = itemTitleSchema.parse(patch.title)
   if (patch.notes !== undefined) row.notes = patch.notes?.trim() ? patch.notes.trim() : null
   if (patch.priority !== undefined) row.fields = fieldsFor(patch.priority)
-  if (patch.dueAt !== undefined) {
+  if (patch.allDay !== undefined) {
+    // Un evento: el día con su hora, o de todo el día.
+    if (patch.dueAt !== undefined) row.due_at = patch.dueAt?.toISOString() ?? null
+    row.all_day = patch.allDay
+  } else if (patch.dueAt !== undefined) {
     row.due_at = patch.dueAt ? startOfDay(patch.dueAt).toISOString() : null
     row.all_day = patch.dueAt !== null
   }

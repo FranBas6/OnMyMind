@@ -412,6 +412,7 @@ export type Database = {
       }
       link_store_name: { Args: { p_site: string; p_url: string }; Returns: string }
       price_savings: { Args: Record<PropertyKey, never>; Returns: number }
+      start_of_user_day: { Args: Record<PropertyKey, never>; Returns: string }
       translate_item_status: {
         Args: { p_kind: Database['public']['Enums']['item_kind']; p_status: string }
         Returns: string

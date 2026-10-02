@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { detailSummary, matchesAge, splitItems, statusFilterOptions } from './filters'
+import {
+  detailSummary,
+  eventsSummary,
+  filterEvents,
+  matchesAge,
+  splitItems,
+  statusFilterOptions,
+} from './filters'
 import type { Item } from './types'
 
 const now = new Date('2026-09-27T12:00:00')
@@ -137,5 +144,45 @@ describe('detailSummary', () => {
     ['inbox', 0, 2, 'Nada sin ordenar'],
   ] as const)('%s con %i y %i → «%s»', (kind, pending, done, expected) => {
     expect(detailSummary(kind, pending, done)).toBe(expected)
+  })
+})
+
+describe('lista de eventos (diseño 17)', () => {
+  // Martes 22 de septiembre de 2026, a mediodía.
+  const now = new Date(2026, 8, 22, 12, 0)
+  const evento = (title: string, overrides: Partial<Item> = {}) =>
+    item(title, { kind: 'event', status: 'upcoming', allDay: false, ...overrides })
+  const items = [
+    evento('Cena de antiguos alumnos', { dueAt: null }),
+    evento('Dentista', { dueAt: new Date(2026, 8, 22, 10) }),
+    evento('Cumpleaños de Marta', { dueAt: new Date(2026, 8, 23), allDay: true }),
+    evento('Cena con los de la uni', {
+      dueAt: new Date(2026, 7, 24, 21),
+      recurrence: 'monthly',
+    }),
+    evento('Concierto', { dueAt: new Date(2026, 8, 12, 21, 30) }),
+    evento('Reunión de la comunidad', {
+      dueAt: new Date(2026, 8, 24, 19),
+      status: 'cancelled',
+      completedAt: new Date(2026, 8, 20),
+    }),
+  ]
+  const titles = (list: Item[]) => list.map((entry) => entry.title)
+
+  it('«Próximos» es lo que tiene día y aún no ha llegado', () => {
+    expect(titles(filterEvents(items, 'upcoming', now))).toEqual([
+      'Cumpleaños de Marta',
+      'Cena con los de la uni',
+    ])
+  })
+
+  it('«Pasados» también lleva lo de hoy cuya hora ya pasó; «Cancelados», lo cancelado', () => {
+    expect(titles(filterEvents(items, 'past', now))).toEqual(['Dentista', 'Concierto'])
+    expect(titles(filterEvents(items, 'cancelled', now))).toEqual(['Reunión de la comunidad'])
+  })
+
+  it('la cabecera cuenta próximos y pasados; lo sin fecha y lo cancelado no', () => {
+    expect(eventsSummary(items, now)).toBe('2 próximos · 1 pasado')
+    expect(eventsSummary([], now)).toBe('Nada todavía')
   })
 })

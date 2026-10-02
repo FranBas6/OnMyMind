@@ -2,6 +2,7 @@ import { subDays } from 'date-fns'
 
 import { counterLabel, doneLabel, KIND_TEMPLATES, type ListKind } from '@/features/lists'
 
+import { isEarlierToday, isPastEvent } from './events'
 import { isOutOfMind } from './status'
 import { countItems, openSublistsLabel } from './sublists'
 import type { Item } from './types'
@@ -125,4 +126,57 @@ export function listSummary(kind: ListKind, items: readonly Item[]): string {
   const sublists = openSublistsLabel(items)
   if (sublists) return `${counterLabel(kind, pending)} · ${sublists}`
   return `${counterLabel(kind, pending)} · ${doneLabel(kind, done)}`
+}
+
+/**
+ * Filtro de una lista de eventos (diseño 17, E1–E5): todo, lo que viene, lo que ya pasó (también lo
+ * de hoy cuya hora ya pasó) y lo cancelado.
+ */
+export type EventFilter = 'all' | 'upcoming' | 'past' | 'cancelled'
+
+export const EVENT_FILTER_OPTIONS: readonly FilterOption<EventFilter>[] = [
+  { value: 'all', label: 'Todos' },
+  { value: 'upcoming', label: 'Próximos' },
+  { value: 'past', label: 'Pasados' },
+  { value: 'cancelled', label: 'Cancelados' },
+]
+
+/** Un evento que ya pasó, o de hoy cuya hora ya pasó: lo del filtro «Pasados» (E3). */
+function isGone(item: Item, now: Date): boolean {
+  return item.status !== 'cancelled' && (isPastEvent(item, now) || isEarlierToday(item, now))
+}
+
+/**
+ * Los eventos de cada filtro (E1–E5). «Próximos» es lo que tiene día y aún no ha llegado; lo sin
+ * fecha solo sale en «Todos», arriba.
+ */
+export function filterEvents(
+  items: readonly Item[],
+  filter: Exclude<EventFilter, 'all'>,
+  now: Date = new Date(),
+): Item[] {
+  const events = items.filter((item) => item.kind === 'event')
+  switch (filter) {
+    case 'upcoming':
+      return events.filter(
+        (item) => item.status !== 'cancelled' && item.dueAt !== null && !isGone(item, now),
+      )
+    case 'past':
+      return events.filter((item) => isGone(item, now))
+    case 'cancelled':
+      return events.filter((item) => item.status === 'cancelled')
+  }
+}
+
+/**
+ * Cabecera de una lista de eventos (E1): «4 próximos · 1 pasado». Lo sin fecha y lo cancelado no
+ * cuentan; sin nada, «Nada todavía» (E6).
+ */
+export function eventsSummary(items: readonly Item[], now: Date = new Date()): string {
+  if (items.length === 0) return 'Nada todavía'
+  const upcoming = filterEvents(items, 'upcoming', now).length
+  const past = items.filter(
+    (item) => item.kind === 'event' && item.status !== 'cancelled' && isPastEvent(item, now),
+  ).length
+  return `${counterLabel('events', upcoming)} · ${doneLabel('events', past)}`
 }

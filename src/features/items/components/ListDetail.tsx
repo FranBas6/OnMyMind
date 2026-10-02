@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils'
 import { addPlaceholder } from '../copy'
 import {
   AGE_FILTER_OPTIONS,
+  EVENT_FILTER_OPTIONS,
+  eventsSummary,
   detailSummary,
   listSummary,
   matchesAge,
@@ -17,6 +19,7 @@ import {
   splitItems,
   statusFilterOptions,
   type AgeFilter,
+  type EventFilter,
   type SortOrder,
   type StatusFilter,
 } from '../filters'
@@ -30,6 +33,7 @@ import { hasPrices, pendingTotals } from '../prices'
 import { childrenOf, sublistSummary, topLevel } from '../sublists'
 import type { Item, MovedItem } from '../types'
 import { AddItemBar, type AddItemBarHandle } from './AddItemBar'
+import { EventsList } from './EventsList'
 import { FilterChips } from './FilterChips'
 import { ItemRow } from './ItemRow'
 import {
@@ -97,9 +101,12 @@ export function ListDetail({
   const { lingering, hold } = useLingering(LINGER_MS)
   const listOf = () => list
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [eventFilter, setEventFilter] = useState<EventFilter>('all')
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('all')
   const [sort, setSort] = useState<SortOrder>('newest')
   const inbox = list.kind === 'inbox'
+  // Una lista de eventos se agrupa por días y tiene sus filtros (diseño 17); también sus sublistas.
+  const events = list.kind === 'events'
 
   const all = items.data
   // Lo de dentro de una sublista sale en su pantalla, no suelto en la lista (ADR-010).
@@ -110,7 +117,9 @@ export function ListDetail({
     ? detailSummary(list.kind, list.counters.pending, list.counters.done)
     : sublist
       ? sublistSummary(sublist, shown ?? [], list.name)
-      : listSummary(list.kind, all)
+      : events
+        ? eventsSummary(all)
+        : listSummary(list.kind, all)
   const empty = shown?.length === 0
   // Con los ítems ya cargados, el total sigue a lo optimista; mientras, el de la vista.
   const total = !inbox && (
@@ -218,6 +227,13 @@ export function ListDetail({
                   value={ageFilter}
                   onChange={setAgeFilter}
                 />
+              ) : events ? (
+                <FilterChips
+                  label="Filtrar eventos"
+                  options={EVENT_FILTER_OPTIONS}
+                  value={eventFilter}
+                  onChange={setEventFilter}
+                />
               ) : (
                 <FilterChips
                   label="Filtrar por estado"
@@ -268,6 +284,15 @@ export function ListDetail({
                 ageFilter={ageFilter}
                 outOfMind={outOfMind}
                 moved={movedQuery.data ?? []}
+                empty={empty}
+                isDesktop={isDesktop}
+              />
+            ) : events && !(sublist && empty) ? (
+              <EventsList
+                active={active}
+                outOfMind={outOfMind}
+                all={shown ?? []}
+                filter={eventFilter}
                 empty={empty}
                 isDesktop={isDesktop}
               />

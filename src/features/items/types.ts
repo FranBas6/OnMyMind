@@ -97,6 +97,11 @@ export interface ItemPatch {
   notes?: string | null
   priority?: Priority | null
   dueAt?: Date | null
+  /**
+   * Un evento (2.4): con `allDay`, `dueAt` se guarda tal cual, con su hora (o a las 00:00 si es de
+   * todo el día). Sin él, la fecha límite de una tarea: el día a las 00:00, de día entero.
+   */
+  allDay?: boolean
   status?: ItemStatus
   /** Cambiar el tipo (fila «Tipo», `changeKindPatch`): llega con su estado traducido. */
   kind?: ItemKind

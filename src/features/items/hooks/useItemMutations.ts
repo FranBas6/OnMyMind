@@ -207,7 +207,10 @@ function patchItem(item: Item, patch: CachePatch): Item {
   if (patch.title !== undefined) next.title = patch.title.trim()
   if (patch.notes !== undefined) next.notes = patch.notes?.trim() ? patch.notes.trim() : null
   if (patch.priority !== undefined) next.priority = patch.priority
-  if (patch.dueAt !== undefined) {
+  if (patch.allDay !== undefined) {
+    if (patch.dueAt !== undefined) next.dueAt = patch.dueAt
+    next.allDay = patch.allDay
+  } else if (patch.dueAt !== undefined) {
     next.dueAt = patch.dueAt
     next.allDay = patch.dueAt !== null
   }
@@ -394,7 +397,10 @@ export function useUpdateItem() {
       if (patch.title !== undefined) previous.title = before.title
       if (patch.notes !== undefined) previous.notes = before.notes
       if (patch.priority !== undefined) previous.priority = before.priority
-      if (patch.dueAt !== undefined) previous.dueAt = before.dueAt
+      if (patch.dueAt !== undefined || patch.allDay !== undefined) {
+        previous.dueAt = before.dueAt
+        previous.allDay = before.allDay
+      }
       if (patch.status !== undefined) previous.status = before.status
       if (patch.kind !== undefined) previous.kind = before.kind
       if (patch.url !== undefined) previous.url = before.url

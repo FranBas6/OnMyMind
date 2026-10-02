@@ -152,4 +152,11 @@ describe('isOutOfMind', () => {
       isOutOfMind({ kind: 'event', status: 'upcoming', dueAt: tomorrow, recurrence: null }, now),
     ).toBe(false)
   })
+
+  it('uno de hoy cuya hora ya pasó sigue en su sitio hasta medianoche (2.4)', () => {
+    const thisMorning = new Date('2026-09-27T10:00:00')
+    expect(
+      isOutOfMind({ kind: 'event', status: 'upcoming', dueAt: thisMorning, recurrence: null }, now),
+    ).toBe(false)
+  })
 })

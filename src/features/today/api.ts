@@ -19,26 +19,35 @@ import { todayBounds, type TodayItem } from './today'
  *
  * Son dos peticiones en paralelo: lo pendiente, que usa `items_due_idx` (parcial, `completed_at is
  * null`), y lo terminado hoy, para «2 hechas hoy». Juntas en un `or` el índice ya no serviría.
- * Los eventos (con hora) se añaden en fase 2 ampliando el filtro de `kind` (2.3).
+ *
+ * Los eventos de hoy («Agenda», 2.4) van en una tercera: los próximos con fecha de hoy, y los que se
+ * repiten y ya han empezado (su vez de hoy la calcula `groupToday` con `occursOn`).
  */
 export async function fetchToday(now: Date): Promise<TodayItem[]> {
   const { start, end } = todayBounds(now)
-  const base = () =>
+  const base = (kind: 'task' | 'event') =>
     supabase
       .from('items')
       .select(
         `${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id), parent:parent_id(status, title)`,
       )
-      .eq('kind', 'task')
+      .eq('kind', kind)
       .is('list.archived_at', null)
       .lt('due_at', end.toISOString())
       .order('due_at')
 
-  const [pending, done] = await Promise.all([
-    base().is('completed_at', null),
-    base().gte('completed_at', start.toISOString()),
+  const [pending, done, events] = await Promise.all([
+    base('task').is('completed_at', null),
+    base('task').gte('completed_at', start.toISOString()),
+    base('event')
+      .eq('status', 'upcoming')
+      .or(`due_at.gte."${start.toISOString()}",recurrence.not.is.null`),
   ])
   if (pending.error) throw pending.error
   if (done.error) throw done.error
-  return [...pending.data, ...done.data].map((row) => ({ ...mapItemRow(row), parent: row.parent }))
+  if (events.error) throw events.error
+  return [...pending.data, ...done.data, ...events.data].map((row) => ({
+    ...mapItemRow(row),
+    parent: row.parent,
+  }))
 }

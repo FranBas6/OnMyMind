@@ -3,6 +3,8 @@ import { addDays, differenceInCalendarDays, format, isSameYear, startOfDay } fro
 import {
   isActiveSublistStatus,
   isFinalStatus,
+  occurrence,
+  occursOn,
   PRIORITY_LABELS,
   type Item,
   type Priority,
@@ -75,7 +77,17 @@ export interface TodayDone {
   list: List
 }
 
+export interface TodayEvent {
+  item: TodayItem
+  list: List
+}
+
 export interface TodayGroups {
+  /**
+   * «Agenda» (diseño 17, H1): los eventos de hoy de cualquier lista, también los que se repiten,
+   * arriba y por hora; primero los de todo el día.
+   */
+  agenda: TodayEvent[]
   /** Una sección por lista, en el orden de las listas. */
   sections: TodaySection[]
   /** «2 hechas hoy»: lo que vencía hasta hoy y se ha terminado hoy, lo último primero. */
@@ -135,10 +147,18 @@ export function groupToday(
   const byId = new Map(lists.map((list) => [list.id, list]))
   const sections = new Map<string, TodaySection>()
   const done: TodayDone[] = []
+  const agenda: TodayEvent[] = []
   const paused = new Set<string>()
 
   for (const item of items) {
     const list = byId.get(item.listId)
+    if (list && item.kind === 'event') {
+      // Lo cancelado no sale (F11); lo de una sublista pausada o hecha se calla, como las tareas.
+      if (item.status === 'upcoming' && showsInToday(item) && occursOn(item, now)) {
+        agenda.push({ item, list })
+      }
+      continue
+    }
     if (!list || item.kind !== 'task' || !item.dueAt || item.dueAt >= end) continue
     if (!showsInToday(item)) {
       if (item.parent?.status === 'paused' && !isFinalStatus(item.status)) {
@@ -158,12 +178,19 @@ export function groupToday(
   const ordered = [...sections.values()].sort((a, b) => a.list.position - b.list.position)
   for (const section of ordered) section.items.sort(byUrgency)
   done.sort((a, b) => (b.item.completedAt?.getTime() ?? 0) - (a.item.completedAt?.getTime() ?? 0))
+  agenda.sort(
+    (a, b) =>
+      Number(b.item.allDay) - Number(a.item.allDay) ||
+      (occurrence(a.item, now)?.getTime() ?? 0) - (occurrence(b.item, now)?.getTime() ?? 0) ||
+      a.list.position - b.list.position ||
+      a.item.position - b.item.position,
+  )
 
   const pending = ordered.reduce(
     (total, section) => total + section.items.filter((item) => !isFinalStatus(item.status)).length,
     0,
   )
-  return { sections: ordered, done, pending, paused: [...paused] }
+  return { agenda, sections: ordered, done, pending, paused: [...paused] }
 }
 
 /** «1 hecha hoy» / «3 hechas hoy». */

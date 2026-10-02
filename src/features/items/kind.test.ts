@@ -53,13 +53,15 @@ describe('changeKindPatch', () => {
     const evento = {
       status: 'upcoming' as const,
       priority: null,
-      dueAt: tarea.dueAt,
+      dueAt: new Date(2026, 9, 3, 19, 30),
       recurrence: 'yearly',
       priceCents: null,
     }
+    // Su día pasa a ser la fecha límite, sin la hora.
     expect(changeKindPatch(evento, 'task')).toEqual({
       kind: 'task',
       status: 'pending',
+      dueAt: new Date(2026, 9, 3),
       recurrence: null,
     })
   })

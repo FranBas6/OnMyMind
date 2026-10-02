@@ -1,10 +1,11 @@
 import { PageHeader } from '@/components/layout/PageHeader'
-import { ItemWorkspace, useLingering } from '@/features/items'
+import { ItemWorkspace, ListScope, useLingering } from '@/features/items'
 import { formatHeaderDate } from '@/lib/date'
 import { OFFLINE_MESSAGE } from '@/lib/errors'
 
 import { useToday } from '../hooks/useToday'
-import { pausedNote } from '../today'
+import { pausedNote, type TodayEvent } from '../today'
+import { AgendaRow } from './AgendaRow'
 import { DoneTodaySection } from './DoneTodaySection'
 import { TodayEmpty } from './TodayEmpty'
 import { TodaySection } from './TodaySection'
@@ -21,7 +22,8 @@ interface TodayViewProps {
 /**
  * Hoy (02 §Hoy, pantalla 7): la fecha, y por listas lo que vence hoy o está atrasado. Se completa
  * aquí mismo; tocar una fila abre su detalle sin salir de Hoy (hoja en móvil, panel en
- * escritorio). Al final, plegado, lo hecho hoy. Los eventos con hora («Agenda») llegan en fase 2.
+ * escritorio). Arriba, la «Agenda» con los eventos de hoy de cualquier lista, por hora (diseño
+ * 17, H1; solo si hay alguno). Al final, plegado, lo hecho hoy.
  */
 export function TodayView({ openItemId, onOpenItem }: TodayViewProps) {
   const { lingering, hold } = useLingering(LINGER_MS)
@@ -50,10 +52,11 @@ export function TodayView({ openItemId, onOpenItem }: TodayViewProps) {
         )}
 
         {groups &&
-          (groups.sections.length === 0 ? (
+          (groups.sections.length === 0 && groups.agenda.length === 0 ? (
             <TodayEmpty />
           ) : (
             <div className="flex flex-col gap-[22px]">
+              {groups.agenda.length > 0 && <Agenda events={groups.agenda} />}
               {groups.sections.map((section) => (
                 <TodaySection key={section.list.id} section={section} now={now} />
               ))}
@@ -67,5 +70,29 @@ export function TodayView({ openItemId, onOpenItem }: TodayViewProps) {
         {groups && groups.done.length > 0 && <DoneTodaySection done={groups.done} />}
       </div>
     </ItemWorkspace>
+  )
+}
+
+/**
+ * «Agenda» (diseño 17, H1): la etiqueta sin cuadrado de color, porque mezcla listas; cada fila lleva
+ * el color de la suya en su barra.
+ */
+function Agenda({ events }: { events: TodayEvent[] }) {
+  return (
+    <section aria-labelledby="hoy-agenda" className="flex flex-col gap-2.5">
+      <h2
+        id="hoy-agenda"
+        className="px-1 font-sans text-xs font-bold tracking-[0.06em] text-muted-foreground uppercase"
+      >
+        Agenda
+      </h2>
+      <ul aria-label="Agenda" className="flex flex-col gap-2.5">
+        {events.map(({ item, list }) => (
+          <ListScope key={item.id} list={list}>
+            <AgendaRow item={item} />
+          </ListScope>
+        ))}
+      </ul>
+    </section>
   )
 }

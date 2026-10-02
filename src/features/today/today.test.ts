@@ -242,3 +242,44 @@ describe('sublistas en Hoy (diseño 12, A1)', () => {
     expect(pausedNote([])).toBeNull()
   })
 })
+
+describe('«Agenda» (diseño 17, H1)', () => {
+  const agenda = list('agenda', { kind: 'events', color: 'amber', position: 1000 })
+  const evento = (id: string, overrides: Partial<Item> = {}) =>
+    item(id, { listId: 'agenda', kind: 'event', status: 'upcoming', allDay: false, ...overrides })
+
+  it('los eventos de hoy de cualquier lista, también los que se repiten, por hora y con el de todo el día primero', () => {
+    const groups = groupToday(
+      [
+        evento('Reunión con Lucía', { listId: 'trabajo', dueAt: at(28, 16) }),
+        evento('Dentista', { dueAt: at(28, 10) }),
+        evento('Cumpleaños de Marta', { dueAt: at(28), allDay: true }),
+        evento('Stand-up', { listId: 'trabajo', dueAt: at(1, 12), recurrence: 'daily' }),
+        evento('Mañana', { dueAt: at(29, 9) }),
+        evento('Cancelado', { dueAt: at(28, 11), status: 'cancelled' }),
+        evento('Sin fecha', { dueAt: null }),
+      ],
+      [agenda, trabajo, casa],
+      { now },
+    )
+    expect(groups.agenda.map((entry) => entry.item.title)).toEqual([
+      'Cumpleaños de Marta',
+      'Dentista',
+      'Stand-up',
+      'Reunión con Lucía',
+    ])
+    expect(groups.agenda[3]?.list.id).toBe('trabajo')
+    // No cuentan como lo que queda por hacer ni crean secciones de tareas.
+    expect(groups.sections).toEqual([])
+    expect(groups.pending).toBe(0)
+  })
+
+  it('lo de una sublista pausada no sale', () => {
+    const groups = groupToday(
+      [{ ...evento('Vuelo', { dueAt: at(28, 7) }), parent: { status: 'paused', title: 'Lisboa' } }],
+      [agenda],
+      { now },
+    )
+    expect(groups.agenda).toEqual([])
+  })
+})

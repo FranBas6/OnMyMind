@@ -7,6 +7,8 @@ export interface SegmentOption<T extends string> {
   label: string
   /** Clases de la opción elegida (la prioridad lleva su color semántico, diseño pantalla 11). */
   selectedClassName?: string
+  /** Se ve pero no se elige: «Pasado» en un evento lo pone la fecha (diseño 17, F1). */
+  disabled?: boolean
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -38,9 +40,13 @@ export function SegmentedControl<T extends string>({
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key]
     if (step === undefined) return
     event.preventDefault()
-    const next = (index + step + options.length) % options.length
+    // Las flechas se saltan lo que no se puede elegir.
+    let next = (index + step + options.length) % options.length
+    while (next !== index && options[next]?.disabled) {
+      next = (next + step + options.length) % options.length
+    }
     const option = options[next]
-    if (!option) return
+    if (!option || option.disabled) return
     onChange(option.value)
     refs.current[next]?.focus()
   }
@@ -59,7 +65,10 @@ export function SegmentedControl<T extends string>({
             role="radio"
             aria-checked={selected}
             tabIndex={index === focusable ? 0 : -1}
+            disabled={option.disabled && !selected}
+            aria-disabled={option.disabled}
             onClick={() => {
+              if (option.disabled) return
               onChange(selected && allowNone ? null : option.value)
             }}
             onKeyDown={(event) => {
@@ -69,10 +78,12 @@ export function SegmentedControl<T extends string>({
               'inline-flex h-9 flex-1 items-center justify-center rounded-[11px] text-[13px] whitespace-nowrap outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
               selected
                 ? (option.selectedClassName ?? 'bg-foreground font-bold text-background')
-                : cn(
-                    'font-semibold hover:bg-card/60 hover:text-foreground',
-                    value === null ? 'text-subtle-foreground' : 'text-muted-foreground',
-                  ),
+                : option.disabled
+                  ? 'font-semibold text-subtle-foreground opacity-60'
+                  : cn(
+                      'font-semibold hover:bg-card/60 hover:text-foreground',
+                      value === null ? 'text-subtle-foreground' : 'text-muted-foreground',
+                    ),
             )}
           >
             {option.label}

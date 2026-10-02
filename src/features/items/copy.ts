@@ -5,7 +5,7 @@ import { formatCaptureAge } from '@/lib/date'
 
 import { moveLossLabel, type MoveLoss } from './move'
 import { isFinalStatus, STATUS_LABELS } from './status'
-import type { Item, ItemKind } from './types'
+import type { Item } from './types'
 
 /** Cómo se llama lo primero que se añade, para el texto del vacío («Escribe la primera tarea…»). */
 const FIRST_ITEM: Record<Exclude<ListKind, 'inbox'>, { noun: string; placeholder: string }> = {
@@ -85,15 +85,4 @@ export function destinationSummary(list: List): string {
     return `Sin ordenar · ${count} ${count === 1 ? 'cosa' : 'cosas'}`
   }
   return `${KIND_TEMPLATES[list.kind].label} · ${counterLabel(list.kind, list.counters.pending)}`
-}
-
-/**
- * Línea del detalle básico que anticipa la ficha completa (diseño 06, T10 y T11). Las compras ya
- * tienen la suya desde la 2.1 (diseño 16).
- */
-export function upcomingFieldsNote(kind: ItemKind): string | null {
-  if (kind === 'event') {
-    return 'Fecha, hora y recordatorio llegarán con la ficha completa de Eventos.'
-  }
-  return null
 }

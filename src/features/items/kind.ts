@@ -1,3 +1,5 @@
+import { startOfDay } from 'date-fns'
+
 import type { ListKind } from '@/features/lists'
 
 import { translateStatus } from './move'
@@ -83,6 +85,8 @@ export function changeKindPatch(item: KindChangeFields, to: ItemKind): ItemPatch
   const patch: ItemPatch = { kind: to, status: translateStatus(item.status, to) }
   if (loss.priority) patch.priority = null
   if (loss.dueAt) patch.dueAt = null
+  // Un evento que pasa a tarea se queda con su día como fecha límite, sin hora (2.4).
+  else if (to === 'task' && item.dueAt) patch.dueAt = startOfDay(item.dueAt)
   if (loss.recurrence) patch.recurrence = null
   // El histórico se queda en la base: si vuelve a ser compra, vuelve con él.
   if (loss.price) {

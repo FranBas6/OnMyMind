@@ -148,6 +148,22 @@ export function AllDoneNote({ withHint }: { withHint: boolean }) {
   )
 }
 
+/**
+ * Un vacío de la lista de eventos (diseño 17, E4–E6): el símbolo sobre su tinte, un título y una
+ * frase. Es el de toda la lista recién creada y el de cada filtro sin nada.
+ */
+export function EventsEmpty({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <Centered>
+      <Tile className="size-16 rounded-[22px] bg-brand-tint">
+        <Mark className="size-8" />
+      </Tile>
+      <Title>{title}</Title>
+      <Description>{children}</Description>
+    </Centered>
+  )
+}
+
 /** Una línea discreta cuando un filtro no deja nada que enseñar. */
 export function FilterEmpty({ children }: { children: ReactNode }) {
   return <p className="px-1 py-6 text-center text-[15px] text-muted-foreground">{children}</p>

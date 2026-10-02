@@ -1,8 +1,8 @@
 import { format, isSameYear } from 'date-fns'
 
-import { isOutOfMind, STATUS_LABELS, type Item } from '@/features/items'
+import { eventWhen, isOutOfMind, STATUS_LABELS, type Item } from '@/features/items'
 import type { List } from '@/features/lists'
-import { formatCaptureAge, formatDueDate, formatEventDate } from '@/lib/date'
+import { formatCaptureAge, formatDueDate } from '@/lib/date'
 
 /** Todo / Pendientes / Hechas (pantalla 13). «Hechas» es lo que está fuera de la cabeza. */
 export type SearchFilter = 'all' | 'open' | 'done'
@@ -255,9 +255,9 @@ function statusMeta(item: Item, now: Date): string {
   if (item.kind === 'note' && item.status === 'pending') {
     return `Sin ordenar · ${formatCaptureAge(item.createdAt, now)}`
   }
-  // Un evento próximo dice cuándo es, como en su fila («12 oct · 07:45», diseño 12, A2).
+  // Un evento próximo dice cuándo es, como en su fila («Dom 12 oct · 07:45», diseños 12 y 17).
   if (item.kind === 'event' && item.dueAt && !item.completedAt && !isOutOfMind(item, now)) {
-    return formatEventDate(item.dueAt, item.allDay, now)
+    return eventWhen(item, now)
   }
   const label = STATUS_LABELS[item.status]
   const date = item.completedAt

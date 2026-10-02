@@ -18,16 +18,19 @@ import { LIST_COLOR_BG } from '@/lib/listColors'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 
-import { itemMoment, upcomingFieldsNote } from '../copy'
+import { itemMoment } from '../copy'
+import { isPastEvent, occurrence } from '../events'
 import { PRIORITY_LABELS, PRIORITIES, type Priority } from '../fields'
 import { isChoosableKind, type ChoosableKind } from '../kind'
 import { useStoreMutation } from '../hooks/useItemMutations'
+import { useItems } from '../hooks/useItems'
 import { useLinkMetadata } from '../hooks/useLinkMetadata'
 import { useRefreshPrice } from '../hooks/useRefreshPrice'
 import { cheapestLink, hasStores, linkFromItem, newLink, storeName } from '../stores'
 import { isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
 import type { Item, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus } from '../types'
 import { DueDatePicker } from './DueDatePicker'
+import { EventWhenField } from './EventWhenField'
 import { ItemControl } from './ItemControl'
 import { ItemMedia } from './ItemMedia'
 import { ItemTitleField, NotesField } from './ItemTextFields'
@@ -88,8 +91,16 @@ export function ItemDetail({
     value: status,
     label: STATUS_LABELS[status],
   }))
-  const note = upcomingFieldsNote(item.kind)
   const online = useOnline()
+  // Los días con eventos de su lista, para los puntos del calendario (diseño 17, F3).
+  const listItems = useItems(item.listId).data
+  const eventDays =
+    item.kind === 'event'
+      ? (listItems ?? []).flatMap((entry) => {
+          const at = entry.kind === 'event' && entry.id !== item.id ? occurrence(entry) : null
+          return at ? [at] : []
+        })
+      : []
   // El enlace trae el título, la imagen y, en una compra, el precio: lo usan el bloque de precio y
   // la fila del enlace (diseños 15 y 16).
   const link = useLinkMetadata(item, online, onUpdate)
@@ -200,6 +211,18 @@ export function ItemDetail({
       </div>
       {!isDesktop && <div className="-mt-2 pl-[42px]">{origin}</div>}
 
+      {/* Lo que importa de un evento, justo bajo el título (diseño 17, F1). */}
+      {item.kind === 'event' && (
+        <EventWhenField
+          item={item}
+          isDesktop={isDesktop}
+          marked={eventDays}
+          onChange={(patch) => {
+            onUpdate(item, patch)
+          }}
+        />
+      )}
+
       <NotesField
         key={`notes-${item.id}`}
         notes={item.notes}
@@ -286,16 +309,24 @@ export function ItemDetail({
       )}
 
       <Field label="Estado">
-        <SegmentedControl<ItemStatus>
-          label="Estado"
-          options={statusOptions}
-          value={item.status}
-          onChange={(status) => {
-            if (status) onUpdate(item, { status })
-          }}
-        />
+        {item.kind === 'event' ? (
+          <EventStatusField
+            item={item}
+            onChange={(status) => {
+              onUpdate(item, { status })
+            }}
+          />
+        ) : (
+          <SegmentedControl<ItemStatus>
+            label="Estado"
+            options={statusOptions}
+            value={item.status}
+            onChange={(status) => {
+              if (status) onUpdate(item, { status })
+            }}
+          />
+        )}
       </Field>
-      {note && <p className="-mt-1 text-[13px] leading-normal text-muted-foreground">{note}</p>}
 
       <div className="mt-auto flex h-11 shrink-0 items-center justify-between text-sm font-semibold">
         <button
@@ -428,5 +459,46 @@ function DueDateField({ item, isDesktop, onChange }: DueDateFieldProps) {
         </button>
       </BottomSheet>
     </>
+  )
+}
+
+/**
+ * El estado de un evento (diseño 17, F1, F10–F12): Próximo y Pasado los pone la fecha, así que
+ * «Pasado» no se elige; tú solo cancelas o lo deshaces, y el aviso lo deja deshacer.
+ */
+function EventStatusField({
+  item,
+  onChange,
+}: {
+  item: Item
+  onChange: (status: ItemStatus) => void
+}) {
+  const cancelled = item.status === 'cancelled'
+  const past = isPastEvent(item)
+  const value = cancelled ? 'cancelled' : past ? 'past' : 'upcoming'
+  const options: SegmentOption<'upcoming' | 'past' | 'cancelled'>[] = [
+    { value: 'upcoming', label: STATUS_LABELS.upcoming, disabled: past && !cancelled },
+    { value: 'past', label: 'Pasado', disabled: true },
+    { value: 'cancelled', label: STATUS_LABELS.cancelled },
+  ]
+  const change = (next: ItemStatus, message: string, back: ItemStatus) => {
+    onChange(next)
+    showUndoToast({
+      message,
+      onUndo: () => {
+        onChange(back)
+      },
+    })
+  }
+  return (
+    <SegmentedControl
+      label="Estado"
+      options={options}
+      value={value}
+      onChange={(next) => {
+        if (next === 'cancelled' && !cancelled) change('cancelled', 'Evento cancelado', item.status)
+        if (next === 'upcoming' && cancelled) change('upcoming', 'Vuelve a tu agenda', 'cancelled')
+      }}
+    />
   )
 }

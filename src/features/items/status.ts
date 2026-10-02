@@ -1,5 +1,7 @@
 import type { ListKind } from '@/features/lists'
 
+import { isPastEvent } from './events'
+
 /** Todos los estados que admite la base (trigger `items_validate`, documento 03 §items). */
 export const ITEM_STATUSES = [
   'pending',
@@ -121,15 +123,13 @@ export function checkboxState(status: ItemStatus): CheckboxState {
 
 /**
  * Si el ítem va a «Fuera de la cabeza»: un estado final o, en eventos, uno pasado. Los eventos
- * pasados no se guardan como estado: `upcoming` sin repetición con la fecha ya pasada (03 §items),
- * la misma regla que la vista `list_counters`.
+ * pasados no se guardan como estado: `upcoming` sin repetición cuyo día ya acabó (03 §items y
+ * `isPastEvent`; decisión de Fran en la 2.4), la misma regla que la vista `list_counters`.
  */
 export function isOutOfMind(
   item: { kind: ItemKind; status: ItemStatus; dueAt: Date | null; recurrence: string | null },
   now: Date = new Date(),
 ): boolean {
   if (isFinalStatus(item.status)) return true
-  return (
-    item.kind === 'event' && item.recurrence === null && item.dueAt !== null && item.dueAt < now
-  )
+  return item.kind === 'event' && isPastEvent(item, now)
 }

@@ -4,6 +4,7 @@ import { useId, useState, type ReactNode } from 'react'
 import { formatCaptureAge } from '@/lib/date'
 import { cn } from '@/lib/utils'
 
+import { eventWhen } from '../events'
 import { kindMark } from '../kind'
 import { itemPrice } from '../prices'
 import { STATUS_LABELS } from '../status'
@@ -153,7 +154,15 @@ export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
       ? `${STATUS_LABELS[item.status]} · ${price.text}`
       : STATUS_LABELS[item.status]
     : null
-  const status = !paid && kindMark(item.kind, actions.list.kind) ? STATUS_LABELS[item.status] : null
+  // Un evento dice cuándo fue o que se canceló (diseño 17, E1: «Sáb 12 sep · 21:30»).
+  const when =
+    item.kind === 'event'
+      ? item.status === 'cancelled'
+        ? STATUS_LABELS[item.status]
+        : item.dueAt && eventWhen(item)
+      : null
+  const status =
+    !paid && !when && kindMark(item.kind, actions.list.kind) ? STATUS_LABELS[item.status] : null
   return (
     <SwipeableRow
       item={item}
@@ -173,7 +182,9 @@ export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
         >
           {status ? `${item.title} · ${status}` : undefined}
         </RowTitle>
-        {paid && <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{paid}</p>}
+        {(paid ?? when) && (
+          <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{paid ?? when}</p>
+        )}
       </div>
       {aside}
     </SwipeableRow>

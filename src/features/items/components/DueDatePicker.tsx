@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils'
 interface DueDatePickerProps {
   value: Date | null
   onChange: (date: Date | null) => void
+  /** Días con algo ya puesto: llevan un punto debajo (diseño 17, F3). */
+  marked?: readonly Date[]
 }
 
 /**
@@ -17,7 +19,7 @@ interface DueDatePickerProps {
  * elegido relleno; los días pasados en gris, pero se pueden elegir (una tarea puede estar
  * atrasada). Devuelve el día a las 00:00 locales: la hora no importa en una fecha límite.
  */
-export function DueDatePicker({ value, onChange }: DueDatePickerProps) {
+export function DueDatePicker({ value, onChange, marked = [] }: DueDatePickerProps) {
   const today = startOfDay(new Date())
   const pick = (date: Date | null) => {
     onChange(date ? startOfDay(date) : null)
@@ -64,7 +66,7 @@ export function DueDatePicker({ value, onChange }: DueDatePickerProps) {
         onSelect={(date) => {
           if (date) pick(date)
         }}
-        modifiers={{ past: { before: today } }}
+        modifiers={{ past: { before: today }, marked: [...marked] }}
         formatters={{
           formatCaption: formatMonthCaption,
           formatWeekdayName: (date) => format(date, 'EEEEE').toUpperCase(),
@@ -97,11 +99,16 @@ export function DueDatePicker({ value, onChange }: DueDatePickerProps) {
           day_button:
             'mx-auto flex h-[42px] w-full items-center justify-center rounded-xl text-sm font-semibold outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50 md:h-9',
           today: '[&>button]:border-2 [&>button]:border-primary',
+          // El elegido manda sobre «pasado» (gris), que si no lo deja ilegible sobre el índigo.
           selected:
-            '[&>button]:bg-primary [&>button]:font-bold [&>button]:text-primary-foreground [&>button]:hover:bg-primary',
+            '[&>button]:bg-primary [&>button]:font-bold [&>button]:text-primary-foreground! [&>button]:hover:bg-primary',
           outside: 'invisible',
         }}
-        modifiersClassNames={{ past: '[&>button]:font-medium [&>button]:text-subtle-foreground' }}
+        modifiersClassNames={{
+          past: '[&>button]:font-medium [&>button]:text-subtle-foreground',
+          marked:
+            "[&>button]:relative [&>button]:after:absolute [&>button]:after:bottom-1 [&>button]:after:size-1 [&>button]:after:rounded-full [&>button]:after:bg-current [&>button]:after:opacity-60 [&>button]:after:content-['']",
+        }}
       />
     </div>
   )
