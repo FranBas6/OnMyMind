@@ -66,6 +66,9 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     priceSource: null,
     previousPriceCents: null,
     priceCheckedAt: null,
+    links: [],
+    priceLinkId: null,
+    priceStore: null,
     ...overrides,
   }
 }
@@ -105,18 +108,21 @@ const HISTORY = [
     currency: 'EUR',
     source: 'web' as const,
     recordedAt: new Date(Date.now() - 120 * DAY),
+    store: null,
   },
   {
     cents: 29500,
     currency: 'EUR',
     source: 'manual' as const,
     recordedAt: new Date(Date.now() - 60 * DAY),
+    store: null,
   },
   {
     cents: 27900,
     currency: 'EUR',
     source: 'web' as const,
     recordedAt: new Date(Date.now() - 30 * DAY),
+    store: null,
   },
 ]
 const metadata = (
@@ -240,7 +246,7 @@ describe('la ficha de compra (diseño 16, 2.2)', () => {
     renderList(compras, [sony()], ID.auriculares)
     const price = await block()
 
-    expect(await within(price).findByText('Histórico de precios')).toBeInTheDocument()
+    expect(await within(price).findByText('Histórico del precio más bajo')).toBeInTheDocument()
     expect(within(price).getByText('6 meses')).toBeInTheDocument()
     expect(pricesApi.fetchPriceHistory).toHaveBeenCalledWith(ID.auriculares)
     // Para quien no ve la gráfica, la misma historia en una frase.
@@ -255,7 +261,7 @@ describe('la ficha de compra (diseño 16, 2.2)', () => {
     expect(
       within(price).getByText('Es el primer precio. El histórico aparece cuando cambie.'),
     ).toBeInTheDocument()
-    expect(within(price).queryByText('Histórico de precios')).not.toBeInTheDocument()
+    expect(within(price).queryByText('Histórico del precio más bajo')).not.toBeInTheDocument()
     expect(pricesApi.fetchPriceHistory).not.toHaveBeenCalled()
   })
 

@@ -57,6 +57,9 @@ const grifo: Item = {
   priceSource: null,
   previousPriceCents: null,
   priceCheckedAt: null,
+  links: [],
+  priceLinkId: null,
+  priceStore: null,
 }
 
 function setup(listItems: Item[] = [grifo]) {

@@ -52,6 +52,29 @@ export interface Item {
   previousPriceCents: number | null
   /** Cuándo se puso o se miró el precio («de la web · hoy»). Lo pone el trigger al cambiarlo. */
   priceCheckedAt: Date | null
+  /**
+   * Las tiendas de una compra con más de una (2.2b, diseño 19), por su orden. Vacío con una sola
+   * tienda o ninguna: entonces el enlace y el precio son los del ítem, como en la 2.1.
+   */
+  links: ItemLink[]
+  /** La tienda de la que sale el precio: la más barata o, comprada, donde se compró. */
+  priceLinkId: string | null
+  /** Su nombre («MediaMarkt»), para «En MediaMarkt, la más barata de 3». */
+  priceStore: string | null
+}
+
+/** Una tienda de una compra (`item_links`): su enlace y su precio, de la web o a mano. */
+export interface ItemLink {
+  id: string
+  url: string
+  /** Como en el ítem: `null` es que aún no se ha buscado; `''`, que la página no dio nada. */
+  urlTitle: string | null
+  urlSite: string | null
+  priceCents: number | null
+  currency: string
+  priceSource: PriceSource | null
+  priceCheckedAt: Date | null
+  position: number
 }
 
 /** `manual`: escrito a mano; `web`: de la página, porque se pegó el enlace o se pidió; `auto`: fase 3. */
@@ -90,5 +113,18 @@ export interface ItemPatch {
   currency?: string
   priceSource?: PriceSource | null
   /** «Sigue a 99 €. Mirado ahora.» (2.2): se miró y no cambió, así que el trigger no lo pone. */
+  priceCheckedAt?: Date | null
+  /** «¿Dónde lo compraste?» (2.2b): la tienda de lo pagado, o `null` si fue en otro sitio. */
+  priceLinkId?: string | null
+  priceStore?: string | null
+}
+
+/** Lo que se cambia de una tienda. */
+export interface ItemLinkPatch {
+  urlTitle?: string | null
+  urlSite?: string | null
+  priceCents?: number | null
+  currency?: string
+  priceSource?: PriceSource | null
   priceCheckedAt?: Date | null
 }

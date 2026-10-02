@@ -33,6 +33,9 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
     priceSource: null,
     previousPriceCents: null,
     priceCheckedAt: null,
+    links: [],
+    priceLinkId: null,
+    priceStore: null,
     ...overrides,
   }
 }

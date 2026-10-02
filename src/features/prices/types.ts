@@ -7,4 +7,6 @@ export interface PriceRecord {
   currency: string
   source: PriceSource
   recordedAt: Date
+  /** De qué tienda era (2.2b): lo dice la etiqueta al tocar un punto de la gráfica. */
+  store: string | null
 }

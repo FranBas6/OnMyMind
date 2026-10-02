@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { parseTaskFields } from './fields'
 import { ITEM_KINDS, ITEM_STATUSES } from './status'
-import type { Item } from './types'
+import type { Item, ItemLink } from './types'
 
 /** Mismo límite que el `check` de `items.title` (03 §items). */
 export const ITEM_TITLE_MAX_LENGTH = 300
@@ -16,7 +16,7 @@ const priceSourceSchema = z.enum(['manual', 'web', 'auto']).nullable()
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at'
+  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at, price_link_id, price_store, links:item_links!item_links_item_id_fkey(id, url, url_title, url_site, price_cents, currency, price_source, price_checked_at, position)'
 
 /** Límite de las notas: el `check` de `items.notes`. */
 export const ITEM_NOTES_MAX_LENGTH = 5000
@@ -48,6 +48,36 @@ export interface ItemRow {
   price_source: string | null
   previous_price_cents: number | null
   price_checked_at: string | null
+  price_link_id: string | null
+  price_store: string | null
+  links: ItemLinkRow[]
+}
+
+export interface ItemLinkRow {
+  id: string
+  url: string
+  url_title: string | null
+  url_site: string | null
+  price_cents: number | null
+  currency: string
+  price_source: string | null
+  price_checked_at: string | null
+  position: number
+}
+
+/** Fila de `item_links` → tienda de la app. */
+export function mapItemLinkRow(row: ItemLinkRow): ItemLink {
+  return {
+    id: row.id,
+    url: row.url,
+    urlTitle: row.url_title,
+    urlSite: row.url_site,
+    priceCents: row.price_cents,
+    currency: row.currency,
+    priceSource: priceSourceSchema.parse(row.price_source),
+    priceCheckedAt: toDate(row.price_checked_at),
+    position: row.position,
+  }
 }
 
 const toDate = (value: string | null) => (value === null ? null : new Date(value))
@@ -81,6 +111,9 @@ export function mapItemRow(row: ItemRow): Item {
     priceSource: priceSourceSchema.parse(row.price_source),
     previousPriceCents: row.previous_price_cents,
     priceCheckedAt: toDate(row.price_checked_at),
+    links: row.links.map(mapItemLinkRow).sort((a, b) => a.position - b.position),
+    priceLinkId: row.price_link_id,
+    priceStore: row.price_store,
   }
 }
 

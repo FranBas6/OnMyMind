@@ -2,40 +2,57 @@ import { useState } from 'react'
 
 import { formatCents } from '@/lib/money'
 
-import { fetchLinkMetadata } from '../api'
-import type { Item, ItemPatch } from '../types'
+import { fetchLinkMetadata, type LinkMetadata } from '../api'
+import { cheapestLink, hasStores, patchLink, storeName } from '../stores'
+import type { Item, ItemLink, ItemLinkPatch, ItemPatch } from '../types'
 
 /**
- * Cómo fue «Actualizar precio» (diseño 16, B10–B14): buscando, un precio nuevo, el mismo, la web
- * no lo da, la web no deja pasar o no se pudo preguntar.
+ * Cómo fue «Actualizar precio» (diseño 16, B10–B14, y 19, T16–T19): buscando (en qué tiendas), un
+ * precio nuevo, el mismo, la web no lo da, no deja pasar, no se pudo; con varias tiendas, una frase
+ * que resume (`summary`) y las que no contestaron (`failedIds`), que enseñan su último precio.
  */
 export type RefreshState =
   | { status: 'idle' }
-  | { status: 'searching' }
+  | { status: 'searching'; ids: readonly string[] }
   | { status: 'new' }
   | { status: 'same'; text: string }
   | { status: 'none' }
   | { status: 'blocked' }
   | { status: 'failed' }
+  | {
+      status: 'summary'
+      text: string
+      tone: 'success' | 'muted'
+      failedIds: readonly string[]
+    }
+
+/** Lo que se sabe de una tienda después de mirar su web. */
+type Outcome =
+  | { link: ItemLink; result: 'new' | 'same'; patch: ItemLinkPatch }
+  | { link: ItemLink; result: 'none' | 'failed' }
 
 /**
- * «Actualizar precio»: vuelve a mirar la web de la compra cuando se pulsa (ADR-007, capa 2 a
- * demanda). Es una petición nueva cada vez, sin la caché del enlace. El precio de la web sustituye
- * al que hubiera, también al escrito a mano, porque se ha pedido; si es el mismo, solo se apunta
- * que se miró («Sigue a 99 €. Mirado ahora.»). El resultado se dice dentro del bloque, sin toast.
+ * «Actualizar precio»: vuelve a mirar la web cuando se pulsa (ADR-007, capa 2 a demanda), con una
+ * petición nueva cada vez, sin la caché del enlace.
+ * - **Una tienda:** el precio de la web sustituye al que hubiera, también al escrito a mano,
+ *   porque se ha pedido; si es el mismo, solo se apunta que se miró.
+ * - **Varias:** se miran a la vez todas las que no tienen el precio escrito a mano («Actualizar
+ *   precio» no lo pisa en esa tienda, diseño 19, T13), y la compra se queda con la más barata.
  */
-export function useRefreshPrice(item: Item, onUpdate: (item: Item, patch: ItemPatch) => void) {
+export function useRefreshPrice(
+  item: Item,
+  onUpdate: (item: Item, patch: ItemPatch) => void,
+  onUpdateLink: (item: Item, linkId: string, patch: ItemLinkPatch) => void,
+) {
   const [state, setState] = useState<RefreshState>({ status: 'idle' })
 
-  const refresh = async () => {
-    if (!item.url) return
-    setState({ status: 'searching' })
+  const refreshOne = async (url: string) => {
+    setState({ status: 'searching', ids: [] })
     try {
-      const metadata = await fetchLinkMetadata(item.url)
+      const metadata = await fetchLinkMetadata(url)
       const price = metadata.price
       if (!price) {
-        // Sin título ni imagen la página ni siquiera se pudo leer: la web no deja pasar.
-        setState({ status: metadata.title || metadata.image ? 'none' : 'blocked' })
+        setState({ status: readable(metadata) ? 'none' : 'blocked' })
         return
       }
       if (price.cents === item.priceCents && price.currency === item.currency) {
@@ -50,11 +67,105 @@ export function useRefreshPrice(item: Item, onUpdate: (item: Item, patch: ItemPa
     }
   }
 
+  const refreshStores = async () => {
+    const targets = item.links.filter((link) => link.priceSource !== 'manual')
+    setState({ status: 'searching', ids: targets.map((link) => link.id) })
+    const now = new Date()
+    const outcomes: Outcome[] = await Promise.all(
+      targets.map(async (link): Promise<Outcome> => {
+        try {
+          const metadata = await fetchLinkMetadata(link.url)
+          const price = metadata.price
+          if (!price) return { link, result: readable(metadata) ? 'none' : 'failed' }
+          const same = price.cents === link.priceCents && price.currency === link.currency
+          return {
+            link,
+            result: same ? 'same' : 'new',
+            patch: same
+              ? { priceSource: 'web', priceCheckedAt: now }
+              : {
+                  priceCents: price.cents,
+                  currency: price.currency,
+                  priceSource: 'web',
+                  priceCheckedAt: now,
+                },
+          }
+        } catch {
+          return { link, result: 'failed' }
+        }
+      }),
+    )
+    for (const outcome of outcomes) {
+      if (outcome.result === 'new' || outcome.result === 'same')
+        onUpdateLink(item, outcome.link.id, outcome.patch)
+    }
+    setState(storesSummary(item.links, outcomes))
+  }
+
   return {
     state,
-    refresh,
+    refresh: async () => {
+      if (hasStores(item)) await refreshStores()
+      else if (item.url) await refreshOne(item.url)
+    },
     reset: () => {
       setState({ status: 'idle' })
     },
+  }
+}
+
+/** Sin título ni imagen la página ni siquiera se pudo leer: la web no deja pasar. */
+function readable(metadata: LinkMetadata): boolean {
+  return Boolean(metadata.title ?? metadata.image)
+}
+
+/** La frase de «Actualizar precio» con varias tiendas (diseño 19, T17–T19). */
+export function storesSummary(
+  before: readonly ItemLink[],
+  outcomes: readonly Outcome[],
+): RefreshState {
+  const after = before.map((link) => {
+    const outcome = outcomes.find((entry) => entry.link.id === link.id)
+    return outcome && 'patch' in outcome ? patchLink(link, outcome.patch) : link
+  })
+  const failed = outcomes.filter((outcome) => outcome.result === 'failed')
+  const failedIds = failed.map((outcome) => outcome.link.id)
+  const bestBefore = cheapestLink(before)
+  const bestAfter = cheapestLink(after)
+
+  if (failed.length > 0) {
+    const names = failed.map((outcome) => storeName(outcome.link)).join(', ')
+    const verb = failed.length > 1 ? 'no contestaron' : 'no contestó'
+    return {
+      status: 'summary',
+      tone: 'muted',
+      text: `${names} ${verb}; se queda con su último precio. Las otras, al día.`,
+      failedIds,
+    }
+  }
+  if (
+    bestAfter &&
+    bestAfter.priceCents !== null &&
+    (bestAfter.id !== bestBefore?.id || bestAfter.priceCents !== bestBefore.priceCents)
+  ) {
+    const price = formatCents(bestAfter.priceCents, bestAfter.currency)
+    return {
+      status: 'summary',
+      tone: 'success',
+      text:
+        bestAfter.id === bestBefore?.id
+          ? `Precio nuevo de la web: ${price} en ${storeName(bestAfter)}.`
+          : `${storeName(bestAfter)} bajó a ${price}. Ahora es la más barata.`,
+      failedIds,
+    }
+  }
+  const changed = outcomes.some((outcome) => outcome.result === 'new')
+  return {
+    status: 'summary',
+    tone: 'muted',
+    text: changed
+      ? 'Precios al día. La más barata sigue siendo la misma.'
+      : `Siguen igual las ${String(outcomes.length)}. Mirado ahora.`,
+    failedIds,
   }
 }

@@ -66,7 +66,7 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
           )}
         </div>
         <p className="mt-[5px] flex min-w-0 flex-wrap items-center gap-x-2 text-xs font-semibold text-muted-foreground md:mt-0 md:text-[13px] md:whitespace-nowrap">
-          {item.url && <LinkMeta url={item.url} />}
+          {item.url && <LinkMeta url={item.url} item={item} />}
           <span>{resultMeta(item, now, route)}</span>
         </p>
       </div>

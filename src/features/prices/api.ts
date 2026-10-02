@@ -12,6 +12,7 @@ const recordSchema = z.object({
   currency: z.string(),
   source: z.enum(['manual', 'web', 'auto']),
   recorded_at: z.string(),
+  store: z.string().nullable(),
 })
 
 /**
@@ -22,7 +23,7 @@ const recordSchema = z.object({
 export async function fetchPriceHistory(itemId: string): Promise<PriceRecord[]> {
   const { data, error } = await supabase
     .from('item_prices')
-    .select('price_cents, currency, source, recorded_at')
+    .select('price_cents, currency, source, recorded_at, store')
     .eq('item_id', itemId)
     .order('recorded_at')
     .order('id')
@@ -37,6 +38,7 @@ export async function fetchPriceHistory(itemId: string): Promise<PriceRecord[]> 
       currency: row.currency,
       source: row.source,
       recordedAt: new Date(row.recorded_at),
+      store: row.store,
     }))
 }
 

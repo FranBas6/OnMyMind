@@ -13,6 +13,8 @@ export interface ChartPoint {
   source: PriceSource
   /** Desde cuándo vale ese precio: lo que dice la etiqueta al tocar el punto. */
   since: number
+  /** De qué tienda era, si se sabe (2.2b). */
+  store: string | null
   /**
    * Un cambio de precio de verdad, con su punto en la gráfica. Los de los bordes no lo son: el
    * precio que ya regía cuando empieza la ventana y el de hoy, que alargan la línea.
@@ -34,6 +36,7 @@ export interface CurrentPrice {
   currency: string
   source: PriceSource
   checkedAt: Date | null
+  store?: string | null
 }
 
 /**
@@ -56,6 +59,7 @@ export function chartData(
       since: record.recordedAt.getTime(),
       cents: record.cents,
       source: record.source,
+      store: record.store,
     }))
     .filter((row) => row.at <= end)
 
@@ -67,6 +71,7 @@ export function chartData(
       since: at,
       cents: current.cents,
       source: current.source,
+      store: current.store ?? null,
     })
   }
 

@@ -8,7 +8,15 @@ import { supabase } from '@/lib/supabase/client'
 
 import type { MovePatch } from './move'
 import { fieldsFor, ITEM_COLUMNS, itemTitleSchema, mapItemRow } from './schemas'
-import type { Item, ItemKind, ItemPatch, ItemStatus, MovedItem } from './types'
+import type {
+  Item,
+  ItemKind,
+  ItemLink,
+  ItemLinkPatch,
+  ItemPatch,
+  ItemStatus,
+  MovedItem,
+} from './types'
 
 type ItemUpdate = Database['public']['Tables']['items']['Update']
 
@@ -122,6 +130,8 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
   if (patch.priceSource !== undefined) row.price_source = patch.priceSource
   if (patch.priceCheckedAt !== undefined)
     row.price_checked_at = patch.priceCheckedAt?.toISOString() ?? null
+  if (patch.priceLinkId !== undefined) row.price_link_id = patch.priceLinkId
+  if (patch.priceStore !== undefined) row.price_store = patch.priceStore
   const { error } = await supabase.from('items').update(row).eq('id', itemId)
   if (error) throw error
 }
@@ -289,4 +299,48 @@ export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
 function functionStatus(error: FunctionsHttpError): number | null {
   const context: unknown = error.context
   return context instanceof Response ? context.status : null
+}
+
+/**
+ * Añade tiendas a una compra (2.2b), con sus ids generados en el cliente: la segunda llega junto a
+ * la primera (la de siempre, sacada del ítem). El trigger `item_links_sync` le pone a la compra el
+ * precio de la más barata. Idempotente, como `createItem`.
+ */
+export async function insertLinks(itemId: string, links: readonly ItemLink[]): Promise<void> {
+  const { error } = await supabase.from('item_links').upsert(
+    links.map((link) => ({
+      id: link.id,
+      item_id: itemId,
+      url: link.url,
+      url_title: link.urlTitle,
+      url_site: link.urlSite,
+      price_cents: link.priceCents,
+      currency: link.currency,
+      price_source: link.priceSource,
+      price_checked_at: link.priceCheckedAt?.toISOString() ?? null,
+      position: link.position,
+    })),
+    { onConflict: 'id', ignoreDuplicates: true },
+  )
+  if (error) throw error
+}
+
+/** Cambia una tienda: lo que trae su web, o su precio escrito a mano. */
+export async function updateLink(linkId: string, patch: ItemLinkPatch): Promise<void> {
+  const row: Database['public']['Tables']['item_links']['Update'] = {}
+  if (patch.urlTitle !== undefined) row.url_title = patch.urlTitle
+  if (patch.urlSite !== undefined) row.url_site = patch.urlSite
+  if (patch.priceCents !== undefined) row.price_cents = patch.priceCents
+  if (patch.currency !== undefined) row.currency = patch.currency
+  if (patch.priceSource !== undefined) row.price_source = patch.priceSource
+  if (patch.priceCheckedAt !== undefined)
+    row.price_checked_at = patch.priceCheckedAt?.toISOString() ?? null
+  const { error } = await supabase.from('item_links').update(row).eq('id', linkId)
+  if (error) throw error
+}
+
+/** Quita una tienda. Si queda una sola, el trigger la devuelve al ítem. */
+export async function deleteLink(linkId: string): Promise<void> {
+  const { error } = await supabase.from('item_links').delete().eq('id', linkId)
+  if (error) throw error
 }

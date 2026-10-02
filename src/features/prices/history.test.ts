@@ -9,6 +9,7 @@ const record = (cents: number, date: Date, extra: Partial<PriceRecord> = {}): Pr
   currency: 'EUR',
   source: 'web',
   recordedAt: date,
+  store: null,
   ...extra,
 })
 

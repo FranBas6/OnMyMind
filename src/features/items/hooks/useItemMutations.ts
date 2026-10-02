@@ -8,6 +8,9 @@ import { queryKeys } from '@/lib/queryKeys'
 import {
   createItem,
   deleteItem,
+  deleteLink,
+  insertLinks,
+  updateLink,
   insertItems,
   moveItem,
   updateItem,
@@ -16,8 +19,9 @@ import {
 } from '../api'
 import { buildMovePatch } from '../move'
 import { isFinalStatus, isOutOfMind } from '../status'
+import { patchLink, withLinks } from '../stores'
 import { countItems, type Counts } from '../sublists'
-import type { Item, ItemPatch, ItemStatus, MovedItem } from '../types'
+import type { Item, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus, MovedItem } from '../types'
 
 /**
  * Todas las mutaciones de ítems comparten clave y `scope`. El `scope` las pone en fila: se envían
@@ -284,6 +288,9 @@ export function useCreateItem() {
               priceSource: null,
               previousPriceCents: null,
               priceCheckedAt: null,
+              links: [],
+              priceLinkId: null,
+              priceStore: null,
             },
           ],
         },
@@ -569,6 +576,59 @@ export function useInsertItems() {
       const title = items[0]?.title ?? ''
       const what = reason === 'restore' ? 'recuperar' : 'duplicar'
       rollback(queryClient, snapshot, `No se ha podido ${what} «${title}». ${errorMessage(error)}`)
+    },
+    onSettled: () => {
+      settle(queryClient)
+    },
+  })
+}
+
+/** Lo que se hace con las tiendas de una compra (2.2b). */
+export type StoreChange =
+  | { type: 'add'; item: Item; links: ItemLink[] }
+  | { type: 'update'; item: Item; linkId: string; patch: ItemLinkPatch }
+  | { type: 'remove'; item: Item; linkId: string }
+
+/** Las tiendas de la compra después del cambio (lo que el servidor tendrá). */
+function linksAfter(change: StoreChange): ItemLink[] {
+  const { item } = change
+  if (change.type === 'add') return [...item.links, ...change.links]
+  if (change.type === 'update')
+    return item.links.map((link) =>
+      link.id === change.linkId ? patchLink(link, change.patch) : link,
+    )
+  return item.links.filter((link) => link.id !== change.linkId)
+}
+
+/**
+ * Añadir, cambiar o quitar una tienda (optimista, en la misma fila que el resto de mutaciones de
+ * ítems, así que nunca llega antes que el alta de la compra). En la caché, la compra queda como la
+ * dejará el trigger (`withLinks`): con el enlace de la primera y el precio de la más barata.
+ */
+export function useStoreMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    ...OFFLINE_TOLERANT,
+    mutationFn: (change: StoreChange) => {
+      if (change.type === 'add') return insertLinks(change.item.id, change.links)
+      if (change.type === 'update') return updateLink(change.linkId, change.patch)
+      return deleteLink(change.linkId)
+    },
+    onMutate: (change) => {
+      // Sobre lo que hay en la caché, por si otra mutación en fila ya la cambió.
+      const update = (items: Item[]) =>
+        items.map((entry) =>
+          entry.id === change.item.id
+            ? withLinks(entry, linksAfter({ ...change, item: entry }))
+            : entry,
+        )
+      return applyOptimistic(queryClient, {
+        items: { [change.item.listId]: update },
+        mixed: update,
+      })
+    },
+    onError: (error, _change, snapshot) => {
+      rollback(queryClient, snapshot, `No se ha podido guardar la tienda. ${errorMessage(error)}`)
     },
     onSettled: () => {
       settle(queryClient)

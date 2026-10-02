@@ -23,6 +23,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      item_links: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          item_id: string
+          position: number
+          price_cents: number | null
+          price_checked_at: string | null
+          price_source: Database['public']['Enums']['price_source'] | null
+          url: string
+          url_site: string | null
+          url_title: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          item_id: string
+          position?: number
+          price_cents?: number | null
+          price_checked_at?: string | null
+          price_source?: Database['public']['Enums']['price_source'] | null
+          url: string
+          url_site?: string | null
+          url_title?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          item_id?: string
+          position?: number
+          price_cents?: number | null
+          price_checked_at?: string | null
+          price_source?: Database['public']['Enums']['price_source'] | null
+          url?: string
+          url_site?: string | null
+          url_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'item_links_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       item_prices: {
         Row: {
           currency: string
@@ -31,6 +81,7 @@ export type Database = {
           price_cents: number
           recorded_at: string
           source: Database['public']['Enums']['price_source']
+          store: string | null
         }
         Insert: {
           currency?: string
@@ -39,6 +90,7 @@ export type Database = {
           price_cents: number
           recorded_at?: string
           source?: Database['public']['Enums']['price_source']
+          store?: string | null
         }
         Update: {
           currency?: string
@@ -47,6 +99,7 @@ export type Database = {
           price_cents?: number
           recorded_at?: string
           source?: Database['public']['Enums']['price_source']
+          store?: string | null
         }
         Relationships: [
           {
@@ -80,7 +133,9 @@ export type Database = {
           previous_price_cents: number | null
           price_cents: number | null
           price_checked_at: string | null
+          price_link_id: string | null
           price_source: Database['public']['Enums']['price_source'] | null
+          price_store: string | null
           recurrence: string | null
           status: string
           title: string
@@ -110,7 +165,9 @@ export type Database = {
           previous_price_cents?: number | null
           price_cents?: number | null
           price_checked_at?: string | null
+          price_link_id?: string | null
           price_source?: Database['public']['Enums']['price_source'] | null
+          price_store?: string | null
           recurrence?: string | null
           status?: string
           title: string
@@ -140,7 +197,9 @@ export type Database = {
           previous_price_cents?: number | null
           price_cents?: number | null
           price_checked_at?: string | null
+          price_link_id?: string | null
           price_source?: Database['public']['Enums']['price_source'] | null
+          price_store?: string | null
           recurrence?: string | null
           status?: string
           title?: string
@@ -190,6 +249,13 @@ export type Database = {
             columns: ['parent_id']
             isOneToOne: false
             referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'items_price_link_id_fkey'
+            columns: ['price_link_id']
+            isOneToOne: false
+            referencedRelation: 'item_links'
             referencedColumns: ['id']
           },
         ]
@@ -344,6 +410,7 @@ export type Database = {
         Args: { p_kind: Database['public']['Enums']['item_kind'] }
         Returns: string[]
       }
+      link_store_name: { Args: { p_site: string; p_url: string }; Returns: string }
       price_savings: { Args: Record<PropertyKey, never>; Returns: number }
       translate_item_status: {
         Args: { p_kind: Database['public']['Enums']['item_kind']; p_status: string }

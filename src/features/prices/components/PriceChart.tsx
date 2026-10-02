@@ -95,7 +95,12 @@ function PointLabel({ point, currency }: { point: ChartPoint; currency: string }
         {isSameDay(since, new Date()) ? 'hoy' : format(since, 'd MMM')}
       </p>
       <p className="mt-0.5 text-xs opacity-80">
-        {point.source === 'manual' ? 'Puesto a mano' : 'De la web'}
+        {/* Con varias tiendas, dice de cuál era (diseño 19, T20): «MediaMarkt · de la web». */}
+        {point.store
+          ? `${point.store} · ${point.source === 'manual' ? 'a mano' : 'de la web'}`
+          : point.source === 'manual'
+            ? 'Puesto a mano'
+            : 'De la web'}
       </p>
     </div>
   )

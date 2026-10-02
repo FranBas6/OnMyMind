@@ -1,12 +1,15 @@
 import { Camera, CircleAlert, ExternalLink, Link2, LoaderCircle, WifiOff, X } from 'lucide-react'
-import { useId, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
+import { useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
 import type { LinkState } from '../hooks/useLinkMetadata'
 import { usePhotoSrc, usePhotoUpload } from '../hooks/usePhoto'
-import { linkDomain, linkPath, normalizeLink } from '../links'
+import { linkDomain, linkPath } from '../links'
 import type { Item, ItemPatch } from '../types'
+import { hasStores, sameLink } from '../stores'
+import { LinkInput } from './LinkInput'
+import { AddStoreButton } from './Stores'
 import { PhotoViewer } from './PhotoViewer'
 
 interface ItemMediaProps {
@@ -15,6 +18,8 @@ interface ItemMediaProps {
   online: boolean
   /** Cómo va el título del enlace: lo busca `useLinkMetadata`, que comparte con el precio. */
   linkState: LinkState
+  /** En una compra: «+ Otra tienda» bajo su enlace (diseño 19, T1 y T2). */
+  onAddStore?: ((url: string) => void) | undefined
   onUpdate: (item: Item, patch: ItemPatch) => void
 }
 
@@ -25,8 +30,16 @@ interface ItemMediaProps {
  * guarda al momento y busca solo el título y la imagen de la página (`useLinkMetadata`): si la
  * cosa aún no tenía foto, esa imagen pasa a serlo, con «De la web».
  */
-export function ItemMedia({ item, isDesktop, online, linkState, onUpdate }: ItemMediaProps) {
+export function ItemMedia({
+  item,
+  isDesktop,
+  online,
+  linkState,
+  onAddStore,
+  onUpdate,
+}: ItemMediaProps) {
   const [editingLink, setEditingLink] = useState(false)
+  const [addingStore, setAddingStore] = useState(false)
   const [viewing, setViewing] = useState(false)
   const picker = useRef<HTMLInputElement>(null)
   const upload = usePhotoUpload(item, onUpdate)
@@ -34,7 +47,9 @@ export function ItemMedia({ item, isDesktop, online, linkState, onUpdate }: Item
 
   const hasPhoto =
     item.imagePath !== null || item.imageUrl !== null || upload.state.status !== 'idle'
-  const hasLink = item.url !== null
+  // Con varias tiendas el enlace vive en «Dónde comprarlo» (diseño 19, T10); aquí queda la foto.
+  const stores = hasStores(item)
+  const hasLink = item.url !== null && !stores
 
   const pickPhoto = () => {
     picker.current?.click()
@@ -78,7 +93,7 @@ export function ItemMedia({ item, isDesktop, online, linkState, onUpdate }: Item
         }}
       />
 
-      {!hasPhoto && !hasLink && !editingLink ? (
+      {!hasPhoto && !hasLink && !editingLink && !stores ? (
         <div className="grid grid-cols-2 gap-2.5">
           {photoButton}
           {linkButton}
@@ -108,6 +123,30 @@ export function ItemMedia({ item, isDesktop, online, linkState, onUpdate }: Item
               }}
             />
           )}
+          {hasLink &&
+            item.url &&
+            onAddStore &&
+            (addingStore ? (
+              <LinkInput
+                validate={(url) =>
+                  item.url && sameLink(item.url, url) ? 'Esta tienda ya está en la lista.' : null
+                }
+                onSave={(url) => {
+                  setAddingStore(false)
+                  onAddStore(url)
+                }}
+                onCancel={() => {
+                  setAddingStore(false)
+                }}
+              />
+            ) : (
+              <AddStoreButton
+                className="-mt-1 h-9 self-start rounded-lg px-1"
+                onClick={() => {
+                  setAddingStore(true)
+                }}
+              />
+            ))}
           {!hasLink && editingLink && (
             <LinkInput
               onSave={saveLink}
@@ -117,7 +156,7 @@ export function ItemMedia({ item, isDesktop, online, linkState, onUpdate }: Item
             />
           )}
           {!hasPhoto && photoButton}
-          {!hasLink && !editingLink && linkButton}
+          {!hasLink && !editingLink && !stores && linkButton}
         </>
       )}
 
@@ -330,119 +369,6 @@ function LinkRow({
       >
         <X aria-hidden className="size-4" strokeWidth={2.2} />
       </button>
-    </div>
-  )
-}
-
-/**
- * «Pega un enlace…» (diseño 15, M2 y M6): abre con el foco y se guarda al pegar o con Intro. Si lo
- * escrito no es un enlace, lo dice y espera. Con portapapeles accesible, «Pegar» lo pega sin tener
- * que mantener pulsado.
- */
-function LinkInput({ onSave, onCancel }: { onSave: (url: string) => void; onCancel: () => void }) {
-  const id = useId()
-  const [text, setText] = useState('')
-  const [invalid, setInvalid] = useState(false)
-  const canRead =
-    typeof navigator !== 'undefined' &&
-    'clipboard' in navigator &&
-    'readText' in navigator.clipboard
-
-  const submit = (value: string) => {
-    const url = normalizeLink(value)
-    if (url) onSave(url)
-    else setInvalid(true)
-  }
-  const onPaste = (event: ClipboardEvent<HTMLInputElement>) => {
-    const pasted = event.clipboardData.getData('text/plain')
-    const url = normalizeLink(pasted)
-    if (!url) return
-    event.preventDefault()
-    onSave(url)
-  }
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
-      event.preventDefault()
-      submit(text)
-    }
-    if (event.key === 'Escape') {
-      event.stopPropagation()
-      onCancel()
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div
-        className={cn(
-          'flex h-13 items-center gap-2.5 rounded-md border-[1.5px] bg-card pr-1.5 pl-3.5',
-          invalid ? 'border-error' : 'border-primary',
-        )}
-      >
-        <Link2
-          aria-hidden
-          className={cn('size-4 shrink-0', invalid ? 'text-error' : 'text-primary')}
-          strokeWidth={2.2}
-        />
-        <input
-          id={id}
-          autoFocus
-          type="url"
-          inputMode="url"
-          enterKeyHint="done"
-          autoComplete="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          value={text}
-          placeholder="Pega un enlace…"
-          aria-label="Pega un enlace"
-          aria-invalid={invalid || undefined}
-          aria-describedby={invalid ? `${id}-error` : undefined}
-          onChange={(event) => {
-            setText(event.target.value)
-            setInvalid(false)
-          }}
-          onPaste={onPaste}
-          onKeyDown={onKeyDown}
-          className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-subtle-foreground"
-        />
-        <button
-          type="button"
-          aria-label="Cancelar el enlace"
-          onClick={onCancel}
-          className="grid size-9 shrink-0 place-items-center rounded-[10px] text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
-          <X aria-hidden className="size-4" strokeWidth={2.2} />
-        </button>
-      </div>
-      {invalid ? (
-        <p id={`${id}-error`} className="px-1 text-[13px] text-error">
-          Eso no parece un enlace.
-        </p>
-      ) : (
-        canRead &&
-        !text && (
-          <button
-            type="button"
-            onMouseDown={(event) => {
-              // Que no le quite el foco al campo (en iOS cerraría el teclado).
-              event.preventDefault()
-            }}
-            onClick={() => {
-              void navigator.clipboard.readText().then(
-                (pasted) => {
-                  setText(pasted)
-                  submit(pasted)
-                },
-                () => undefined,
-              )
-            }}
-            className="self-start rounded-[10px] bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-primary-strong outline-none hover:bg-primary/20 focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            Pegar
-          </button>
-        )
-      )}
     </div>
   )
 }

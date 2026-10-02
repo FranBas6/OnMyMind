@@ -62,7 +62,7 @@ export function TaskRow({ item }: { item: Item }) {
     </span>
   ) : null
   const thumb = hasThumb(item)
-  const link = item.url ? <LinkMeta url={item.url} className={META} /> : null
+  const link = item.url ? <LinkMeta url={item.url} item={item} className={META} /> : null
   return (
     <SwipeableRow
       item={item}

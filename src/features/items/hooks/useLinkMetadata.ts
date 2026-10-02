@@ -5,6 +5,7 @@ import { queryKeys } from '@/lib/queryKeys'
 
 import { fetchLinkMetadata } from '../api'
 import { URL_TITLE_MAX_LENGTH } from '../links'
+import { hasStores } from '../stores'
 import type { Item, ItemPatch } from '../types'
 
 /** Cómo va el título del enlace (diseño 15). */
@@ -28,9 +29,12 @@ export function useLinkMetadata(
   online: boolean,
   onUpdate: (item: Item, patch: ItemPatch) => void,
 ): { linkState: LinkState; priceState: WebPriceState; siteName: string | null } {
-  const needsTitle = item.url !== null && item.urlTitle === null
+  // Con varias tiendas, cada una busca lo suyo (`Stores`): el enlace del ítem es el de la primera.
+  const single = !hasStores(item)
+  const needsTitle = single && item.url !== null && item.urlTitle === null
   // Una compra con enlace y sin precio: recién pegado, o algo con enlace que se convierte en compra.
-  const needsPrice = item.kind === 'shopping' && item.url !== null && item.priceCents === null
+  const needsPrice =
+    single && item.kind === 'shopping' && item.url !== null && item.priceCents === null
   const metadata = useQuery({
     queryKey: queryKeys.linkMetadata(item.url ?? ''),
     queryFn: () => fetchLinkMetadata(item.url ?? ''),

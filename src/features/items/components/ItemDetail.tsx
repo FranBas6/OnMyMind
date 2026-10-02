@@ -8,27 +8,32 @@ import {
   X,
 } from 'lucide-react'
 import { Popover } from 'radix-ui'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import type { List } from '@/features/lists'
 import { useOnline } from '@/hooks/useOnline'
 import { formatDueDateLong } from '@/lib/date'
 import { LIST_COLOR_BG } from '@/lib/listColors'
+import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 
 import { itemMoment, upcomingFieldsNote } from '../copy'
 import { PRIORITY_LABELS, PRIORITIES, type Priority } from '../fields'
 import { isChoosableKind, type ChoosableKind } from '../kind'
+import { useStoreMutation } from '../hooks/useItemMutations'
 import { useLinkMetadata } from '../hooks/useLinkMetadata'
+import { useRefreshPrice } from '../hooks/useRefreshPrice'
+import { cheapestLink, hasStores, linkFromItem, newLink, storeName } from '../stores'
 import { isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
-import type { Item, ItemPatch, ItemStatus } from '../types'
+import type { Item, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus } from '../types'
 import { DueDatePicker } from './DueDatePicker'
 import { ItemControl } from './ItemControl'
 import { ItemMedia } from './ItemMedia'
 import { ItemTitleField, NotesField } from './ItemTextFields'
 import { KindField } from './KindField'
 import { PriceBlock } from './PriceBlock'
+import { StoresSection } from './Stores'
 import { SegmentedControl, type SegmentOption } from './SegmentedControl'
 
 const PRIORITY_SELECTED: Record<Priority, string> = {
@@ -88,6 +93,54 @@ export function ItemDetail({
   // El enlace trae el título, la imagen y, en una compra, el precio: lo usan el bloque de precio y
   // la fila del enlace (diseños 15 y 16).
   const link = useLinkMetadata(item, online, onUpdate)
+
+  // Las tiendas de una compra (2.2b, diseño 19). «Actualizar precio» vive aquí porque lo ven el
+  // bloque de precio y cada tienda («Buscando…», «No contestó»).
+  const storeMutation = useStoreMutation()
+  const { mutate: mutateStores } = storeMutation
+  const updateLink = useCallback(
+    (target: Item, linkId: string, patch: ItemLinkPatch) => {
+      mutateStores({ type: 'update', item: target, linkId, patch })
+    },
+    [mutateStores],
+  )
+  const refresh = useRefreshPrice(item, onUpdate, updateLink)
+  const [notice, setNotice] = useState<string | null>(null)
+  const addStore = (url: string) => {
+    refresh.reset()
+    setNotice(null)
+    if (hasStores(item)) {
+      mutateStores({ type: 'add', item, links: [newLink(crypto.randomUUID(), url, item.links)] })
+      return
+    }
+    // La segunda tienda: la de siempre pasa a la lista con ella (`item_links`).
+    const first = linkFromItem(item, crypto.randomUUID())
+    if (!first) return
+    mutateStores({
+      type: 'add',
+      item,
+      links: [first, newLink(crypto.randomUUID(), url, [first])],
+    })
+  }
+  const removeStore = (removed: ItemLink) => {
+    const rest = item.links.filter((entry) => entry.id !== removed.id)
+    refresh.reset()
+    mutateStores({ type: 'remove', item, linkId: removed.id })
+    const next = cheapestLink(rest)
+    setNotice(
+      removed.id === item.priceLinkId && next && rest.length > 1
+        ? `Ahora la más barata es ${storeName(next)}.`
+        : null,
+    )
+    showUndoToast({
+      message: `${storeName(removed)} quitada`,
+      onUndo: () => {
+        setNotice(null)
+        // Si quedó una sola, volvió a la compra: se vuelven a poner las dos.
+        mutateStores({ type: 'add', item, links: rest.length > 1 ? [removed] : [...rest, removed] })
+      },
+    })
+  }
 
   const origin = (
     <span className="flex min-w-0 items-center gap-2 text-[13px] text-subtle-foreground">
@@ -162,7 +215,23 @@ export function ItemDetail({
           isDesktop={isDesktop}
           online={online}
           linkState={link.linkState}
+          onAddStore={item.kind === 'shopping' ? addStore : undefined}
           onUpdate={onUpdate}
+        />
+      )}
+
+      {hasStores(item) && (
+        <StoresSection
+          item={item}
+          isDesktop={isDesktop}
+          online={online}
+          refresh={refresh.state}
+          onAdd={addStore}
+          onUpdate={(linkId, patch) => {
+            updateLink(item, linkId, patch)
+          }}
+          onRemove={removeStore}
+          onNotice={setNotice}
         />
       )}
 
@@ -173,6 +242,9 @@ export function ItemDetail({
           key={`price-${item.id}`}
           item={item}
           online={online}
+          isDesktop={isDesktop}
+          refresh={refresh}
+          notice={notice}
           webPrice={link.priceState}
           siteName={link.siteName}
           onUpdate={onUpdate}

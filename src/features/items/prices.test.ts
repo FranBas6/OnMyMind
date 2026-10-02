@@ -33,6 +33,9 @@ function compra(overrides: Partial<Item> = {}): Item {
     priceSource: 'manual',
     previousPriceCents: null,
     priceCheckedAt: null,
+    links: [],
+    priceLinkId: null,
+    priceStore: null,
     ...overrides,
   }
 }

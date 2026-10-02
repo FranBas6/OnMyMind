@@ -39,7 +39,7 @@ export function ItemSheet({ item, ...props }: ItemSheetProps) {
     >
       {shown && (
         <div className="-mx-[22px] min-h-0 flex-1 overflow-y-auto px-[22px] pt-3.5">
-          <ItemDetail item={shown} {...props} />
+          <ItemDetail key={shown.id} item={shown} {...props} />
         </div>
       )}
     </BottomSheet>
@@ -71,7 +71,7 @@ function DesktopPanel({ item, ...props }: ItemDetailProps) {
       aria-label={`Detalle de «${item.title}»`}
       className="h-dvh w-[420px] overflow-y-auto border-l border-border bg-card px-7 pt-6 pb-7 shadow-panel"
     >
-      <ItemDetail item={item} {...props} />
+      <ItemDetail key={item.id} item={item} {...props} />
     </section>
   )
 }
