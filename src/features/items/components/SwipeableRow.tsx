@@ -139,9 +139,13 @@ export function SwipeableRow({ item, surfaceClassName, children }: SwipeableRowP
         className={cn(
           'touch-pan-y',
           offset !== 0 && 'shadow-swipe',
-          !swipe.dragging &&
-            'motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out',
           surfaceClassName,
+          // Va después de la superficie: su `duration-200` (de `animate-in`) da a todo una
+          // transición de 200 ms, y sin propiedad la de CSS es `all`. Arrastrando, nada se anima:
+          // la fila va pegada al dedo. Al soltar, solo el `transform`.
+          swipe.dragging
+            ? 'transition-none'
+            : 'motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out motion-reduce:transition-none',
         )}
       >
         {children}

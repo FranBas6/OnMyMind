@@ -118,6 +118,22 @@ describe('deslizar una fila', () => {
     })
   })
 
+  it('mientras se arrastra va pegada al dedo, sin transición; al soltar vuelve animada', async () => {
+    renderCasa()
+    const surface = await rowSurface()
+    const touch = { pointerId: 1, pointerType: 'touch', isPrimary: true }
+    fireEvent.pointerDown(surface, { ...touch, clientX: 100, clientY: 300 })
+    fireEvent.pointerMove(surface, { ...touch, clientX: 120, clientY: 300 })
+    fireEvent.pointerMove(surface, { ...touch, clientX: 150, clientY: 300 })
+    // La superficie lleva `duration-200` (su animación de entrada): sin `transition-none`, el
+    // transform se animaría 200 ms en cada movimiento y la fila iría detrás del dedo.
+    expect(surface).toHaveStyle({ transform: 'translateX(50px)' })
+    expect(surface).toHaveClass('transition-none')
+    fireEvent.pointerUp(surface, { ...touch, clientX: 150, clientY: 300 })
+    expect(surface).not.toHaveClass('transition-none')
+    expect(surface).toHaveClass('motion-safe:transition-transform')
+  })
+
   it('un gesto vertical es scroll: la fila no se mueve', async () => {
     renderCasa()
     const surface = await rowSurface()
