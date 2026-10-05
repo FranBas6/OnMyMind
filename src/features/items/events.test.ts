@@ -16,6 +16,7 @@ import {
   isRecurrence,
   nextOccurrence,
   occurrence,
+  occurrencesBetween,
   occursOn,
 } from './events'
 
@@ -120,6 +121,42 @@ describe('occurrence y occursOn', () => {
     expect(isRecurrence('weekly')).toBe(true)
     expect(isRecurrence('custom')).toBe(false)
     expect(isRecurrence(null)).toBe(false)
+  })
+})
+
+describe('occurrencesBetween', () => {
+  // El mes de septiembre en la rejilla del calendario: del lunes 31 de agosto al domingo 4 de octubre.
+  const start = at(8, 31)
+  const end = at(10, 5)
+
+  it('uno sin repetir, solo si cae dentro; sin fecha, nunca', () => {
+    expect(occurrencesBetween(event('Dentista', at(9, 22, 10)), start, end)).toEqual([
+      at(9, 22, 10),
+    ])
+    expect(occurrencesBetween(event('Boda', at(11, 15)), start, end)).toEqual([])
+    expect(occurrencesBetween(event('Cena', null), start, end)).toEqual([])
+  })
+
+  it('lo que se repite, cada vez dentro del rango y nunca antes de la primera', () => {
+    const yoga = event('Yoga', at(9, 3, 19), { recurrence: 'weekly' })
+    expect(occurrencesBetween(yoga, start, end)).toEqual([
+      at(9, 3, 19),
+      at(9, 10, 19),
+      at(9, 17, 19),
+      at(9, 24, 19),
+      at(10, 1, 19),
+    ])
+    const cena = event('Cena', at(8, 25, 21), { recurrence: 'monthly' })
+    expect(occurrencesBetween(cena, start, end)).toEqual([at(9, 25, 21)])
+    const cumple = event('Cumpleaños', at(9, 23, 0, 0, 2020), { recurrence: 'yearly' })
+    expect(occurrencesBetween(cumple, start, end)).toEqual([at(9, 23)])
+  })
+
+  it('cada día, todas; y el 31 de cada mes cae en el último de los cortos', () => {
+    const standUp = event('Stand-up', at(9, 28, 9, 30), { recurrence: 'daily' })
+    expect(occurrencesBetween(standUp, start, end)).toHaveLength(7)
+    const alquiler = event('Alquiler', at(1, 31), { recurrence: 'monthly' })
+    expect(occurrencesBetween(alquiler, start, end)).toEqual([at(8, 31), at(9, 30)])
   })
 })
 

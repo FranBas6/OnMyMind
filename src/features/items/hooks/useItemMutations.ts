@@ -32,10 +32,15 @@ import type { Item, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus, MovedItem } 
 const ITEM_MUTATION_KEY = ['items'] as const
 
 /**
- * Las consultas que mezclan ítems de varias listas: Hoy (una por día) y Buscar. Cada pantalla
+ * Las consultas que mezclan ítems de varias listas: Hoy (una por día), otro día de Hoy (una por
+ * mes) y Buscar. Cada pantalla
  * vuelve a filtrar lo suyo (`groupToday`, `searchItems`), así que basta con aplicarles el cambio.
  */
-const MIXED_QUERIES = [queryKeys.items.todayAll, queryKeys.items.all] as const
+const MIXED_QUERIES = [
+  queryKeys.items.todayAll,
+  queryKeys.items.daysAll,
+  queryKeys.items.all,
+] as const
 
 function mixedQueries(queryClient: QueryClient): [QueryKey, Item[] | undefined][] {
   return MIXED_QUERIES.flatMap((queryKey) => queryClient.getQueriesData<Item[]>({ queryKey }))

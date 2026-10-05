@@ -1,3 +1,4 @@
 export { TodayView } from './components/TodayView'
 export { useTodayCount } from './hooks/useToday'
-export { todayQueryOptions } from './queries'
+export { daysQueryOptions, todayQueryOptions } from './queries'
+export { dayKey, parseDayKey, stripMonth } from './today'

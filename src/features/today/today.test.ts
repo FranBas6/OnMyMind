@@ -4,9 +4,17 @@ import type { Item } from '@/features/items'
 import type { List } from '@/features/lists'
 
 import {
+  dayEyebrow,
   dayKey,
+  dayTitle,
   doneTodayLabel,
+  emptyDay,
+  groupDay,
   groupToday,
+  markedDays,
+  monthGrid,
+  parseDayKey,
+  stripMonth,
   overdueLabel,
   pausedNote,
   showsInToday,
@@ -281,5 +289,128 @@ describe('«Agenda» (diseño 17, H1)', () => {
       { now },
     )
     expect(groups.agenda).toEqual([])
+  })
+})
+
+// Otro día en Hoy (2.5, diseño 17, C1–C7). Hoy es el lunes 28 de septiembre de 2026.
+const today = at(28)
+const event = (id: string, overrides: Partial<Item> = {}) =>
+  item(id, { kind: 'event', status: 'upcoming', allDay: false, listId: 'trabajo', ...overrides })
+
+describe('el día de la URL y la rejilla del mes', () => {
+  it('`?day=` solo vale si es una fecha de verdad', () => {
+    expect(parseDayKey('2026-10-14')).toEqual(new Date(2026, 9, 14))
+    expect(parseDayKey('2026-02-30')).toBeNull()
+    expect(parseDayKey('mañana')).toBeNull()
+    expect(parseDayKey('2026-10-14T10:00')).toBeNull()
+  })
+
+  it('la rejilla va de lunes a lunes, con las semanas enteras del mes', () => {
+    expect(monthGrid(at(28))).toEqual({ start: at(-6 + 7 - 1), end: new Date(2026, 9, 5) })
+    expect(monthGrid(new Date(2026, 10, 15))).toEqual({
+      start: new Date(2026, 9, 26),
+      end: new Date(2026, 11, 7),
+    })
+  })
+
+  it('la tira de una semana entre dos meses pide el mes de su lunes, que la incluye entera', () => {
+    // La semana del jueves 1 de octubre empieza el lunes 28 de septiembre.
+    expect(stripMonth(new Date(2026, 9, 1))).toEqual(new Date(2026, 8, 1))
+    expect(monthGrid(stripMonth(new Date(2026, 9, 4))).end).toEqual(new Date(2026, 9, 5))
+  })
+})
+
+describe('groupDay', () => {
+  const thursday = new Date(2026, 9, 1)
+
+  it('un día que viene: sus eventos, también los que se repiten, y lo que vence ese día', () => {
+    const items = [
+      event('reunion', { dueAt: new Date(2026, 9, 1, 11) }),
+      event('yoga', { dueAt: at(3, 19), recurrence: 'weekly', listId: 'casa' }),
+      event('cancelado', { dueAt: new Date(2026, 9, 1, 9), status: 'cancelled' }),
+      event('otro dia', { dueAt: new Date(2026, 9, 2, 9) }),
+      item('demo', { listId: 'trabajo', dueAt: thursday, priority: 'high' }),
+      item('hecha', { dueAt: thursday, status: 'done', completedAt: at(28, 9) }),
+      item('manana', { dueAt: new Date(2026, 9, 2) }),
+    ]
+    const groups = groupDay(items, lists, { day: thursday, today })
+    expect(groups.agenda.map(({ item }) => item.id)).toEqual(['reunion', 'yoga'])
+    expect(titles({ ...groupToday([], lists, { now }), sections: groups.sections })).toEqual([
+      ['trabajo', ['demo']],
+    ])
+    expect(groups.done).toEqual([])
+    // El yoga es los jueves (empezó el jueves 3): el miércoles 7, no.
+    expect(groupDay(items, lists, { day: new Date(2026, 9, 7), today }).agenda).toEqual([])
+  })
+
+  it('un día pasado: sus eventos y «Hecho ese día», no lo que venció y sigue pendiente', () => {
+    const friday = at(25)
+    const items = [
+      event('concierto', { dueAt: at(25, 21, 30) }),
+      item('regalo', { status: 'done', dueAt: null, completedAt: at(25, 10) }),
+      item('pan', { kind: 'shopping', status: 'bought', dueAt: null, completedAt: at(25, 18) }),
+      item('descartado', { kind: 'shopping', status: 'discarded', completedAt: at(25, 12) }),
+      item('pendiente', { dueAt: at(25) }),
+      item('otro dia', { status: 'done', completedAt: at(24, 10) }),
+    ]
+    const groups = groupDay(items, lists, { day: friday, today })
+    expect(groups.agenda.map(({ item }) => item.id)).toEqual(['concierto'])
+    expect(groups.sections).toEqual([])
+    expect(groups.done.map(({ item }) => item.id)).toEqual(['pan', 'regalo'])
+  })
+
+  it('lo de una lista que ya no está (archivada) no sale', () => {
+    const groups = groupDay([item('fuera', { listId: 'archivada', dueAt: thursday })], lists, {
+      day: thursday,
+      today,
+    })
+    expect(groups.sections).toEqual([])
+  })
+})
+
+describe('markedDays', () => {
+  it('un punto donde el día no sale vacío', () => {
+    const items = [
+      event('yoga', { dueAt: at(3, 19), recurrence: 'weekly' }),
+      item('demo', { dueAt: new Date(2026, 9, 1) }),
+      item('atrasada', { dueAt: at(21) }),
+      item('hecha', { status: 'done', dueAt: null, completedAt: at(15, 10) }),
+      event('cancelado', { dueAt: at(30), status: 'cancelled' }),
+    ]
+    const marked = markedDays(items, lists, { ...monthGrid(today), today })
+    expect([...marked].sort()).toEqual([
+      '2026-09-03',
+      '2026-09-10',
+      '2026-09-15',
+      '2026-09-17',
+      '2026-09-24',
+      '2026-10-01',
+    ])
+  })
+})
+
+describe('la cabecera de otro día (diseño 17, C2, C4 y C5)', () => {
+  it('el título: «Hoy», el día de este mes o con el mes', () => {
+    expect(dayTitle(at(28, 15), today)).toBe('Hoy')
+    expect(dayTitle(at(25), today)).toBe('Viernes 25')
+    expect(dayTitle(new Date(2026, 10, 15), today)).toBe('Domingo 15 nov')
+    expect(dayTitle(new Date(2027, 0, 2), today)).toBe('Sábado 2 ene 2027')
+  })
+
+  it('la línea de encima, con la distancia hasta cuatro semanas', () => {
+    expect(dayEyebrow(today, today)).toBeNull()
+    expect(dayEyebrow(at(29), today)).toBe('Hoy es lunes 28 · mañana')
+    expect(dayEyebrow(at(27), today)).toBe('Hoy es lunes 28 · ayer')
+    expect(dayEyebrow(at(18), today)).toBe('Hoy es lunes 28 · hace 10 días')
+    expect(dayEyebrow(new Date(2026, 9, 1), today)).toBe('Hoy es lunes 28 sep · dentro de 3 días')
+    expect(dayEyebrow(new Date(2026, 10, 15), today)).toBe('Hoy es lunes 28 sep')
+  })
+
+  it('el vacío', () => {
+    expect(emptyDay(new Date(2026, 9, 3), today).title).toBe('Nada para el sábado 3 oct.')
+    expect(emptyDay(at(25), today)).toEqual({
+      title: 'Nada del viernes 25.',
+      body: 'Ese día no tenía nada con fecha ni marcaste nada.',
+    })
   })
 })

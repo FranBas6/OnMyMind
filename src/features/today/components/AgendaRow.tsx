@@ -17,21 +17,22 @@ import { useNow } from '@/hooks/useNow'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
-import type { TodayItem } from '../today'
+import type { DayTense, TodayItem } from '../today'
 
 /**
  * Un evento en la «Agenda» de Hoy (diseño 17, H1 y H2): la hora a la izquierda (o «Todo el día»),
  * una barra del color de su lista, el título y, debajo, la lista y la repetición («Agenda · ↻ Cada
- * año»). Uno cuya hora ya pasó va con la hora y el título en gris y la barra más clara. Va en el
- * `ListScope` de su lista: se toca, se mantiene pulsado y se desliza igual que en ella.
+ * año»). Uno cuya hora ya pasó va con la hora y el título en gris y la barra más clara; en un día
+ * pasado (diseño 17, C4), todos. Va en el `ListScope` de su lista: se toca, se mantiene pulsado y
+ * se desliza igual que en ella.
  */
-export function AgendaRow({ item }: { item: TodayItem }) {
+export function AgendaRow({ item, tense = 'today' }: { item: TodayItem; tense?: DayTense }) {
   const actions = useItemActions()
   // La hora de verdad (no el día de Hoy): pasada la suya, la fila se apaga sola.
   const now = new Date(useNow(60_000))
   const { list } = actions
   const time = eventTime(item)
-  const earlier = isEarlierToday(item, now)
+  const earlier = tense === 'past' || (tense === 'today' && isEarlierToday(item, now))
   const route = item.parent ? `${list.name} › ${item.parent.title}` : list.name
   return (
     <SwipeableRow

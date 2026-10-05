@@ -25,29 +25,68 @@ import { todayBounds, type TodayItem } from './today'
  */
 export async function fetchToday(now: Date): Promise<TodayItem[]> {
   const { start, end } = todayBounds(now)
-  const base = (kind: 'task' | 'event') =>
-    supabase
-      .from('items')
-      .select(
-        `${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id), parent:parent_id(status, title)`,
-      )
-      .eq('kind', kind)
-      .is('list.archived_at', null)
-      .lt('due_at', end.toISOString())
-      .order('due_at')
-
   const [pending, done, events] = await Promise.all([
-    base('task').is('completed_at', null),
-    base('task').gte('completed_at', start.toISOString()),
-    base('event')
-      .eq('status', 'upcoming')
-      .or(`due_at.gte."${start.toISOString()}",recurrence.not.is.null`),
+    dated('task').lt('due_at', end.toISOString()).is('completed_at', null).order('due_at'),
+    dated('task')
+      .lt('due_at', end.toISOString())
+      .gte('completed_at', start.toISOString())
+      .order('due_at'),
+    upcomingEvents(start, end),
   ])
-  if (pending.error) throw pending.error
-  if (done.error) throw done.error
-  if (events.error) throw events.error
-  return [...pending.data, ...done.data, ...events.data].map((row) => ({
-    ...mapItemRow(row),
-    parent: row.parent,
-  }))
+  return rows(pending, done, events)
+}
+
+/**
+ * Lo de unos días (la rejilla de un mes, `monthGrid`) para ver otro día en Hoy y poner los puntos
+ * del calendario (sesión 2.5, diseño 17): lo pendiente que vence en esos días, lo terminado en
+ * ellos (de cualquier tipo: «Hecho ese día») y los eventos, con los que se repiten y empezaron
+ * antes (sus veces las calcula `occurrencesBetween`). También en tres peticiones, por los índices.
+ */
+export async function fetchDays(start: Date, end: Date): Promise<TodayItem[]> {
+  const [pending, done, events] = await Promise.all([
+    dated('task')
+      .gte('due_at', start.toISOString())
+      .lt('due_at', end.toISOString())
+      .is('completed_at', null)
+      .order('due_at'),
+    items()
+      .in('status', ['done', 'bought'])
+      .gte('completed_at', start.toISOString())
+      .lt('completed_at', end.toISOString())
+      .order('completed_at'),
+    upcomingEvents(start, end),
+  ])
+  return rows(pending, done, events)
+}
+
+/** Los ítems con su lista (para filtrar las archivadas) y su sublista, si están en una. */
+function items() {
+  return supabase
+    .from('items')
+    .select(
+      `${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id), parent:parent_id(status, title)`,
+    )
+    .is('list.archived_at', null)
+}
+
+function dated(kind: 'task' | 'event') {
+  return items().eq('kind', kind)
+}
+
+/** Los eventos próximos entre dos días, y los que se repiten y ya han empezado antes del final. */
+function upcomingEvents(start: Date, end: Date) {
+  return dated('event')
+    .eq('status', 'upcoming')
+    .lt('due_at', end.toISOString())
+    .or(`due_at.gte."${start.toISOString()}",recurrence.not.is.null`)
+    .order('due_at')
+}
+
+type ItemsResult = Awaited<ReturnType<typeof items>>
+
+function rows(...results: ItemsResult[]): TodayItem[] {
+  return results.flatMap((result) => {
+    if (result.error) throw result.error
+    return result.data.map((row) => ({ ...mapItemRow(row), parent: row.parent }))
+  })
 }

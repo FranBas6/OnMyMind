@@ -144,9 +144,21 @@ const ROW =
  * Una fila terminada: tachada, con el control de su tipo atenuado; `aside`, a la derecha (en Hoy,
  * su lista). Si no es del tipo por defecto de la lista, lleva su estado («Cable HDMI · Comprado»,
  * diseño 12), porque el título solo no dice cómo terminó. Una compra con precio dice debajo cómo
- * terminó y, si se compró, por cuánto («Comprado · 12 €», diseño 16, A1 y D2).
+ * terminó y, si se compró, por cuánto («Comprado · 12 €», diseño 16, A1 y D2). `meta` es una
+ * línea más debajo (en «Hecho ese día» de Hoy, su lista); con `muted: false`, el control no se
+ * atenúa (diseño 17, C4).
  */
-export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
+export function DoneRow({
+  item,
+  aside,
+  meta,
+  muted = true,
+}: {
+  item: Item
+  aside?: ReactNode
+  meta?: ReactNode
+  muted?: boolean
+}) {
   const actions = useItemActions()
   const price = itemPrice(item)
   const paid = price
@@ -173,7 +185,7 @@ export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
         onToggle={() => {
           actions.toggle(item)
         }}
-        className="z-10 opacity-60"
+        className={cn('z-10', muted && 'opacity-60')}
       />
       <div className="min-w-0 flex-1">
         <RowTitle
@@ -185,6 +197,7 @@ export function DoneRow({ item, aside }: { item: Item; aside?: ReactNode }) {
         {(paid ?? when) && (
           <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{paid ?? when}</p>
         )}
+        {meta}
       </div>
       {aside}
     </SwipeableRow>

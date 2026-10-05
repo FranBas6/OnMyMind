@@ -13,7 +13,15 @@ import { TodayRow } from './TodayRow'
  * ninguno salvo índigo (el ámbar se queda en 2,2:1): el color va en el cuadrado y el texto en
  * `muted`, como el resto de etiquetas de sección.
  */
-export function TodaySection({ section, now }: { section: Section; now: Date }) {
+export function TodaySection({
+  section,
+  now,
+  otherDay = false,
+}: {
+  section: Section
+  now: Date
+  otherDay?: boolean
+}) {
   const { list, items } = section
   const labelId = useId()
   return (
@@ -28,7 +36,7 @@ export function TodaySection({ section, now }: { section: Section; now: Date }) 
       <ListScope list={list}>
         <ul aria-label={list.name} className="flex flex-col gap-2.5">
           {items.map((item) => (
-            <TodayRow key={item.id} item={item} now={now} />
+            <TodayRow key={item.id} item={item} now={now} otherDay={otherDay} />
           ))}
         </ul>
       </ListScope>

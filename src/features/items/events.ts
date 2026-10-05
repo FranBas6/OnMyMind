@@ -124,6 +124,24 @@ export function occursOn(event: EventFields, day: Date): boolean {
   return differenceInCalendarDays(nextOccurrence(event.dueAt, event.recurrence, start), day) === 0
 }
 
+/**
+ * Las veces que toca un evento entre dos días (`start` incluido, `end` no), también las de uno que
+ * se repite: los puntos del calendario de Hoy (diseño 17, C1 y D4). Uno que se repite no toca
+ * antes de su primera vez.
+ */
+export function occurrencesBetween(event: EventFields, start: Date, end: Date): Date[] {
+  const { dueAt } = event
+  if (dueAt === null) return []
+  const from = startOfDay(start)
+  if (!isRecurrence(event.recurrence)) return dueAt >= from && dueAt < end ? [dueAt] : []
+  const found: Date[] = []
+  let n = Math.max(0, stepsUntil(dueAt, event.recurrence, from) - 1)
+  for (let at = nth(dueAt, event.recurrence, n); at < end; at = nth(dueAt, event.recurrence, ++n)) {
+    if (at >= from) found.push(at)
+  }
+  return found
+}
+
 /** Hasta cuántos días antes o después un día se nombra por su día de la semana («Jueves 25»). */
 const WEEKDAY_DAYS = 6
 /** Más allá de cuatro semanas se agrupa por meses (diseño 17, E2). */

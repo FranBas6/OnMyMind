@@ -22,6 +22,12 @@ export const queryKeys = {
      */
     todayAll: ['items', 'today'] as const,
     today: (day: string) => ['items', 'today', day] as const,
+    /**
+     * Otro día en Hoy (2.5): lo de la rejilla de un mes (`2026-10`), para el día y los puntos del
+     * calendario. `daysAll` las abarca todas, como `todayAll`.
+     */
+    daysAll: ['items', 'days'] as const,
+    days: (month: string) => ['items', 'days', month] as const,
     /** Las sublistas de todas las listas: destinos de la captura y de «Mover a…» (2a.5). */
     sublists: ['items', 'sublists'] as const,
     /** Todos los ítems de todas las listas, archivadas incluidas (Buscar, fase 1). */

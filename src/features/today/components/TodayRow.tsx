@@ -21,9 +21,18 @@ import { todayMeta, type TodayItem } from '../today'
  * y el ···. Con foto, su miniatura; con enlace, su dominio en la meta (diseño 15, H1). Se toca,
  * se mantiene pulsada y se desliza igual que en su lista.
  */
-export function TodayRow({ item, now }: { item: TodayItem; now: Date }) {
+export function TodayRow({
+  item,
+  now,
+  otherDay = false,
+}: {
+  item: TodayItem
+  now: Date
+  /** En otro día de Hoy: «Vence ese día» y sin «Atrasada» (diseño 17, C2). */
+  otherDay?: boolean
+}) {
   const actions = useItemActions()
-  const { overdue, detail } = todayMeta(item, now, actions.list.name)
+  const { overdue, detail } = todayMeta(item, now, actions.list.name, { otherDay })
   const thumb = hasThumb(item)
   return (
     <SwipeableRow
