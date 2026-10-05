@@ -16,3 +16,5 @@ detalle, y `RowThumb` / `LinkMeta` en las filas. El título y la imagen de la p�
 edge function `fetch-metadata`. Desde la 2.4 (diseño 17), los eventos: `events.ts` (cuándo pasa uno,
 la siguiente vez de uno que se repite, los grupos por días y los textos), `EventsList` y `EventRow`
 en una lista de eventos, y `EventWhenField` («Cuándo») en el detalle.
+
+Desde la 2.8, `photoCleanup.ts` borra del bucket las fotos que ya no usa ningún ítem (`orphan_photos`) un rato después de quitar o cambiar una foto, o de borrar un ítem o una lista, y una vez al día al abrir la app. En los tests lo sustituye `src/test/setup.ts`.

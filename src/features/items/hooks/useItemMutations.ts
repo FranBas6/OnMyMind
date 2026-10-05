@@ -18,6 +18,7 @@ import {
   type NewItem,
 } from '../api'
 import { buildMovePatch } from '../move'
+import { schedulePhotoCleanup } from '../photoCleanup'
 import { isFinalStatus, isOutOfMind } from '../status'
 import { patchLink, withLinks } from '../stores'
 import { countItems, type Counts } from '../sublists'
@@ -441,6 +442,10 @@ export function useUpdateItem() {
       }
       toast.error(`No se ha podido guardar. ${errorMessage(error)}`)
     },
+    onSuccess: (_data, { patch }) => {
+      // La foto de antes (cambiada o quitada) puede haberse quedado sin nadie que la use (2.8).
+      if (patch.imagePath !== undefined) schedulePhotoCleanup()
+    },
     onSettled: () => {
       settle(queryClient)
     },
@@ -555,6 +560,10 @@ export function useDeleteItem() {
         snapshot,
         `No se ha podido borrar «${item.title}». ${errorMessage(error)}`,
       )
+    },
+    onSuccess: () => {
+      // Sus fotos (y las de lo de dentro), cuando ya no se pueda «Deshacer» (2.8).
+      schedulePhotoCleanup()
     },
     onSettled: () => {
       settle(queryClient)

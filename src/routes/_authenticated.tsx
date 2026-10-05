@@ -5,6 +5,7 @@ import { InstallHint } from '@/components/InstallHint'
 import { AppShell } from '@/components/layout/AppShell'
 import { useSession } from '@/features/auth'
 import { CaptureProvider } from '@/features/capture'
+import { cleanupPhotosDaily } from '@/features/items'
 import { ListActionsProvider } from '@/features/lists'
 import { ThemeSync } from '@/features/profile'
 
@@ -33,6 +34,11 @@ function AuthenticatedLayout() {
   useEffect(() => {
     if (sessionState.status === 'anonymous') void router.invalidate()
   }, [sessionState.status, router])
+
+  // Una vez al día, las fotos que ya no usa nadie (2.8); no pinta nada, así que no es una consulta.
+  useEffect(() => {
+    if (sessionState.status === 'authenticated') cleanupPhotosDaily()
+  }, [sessionState.status])
 
   return (
     <ListActionsProvider>

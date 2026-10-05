@@ -1,5 +1,8 @@
+import { removeAllPhotos } from '@/features/items/photoCleanup'
+import { PHOTO_BUCKET, SIGNED_URL_SECONDS } from '@/features/items/photos'
 import { supabase } from '@/lib/supabase/client'
 
+import { exportDocument } from './export'
 import { displayNameSchema, mergeSettings, parseSettings, type SettingsPatch } from './schemas'
 import type { Profile } from './types'
 
@@ -47,5 +50,86 @@ export async function updateDisplayName(userId: string, name: string): Promise<v
     .from('profiles')
     .update({ display_name: displayNameSchema.parse(name) })
     .eq('id', userId)
+  if (error) throw error
+}
+
+/** PostgREST devuelve como mucho mil filas por petición: se piden de mil en mil, por `id`. */
+const PAGE = 1000
+
+async function allRows(
+  page: (
+    from: number,
+    to: number,
+  ) => PromiseLike<{ data: Record<string, unknown>[] | null; error: Error | null }>,
+): Promise<Record<string, unknown>[]> {
+  const rows: Record<string, unknown>[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from, from + PAGE - 1)
+    if (error) throw error
+    rows.push(...(data ?? []))
+    if (!data || data.length < PAGE) return rows
+  }
+}
+
+/**
+ * Todo lo tuyo, para el JSON de «Exportar mis datos» (diseño 18, P7): el perfil con sus ajustes,
+ * las listas (también las archivadas), los ítems (con las sublistas y lo de dentro), las tiendas,
+ * el histórico de precios y los avisos. RLS ya deja solo lo tuyo. Las suscripciones a avisos no:
+ * son de cada navegador. Las fotos, como URLs firmadas de una semana.
+ */
+export async function fetchExport(userId: string): Promise<ReturnType<typeof exportDocument>> {
+  const [profile, lists, items, itemLinks, itemPrices, reminders] = await Promise.all([
+    allRows((from, to) => supabase.from('profiles').select('*').eq('id', userId).range(from, to)),
+    allRows((from, to) => supabase.from('lists').select('*').order('id').range(from, to)),
+    allRows((from, to) => supabase.from('items').select('*').order('id').range(from, to)),
+    allRows((from, to) => supabase.from('item_links').select('*').order('id').range(from, to)),
+    allRows((from, to) => supabase.from('item_prices').select('*').order('id').range(from, to)),
+    allRows((from, to) => supabase.from('reminders').select('*').order('id').range(from, to)),
+  ])
+  const paths = [
+    ...new Set(items.map((item) => item.image_path).filter((path) => typeof path === 'string')),
+  ]
+  const photoUrls = new Map<string, string>()
+  for (let start = 0; start < paths.length; start += 100) {
+    const { data, error } = await supabase.storage
+      .from(PHOTO_BUCKET)
+      .createSignedUrls(paths.slice(start, start + 100), SIGNED_URL_SECONDS)
+    if (error) throw error
+    for (const entry of data) {
+      if (entry.path && entry.signedUrl) photoUrls.set(entry.path, entry.signedUrl)
+    }
+  }
+  return exportDocument(
+    { profile: profile[0] ?? null, lists, items, itemLinks, itemPrices, reminders },
+    photoUrls,
+  )
+}
+
+export interface AccountCounts {
+  /** Tus listas, sin «En mente» (también las archivadas). */
+  lists: number
+  /** Lo que hay dentro, sin contar las sublistas. */
+  items: number
+}
+
+/** Lo que se borra con la cuenta, para decirlo en la confirmación (diseño 18, P9). */
+export async function fetchAccountCounts(): Promise<AccountCounts> {
+  const [lists, items] = await Promise.all([
+    supabase.from('lists').select('id', { count: 'exact', head: true }).neq('kind', 'inbox'),
+    supabase.from('items').select('id', { count: 'exact', head: true }).neq('kind', 'sublist'),
+  ])
+  if (lists.error) throw lists.error
+  if (items.error) throw items.error
+  return { lists: lists.count ?? 0, items: items.count ?? 0 }
+}
+
+/**
+ * Borra la cuenta (08 B.11): primero las fotos, con la API de Storage, que es la única que puede;
+ * después `delete_own_account`, que borra tu usuario y las cascadas hacen el resto. Si quedara una
+ * foto, la base no sigue: así no queda ningún archivo sin dueño.
+ */
+export async function deleteAccount(): Promise<void> {
+  await removeAllPhotos()
+  const { error } = await supabase.rpc('delete_own_account')
   if (error) throw error
 }

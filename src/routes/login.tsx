@@ -1,4 +1,5 @@
 import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
+import { CircleCheck } from 'lucide-react'
 import { useState } from 'react'
 
 import {
@@ -10,6 +11,7 @@ import {
   safeRedirect,
   SigningInScreen,
   SignUpForm,
+  useAccountDeletedNotice,
   type EmailCodeStart,
 } from '@/features/auth'
 
@@ -41,6 +43,8 @@ function LoginPage() {
     const pending = loadPendingCode(Date.now())
     return pending ? { kind: 'code', start: { step: 'code', ...pending } } : { kind: 'form' }
   })
+
+  const accountDeleted = useAccountDeletedNotice()
 
   const goToDestination = () => {
     void navigate({ href: safeRedirect(search.redirect), replace: true })
@@ -115,6 +119,15 @@ function LoginPage() {
         </>
       }
     >
+      {accountDeleted && (
+        <p
+          role="status"
+          className="-mb-2 flex items-start gap-2.5 rounded-2xl border border-border-soft bg-card px-4 py-3 text-[14px] leading-[1.4] text-muted-foreground"
+        >
+          <CircleCheck aria-hidden className="mt-px size-[18px] shrink-0 text-success" />
+          {accountDeleted}
+        </p>
+      )}
       <LoginForm
         onSuccess={goToDestination}
         redirect={search.redirect}

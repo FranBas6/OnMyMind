@@ -83,7 +83,7 @@ function fail(): never {
 /**
  * Sube la foto de un ítem (reducida, con su miniatura) a `{user}/{item}/{uuid}.webp` y devuelve
  * la ruta, que se guarda en `items.image_path`. La carpeta del usuario es la que exige la política
- * del bucket. Las fotos que se cambian o se quitan no se borran todavía (ver plan 02a, 2a.6).
+ * del bucket. La de antes, si ya no la usa nadie, la borra `photoCleanup.ts` (2.8).
  */
 export async function uploadItemPhoto(itemId: string, file: Blob): Promise<string> {
   const { data: auth } = await supabase.auth.getSession()

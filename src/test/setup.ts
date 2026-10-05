@@ -22,6 +22,17 @@ vi.mock('@/features/reminders/api', () => ({
   deletePushSubscription: () => Promise.resolve(),
 }))
 
+// La limpieza de fotos (2.8) va a la red un rato después de borrar o cambiar una foto: en los
+// tests, nada.
+vi.mock('@/features/items/photoCleanup', () => ({
+  CLEANUP_DELAY_MS: 30_000,
+  removePhotos: () => Promise.resolve(),
+  removeOrphanPhotos: () => Promise.resolve(0),
+  removeAllPhotos: () => Promise.resolve(),
+  schedulePhotoCleanup: () => undefined,
+  cleanupPhotosDaily: () => undefined,
+}))
+
 // jsdom no implementa matchMedia (lo usan next-themes y sonner).
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

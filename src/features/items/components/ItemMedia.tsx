@@ -266,7 +266,9 @@ function PhotoSquare({
         aria-label={uploading ? 'Subiendo la foto…' : `Ver la foto de «${title}»`}
         className="relative size-24 shrink-0 overflow-hidden rounded-md bg-fill outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
-        {src && <img src={src} alt="" className="size-full object-cover" />}
+        {src && (
+          <img src={src} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
+        )}
         {uploading && (
           <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-scrim text-white">
             <LoaderCircle aria-hidden className="size-7 animate-spin" strokeWidth={2.4} />

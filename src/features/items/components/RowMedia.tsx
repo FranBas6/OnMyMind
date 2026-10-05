@@ -28,6 +28,7 @@ export function RowThumb({ item, className }: { item: Item; className?: string }
           src={src}
           alt=""
           loading="lazy"
+          referrerPolicy="no-referrer"
           onError={() => {
             setBroken(src)
           }}

@@ -7,6 +7,7 @@ export { SignUpForm } from './components/SignUpForm'
 export { useChangePassword, useSignOut } from './hooks/useAuthMutations'
 export { useSession, type SessionState } from './hooks/useSession'
 export { safeRedirect } from './redirect'
+export { useAccountDeletedNotice } from './hooks/useAccountDeletedNotice'
 export { loadPendingCode } from './emailCode'
 export { SigningInScreen } from './components/SigningInScreen'
 export {

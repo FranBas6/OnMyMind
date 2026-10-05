@@ -80,6 +80,7 @@ export function PhotoViewer({
               <img
                 src={src}
                 alt={`Foto de «${item.title}»`}
+                referrerPolicy="no-referrer"
                 className="max-h-full max-w-full rounded-md object-contain"
               />
             )}

@@ -38,6 +38,7 @@ export {
 export type { Item, ItemKind, ItemStatus, Priority } from './types'
 export { LinkMeta, RowPrice, RowThumb } from './components/RowMedia'
 export { hasThumb } from './photos'
+export { cleanupPhotosDaily } from './photoCleanup'
 export { hasPrices } from './prices'
 export type { LinkMetadata, NewItemLink } from './api'
 export { useFillCapturedLink, useLinkPreview, type LinkPreviewState } from './hooks/useCapturedLink'

@@ -522,6 +522,7 @@ export type Database = {
         Args: { p_kind: Database['public']['Enums']['list_kind'] }
         Returns: Database['public']['Enums']['item_kind']
       }
+      delete_own_account: { Args: Record<PropertyKey, never>; Returns: undefined }
       invoke_send_reminders: { Args: Record<PropertyKey, never>; Returns: number }
       is_active_sublist_status: { Args: { p_status: string }; Returns: boolean }
       is_final_status: { Args: { p_status: string }; Returns: boolean }
@@ -531,6 +532,8 @@ export type Database = {
         Returns: string[]
       }
       link_store_name: { Args: { p_site: string; p_url: string }; Returns: string }
+      orphan_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
+      own_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
       price_savings: { Args: Record<PropertyKey, never>; Returns: number }
       reminder_time: {
         Args: {

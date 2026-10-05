@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+import { schedulePhotoCleanup } from '@/features/items/photoCleanup'
 import { errorMessage } from '@/lib/errors'
 import { queryKeys } from '@/lib/queryKeys'
 
@@ -103,6 +104,10 @@ export function useDeleteList() {
       }),
     onError: (error, _list, snapshot) => {
       rollback(queryClient, snapshot, `No se ha podido borrar. ${errorMessage(error)}`)
+    },
+    // Las fotos de sus ítems se quedan sin nadie que las use (2.8).
+    onSuccess: () => {
+      schedulePhotoCleanup()
     },
     onSettled: () => refetchLists(queryClient),
   })

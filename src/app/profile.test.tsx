@@ -133,10 +133,13 @@ describe('Perfil', () => {
     expect(
       within(region('Captura')).getByRole('button', { name: /Lista por defecto: En mente/ }),
     ).toBeInTheDocument()
-    // «Avisos» desde la 2.6 (diseño 18); exportar llega en la 2.8. En jsdom no hay service worker:
-    // este navegador no puede mostrar avisos.
+    // «Avisos» desde la 2.6 (diseño 18). En jsdom no hay service worker: este navegador no puede
+    // mostrar avisos. «Datos» y «Borrar la cuenta», desde la 2.8.
     expect(await within(region('Avisos')).findByText('No disponibles')).toBeInTheDocument()
-    expect(screen.queryByText(/Exportar/)).not.toBeInTheDocument()
+    expect(
+      within(region('Datos')).getByRole('button', { name: /Exportar mis datos/ }),
+    ).toBeInTheDocument()
+    expect(within(region('Cuenta')).getByRole('button', { name: 'Borrar la cuenta' })).toBeEnabled()
     // «Ahorrado» a cero (diseño 16, C2), en tinta normal y con lo que contará.
     const saved = (await screen.findByText('ahorrado')).closest('div')
     expect(saved).toHaveTextContent('0 €')

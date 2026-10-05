@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -7,7 +7,9 @@ import { cn } from '@/lib/utils'
 import { useProfile } from '../hooks/useProfile'
 import { AccountSection } from './AccountSection'
 import { AppSection } from './AppSection'
+import { DataSection } from './DataSection'
 import { DefaultListSetting } from './DefaultListSetting'
+import { ExportDialog } from './ExportDialog'
 import { NotificationsSection } from './NotificationsSection'
 import { ProfileHeader } from './ProfileHeader'
 import { StatsRow } from './StatsRow'
@@ -15,13 +17,14 @@ import { ThemeSetting } from './ThemeSetting'
 
 /**
  * Perfil (02 §Perfil, pantalla 14 y diseños 09, 10 y 18): tu nombre y email, las cifras,
- * Apariencia, Captura, Avisos (2.6), App (versión e instalar) y Cuenta. En escritorio, a dos
- * columnas y con la nota de que los ajustes viajan con la cuenta. Exportar y borrar la cuenta
- * llegan en la 2.8.
+ * Apariencia, Captura, Avisos (2.6), App (versión e instalar), Datos (exportar, 2.8) y Cuenta
+ * (borrarla, 2.8). En escritorio, a dos columnas y con la nota de que los ajustes viajan con la
+ * cuenta.
  */
 export function ProfileView() {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const profile = useProfile()
+  const [exporting, setExporting] = useState(false)
 
   return (
     <div className="flex flex-col gap-[22px] md:gap-6">
@@ -55,22 +58,32 @@ export function ProfileView() {
         </Section>
       </div>
 
-      {/* «Avisos» entre Captura y App (diseño 18, P1 y D5). */}
-      <div className="md:grid md:grid-cols-2 md:gap-6">
+      {/* Avisos, App, Datos y Cuenta, en el orden del diseño 18 (P1, P6). En escritorio siguen a dos
+          columnas (decisión de la 1.13): Avisos y App arriba, Datos y Cuenta abajo. */}
+      <div className="flex flex-col gap-[22px] md:grid md:grid-cols-2 md:items-start md:gap-6">
         <Section title="Avisos">
           <NotificationsSection isDesktop={isDesktop} />
         </Section>
-      </div>
-
-      {/* «App» entre Captura y Cuenta; en escritorio, las dos en la segunda fila (diseño 10, D3). */}
-      <div className="flex flex-col gap-[22px] md:grid md:grid-cols-2 md:gap-6">
         <Section title="App">
           <AppSection />
         </Section>
+        <Section title="Datos">
+          <DataSection
+            onExport={() => {
+              setExporting(true)
+            }}
+          />
+        </Section>
         <Section title="Cuenta">
-          <AccountSection isDesktop={isDesktop} />
+          <AccountSection
+            isDesktop={isDesktop}
+            onExport={() => {
+              setExporting(true)
+            }}
+          />
         </Section>
       </div>
+      <ExportDialog open={exporting} onOpenChange={setExporting} isDesktop={isDesktop} />
     </div>
   )
 }
