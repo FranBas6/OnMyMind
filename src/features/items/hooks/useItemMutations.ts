@@ -50,9 +50,10 @@ const ITEM_MUTATION_SCOPE = { id: 'items' }
 /**
  * Sin red, la mutación espera (`networkMode: 'online'`) en vez de fallar: el cambio optimista ya
  * se ve y se envía solo al volver la conexión. Si la red cae a mitad, se reintenta hasta tres
- * veces; cualquier otro error (RLS, validación) no se reintenta porque no se arreglaría.
+ * veces; cualquier otro error (RLS, validación) no se reintenta porque no se arreglaría. Los
+ * avisos (2.6) van en la misma fila: el de un ítem creado sin red sale detrás de su alta.
  */
-const OFFLINE_TOLERANT = {
+export const OFFLINE_TOLERANT = {
   mutationKey: ITEM_MUTATION_KEY,
   scope: ITEM_MUTATION_SCOPE,
   networkMode: 'online',
@@ -176,6 +177,8 @@ function settle(queryClient: QueryClient) {
   if (queryClient.isMutating({ mutationKey: ITEM_MUTATION_KEY }) > 1) return
   void queryClient.invalidateQueries({ queryKey: ['items'] })
   void queryClient.invalidateQueries({ queryKey: queryKeys.lists.all })
+  // Cambiar la fecha de un ítem mueve su aviso en la base (`items_sync_reminders`, 2.6).
+  void queryClient.invalidateQueries({ queryKey: queryKeys.reminders })
 }
 
 /** Cuánto suma un ítem a los contadores: un pendiente o un hecho. */

@@ -386,6 +386,92 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_used_at: string | null
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_used_at?: string | null
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_used_at?: string | null
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'push_subscriptions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      reminders: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          offset_minutes: number | null
+          remind_at: string
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          offset_minutes?: number | null
+          remind_at: string
+          sent_at?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          offset_minutes?: number | null
+          remind_at?: string
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'reminders_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: true
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reminders_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       list_counters: {
@@ -412,11 +498,26 @@ export type Database = {
       }
       link_store_name: { Args: { p_site: string; p_url: string }; Returns: string }
       price_savings: { Args: Record<PropertyKey, never>; Returns: number }
+      reminder_time: {
+        Args: {
+          p_after: string
+          p_due_at: string
+          p_offset: number
+          p_recurrence: string
+          p_tz: string
+        }
+        Returns: string
+      }
+      save_push_subscription: {
+        Args: { p_auth: string; p_endpoint: string; p_p256dh: string; p_user_agent: string }
+        Returns: undefined
+      }
       start_of_user_day: { Args: Record<PropertyKey, never>; Returns: string }
       translate_item_status: {
         Args: { p_kind: Database['public']['Enums']['item_kind']; p_status: string }
         Returns: string
       }
+      user_timezone: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {
       item_kind: 'note' | 'task' | 'shopping' | 'event' | 'sublist'

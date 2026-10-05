@@ -11,6 +11,10 @@ interface DueDatePickerProps {
   onChange: (date: Date | null) => void
   /** Días con algo ya puesto: llevan un punto debajo (diseño 17, F3). */
   marked?: readonly Date[]
+  /** Sin «Quitar fecha» (el día de un aviso personalizado siempre hace falta, diseño 18, R9). */
+  clearable?: boolean
+  /** Atajos después de «Hoy» y «Mañana» (el «Lunes» de un aviso personalizado). */
+  shortcuts?: readonly { label: string; date: Date }[]
 }
 
 /**
@@ -19,7 +23,13 @@ interface DueDatePickerProps {
  * elegido relleno; los días pasados en gris, pero se pueden elegir (una tarea puede estar
  * atrasada). Devuelve el día a las 00:00 locales: la hora no importa en una fecha límite.
  */
-export function DueDatePicker({ value, onChange, marked = [] }: DueDatePickerProps) {
+export function DueDatePicker({
+  value,
+  onChange,
+  marked = [],
+  clearable = true,
+  shortcuts = [],
+}: DueDatePickerProps) {
   const today = startOfDay(new Date())
   const pick = (date: Date | null) => {
     onChange(date ? startOfDay(date) : null)
@@ -45,7 +55,18 @@ export function DueDatePicker({ value, onChange, marked = [] }: DueDatePickerPro
         >
           Mañana
         </Shortcut>
-        {value !== null && (
+        {shortcuts.map((shortcut) => (
+          <Shortcut
+            key={shortcut.label}
+            active={value !== null && isSameDay(value, shortcut.date)}
+            onClick={() => {
+              pick(shortcut.date)
+            }}
+          >
+            {shortcut.label}
+          </Shortcut>
+        ))}
+        {clearable && value !== null && (
           <Shortcut
             onClick={() => {
               pick(null)

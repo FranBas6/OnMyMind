@@ -11,6 +11,17 @@ afterEach(() => {
   cleanup()
 })
 
+// Los avisos (2.6) se piden en cualquier pantalla con filas: por defecto, ninguno y sin red.
+// Funciones normales y no `vi.fn`, para que `vi.resetAllMocks()` no las deje sin respuesta; un
+// test que necesite avisos hace su propio `vi.mock` de este módulo.
+vi.mock('@/features/reminders/api', () => ({
+  fetchReminders: () => Promise.resolve([]),
+  saveReminder: () => Promise.resolve(),
+  deleteReminder: () => Promise.resolve(),
+  savePushSubscription: () => Promise.resolve(),
+  deletePushSubscription: () => Promise.resolve(),
+}))
+
 // jsdom no implementa matchMedia (lo usan next-themes y sonner).
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

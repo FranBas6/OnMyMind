@@ -1,7 +1,7 @@
 import { format, set, startOfDay } from 'date-fns'
 import { Calendar, Check, ChevronRight, Clock, Repeat } from 'lucide-react'
 import { Popover } from 'radix-ui'
-import { useState, type ComponentProps, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import { Switch } from '@/components/Switch'
@@ -24,6 +24,7 @@ import {
 } from '../events'
 import type { Item, ItemPatch } from '../types'
 import { DueDatePicker } from './DueDatePicker'
+import { Row, SheetHeader, Value } from './FieldRow'
 
 /** La hora que se pone al quitar «Todo el día»: luego se cambia. */
 const DEFAULT_HOUR = 10
@@ -34,6 +35,10 @@ interface EventWhenFieldProps {
   /** Los días con eventos de su lista: puntos en el calendario (F3). */
   marked: readonly Date[]
   onChange: (patch: ItemPatch) => void
+  /** La fila del aviso (diseño 18, R3): la última de la caja, porque depende de todo lo de arriba. */
+  reminderRow?: ReactNode
+  /** Lo que dice el aviso debajo de la caja (R4, A4, R14). */
+  reminderNote?: ReactNode
 }
 
 /**
@@ -44,7 +49,14 @@ interface EventWhenFieldProps {
  * escritorio, un popover con el calendario y un campo de hora que acepta «21», «2130» o «21:30».
  * Quitar la fecha se deshace desde el aviso. Lo pasado y lo cancelado lo dicen encima.
  */
-export function EventWhenField({ item, isDesktop, marked, onChange }: EventWhenFieldProps) {
+export function EventWhenField({
+  item,
+  isDesktop,
+  marked,
+  onChange,
+  reminderRow,
+  reminderNote,
+}: EventWhenFieldProps) {
   const [dayOpen, setDayOpen] = useState(false)
   const [repeatOpen, setRepeatOpen] = useState(false)
   const now = new Date()
@@ -290,6 +302,7 @@ export function EventWhenField({ item, isDesktop, marked, onChange }: EventWhenF
             {repeatPicker}
           </>
         )}
+        {reminderRow}
       </div>
       {!item.dueAt && (
         <p className="text-[13px] leading-normal text-muted-foreground">
@@ -302,66 +315,8 @@ export function EventWhenField({ item, isDesktop, marked, onChange }: EventWhenF
           {following}
         </p>
       )}
+      {reminderNote}
     </section>
-  )
-}
-
-/**
- * Una fila de «Cuándo». Pasa la `ref` y el resto de props al botón: en escritorio es el ancla del
- * popover (`Popover.Anchor asChild`), que sin ella no sabe dónde ponerse.
- */
-function Row({
-  icon: Icon,
-  label,
-  highlighted = false,
-  children,
-  className,
-  ...props
-}: Omit<ComponentProps<'button'>, 'children'> & {
-  icon: typeof Calendar
-  label: string
-  highlighted?: boolean
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      {...props}
-      className={cn(
-        'flex h-13 w-full items-center justify-between gap-3 px-4 text-[15px] outline-none hover:bg-fill/50 focus-visible:bg-fill',
-        highlighted && 'bg-brand-tint hover:bg-brand-tint',
-        className,
-      )}
-    >
-      <span className="flex items-center gap-2.5 font-medium">
-        <Icon aria-hidden className="size-4 text-muted-foreground" strokeWidth={2} />
-        {label}
-      </span>
-      <span className="flex items-center gap-1.5 whitespace-nowrap">
-        {children}
-        <ChevronRight aria-hidden className="size-4 text-subtle-foreground" strokeWidth={2} />
-      </span>
-    </button>
-  )
-}
-
-function Value({ children }: { children: ReactNode }) {
-  return <span className="font-semibold">{children}</span>
-}
-
-/** La cabecera de las hojas del evento (F3, F7): el título y «Listo» a la derecha. */
-function SheetHeader({ title, onDone }: { title: string; onDone: () => void }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <p className="font-display text-xl font-extrabold tracking-[-0.02em]">{title}</p>
-      <button
-        type="button"
-        onClick={onDone}
-        className="h-9 rounded-lg px-1 font-display text-[15px] font-bold text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      >
-        Listo
-      </button>
-    </div>
   )
 }
 

@@ -49,4 +49,8 @@ export const queryKeys = {
   /** «Ahorrado» de Perfil (2.2): fuera de `['prices']`, que son históricos de un ítem. */
   savings: ['savings'] as const,
   profile: () => ['profile'] as const,
+  /** Tus avisos (2.6): pocos, todos de una vez. Fuera de `['items']`, que son listas de ítems. */
+  reminders: ['reminders'] as const,
+  /** Si este dispositivo recibe avisos (`PushState`), que solo sabe el navegador. */
+  push: ['push'] as const,
 }

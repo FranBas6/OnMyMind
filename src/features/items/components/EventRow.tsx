@@ -2,6 +2,10 @@ import { format } from 'date-fns'
 import { Calendar, Repeat } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+// Por sus rutas y no por el índice: `reminders` usa piezas de `items`.
+import { ReminderBell } from '@/features/reminders/components/ReminderBell'
+import { useItemReminder } from '@/features/reminders/hooks/useReminders'
+import { showsBell } from '@/features/reminders/reminders'
 import { useNow } from '@/hooks/useNow'
 import { cn } from '@/lib/utils'
 
@@ -76,6 +80,7 @@ export function EventRow({ item, byMonth = false }: { item: Item; byMonth?: bool
         ? `A las ${time}.`
         : 'Todo el día.'
 
+  const reminder = useItemReminder(item.id)
   const meta: ReactNode[] = []
   if (!at) {
     meta.push(
@@ -97,6 +102,11 @@ export function EventRow({ item, byMonth = false }: { item: Item; byMonth?: bool
         <Repeat aria-hidden className="size-3" strokeWidth={2.4} />
         {RECURRENCE_LABELS[item.recurrence]}
       </span>,
+    )
+  }
+  if (showsBell(reminder, item)) {
+    meta.push(
+      <ReminderBell key="reminder" item={item} className={cn(META, 'text-muted-foreground')} />,
     )
   }
   if (cancelled) {

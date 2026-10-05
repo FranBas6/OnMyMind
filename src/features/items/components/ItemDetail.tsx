@@ -12,6 +12,8 @@ import { useCallback, useState } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import type { List } from '@/features/lists'
+// Por su ruta y no por el índice: `reminders` usa piezas de `items` y así no hay ciclo.
+import { useReminderField } from '@/features/reminders/hooks/useReminderField'
 import { useOnline } from '@/hooks/useOnline'
 import { formatDueDateLong } from '@/lib/date'
 import { LIST_COLOR_BG } from '@/lib/listColors'
@@ -104,6 +106,8 @@ export function ItemDetail({
   // El enlace trae el título, la imagen y, en una compra, el precio: lo usan el bloque de precio y
   // la fila del enlace (diseños 15 y 16).
   const link = useLinkMetadata(item, online, onUpdate)
+  // El aviso (diseño 18): en un evento va en «Cuándo»; en una tarea, con la fecha límite.
+  const reminder = useReminderField({ item, isDesktop })
 
   // Las tiendas de una compra (2.2b, diseño 19). «Actualizar precio» vive aquí porque lo ven el
   // bloque de precio y cada tienda («Buscando…», «No contestó»).
@@ -220,6 +224,8 @@ export function ItemDetail({
           onChange={(patch) => {
             onUpdate(item, patch)
           }}
+          reminderRow={reminder.row}
+          reminderNote={reminder.note}
         />
       )}
 
@@ -298,13 +304,20 @@ export function ItemDetail({
               }}
             />
           </Field>
-          <DueDateField
-            item={item}
-            isDesktop={isDesktop}
-            onChange={(dueAt) => {
-              onUpdate(item, { dueAt })
-            }}
-          />
+          {/* La fecha límite y su aviso, juntos (diseño 18, R1): el aviso depende de la fecha. */}
+          <div className="flex flex-col gap-2">
+            <div className="divide-y divide-border-soft overflow-hidden rounded-2xl border border-border-soft bg-card">
+              <DueDateField
+                item={item}
+                isDesktop={isDesktop}
+                onChange={(dueAt) => {
+                  onUpdate(item, { dueAt })
+                }}
+              />
+              {reminder.row}
+            </div>
+            {reminder.note}
+          </div>
         </>
       )}
 
@@ -389,8 +402,8 @@ function DueDateField({ item, isDesktop, onChange }: DueDateFieldProps) {
         setOpen(true)
       }}
       className={cn(
-        'flex h-13 w-full items-center justify-between gap-3 rounded-2xl border border-border-soft bg-card px-4 text-[15px] outline-none hover:border-border hover:bg-fill/50 focus-visible:ring-[3px] focus-visible:ring-ring/50',
-        open && isDesktop && 'border-primary',
+        'flex h-13 w-full items-center justify-between gap-3 px-4 text-[15px] outline-none hover:bg-fill/50 focus-visible:bg-fill',
+        open && isDesktop && 'bg-brand-tint hover:bg-brand-tint',
       )}
     >
       <span className="flex items-center gap-2.5 font-medium">

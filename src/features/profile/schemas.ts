@@ -54,10 +54,14 @@ export function parseSettings(raw: unknown): Settings {
   }
 }
 
-/** Lo que la app puede cambiar de `settings` en fase 1. */
+/** Lo que la app puede cambiar de `settings`. */
 export interface SettingsPatch {
   theme?: Theme
   defaultListId?: string | null
+  /** La zona del dispositivo, al activar los avisos (2.6): la usan los avisos y el resumen. */
+  timezone?: string
+  /** «Resumen de Hoy» (2.6): la hora (`08:00`), o `null` sin resumen. */
+  dailySummaryTime?: string | null
 }
 
 /**
@@ -71,6 +75,8 @@ export function mergeSettings(
   const next = isJsonObject(raw) ? { ...raw } : {}
   if (patch.theme !== undefined) next.theme = patch.theme
   if (patch.defaultListId !== undefined) next.default_list_id = patch.defaultListId
+  if (patch.timezone !== undefined) next.timezone = patch.timezone
+  if (patch.dailySummaryTime !== undefined) next.daily_summary_time = patch.dailySummaryTime
   return next
 }
 

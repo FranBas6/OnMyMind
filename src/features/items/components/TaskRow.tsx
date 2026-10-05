@@ -1,5 +1,9 @@
 import { Repeat } from 'lucide-react'
 
+// Por sus rutas y no por el índice: `reminders` usa piezas de `items`.
+import { ReminderBell } from '@/features/reminders/components/ReminderBell'
+import { useItemReminder } from '@/features/reminders/hooks/useReminders'
+import { showsBell } from '@/features/reminders/reminders'
 import { cn } from '@/lib/utils'
 
 import {
@@ -84,6 +88,10 @@ export function TaskRow({ item }: { item: Item }) {
       )}
     </span>
   ) : null
+  // La campana del aviso (diseño 18, R13): junto a la fecha; sin fecha, con su momento.
+  const bell = showsBell(useItemReminder(item.id), item) ? (
+    <ReminderBell item={item} className={META} />
+  ) : null
   const thumb = hasThumb(item)
   const link = item.url ? <LinkMeta url={item.url} item={item} className={META} /> : null
   return (
@@ -109,8 +117,9 @@ export function TaskRow({ item }: { item: Item }) {
           <RowTitle item={item} />
           {link && <p className="mt-0.5 hidden md:flex">{link}</p>}
           {repeat && <p className="mt-0.5 hidden md:flex">{repeat}</p>}
+          {bell && <p className="mt-0.5 hidden md:flex">{bell}</p>}
         </div>
-        {first || second || link ? (
+        {first || second || link || bell ? (
           <div className="mt-1.5 flex min-w-0 items-center gap-2 md:contents">
             {first ?? <span className="hidden md:block" />}
             {link && <span className="flex min-w-0 md:hidden">{link}</span>}
@@ -121,6 +130,16 @@ export function TaskRow({ item }: { item: Item }) {
                   ·
                 </span>
                 {repeat}
+              </span>
+            )}
+            {bell && (
+              <span className="flex items-center gap-2 md:hidden">
+                {(first ?? second ?? link ?? repeat) && (
+                  <span aria-hidden className={META}>
+                    ·
+                  </span>
+                )}
+                {bell}
               </span>
             )}
           </div>

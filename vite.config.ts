@@ -51,7 +51,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      strategies: 'generateSW',
+      // El service worker lo escribimos nosotros (`src/sw/sw.ts`, 2.6) para recibir los push; el
+      // plugin lo compila y le inyecta la lista del precache. Hace lo que hacía el generado.
+      strategies: 'injectManifest',
+      srcDir: 'src/sw',
+      filename: 'sw.ts',
       // `prompt`: una versión nueva espera a que le digas «Actualizar» (no recarga sola en mitad
       // de una captura). El registro lo hace la app con `useRegisterSW` (`src/app/pwa.tsx`).
       registerType: 'prompt',
@@ -84,7 +88,7 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
+      injectManifest: {
         // App shell completa + fuentes autoalojadas (woff2) para que funcione offline.
         // (El manifest lo añade el plugin por su cuenta.)
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
@@ -95,11 +99,6 @@ export default defineConfig({
           'logos/png/app-icon-1024.png',
           'logos/png/mark-*.png',
         ],
-        navigateFallback: '/index.html',
-        // La vuelta de OAuth (`/auth/callback`) tiene que llegar a la red, no al `index.html`
-        // precacheado (08 A.7).
-        navigateFallbackDenylist: [/^\/auth\//],
-        cleanupOutdatedCaches: true,
       },
     }),
   ],

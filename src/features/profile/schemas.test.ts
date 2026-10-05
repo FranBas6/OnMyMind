@@ -64,6 +64,15 @@ describe('mergeSettings', () => {
     ).toEqual({ theme: 'dark', timezone: 'Europe/Madrid', futura: 1 })
     expect(mergeSettings(null, { defaultListId: INBOX })).toEqual({ default_list_id: INBOX })
   })
+
+  it('la zona y el resumen de Hoy (2.6), con sus claves de la base', () => {
+    expect(
+      mergeSettings({ theme: 'dark' }, { timezone: 'Atlantic/Canary', dailySummaryTime: '08:00' }),
+    ).toEqual({ theme: 'dark', timezone: 'Atlantic/Canary', daily_summary_time: '08:00' })
+    expect(mergeSettings({ daily_summary_time: '08:00' }, { dailySummaryTime: null })).toEqual({
+      daily_summary_time: null,
+    })
+  })
 })
 
 describe('nombre', () => {

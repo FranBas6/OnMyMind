@@ -8,15 +8,16 @@ import { useProfile } from '../hooks/useProfile'
 import { AccountSection } from './AccountSection'
 import { AppSection } from './AppSection'
 import { DefaultListSetting } from './DefaultListSetting'
+import { NotificationsSection } from './NotificationsSection'
 import { ProfileHeader } from './ProfileHeader'
 import { StatsRow } from './StatsRow'
 import { ThemeSetting } from './ThemeSetting'
 
 /**
- * Perfil de la fase 1 (02 §Perfil, pantalla 14 y diseños 09 y 10): tu nombre y email, dos cifras,
- * Apariencia, Captura, App (versión e instalar) y Cuenta. En escritorio, a dos columnas y con la
- * nota de que los ajustes viajan con la cuenta. Lo de la fase 2 (avisos, exportar, ahorrados, borrar la
- * cuenta) no sale.
+ * Perfil (02 §Perfil, pantalla 14 y diseños 09, 10 y 18): tu nombre y email, las cifras,
+ * Apariencia, Captura, Avisos (2.6), App (versión e instalar) y Cuenta. En escritorio, a dos
+ * columnas y con la nota de que los ajustes viajan con la cuenta. Exportar y borrar la cuenta
+ * llegan en la 2.8.
  */
 export function ProfileView() {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -51,6 +52,13 @@ export function ProfileView() {
         </Section>
         <Section title="Captura">
           <DefaultListSetting isDesktop={isDesktop} />
+        </Section>
+      </div>
+
+      {/* «Avisos» entre Captura y App (diseño 18, P1 y D5). */}
+      <div className="md:grid md:grid-cols-2 md:gap-6">
+        <Section title="Avisos">
+          <NotificationsSection isDesktop={isDesktop} />
         </Section>
       </div>
 

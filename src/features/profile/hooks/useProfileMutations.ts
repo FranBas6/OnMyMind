@@ -52,6 +52,8 @@ export function useUpdateSettings() {
         ...profile.settings,
         ...(patch.theme !== undefined && { theme: patch.theme }),
         ...(patch.defaultListId !== undefined && { defaultListId: patch.defaultListId }),
+        ...(patch.timezone !== undefined && { timezone: patch.timezone }),
+        ...(patch.dailySummaryTime !== undefined && { dailySummaryTime: patch.dailySummaryTime }),
       },
     }),
     updateSettings,
