@@ -403,7 +403,8 @@ authorization_url_path = "/oauth/consent"
 allow_dynamic_registration = false
 
 [edge_runtime]
-# Apagado para ahorrar ~1 GB de imagen. `fetch-metadata` existe desde la 2a.6: enciéndelo para servirla en local.
+# Apagado para ahorrar ~1 GB de imagen. Enciéndelo para servir en local `fetch-metadata` (2a.6) o
+# `send-reminders` (2.7).
 enabled = false
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.
@@ -416,6 +417,10 @@ deno_version = 2
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
+
+# La llama pg_cron (2.7), no un usuario: sin la puerta de JWT. La función exige su cabecera secreta.
+[functions.send-reminders]
+verify_jwt = false
 
 [analytics]
 # Apagado: logflare y vector solo alimentan la pestaña de logs de Studio (~1,1 GB de imágenes y

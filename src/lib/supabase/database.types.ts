@@ -366,6 +366,7 @@ export type Database = {
           display_name: string | null
           id: string
           settings: NonNullable<Json>
+          summary_sent_on: string | null
           updated_at: string
         }
         Insert: {
@@ -374,6 +375,7 @@ export type Database = {
           display_name?: string | null
           id: string
           settings?: NonNullable<Json>
+          summary_sent_on?: string | null
           updated_at?: string
         }
         Update: {
@@ -382,6 +384,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           settings?: NonNullable<Json>
+          summary_sent_on?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -485,10 +488,41 @@ export type Database = {
       }
     }
     Functions: {
+      claim_daily_summaries: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          all_day: boolean
+          kind: string
+          occurs_local: string
+          overdue: boolean
+          title: string
+          user_id: string
+        }[]
+      }
+      claim_due_reminders: {
+        Args: { p_limit?: number }
+        Returns: {
+          all_day: boolean
+          done: boolean
+          hidden: boolean
+          item_id: string
+          kind: string
+          list_id: string
+          list_name: string
+          now_local: string
+          occurs_at: string
+          occurs_local: string
+          remind_at: string
+          reminder_id: string
+          title: string
+          user_id: string
+        }[]
+      }
       default_item_kind: {
         Args: { p_kind: Database['public']['Enums']['list_kind'] }
         Returns: Database['public']['Enums']['item_kind']
       }
+      invoke_send_reminders: { Args: Record<PropertyKey, never>; Returns: number }
       is_active_sublist_status: { Args: { p_status: string }; Returns: boolean }
       is_final_status: { Args: { p_status: string }; Returns: boolean }
       is_list_member: { Args: { p_list_id: string }; Returns: boolean }
@@ -518,6 +552,7 @@ export type Database = {
         Returns: string
       }
       user_timezone: { Args: { p_user_id: string }; Returns: string }
+      verify_cron_secret: { Args: { p_secret: string }; Returns: boolean }
     }
     Enums: {
       item_kind: 'note' | 'task' | 'shopping' | 'event' | 'sublist'
