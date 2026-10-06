@@ -75,3 +75,41 @@ export const listPersonSchema = z
     joinedAt: row.joined_at ? new Date(row.joined_at) : null,
   }))
 export type ListPerson = z.output<typeof listPersonSchema>
+
+/** Alguien en una de tus listas compartidas (`shared_list_people`, 3.3). */
+export const sharedPersonSchema = z
+  .object({
+    list_id: z.string(),
+    user_id: z.string(),
+    display_name: z.string().nullable(),
+    avatar_url: z.string().nullable(),
+    is_owner: z.boolean(),
+    joined_at: z.string().nullable(),
+  })
+  .transform((row) => ({
+    listId: row.list_id,
+    person: {
+      userId: row.user_id,
+      displayName: row.display_name,
+      avatarUrl: row.avatar_url,
+      isOwner: row.is_owner,
+      joinedAt: row.joined_at ? new Date(row.joined_at) : null,
+    } satisfies ListPerson,
+  }))
+
+/**
+ * Por qué ya no tienes una lista (3.3, diseño 20, M9 y M10): te quitaron, quien la creó la borró o
+ * la archivó. Con el nombre que tenía y el de quien la creó, para decirlo.
+ */
+export const departureSchema = z
+  .object({
+    reason: z.enum(['removed', 'deleted', 'archived']),
+    list_name: z.string(),
+    owner_name: z.string().nullable(),
+  })
+  .transform((row) => ({
+    reason: row.reason,
+    listName: row.list_name,
+    ownerName: row.owner_name,
+  }))
+export type Departure = z.output<typeof departureSchema>

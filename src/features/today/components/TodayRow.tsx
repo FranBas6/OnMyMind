@@ -11,6 +11,8 @@ import {
   useItemActions,
 } from '@/features/items'
 import { cn } from '@/lib/utils'
+import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
+import { useItemPerson } from '@/features/sharing/hooks/useSharing'
 
 import { todayMeta, type TodayItem } from '../today'
 
@@ -34,6 +36,8 @@ export function TodayRow({
   const actions = useItemActions()
   const { overdue, detail } = todayMeta(item, now, actions.list.name, { otherDay })
   const thumb = hasThumb(item)
+  // Una tarea de una lista compartida que añadió el otro, con su inicial (diseño 20, M6).
+  const person = useItemPerson(item)
   return (
     <SwipeableRow
       item={item}
@@ -59,6 +63,11 @@ export function TodayRow({
       <div className="min-w-0 flex-1 md:contents">
         <RowTitle item={item} />
         <p className="mt-[5px] flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-muted-foreground md:mt-0 md:justify-end md:text-[13px]">
+          {person && (
+            <span className="flex items-center">
+              <ItemPersonMark person={person} item={item} />
+            </span>
+          )}
           {overdue && (
             <span className="rounded-lg bg-overdue-bg px-2 py-[3px] leading-4 font-bold whitespace-nowrap text-overdue">
               {overdue}

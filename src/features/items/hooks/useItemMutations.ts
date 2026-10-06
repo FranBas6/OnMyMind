@@ -225,7 +225,10 @@ function patchItem(item: Item, patch: CachePatch): Item {
   }
   if (patch.status !== undefined) {
     next.status = patch.status
-    next.completedAt = isFinalStatus(patch.status) ? (item.completedAt ?? new Date()) : null
+    const final = isFinalStatus(patch.status)
+    next.completedAt = final ? (item.completedAt ?? new Date()) : null
+    // Lo completa quien tiene la sesión: hasta que vuelva el servidor, sin inicial.
+    next.completedBy = final && item.completedAt ? item.completedBy : null
   }
   if (patch.kind !== undefined) next.kind = patch.kind
   if (patch.url !== undefined) next.url = patch.url
@@ -292,6 +295,8 @@ export function itemFromNew(item: NewItem, position: number): Item {
     links: [],
     priceLinkId: null,
     priceStore: null,
+    createdBy: null,
+    completedBy: null,
   }
 }
 

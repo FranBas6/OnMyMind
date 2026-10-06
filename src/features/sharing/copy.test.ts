@@ -32,3 +32,31 @@ describe('textos de compartir (diseño 20)', () => {
     expect(invitedListSummary(null, 2)).toBe('Una lista con 2 cosas.')
   })
 })
+
+describe('con quién (diseño 20, M2)', () => {
+  it('nombra a los demás', async () => {
+    const { withPeople } = await import('./copy')
+    expect(withPeople([{ displayName: 'Marta' }])).toBe('con Marta')
+    expect(withPeople([{ displayName: 'Marta' }, { displayName: 'Luis' }])).toBe('con Marta y Luis')
+    expect(
+      withPeople([{ displayName: 'Ana' }, { displayName: 'Luis' }, { displayName: null }]),
+    ).toBe('con Ana, Luis y Alguien')
+    expect(withPeople([])).toBe('')
+  })
+})
+
+describe('una lista que ya no tienes (diseño 20, M9 y M10)', () => {
+  it('dice qué pasó y quién', async () => {
+    const { goneCopy } = await import('./copy')
+    expect(goneCopy({ reason: 'removed', listName: 'Compras', ownerName: 'Fran' })).toEqual({
+      title: 'Ya no estás en «Compras»',
+      text: 'Fran te ha quitado de la lista. Lo que añadiste se queda en ella.',
+    })
+    expect(goneCopy({ reason: 'deleted', listName: 'Compras', ownerName: 'Fran' }).title).toBe(
+      'Fran ha borrado «Compras»',
+    )
+    expect(goneCopy({ reason: 'archived', listName: 'Compras', ownerName: null }).title).toBe(
+      'Alguien ha archivado «Compras»',
+    )
+  })
+})

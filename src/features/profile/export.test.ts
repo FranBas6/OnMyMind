@@ -37,6 +37,8 @@ function item(title: string, overrides: Partial<Item> = {}): Item {
     links: [],
     priceLinkId: null,
     priceStore: null,
+    createdBy: null,
+    completedBy: null,
     ...overrides,
   }
 }
@@ -59,7 +61,10 @@ describe('el JSON', () => {
     const document = exportDocument(
       {
         profile: { id: 'u1', settings: { theme: 'dark' } },
-        lists: [{ id: 'casa', name: 'Casa' }],
+        lists: [
+          { id: 'casa', name: 'Casa', owner_id: 'u1' },
+          { id: 'compras', name: 'Compras de Ana', owner_id: 'ana' },
+        ],
         items: [
           { id: 'a', title: 'Con foto', image_path: 'u1/a/foto.webp' },
           { id: 'b', title: 'Sin foto', image_path: null },
@@ -76,7 +81,11 @@ describe('el JSON', () => {
       format: 1,
       exported_at: NOW.toISOString(),
       profile: { settings: { theme: 'dark' } },
-      lists: [{ name: 'Casa' }],
+      // Las compartidas contigo van también, marcadas (3.3).
+      lists: [
+        { name: 'Casa', created_by_me: true },
+        { name: 'Compras de Ana', created_by_me: false },
+      ],
       item_prices: [{ price_cents: 1250 }],
       reminders: [{ offset_minutes: 60 }],
     })

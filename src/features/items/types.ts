@@ -61,6 +61,12 @@ export interface Item {
   priceLinkId: string | null
   /** Su nombre («MediaMarkt»), para «En MediaMarkt, la más barata de 3». */
   priceStore: string | null
+  /**
+   * Quién lo añadió y quién lo completó (3.3): en una lista compartida, la inicial del otro. `null`
+   * en lo que aún no ha vuelto del servidor (lo acabas de hacer tú).
+   */
+  createdBy: string | null
+  completedBy: string | null
 }
 
 /** Una tienda de una compra (`item_links`): su enlace y su precio, de la web o a mano. */

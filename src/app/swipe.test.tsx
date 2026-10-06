@@ -54,6 +54,8 @@ const grifo: Item = {
   links: [],
   priceLinkId: null,
   priceStore: null,
+  createdBy: null,
+  completedBy: null,
 }
 
 function renderCasa() {

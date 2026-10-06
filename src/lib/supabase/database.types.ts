@@ -115,6 +115,7 @@ export type Database = {
         Row: {
           all_day: boolean
           completed_at: string | null
+          completed_by: string | null
           created_at: string
           created_by: string
           currency: string | null
@@ -147,6 +148,7 @@ export type Database = {
         Insert: {
           all_day?: boolean
           completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           created_by: string
           currency?: string | null
@@ -179,6 +181,7 @@ export type Database = {
         Update: {
           all_day?: boolean
           completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           created_by?: string
           currency?: string | null
@@ -209,6 +212,13 @@ export type Database = {
           url_title?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'items_completed_by_fkey'
+            columns: ['completed_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'items_created_by_fkey'
             columns: ['created_by']
@@ -270,6 +280,41 @@ export type Database = {
             columns: ['price_link_id']
             isOneToOne: false
             referencedRelation: 'item_links'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      list_departures: {
+        Row: {
+          happened_at: string
+          list_id: string
+          list_name: string
+          owner_name: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          happened_at?: string
+          list_id: string
+          list_name: string
+          owner_name?: string | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          happened_at?: string
+          list_id?: string
+          list_name?: string
+          owner_name?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'list_departures_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
@@ -675,6 +720,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      note_list_departure: {
+        Args: { p_list_id: string; p_reason: string; p_user_id?: string }
+        Returns: undefined
+      }
       orphan_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
       own_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
       price_savings: { Args: Record<PropertyKey, never>; Returns: number }
@@ -694,6 +743,17 @@ export type Database = {
         Returns: undefined
       }
       set_list_positions: { Args: { p_changes: Json }; Returns: undefined }
+      shared_list_people: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avatar_url: string
+          display_name: string
+          is_owner: boolean
+          joined_at: string
+          list_id: string
+          user_id: string
+        }[]
+      }
       start_of_user_day: { Args: Record<PropertyKey, never>; Returns: string }
       translate_item_status: {
         Args: { p_kind: Database['public']['Enums']['item_kind']; p_status: string }

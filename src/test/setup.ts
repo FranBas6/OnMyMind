@@ -3,6 +3,7 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 
+import type * as SharingApi from '@/features/sharing/api'
 import { configureDateLocale } from '@/lib/date'
 
 configureDateLocale()
@@ -20,6 +21,14 @@ vi.mock('@/features/reminders/api', () => ({
   deleteReminder: () => Promise.resolve(),
   savePushSubscription: () => Promise.resolve(),
   deletePushSubscription: () => Promise.resolve(),
+}))
+
+// Quién está en las listas compartidas (3.3) se pide en cualquier pantalla con listas o filas: por
+// defecto, nadie comparte nada. Lo demás de compartir, de verdad (un test lo simula a su manera).
+vi.mock('@/features/sharing/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof SharingApi>()),
+  fetchSharedPeople: () => Promise.resolve(new Map()),
+  fetchDeparture: () => Promise.resolve(null),
 }))
 
 // La limpieza de fotos (2.8) va a la red un rato después de borrar o cambiar una foto: en los

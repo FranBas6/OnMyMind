@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { FormError } from '@/features/auth'
+import { SharedListsNotice } from '@/features/sharing/components/SharedListsNotice'
 import { useOnline } from '@/hooks/useOnline'
 import { cn } from '@/lib/utils'
 
@@ -80,6 +81,8 @@ export function DeleteAccountDialog({
           ),
         )}
       </p>
+      {/* Lo que pasa con cada lista compartida (diseño 20, P1 y P2). */}
+      <SharedListsNotice />
       <p className="-mt-1 text-[13.5px] leading-[1.45] text-muted-foreground">
         Si quieres quedarte con algo,{' '}
         <button

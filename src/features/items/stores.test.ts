@@ -46,6 +46,8 @@ const compra: Item = {
   links: [],
   priceLinkId: null,
   priceStore: null,
+  createdBy: null,
+  completedBy: null,
 }
 
 const tienda = (id: string, price: number | null, extra: Partial<ItemLink> = {}): ItemLink => ({
@@ -126,6 +128,8 @@ describe('de una tienda a varias', () => {
       priceCents: 29900,
       priceLinkId: null,
       priceStore: null,
+      createdBy: null,
+      completedBy: null,
     })
     expect(hasStores(next)).toBe(false)
   })

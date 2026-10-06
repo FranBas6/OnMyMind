@@ -57,6 +57,9 @@ export const queryKeys = {
   push: ['push'] as const,
   /** Compartir (3.2): el enlace activo de una lista, quién está y lo que dice un enlace. */
   sharing: {
+    /** Quién está en cada lista compartida (3.3): las iniciales de toda la app. */
+    shared: ['sharing', 'shared'] as const,
+    departure: (listId: string) => ['sharing', 'departure', listId] as const,
     invite: (listId: string) => ['sharing', 'invite', listId] as const,
     people: (listId: string) => ['sharing', 'people', listId] as const,
     preview: (token: string) => ['sharing', 'preview', token] as const,

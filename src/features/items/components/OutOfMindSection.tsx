@@ -3,6 +3,8 @@ import { useId, useState, type ReactNode } from 'react'
 
 import { formatCaptureAge } from '@/lib/date'
 import { cn } from '@/lib/utils'
+import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
+import { useItemPerson } from '@/features/sharing/hooks/useSharing'
 
 import { eventWhen } from '../events'
 import { kindMark } from '../kind'
@@ -175,6 +177,8 @@ export function DoneRow({
       : null
   const status =
     !paid && !when && kindMark(item.kind, actions.list.kind) ? STATUS_LABELS[item.status] : null
+  // Si lo completó el otro, su inicial (diseño 20, M2).
+  const person = useItemPerson(item)
   return (
     <SwipeableRow
       item={item}
@@ -194,8 +198,11 @@ export function DoneRow({
         >
           {status ? `${item.title} · ${status}` : undefined}
         </RowTitle>
-        {(paid ?? when) && (
-          <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{paid ?? when}</p>
+        {(paid ?? when ?? person) && (
+          <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+            {person && <ItemPersonMark person={person} item={item} />}
+            {paid ?? when}
+          </p>
         )}
         {meta}
       </div>

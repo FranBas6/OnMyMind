@@ -8,6 +8,8 @@ import { useItemReminder } from '@/features/reminders/hooks/useReminders'
 import { showsBell } from '@/features/reminders/reminders'
 import { useNow } from '@/hooks/useNow'
 import { cn } from '@/lib/utils'
+import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
+import { useItemPerson } from '@/features/sharing/hooks/useSharing'
 
 import {
   eventTime,
@@ -81,7 +83,16 @@ export function EventRow({ item, byMonth = false }: { item: Item; byMonth?: bool
         : 'Todo el día.'
 
   const reminder = useItemReminder(item.id)
+  // En una lista compartida, la inicial de quien lo añadió si no fuiste tú (diseño 20, M2).
+  const person = useItemPerson(item)
   const meta: ReactNode[] = []
+  if (person) {
+    meta.push(
+      <span key="person" className={META}>
+        <ItemPersonMark person={person} item={item} />
+      </span>,
+    )
+  }
   if (!at) {
     meta.push(
       <span key="day" className={cn(META, 'text-primary')}>

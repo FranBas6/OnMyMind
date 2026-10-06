@@ -6,7 +6,7 @@ import { BottomSheet } from '@/components/BottomSheet'
 import { SublistGlyph } from '@/components/SublistGlyph'
 import { ListIcon } from '@/components/ListIcon'
 import { personName } from '@/features/sharing/copy'
-import { PersonInitial } from '@/features/sharing/components/PersonInitial'
+import { SharedInitials } from '@/features/sharing/components/SharedInitials'
 import { useListPeople } from '@/features/sharing/hooks/useSharing'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
@@ -202,18 +202,7 @@ function memberEntries(
     {
       label: 'Quién está',
       icon: Users,
-      trailing: people && (
-        <span aria-hidden className="flex -space-x-1.5">
-          {people.map((person) => (
-            <PersonInitial
-              key={person.userId}
-              name={person.displayName}
-              isOwner={person.isOwner}
-              className="size-[22px] text-[11px] ring-2 ring-card"
-            />
-          ))}
-        </span>
-      ),
+      trailing: people && <SharedInitials people={people} />,
       onSelect: () => {
         actions.openPeople(list)
       },

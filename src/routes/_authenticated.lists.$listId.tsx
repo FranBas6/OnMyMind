@@ -1,10 +1,11 @@
 import { onlineManager } from '@tanstack/react-query'
-import { createFileRoute, Navigate } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { z } from 'zod'
 
 import { itemsQueryOptions, ListDetail, useOpenSublist } from '@/features/items'
 import { listsQueryOptions, useLists } from '@/features/lists'
+import { GoneList } from '@/features/sharing'
 
 /**
  * `?item=<id>` abre el detalle de un ítem (04 §Rutas): un enlace directo o, en fase 2, una
@@ -65,8 +66,9 @@ function ListDetailPage() {
   const { inbox, lists: others } = lists.data
   const list = inbox?.id === listId ? inbox : others.find((entry) => entry.id === listId)
   // Borrada, archivada o de otra persona: de vuelta a Inicio (archivar y borrar desde el menú
-  // de esta pantalla acaban aquí, y el aviso «Deshacer» sale ya en Inicio).
-  if (!list) return <Navigate to="/" replace />
+  // de esta pantalla acaban aquí, y el aviso «Deshacer» sale ya en Inicio). Si era una lista
+  // compartida contigo y te quitaron, o quien la creó la borró o archivó, antes se dice (3.3).
+  if (!list) return <GoneList listId={listId} />
 
   return (
     <ListDetail

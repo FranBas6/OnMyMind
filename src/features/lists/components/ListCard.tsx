@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils'
 
 import { counterLabel, KIND_TEMPLATES, pendingTotal } from '../templates'
 import type { List } from '../types'
+import { ListCardInitials, ListCardSharedNote } from '@/features/sharing/components/SharedInitials'
+
 import { ListCardMenu } from './ListCardMenu'
 import { useListDrag } from './listDragContext'
 
@@ -122,12 +124,17 @@ function ListCardFace({ list }: { list: List }) {
     <>
       <div className="flex items-start justify-between">
         <ListIcon name={list.name} color={list.color} />
-        {/* Hueco del botón ···, que se pinta encima (fuera del enlace). */}
-        <span aria-hidden className="-mt-1.5 -mr-1.5 size-8 shrink-0" />
+        <div className="flex items-start gap-1">
+          {/* Compartida: las iniciales de quienes están, junto al ··· (diseño 20, M1). */}
+          <ListCardInitials list={list} />
+          {/* Hueco del botón ···, que se pinta encima (fuera del enlace). */}
+          <span aria-hidden className="-mt-1.5 -mr-1.5 size-8 shrink-0" />
+        </div>
       </div>
       <div className="min-w-0">
         <p className="font-display text-base leading-[1.2] font-bold tracking-[-0.01em] break-words">
           {list.name}
+          <ListCardSharedNote list={list} />
         </p>
         <p className="mt-[3px] truncate text-[12.5px] text-subtle-foreground">
           {KIND_TEMPLATES[list.kind].label}

@@ -36,9 +36,10 @@ export function useExportData() {
 
 /** Cuántas listas y cosas se borran con la cuenta: se pide cada vez que se abre la confirmación. */
 export function useAccountCounts(enabled: boolean) {
+  const user = useCurrentUser()
   return useQuery({
     queryKey: queryKeys.accountCounts,
-    queryFn: fetchAccountCounts,
+    queryFn: () => fetchAccountCounts(user.id),
     enabled,
     staleTime: 0,
   })

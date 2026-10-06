@@ -27,7 +27,9 @@ export interface ExportTables {
 
 /**
  * El documento del JSON. Las fotos van como enlaces (diseño 18, P7): cada ítem con foto lleva
- * `photo_url`, una URL firmada que dura una semana, además de su `image_path`.
+ * `photo_url`, una URL firmada que dura una semana, además de su `image_path`. Van también las
+ * listas compartidas contigo (3.3, decisión de Fran: todo lo que ves), cada una con
+ * `created_by_me` para distinguirlas de las tuyas.
  */
 export function exportDocument(
   tables: ExportTables,
@@ -39,7 +41,10 @@ export function exportDocument(
     format: EXPORT_FORMAT,
     exported_at: now.toISOString(),
     profile: tables.profile,
-    lists: tables.lists,
+    lists: tables.lists.map((list) => ({
+      ...list,
+      created_by_me: list.owner_id === tables.profile?.id,
+    })),
     items: tables.items.map((item) => {
       const path = typeof item.image_path === 'string' ? item.image_path : null
       const url = path ? photoUrls.get(path) : undefined

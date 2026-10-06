@@ -17,6 +17,7 @@ import {
 import { ProfileLink } from '@/features/profile'
 import { focusSearchField, SidebarSearchField } from '@/features/search'
 import { useTodayCount } from '@/features/today'
+import { SidebarSharedIcon } from '@/features/sharing/components/SharedInitials'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { cn } from '@/lib/utils'
@@ -201,6 +202,7 @@ function SidebarListRow({ list, lifted = false }: { list: List; lifted?: boolean
         className={cn('size-3 shrink-0 rounded-[4px]', LIST_COLOR_BG[list.color])}
       />
       <span className="truncate">{list.name}</span>
+      <SidebarSharedIcon list={list} />
       <Count value={list.counters.pending} />
     </>
   )

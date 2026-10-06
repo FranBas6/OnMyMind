@@ -5,6 +5,8 @@ import { ReminderBell } from '@/features/reminders/components/ReminderBell'
 import { useItemReminder } from '@/features/reminders/hooks/useReminders'
 import { showsBell } from '@/features/reminders/reminders'
 import { cn } from '@/lib/utils'
+import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
+import { useItemPerson } from '@/features/sharing/hooks/useSharing'
 
 import {
   eventTime,
@@ -94,6 +96,18 @@ export function TaskRow({ item }: { item: Item }) {
   ) : null
   const thumb = hasThumb(item)
   const link = item.url ? <LinkMeta url={item.url} item={item} className={META} /> : null
+  // En una lista compartida, la inicial de quien lo añadió si no fuiste tú (diseño 20, M2).
+  const person = useItemPerson(item)
+  const author = person && (
+    <span className="flex shrink-0 items-center">
+      <ItemPersonMark person={person} item={item} />
+    </span>
+  )
+  const dot = (
+    <span aria-hidden className={META}>
+      ·
+    </span>
+  )
   return (
     <SwipeableRow
       item={item}
@@ -115,12 +129,24 @@ export function TaskRow({ item }: { item: Item }) {
         {/* En escritorio el enlace va bajo el título; las columnas de la derecha no cambian. */}
         <div className="min-w-0">
           <RowTitle item={item} />
-          {link && <p className="mt-0.5 hidden md:flex">{link}</p>}
+          {(link ?? author) && (
+            <p className="mt-0.5 hidden items-center gap-1.5 md:flex">
+              {author}
+              {author && link && dot}
+              {link}
+            </p>
+          )}
           {repeat && <p className="mt-0.5 hidden md:flex">{repeat}</p>}
           {bell && <p className="mt-0.5 hidden md:flex">{bell}</p>}
         </div>
-        {first || second || link || bell ? (
+        {first || second || link || bell || author ? (
           <div className="mt-1.5 flex min-w-0 items-center gap-2 md:contents">
+            {author && (
+              <span className="flex items-center gap-2 md:hidden">
+                {author}
+                {(first ?? link ?? second ?? bell ?? repeat) && dot}
+              </span>
+            )}
             {first ?? <span className="hidden md:block" />}
             {link && <span className="flex min-w-0 md:hidden">{link}</span>}
             {second ?? <span className="hidden md:block" />}

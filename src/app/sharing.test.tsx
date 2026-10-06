@@ -26,6 +26,8 @@ vi.mock('@/features/sharing/api', async (importOriginal) => {
     fetchListPeople: vi.fn(),
     leaveList: vi.fn(),
     removeMember: vi.fn(),
+    fetchSharedPeople: vi.fn(() => Promise.resolve(new Map())),
+    fetchDeparture: vi.fn(() => Promise.resolve(null)),
   }
 })
 

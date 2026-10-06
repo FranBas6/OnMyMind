@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { itemsQueryOptions, ListDetail, useItems, useOpenSublist } from '@/features/items'
 import { listsQueryOptions, useLists } from '@/features/lists'
+import { GoneList } from '@/features/sharing'
 
 /**
  * `?item=` abre el detalle de algo de dentro, como en la lista; `?rename=` entra con el nombre de
@@ -60,7 +61,8 @@ function SublistPage() {
 
   const { inbox, lists: others } = lists.data
   const list = inbox?.id === listId ? inbox : others.find((entry) => entry.id === listId)
-  if (!list) return <Navigate to="/" replace />
+  // Como en la lista: si era compartida y ya no la tienes, se dice por qué (3.3).
+  if (!list) return <GoneList listId={listId} />
 
   // Sin los ítems de la lista aún no se sabe si existe; sin red y sin caché, a la lista, que lo
   // explica. Borrada o movida a otra lista (también desde su propio menú): de vuelta a su lista.

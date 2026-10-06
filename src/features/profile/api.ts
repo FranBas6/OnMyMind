@@ -106,17 +106,28 @@ export async function fetchExport(userId: string): Promise<ReturnType<typeof exp
 }
 
 export interface AccountCounts {
-  /** Tus listas, sin «En mente» (también las archivadas). */
+  /** Tus listas, sin «En mente» (también las archivadas). No cuentan las compartidas contigo. */
   lists: number
   /** Lo que hay dentro, sin contar las sublistas. */
   items: number
 }
 
-/** Lo que se borra con la cuenta, para decirlo en la confirmación (diseño 18, P9). */
-export async function fetchAccountCounts(): Promise<AccountCounts> {
+/**
+ * Lo que se borra con la cuenta, para decirlo en la confirmación (diseño 18, P9). Solo lo tuyo: las
+ * listas compartidas contigo no se borran (3.3), y RLS las dejaría contar si no se filtra.
+ */
+export async function fetchAccountCounts(userId: string): Promise<AccountCounts> {
   const [lists, items] = await Promise.all([
-    supabase.from('lists').select('id', { count: 'exact', head: true }).neq('kind', 'inbox'),
-    supabase.from('items').select('id', { count: 'exact', head: true }).neq('kind', 'sublist'),
+    supabase
+      .from('lists')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', userId)
+      .neq('kind', 'inbox'),
+    supabase
+      .from('items')
+      .select('id, list:lists!items_list_id_fkey!inner(owner_id)', { count: 'exact', head: true })
+      .eq('list.owner_id', userId)
+      .neq('kind', 'sublist'),
   ])
   if (lists.error) throw lists.error
   if (items.error) throw items.error

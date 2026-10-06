@@ -5,10 +5,13 @@ import { supabase } from '@/lib/supabase/client'
 import {
   acceptResultSchema,
   activeInviteSchema,
+  departureSchema,
   invitePreviewSchema,
   listPersonSchema,
+  sharedPersonSchema,
   type AcceptResult,
   type ActiveInvite,
+  type Departure,
   type InvitePreview,
   type ListPerson,
 } from './schemas'
@@ -77,6 +80,31 @@ export async function fetchListPeople(listId: string): Promise<ListPerson[]> {
   const { data, error } = await supabase.rpc('list_people', { p_list_id: listId })
   if (error) throw error
   return z.array(listPersonSchema).parse(data)
+}
+
+/**
+ * Quién está en cada una de tus listas compartidas, de una vez (3.3): por lista, primero quien la
+ * creó. Las que no comparte nadie no salen.
+ */
+export async function fetchSharedPeople(): Promise<Map<string, ListPerson[]>> {
+  const { data, error } = await supabase.rpc('shared_list_people')
+  if (error) throw error
+  const byList = new Map<string, ListPerson[]>()
+  for (const { listId, person } of z.array(sharedPersonSchema).parse(data)) {
+    byList.set(listId, [...(byList.get(listId) ?? []), person])
+  }
+  return byList
+}
+
+/** Por qué ya no tienes una lista que tenías, si es que te la quitaron, la borraron o la archivaron. */
+export async function fetchDeparture(listId: string): Promise<Departure | null> {
+  const { data, error } = await supabase
+    .from('list_departures')
+    .select('reason, list_name, owner_name')
+    .eq('list_id', listId)
+    .maybeSingle()
+  if (error) throw error
+  return data ? departureSchema.parse(data) : null
 }
 
 /** Sales de una lista compartida contigo: lo que añadiste se queda en ella. */

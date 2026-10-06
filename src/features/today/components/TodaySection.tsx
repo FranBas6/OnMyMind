@@ -3,6 +3,7 @@ import { useId } from 'react'
 import { ListScope } from '@/features/items'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
+import { SharedWith } from '@/features/sharing/components/SharedInitials'
 
 import type { TodaySection as Section } from '../today'
 import { TodayRow } from './TodayRow'
@@ -32,6 +33,7 @@ export function TodaySection({
       >
         <span aria-hidden className={cn('size-2.5 rounded-[3px]', LIST_COLOR_BG[list.color])} />
         {list.name}
+        <SharedWith list={list} />
       </h2>
       <ListScope list={list}>
         <ul aria-label={list.name} className="flex flex-col gap-2.5">

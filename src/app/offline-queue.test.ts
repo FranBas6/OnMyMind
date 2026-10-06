@@ -72,6 +72,8 @@ const pan: Item = {
   links: [],
   priceLinkId: null,
   priceStore: null,
+  createdBy: null,
+  completedBy: null,
 }
 
 const leche: NewItem = {
