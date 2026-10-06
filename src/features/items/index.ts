@@ -10,7 +10,12 @@ export { StatusCheckbox } from './components/StatusCheckbox'
 export { SublistIcon } from './components/SublistIcon'
 export { SwipeableRow } from './components/SwipeableRow'
 export { PRIORITY_LABELS } from './fields'
-export { OFFLINE_TOLERANT, useCreateItem, useDeleteItem } from './hooks/useItemMutations'
+export {
+  itemMutations,
+  OFFLINE_TOLERANT,
+  useCreateItem,
+  useDeleteItem,
+} from './hooks/useItemMutations'
 export { useItems } from './hooks/useItems'
 export { useLingering } from './hooks/useLingering'
 export { useOpenSublist } from './hooks/useOpenSublist'

@@ -1,4 +1,4 @@
-import type { QueryClient } from '@tanstack/react-query'
+import { onlineManager, type Mutation, type QueryClient } from '@tanstack/react-query'
 import {
   persistQueryClient,
   type PersistedClient,
@@ -6,13 +6,17 @@ import {
 } from '@tanstack/react-query-persist-client'
 import { del, get, set } from 'idb-keyval'
 
-/** Cuánto vale la caché guardada: una semana sin abrir la app y se vuelve a pedir todo. */
+/**
+ * Cuánto vale la caché guardada: una semana sin abrir la app y se vuelve a pedir todo. La cola de
+ * cambios va con ella: lo que lleve una semana sin enviarse se pierde.
+ */
 export const PERSIST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 /**
  * Versión de la forma de los datos guardados. Se sube a mano cuando cambie lo que se guarda en
- * caché (un campo nuevo en `Item`, otra clave): la caché anterior se descarta en vez de leerse
- * mal. No es la versión de la app, para no perder lo guardado en cada despliegue.
+ * caché (un campo nuevo en `Item`, otra clave) o en la cola de cambios (la clave de una mutación
+ * o la forma de sus variables): lo anterior se descarta en vez de leerse mal, y con ello lo que
+ * quedara sin enviar. No es la versión de la app, para no perder lo guardado en cada despliegue.
  */
 export const CACHE_BUSTER = 'datos-1'
 
@@ -35,8 +39,12 @@ export function createIdbPersister(): Persister {
     pending = undefined
   }
   // Al cerrar o esconder la app, lo que quede pendiente se guarda ya (también el vaciado de la
-  // caché al cerrar sesión: que no sobreviva en el dispositivo).
+  // caché al cerrar sesión: que no sobreviva en el dispositivo). En el iPhone, al pasar al
+  // selector de apps llega `visibilitychange`, y al cerrarla desde ahí puede no llegar nada más.
   window.addEventListener('pagehide', flush)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flush()
+  })
   return {
     persistClient: (client) => {
       pending = client
@@ -49,10 +57,24 @@ export function createIdbPersister(): Persister {
 }
 
 /**
+ * Si una mutación se guarda con la caché: la que espera la red (o su turno en la fila) y se sabe
+ * repetir al volver, porque su clave tiene una función registrada con `setMutationDefaults`. Una
+ * en vuelo no: puede que ya haya llegado, y repetirla duplicaría un alta.
+ */
+export function isReplayable(queryClient: QueryClient, mutation: Mutation): boolean {
+  const key = mutation.options.mutationKey
+  return (
+    mutation.state.isPaused &&
+    key !== undefined &&
+    queryClient.getMutationDefaults(key).mutationFn !== undefined
+  )
+}
+
+/**
  * Restaura la caché guardada (antes de pintar, para que los loaders del router la encuentren) y
- * se suscribe para guardar los cambios. Solo se guardan consultas terminadas con éxito; las
- * mutaciones en pausa no, porque al volver no sabrían qué función ejecutar (su cola persistida es
- * de la fase 2, ADR-005).
+ * se suscribe para guardar los cambios. Se guardan las consultas terminadas con éxito y la cola de
+ * cambios sin enviar (2.10, ADR-005). Con red, la cola sale ya, antes que cualquier consulta: la
+ * respuesta tiene que traer esos cambios. Sin red, sale sola cuando vuelva (`onlineManager`).
  */
 export async function restoreQueryCache(queryClient: QueryClient): Promise<void> {
   const [, restored] = persistQueryClient({
@@ -60,8 +82,11 @@ export async function restoreQueryCache(queryClient: QueryClient): Promise<void>
     persister: createIdbPersister(),
     maxAge: PERSIST_MAX_AGE_MS,
     buster: CACHE_BUSTER,
-    dehydrateOptions: { shouldDehydrateMutation: () => false },
+    dehydrateOptions: {
+      shouldDehydrateMutation: (mutation) => isReplayable(queryClient, mutation),
+    },
   })
   // Si IndexedDB no está (navegación privada) o falla, la app arranca igual, sin caché.
   await restored.catch(() => undefined)
+  if (onlineManager.isOnline()) void queryClient.resumePausedMutations()
 }

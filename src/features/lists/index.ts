@@ -15,6 +15,7 @@ export {
   NewListRoundButton,
 } from './components/NewListEntries'
 export { useArchivedLists } from './hooks/useArchivedLists'
+export { listMutations } from './hooks/useListMutations'
 export { useLists, type ListsByRole } from './hooks/useLists'
 export { archivedListsQueryOptions, listsQueryOptions } from './queries'
 export { counterLabel, doneLabel, KIND_TEMPLATES, pendingTotal } from './templates'

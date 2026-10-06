@@ -3,6 +3,7 @@ export { usePush } from './hooks/usePush'
 export { useReminderField } from './hooks/useReminderField'
 export {
   reminderFor,
+  reminderMutations,
   useItemReminder,
   useSetReminder,
   type ReminderChoice,

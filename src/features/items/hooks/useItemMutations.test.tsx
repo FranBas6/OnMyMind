@@ -9,6 +9,7 @@ import { queryKeys } from '@/lib/queryKeys'
 import * as api from '../api'
 import type { Item } from '../types'
 import {
+  itemMutations,
   nextItemPosition,
   useCreateItem,
   useDeleteItem,
@@ -64,6 +65,8 @@ const grifo: Item = {
 
 function setup(listItems: Item[] = [grifo]) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  // Lo que hace cada mutación está registrado en el cliente (2.10), como en `createQueryClient`.
+  for (const mutation of itemMutations) mutation.register(queryClient)
   queryClient.setQueryData(queryKeys.lists.all, [casa])
   queryClient.setQueryData(queryKeys.items.byList('casa'), listItems)
   queryClient.setQueryData(queryKeys.items.today('2026-09-28'), [grifo])

@@ -1,7 +1,14 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
+import { useCallback } from 'react'
 import { toast } from 'sonner'
 
 import { errorMessage } from '@/lib/errors'
+import {
+  durableMutation,
+  useDurableMutation,
+  WAITS_FOR_NETWORK,
+  type DurableMutation,
+} from '@/lib/mutations'
 import { queryKeys } from '@/lib/queryKeys'
 
 import { updateDisplayName, updateSettings } from '../api'
@@ -13,27 +20,41 @@ import { useCurrentUser } from './useProfile'
 const PROFILE_SCOPE = { id: 'profile' }
 
 /**
- * Patrón optimista del perfil: se ve al instante, vuelve atrás si el servidor dice que no y, al
- * terminar, se pide de nuevo (el servidor manda: `updated_at`, lo que haya cambiado otro dispositivo).
+ * Lo que se guarda va con quién lo guarda: una mutación restaurada al abrir la app (2.10) no tiene
+ * un hook alrededor que se lo diga.
  */
-function useOptimisticProfile<T>(
-  update: (profile: Profile, variables: T) => Profile,
-  mutationFn: (userId: string, variables: T) => Promise<void>,
+interface ProfileChange<T> {
+  userId: string
+  value: T
+}
+
+/** Lo de antes, para volver atrás si falla. */
+interface ProfileContext {
+  previous: Profile | undefined
+}
+
+/**
+ * Patrón optimista del perfil: se ve al instante, sin red espera (también con la app cerrada),
+ * vuelve atrás si el servidor dice que no y, al terminar, se pide de nuevo (el servidor manda:
+ * `updated_at`, lo que haya cambiado otro dispositivo).
+ */
+function optimisticProfile<T>(
+  update: (profile: Profile, value: T) => Profile,
+  send: (userId: string, value: T) => Promise<void>,
   failure: string,
 ) {
-  const queryClient = useQueryClient()
-  const user = useCurrentUser()
   const key = queryKeys.profile()
-  return useMutation({
+  return (queryClient: QueryClient) => ({
+    ...WAITS_FOR_NETWORK,
     scope: PROFILE_SCOPE,
-    mutationFn: (variables: T) => mutationFn(user.id, variables),
-    onMutate: async (variables) => {
+    mutationFn: ({ userId, value }: ProfileChange<T>) => send(userId, value),
+    onMutate: async ({ value }: ProfileChange<T>): Promise<ProfileContext> => {
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<Profile>(key)
-      if (previous) queryClient.setQueryData(key, update(previous, variables))
+      if (previous) queryClient.setQueryData(key, update(previous, value))
       return { previous }
     },
-    onError: (error, _variables, context) => {
+    onError: (error: Error, _change: ProfileChange<T>, context: ProfileContext | undefined) => {
       if (context?.previous) queryClient.setQueryData(key, context.previous)
       toast.error(`${failure} ${errorMessage(error)}`)
     },
@@ -43,8 +64,9 @@ function useOptimisticProfile<T>(
   })
 }
 
-export function useUpdateSettings() {
-  return useOptimisticProfile<SettingsPatch>(
+const updateSettingsMutation = durableMutation(
+  ['profile', 'settings'],
+  optimisticProfile<SettingsPatch>(
     (profile, patch) => ({
       ...profile,
       themeStored: profile.themeStored || patch.theme !== undefined,
@@ -59,13 +81,39 @@ export function useUpdateSettings() {
     }),
     updateSettings,
     'No se ha podido guardar el ajuste.',
-  )
-}
+  ),
+)
 
-export function useUpdateDisplayName() {
-  return useOptimisticProfile<string>(
+const updateDisplayNameMutation = durableMutation(
+  ['profile', 'name'],
+  optimisticProfile<string>(
     (profile, name) => ({ ...profile, displayName: name.trim() }),
     updateDisplayName,
     'No se ha podido guardar tu nombre.',
-  )
+  ),
+)
+
+/** Las mutaciones del perfil que se registran en el QueryClient (2.10). */
+export const profileMutations = [updateSettingsMutation, updateDisplayNameMutation]
+
+/** Quien llama solo pasa el cambio; quién lo guarda lo pone el hook. */
+function useProfileChange<T>(mutation: DurableMutation<ProfileChange<T>, void, ProfileContext>) {
+  const user = useCurrentUser()
+  const { mutate } = useDurableMutation(mutation)
+  return {
+    mutate: useCallback(
+      (value: T) => {
+        mutate({ userId: user.id, value })
+      },
+      [mutate, user.id],
+    ),
+  }
+}
+
+export function useUpdateSettings() {
+  return useProfileChange(updateSettingsMutation)
+}
+
+export function useUpdateDisplayName() {
+  return useProfileChange(updateDisplayNameMutation)
 }

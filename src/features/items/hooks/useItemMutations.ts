@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
+import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import type { List } from '@/features/lists'
-import { errorMessage, isNetworkError } from '@/lib/errors'
+import { errorMessage } from '@/lib/errors'
+import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/mutations'
 import { withPositions, type Positioned } from '@/lib/reorder'
 import { queryKeys } from '@/lib/queryKeys'
 
@@ -27,10 +28,11 @@ import { countItems, type Counts } from '../sublists'
 import type { Item, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus, MovedItem } from '../types'
 
 /**
- * Todas las mutaciones de ítems comparten clave y `scope`. El `scope` las pone en fila: se envían
- * de una en una y en orden, así que completar un ítem recién creado sin red nunca llega a
- * Supabase antes que su alta, ni un «Deshacer» antes que el borrado. La clave sirve para saber
- * cuántas quedan en vuelo.
+ * Todas las mutaciones de ítems empiezan su clave por `items` y comparten `scope`. El `scope` las
+ * pone en fila: se envían de una en una y en orden, así que completar un ítem recién creado sin
+ * red nunca llega a Supabase antes que su alta, ni un «Deshacer» antes que el borrado. Con el
+ * prefijo se sabe cuántas quedan en vuelo; el resto de la clave dice cuál es, para encontrar su
+ * función al restaurarla (2.10).
  */
 const ITEM_MUTATION_KEY = ['items'] as const
 
@@ -51,17 +53,13 @@ function mixedQueries(queryClient: QueryClient): [QueryKey, Item[] | undefined][
 const ITEM_MUTATION_SCOPE = { id: 'items' }
 
 /**
- * Sin red, la mutación espera (`networkMode: 'online'`) en vez de fallar: el cambio optimista ya
- * se ve y se envía solo al volver la conexión. Si la red cae a mitad, se reintenta hasta tres
- * veces; cualquier otro error (RLS, validación) no se reintenta porque no se arreglaría. Los
- * avisos (2.6) van en la misma fila: el de un ítem creado sin red sale detrás de su alta.
+ * Sin red esperan en vez de fallar (`WAITS_FOR_NETWORK`), en fila. Los avisos (2.6) van en la
+ * misma fila: el de un ítem creado sin red sale detrás de su alta.
  */
-export const OFFLINE_TOLERANT = {
-  mutationKey: ITEM_MUTATION_KEY,
-  scope: ITEM_MUTATION_SCOPE,
-  networkMode: 'online',
-  retry: (failureCount: number, error: Error) => isNetworkError(error) && failureCount < 3,
-} as const
+export const OFFLINE_TOLERANT = { ...WAITS_FOR_NETWORK, scope: ITEM_MUTATION_SCOPE } as const
+
+/** La clave de una mutación de ítems: `items` y cuál es. */
+export const itemMutationKey = (name: string) => [...ITEM_MUTATION_KEY, name] as const
 
 /** Foto de las cachés que toca una mutación, para volver atrás si el servidor dice que no. */
 interface Snapshot {
@@ -301,32 +299,33 @@ export function itemFromNew(item: NewItem, position: number): Item {
  * Añadir (optimista): el ítem aparece al instante con un id generado en el cliente, que es
  * también el que se guarda, así que la fila real sustituye a la optimista sin saltos.
  */
+const createItemMutation = durableMutation(itemMutationKey('create'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: (item: NewItem) => createItem(item),
+  onMutate: (item) =>
+    applyOptimistic(queryClient, {
+      items: {
+        [item.listId]: (items) => [
+          ...items,
+          itemFromNew(item, item.position ?? nextItemPosition(items)),
+        ],
+      },
+      counters: { [item.listId]: { pending: 1, done: 0 } },
+    }),
+  onError: (error, item, snapshot) => {
+    rollback(
+      queryClient,
+      snapshot,
+      `No se ha podido añadir «${item.title.trim()}». ${errorMessage(error)}`,
+    )
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
+
 export function useCreateItem() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    ...OFFLINE_TOLERANT,
-    mutationFn: (item: NewItem) => createItem(item),
-    onMutate: (item) =>
-      applyOptimistic(queryClient, {
-        items: {
-          [item.listId]: (items) => [
-            ...items,
-            itemFromNew(item, item.position ?? nextItemPosition(items)),
-          ],
-        },
-        counters: { [item.listId]: { pending: 1, done: 0 } },
-      }),
-    onError: (error, item, snapshot) => {
-      rollback(
-        queryClient,
-        snapshot,
-        `No se ha podido añadir «${item.title.trim()}». ${errorMessage(error)}`,
-      )
-    },
-    onSettled: () => {
-      settle(queryClient)
-    },
-  })
+  return useDurableMutation(createItemMutation)
 }
 
 /** Cambia un ítem en una lista de ítems, si está. */
@@ -337,25 +336,26 @@ const patchIn = (items: Item[], itemId: string, patch: CachePatch) =>
  * Cambiar el estado desde el checkbox o el menú de la fila (optimista). La lista es la del ítem:
  * en Hoy cada fila es de una lista distinta.
  */
+const setItemStatusMutation = durableMutation(itemMutationKey('status'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: ({ item, status }: { item: Item; status: ItemStatus }) =>
+    updateItemStatus(item.id, status),
+  onMutate: ({ item, status }) =>
+    applyOptimistic(queryClient, {
+      items: { [item.listId]: (items) => patchIn(items, item.id, { status }) },
+      mixed: (items) => patchIn(items, item.id, { status }),
+      counters: { [item.listId]: statusDelta(item.status, status) },
+    }),
+  onError: (error, _variables, snapshot) => {
+    rollback(queryClient, snapshot, `No se ha podido cambiar. ${errorMessage(error)}`)
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
+
 export function useSetItemStatus() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    ...OFFLINE_TOLERANT,
-    mutationFn: ({ item, status }: { item: Item; status: ItemStatus }) =>
-      updateItemStatus(item.id, status),
-    onMutate: ({ item, status }) =>
-      applyOptimistic(queryClient, {
-        items: { [item.listId]: (items) => patchIn(items, item.id, { status }) },
-        mixed: (items) => patchIn(items, item.id, { status }),
-        counters: { [item.listId]: statusDelta(item.status, status) },
-      }),
-    onError: (error, _variables, snapshot) => {
-      rollback(queryClient, snapshot, `No se ha podido cambiar. ${errorMessage(error)}`)
-    },
-    onSettled: () => {
-      settle(queryClient)
-    },
-  })
+  return useDurableMutation(setItemStatusMutation)
 }
 
 /**
@@ -363,8 +363,7 @@ export function useSetItemStatus() {
  * tenía antes: lo que se haya guardado mientras tanto en otros campos no se pierde, como pasaría
  * al restaurar la foto entera de la lista. Se aplica en su lista y en Hoy.
  */
-export function useUpdateItem() {
-  const queryClient = useQueryClient()
+const updateItemMutation = durableMutation(itemMutationKey('update'), (queryClient) => {
   const replace = (item: Item, patch: CachePatch) => {
     queryClient.setQueryData<Item[]>(
       queryKeys.items.byList(item.listId),
@@ -394,7 +393,7 @@ export function useUpdateItem() {
     )
   }
 
-  return useMutation({
+  return {
     ...OFFLINE_TOLERANT,
     mutationFn: ({ item, patch }: { item: Item; patch: ItemPatch }) => updateItem(item.id, patch),
     onMutate: async ({ item, patch }) => {
@@ -451,7 +450,11 @@ export function useUpdateItem() {
     onSettled: () => {
       settle(queryClient)
     },
-  })
+  }
+})
+
+export function useUpdateItem() {
+  return useDurableMutation(updateItemMutation)
 }
 
 export interface MoveVariables {
@@ -467,74 +470,97 @@ export interface MoveVariables {
  * está en caché) con su estado traducido, y los contadores de las dos cambian. Si sale de «En
  * mente», aparece en su «Fuera de la cabeza» como movida; si vuelve a ella, deja de estarlo.
  */
+const moveItemMutation = durableMutation(itemMutationKey('move'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: ({ item, to, parentId = null }: MoveVariables) =>
+    moveItem(item.id, buildMovePatch(item, to, parentId)),
+  onMutate: ({ item, from, to, parentId = null }) => {
+    const patch = buildMovePatch(item, to, parentId)
+    const leavesInbox = from.kind === 'inbox'
+    const entersInbox = to.kind === 'inbox'
+    const moved: Item = {
+      ...item,
+      ...patch,
+      position: Number.MAX_SAFE_INTEGER,
+      completedAt: isFinalStatus(patch.status) ? (item.completedAt ?? new Date()) : null,
+      leftInboxId: entersInbox ? null : leavesInbox ? from.id : item.leftInboxId,
+      leftInboxAt: entersInbox ? null : leavesInbox ? new Date() : item.leftInboxAt,
+    }
+    const movedChanges: Record<string, (entries: MovedItem[]) => MovedItem[]> = {}
+    if (leavesInbox) {
+      movedChanges[from.id] = (entries) => [
+        { id: item.id, title: item.title, listName: to.name, movedAt: new Date() },
+        ...entries,
+      ]
+    }
+    if (entersInbox) {
+      movedChanges[to.id] = (entries) => entries.filter((entry) => entry.id !== item.id)
+    }
+    // Una sublista se va con lo de dentro (trigger `items_follow_parent`).
+    const children =
+      item.kind === 'sublist'
+        ? (queryClient.getQueryData<Item[]>(queryKeys.items.byList(from.id)) ?? [])
+            .filter((entry) => entry.parentId === item.id)
+            .map((entry) => ({ ...entry, listId: to.id }))
+        : []
+    const goes = new Set([item.id, ...children.map((entry) => entry.id)])
+    const follow = (entry: Item) =>
+      entry.id === item.id ? moved : goes.has(entry.id) ? { ...entry, listId: to.id } : entry
+    return applyOptimistic(queryClient, {
+      // Dentro de la misma lista (a una sublista, o fuera de ella) el ítem cambia de sitio sin
+      // salir de su caché; entre listas sale de una y entra al final de la otra.
+      items:
+        from.id === to.id
+          ? { [from.id]: (items) => items.map((entry) => (entry.id === item.id ? moved : entry)) }
+          : {
+              [from.id]: (items) => items.filter((entry) => !goes.has(entry.id)),
+              [to.id]: (items) => [...items, moved, ...children],
+            },
+      // En Hoy se queda si la lista destino también es de tareas (lo decide `groupToday`).
+      mixed: (items) => items.map(follow),
+      moved: movedChanges,
+      counters:
+        from.id === to.id
+          ? {}
+          : { [from.id]: negate(counted(item.status)), [to.id]: counted(patch.status) },
+    })
+  },
+  onError: (error, { to }, snapshot) => {
+    rollback(queryClient, snapshot, `No se ha podido mover a «${to.name}». ${errorMessage(error)}`)
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
+
 export function useMoveItem() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    ...OFFLINE_TOLERANT,
-    mutationFn: ({ item, to, parentId = null }: MoveVariables) =>
-      moveItem(item.id, buildMovePatch(item, to, parentId)),
-    onMutate: ({ item, from, to, parentId = null }) => {
-      const patch = buildMovePatch(item, to, parentId)
-      const leavesInbox = from.kind === 'inbox'
-      const entersInbox = to.kind === 'inbox'
-      const moved: Item = {
-        ...item,
-        ...patch,
-        position: Number.MAX_SAFE_INTEGER,
-        completedAt: isFinalStatus(patch.status) ? (item.completedAt ?? new Date()) : null,
-        leftInboxId: entersInbox ? null : leavesInbox ? from.id : item.leftInboxId,
-        leftInboxAt: entersInbox ? null : leavesInbox ? new Date() : item.leftInboxAt,
-      }
-      const movedChanges: Record<string, (entries: MovedItem[]) => MovedItem[]> = {}
-      if (leavesInbox) {
-        movedChanges[from.id] = (entries) => [
-          { id: item.id, title: item.title, listName: to.name, movedAt: new Date() },
-          ...entries,
-        ]
-      }
-      if (entersInbox) {
-        movedChanges[to.id] = (entries) => entries.filter((entry) => entry.id !== item.id)
-      }
-      // Una sublista se va con lo de dentro (trigger `items_follow_parent`).
-      const children =
-        item.kind === 'sublist'
-          ? (queryClient.getQueryData<Item[]>(queryKeys.items.byList(from.id)) ?? [])
-              .filter((entry) => entry.parentId === item.id)
-              .map((entry) => ({ ...entry, listId: to.id }))
-          : []
-      const goes = new Set([item.id, ...children.map((entry) => entry.id)])
-      const follow = (entry: Item) =>
-        entry.id === item.id ? moved : goes.has(entry.id) ? { ...entry, listId: to.id } : entry
-      return applyOptimistic(queryClient, {
-        // Dentro de la misma lista (a una sublista, o fuera de ella) el ítem cambia de sitio sin
-        // salir de su caché; entre listas sale de una y entra al final de la otra.
-        items:
-          from.id === to.id
-            ? { [from.id]: (items) => items.map((entry) => (entry.id === item.id ? moved : entry)) }
-            : {
-                [from.id]: (items) => items.filter((entry) => !goes.has(entry.id)),
-                [to.id]: (items) => [...items, moved, ...children],
-              },
-        // En Hoy se queda si la lista destino también es de tareas (lo decide `groupToday`).
-        mixed: (items) => items.map(follow),
-        moved: movedChanges,
-        counters:
-          from.id === to.id
-            ? {}
-            : { [from.id]: negate(counted(item.status)), [to.id]: counted(patch.status) },
-      })
-    },
-    onError: (error, { to }, snapshot) => {
-      rollback(
-        queryClient,
-        snapshot,
-        `No se ha podido mover a «${to.name}». ${errorMessage(error)}`,
-      )
-    },
-    onSettled: () => {
-      settle(queryClient)
-    },
-  })
+  return useDurableMutation(moveItemMutation)
+}
+
+/**
+ * Ordenar a mano (2.9, diseño 14): las posiciones nuevas de unos ítems de una lista, al momento y
+ * también sin red (en la fila de las mutaciones de ítems; «Sin conexión, el orden cambia igual,
+ * sin aviso», R13). Si el servidor dice que no, vuelve atrás.
+ */
+const reorderItemsMutation = durableMutation(itemMutationKey('reorder'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: ({ changes }: { listId: string; changes: Positioned[] }) =>
+    updateItemPositions(changes),
+  onMutate: ({ listId, changes }) =>
+    applyOptimistic(queryClient, {
+      items: { [listId]: (items) => withPositions(items, changes) },
+      mixed: (items) => withPositions(items, changes),
+    }),
+  onError: (error, _variables, snapshot) => {
+    rollback(queryClient, snapshot, `No se ha podido guardar el orden. ${errorMessage(error)}`)
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
+
+export function useReorderItems() {
+  return useDurableMutation(reorderItemsMutation)
 }
 
 /**
@@ -542,60 +568,36 @@ export function useMoveItem() {
  * el aviso «Deshacer». Deshacer es `useInsertItems`, que lo vuelve a crear igual (una sublista,
  * con lo de dentro).
  */
-/**
- * Ordenar a mano (2.9, diseño 14): las posiciones nuevas de unos ítems de una lista, al momento y
- * también sin red (en la fila de las mutaciones de ítems; «Sin conexión, el orden cambia igual,
- * sin aviso», R13). Si el servidor dice que no, vuelve atrás.
- */
-export function useReorderItems() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    ...OFFLINE_TOLERANT,
-    mutationFn: ({ changes }: { listId: string; changes: Positioned[] }) =>
-      updateItemPositions(changes),
-    onMutate: ({ listId, changes }) =>
-      applyOptimistic(queryClient, {
-        items: { [listId]: (items) => withPositions(items, changes) },
-        mixed: (items) => withPositions(items, changes),
-      }),
-    onError: (error, _variables, snapshot) => {
-      rollback(queryClient, snapshot, `No se ha podido guardar el orden. ${errorMessage(error)}`)
-    },
-    onSettled: () => {
-      settle(queryClient)
-    },
-  })
-}
+const deleteItemMutation = durableMutation(itemMutationKey('delete'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: (item: Pick<Item, 'id' | 'listId' | 'status' | 'title'>) => deleteItem(item.id),
+  onMutate: (item) => {
+    // Borrar una sublista borra lo de dentro (`on delete cascade`).
+    const gone = (entry: Item) => entry.id === item.id || entry.parentId === item.id
+    return applyOptimistic(queryClient, {
+      items: { [item.listId]: (items) => items.filter((entry) => !gone(entry)) },
+      mixed: (items) => items.filter((entry) => !gone(entry)),
+      counters: { [item.listId]: negate(counted(item.status)) },
+    })
+  },
+  onError: (error, item, snapshot) => {
+    rollback(
+      queryClient,
+      snapshot,
+      `No se ha podido borrar «${item.title}». ${errorMessage(error)}`,
+    )
+  },
+  onSuccess: () => {
+    // Sus fotos (y las de lo de dentro), cuando ya no se pueda «Deshacer» (2.8).
+    schedulePhotoCleanup()
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
 
 export function useDeleteItem() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    ...OFFLINE_TOLERANT,
-    mutationFn: (item: Pick<Item, 'id' | 'listId' | 'status' | 'title'>) => deleteItem(item.id),
-    onMutate: (item) => {
-      // Borrar una sublista borra lo de dentro (`on delete cascade`).
-      const gone = (entry: Item) => entry.id === item.id || entry.parentId === item.id
-      return applyOptimistic(queryClient, {
-        items: { [item.listId]: (items) => items.filter((entry) => !gone(entry)) },
-        mixed: (items) => items.filter((entry) => !gone(entry)),
-        counters: { [item.listId]: negate(counted(item.status)) },
-      })
-    },
-    onError: (error, item, snapshot) => {
-      rollback(
-        queryClient,
-        snapshot,
-        `No se ha podido borrar «${item.title}». ${errorMessage(error)}`,
-      )
-    },
-    onSuccess: () => {
-      // Sus fotos (y las de lo de dentro), cuando ya no se pueda «Deshacer» (2.8).
-      schedulePhotoCleanup()
-    },
-    onSettled: () => {
-      settle(queryClient)
-    },
-  })
+  return useDurableMutation(deleteItemMutation)
 }
 
 const withItems = (items: Item[], added: readonly Item[]) => [
@@ -614,29 +616,30 @@ export interface InsertVariables {
  * Vuelve a poner ítems tal cual (optimista): «Deshacer» un borrado, que devuelve una sublista con
  * todo lo suyo, y duplicar una sublista, que inserta la copia con sus ids ya generados.
  */
+const insertItemsMutation = durableMutation(itemMutationKey('insert'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: ({ items }: InsertVariables) => insertItems(items),
+  onMutate: ({ items }) => {
+    const listId = items[0]?.listId
+    if (!listId) return undefined
+    return applyOptimistic(queryClient, {
+      items: { [listId]: (cached) => withItems(cached, items) },
+      mixed: (cached) => withItems(cached, items),
+      counters: { [listId]: countItems(items) },
+    })
+  },
+  onError: (error, { items, reason }, snapshot) => {
+    const title = items[0]?.title ?? ''
+    const what = reason === 'restore' ? 'recuperar' : 'duplicar'
+    rollback(queryClient, snapshot, `No se ha podido ${what} «${title}». ${errorMessage(error)}`)
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
+
 export function useInsertItems() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    ...OFFLINE_TOLERANT,
-    mutationFn: ({ items }: InsertVariables) => insertItems(items),
-    onMutate: ({ items }) => {
-      const listId = items[0]?.listId
-      if (!listId) return undefined
-      return applyOptimistic(queryClient, {
-        items: { [listId]: (cached) => withItems(cached, items) },
-        mixed: (cached) => withItems(cached, items),
-        counters: { [listId]: countItems(items) },
-      })
-    },
-    onError: (error, { items, reason }, snapshot) => {
-      const title = items[0]?.title ?? ''
-      const what = reason === 'restore' ? 'recuperar' : 'duplicar'
-      rollback(queryClient, snapshot, `No se ha podido ${what} «${title}». ${errorMessage(error)}`)
-    },
-    onSettled: () => {
-      settle(queryClient)
-    },
-  })
+  return useDurableMutation(insertItemsMutation)
 }
 
 /** Lo que se hace con las tiendas de una compra (2.2b). */
@@ -661,33 +664,46 @@ function linksAfter(change: StoreChange): ItemLink[] {
  * ítems, así que nunca llega antes que el alta de la compra). En la caché, la compra queda como la
  * dejará el trigger (`withLinks`): con el enlace de la primera y el precio de la más barata.
  */
+const storeMutation = durableMutation(itemMutationKey('store'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: (change: StoreChange) => {
+    if (change.type === 'add') return insertLinks(change.item.id, change.links)
+    if (change.type === 'update') return updateLink(change.linkId, change.patch)
+    return deleteLink(change.linkId)
+  },
+  onMutate: (change) => {
+    // Sobre lo que hay en la caché, por si otra mutación en fila ya la cambió.
+    const update = (items: Item[]) =>
+      items.map((entry) =>
+        entry.id === change.item.id
+          ? withLinks(entry, linksAfter({ ...change, item: entry }))
+          : entry,
+      )
+    return applyOptimistic(queryClient, {
+      items: { [change.item.listId]: update },
+      mixed: update,
+    })
+  },
+  onError: (error, _change, snapshot) => {
+    rollback(queryClient, snapshot, `No se ha podido guardar la tienda. ${errorMessage(error)}`)
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
+
 export function useStoreMutation() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    ...OFFLINE_TOLERANT,
-    mutationFn: (change: StoreChange) => {
-      if (change.type === 'add') return insertLinks(change.item.id, change.links)
-      if (change.type === 'update') return updateLink(change.linkId, change.patch)
-      return deleteLink(change.linkId)
-    },
-    onMutate: (change) => {
-      // Sobre lo que hay en la caché, por si otra mutación en fila ya la cambió.
-      const update = (items: Item[]) =>
-        items.map((entry) =>
-          entry.id === change.item.id
-            ? withLinks(entry, linksAfter({ ...change, item: entry }))
-            : entry,
-        )
-      return applyOptimistic(queryClient, {
-        items: { [change.item.listId]: update },
-        mixed: update,
-      })
-    },
-    onError: (error, _change, snapshot) => {
-      rollback(queryClient, snapshot, `No se ha podido guardar la tienda. ${errorMessage(error)}`)
-    },
-    onSettled: () => {
-      settle(queryClient)
-    },
-  })
+  return useDurableMutation(storeMutation)
 }
+
+/** Las mutaciones de ítems que se registran en el QueryClient (`setMutationDefaults`, 2.10). */
+export const itemMutations = [
+  createItemMutation,
+  setItemStatusMutation,
+  updateItemMutation,
+  moveItemMutation,
+  reorderItemsMutation,
+  deleteItemMutation,
+  insertItemsMutation,
+  storeMutation,
+]
