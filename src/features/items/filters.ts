@@ -1,6 +1,7 @@
 import { subDays } from 'date-fns'
 
 import { counterLabel, doneLabel, KIND_TEMPLATES, type ListKind } from '@/features/lists'
+import type { InboxSort } from '@/features/profile/schemas'
 
 import { isEarlierToday, isPastEvent } from './events'
 import { isOutOfMind } from './status'
@@ -11,8 +12,11 @@ import type { Item } from './types'
 export type StatusFilter = 'all' | 'open' | 'closed'
 /** Filtro de «En mente», por antigüedad (diseño 05): lo que pesa es lo que lleva tiempo ahí. */
 export type AgeFilter = 'all' | 'week' | 'older'
-/** Orden de «En mente» en escritorio: «Ordenar: más reciente» alterna con «más antigua». */
-export type SortOrder = 'newest' | 'oldest'
+/**
+ * Orden de «En mente» (diseño 14, E2): por fecha de captura o «A mi manera» (a mano, por
+ * `position`). Se recuerda en la cuenta (`settings.inbox_sort`).
+ */
+export type SortOrder = InboxSort
 
 export interface FilterOption<T extends string> {
   value: T
@@ -43,10 +47,12 @@ export const AGE_FILTER_OPTIONS: readonly FilterOption<AgeFilter>[] = [
   { value: 'older', label: 'Antiguas' },
 ]
 
-export const SORT_LABELS: Record<SortOrder, string> = {
-  newest: 'más reciente',
-  oldest: 'más antigua',
-}
+/** Las opciones del menú de ordenar (E2) y el texto corto del botón en escritorio (D7). */
+export const SORT_OPTIONS: readonly { value: SortOrder; label: string; short: string }[] = [
+  { value: 'newest', label: 'Más reciente primero', short: 'Más reciente' },
+  { value: 'oldest', label: 'Más antigua primero', short: 'Más antigua' },
+  { value: 'manual', label: 'A mi manera', short: 'A mi manera' },
+]
 
 /** Días que una captura cuenta como «de esta semana» (los siete últimos, no la semana natural). */
 const RECENT_DAYS = 7
@@ -75,13 +81,14 @@ interface SplitOptions {
    * de que bajen a «Fuera de la cabeza» (06 §Interacción: 400 ms).
    */
   lingering?: ReadonlySet<string>
-  /** Solo en «En mente», que se ordena por fecha de captura. */
+  /** Solo en «En mente», que se ordena por fecha de captura o a mano. */
   sort?: SortOrder
 }
 
-const byPosition = (a: Item, b: Item) =>
+/** El orden de una lista: `position` y, a igualdad, lo más antiguo antes. */
+export const byPosition = (a: Item, b: Item) =>
   a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime()
-const byCreated = (order: SortOrder) => (a: Item, b: Item) =>
+const byCreated = (order: Exclude<SortOrder, 'manual'>) => (a: Item, b: Item) =>
   order === 'newest'
     ? b.createdAt.getTime() - a.createdAt.getTime()
     : a.createdAt.getTime() - b.createdAt.getTime()
@@ -90,7 +97,8 @@ const outOfMindAt = (item: Item) => (item.completedAt ?? item.dueAt ?? item.crea
 
 /**
  * Separa los ítems de una lista en lo pendiente y «Fuera de la cabeza». Las listas normales van
- * por `position`; «En mente», por la fecha de captura (la más reciente arriba, como su tarjeta).
+ * por `position`; «En mente», por la fecha de captura (la más reciente arriba, como su tarjeta) o,
+ * con «A mi manera», también por `position`.
  */
 export function splitItems(items: readonly Item[], kind: ListKind, options: SplitOptions = {}) {
   const { now = new Date(), lingering, sort = 'newest' } = options
@@ -100,7 +108,7 @@ export function splitItems(items: readonly Item[], kind: ListKind, options: Spli
     if (isOutOfMind(item, now) && !lingering?.has(item.id)) outOfMind.push(item)
     else active.push(item)
   }
-  active.sort(kind === 'inbox' ? byCreated(sort) : byPosition)
+  active.sort(kind === 'inbox' && sort !== 'manual' ? byCreated(sort) : byPosition)
   outOfMind.sort((a, b) => outOfMindAt(b) - outOfMindAt(a))
   return { active, outOfMind } satisfies SplitItems
 }

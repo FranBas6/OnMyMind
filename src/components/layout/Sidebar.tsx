@@ -1,9 +1,19 @@
+import { useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { Link, useNavigate, useRouter, useRouterState } from '@tanstack/react-router'
 import { Archive, Inbox, Plus, Sun, type LucideIcon } from 'lucide-react'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, type ReactNode, type SyntheticEvent } from 'react'
 
 import { useCapture } from '@/features/capture'
-import { ARCHIVED_SECTION_ID, useArchivedLists, useLists, useListActions } from '@/features/lists'
+import {
+  ARCHIVED_SECTION_ID,
+  ListsDnd,
+  useArchivedLists,
+  useListActions,
+  useListDrag,
+  useLists,
+  type List,
+} from '@/features/lists'
 import { ProfileLink } from '@/features/profile'
 import { focusSearchField, SidebarSearchField } from '@/features/search'
 import { useTodayCount } from '@/features/today'
@@ -88,33 +98,25 @@ export function Sidebar() {
         >
           Mis listas
         </h2>
-        <ul className="flex flex-col gap-0.5">
-          {lists.data?.lists.map((list) => {
-            // También dentro de una de sus sublistas (diseño 12, D5).
-            const active =
-              pathname === `/lists/${list.id}` || pathname.startsWith(`/lists/${list.id}/`)
-            return (
-              <li key={list.id}>
-                <Link
-                  to="/lists/$listId"
-                  params={{ listId: list.id }}
-                  aria-current={active ? 'page' : undefined}
-                  className={cn(
-                    'flex h-10 items-center gap-2.5 rounded-xl px-3 text-sm font-medium outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                    active && 'bg-card',
-                  )}
-                >
-                  <span
-                    aria-hidden
-                    className={cn('size-3 shrink-0 rounded-[4px]', LIST_COLOR_BG[list.color])}
-                  />
-                  <span className="truncate">{list.name}</span>
-                  <Count value={list.counters.pending} />
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
+        {/* Se ordenan arrastrando (2.9, diseño 14, D5); «Archivadas» no se mueve. */}
+        <ListsDnd
+          lists={lists.data?.lists ?? []}
+          strategy={verticalListSortingStrategy}
+          renderLifted={(list) => <SidebarListRow list={list} lifted />}
+        >
+          <ul className="flex flex-col gap-0.5">
+            {lists.data?.lists.map((list) => (
+              <SortableSidebarList
+                key={list.id}
+                list={list}
+                // También dentro de una de sus sublistas (diseño 12, D5).
+                active={
+                  pathname === `/lists/${list.id}` || pathname.startsWith(`/lists/${list.id}/`)
+                }
+              />
+            ))}
+          </ul>
+        </ListsDnd>
         {/* Las archivadas se mencionan en gris, sin contar como lista (diseño 04 Listas, D8). */}
         {archivedCount > 0 && (
           <Link
@@ -145,6 +147,68 @@ export function Sidebar() {
         <ProfileLink />
       </div>
     </aside>
+  )
+}
+
+/** Una lista de «Mis listas», que se ordena arrastrándola con el ratón (diseño 14, D5). */
+function SortableSidebarList({ list, active }: { list: List; active: boolean }) {
+  const drag = useListDrag()
+  const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: list.id,
+    data: { label: list.name },
+  })
+  // dnd-kit lo da como `Function`: el manejador de su sensor de ratón.
+  const onMouseDown = listeners?.onMouseDown as ((event: SyntheticEvent) => void) | undefined
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn(
+        'rounded-xl',
+        isDragging && 'border border-dashed border-primary/50 bg-brand-tint',
+      )}
+    >
+      <Link
+        to="/lists/$listId"
+        params={{ listId: list.id }}
+        aria-current={active ? 'page' : undefined}
+        onMouseDown={onMouseDown}
+        onClickCapture={(event) => {
+          if (drag?.swallowsClick()) {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+        }}
+        className={cn(
+          'flex h-10 items-center gap-2.5 rounded-xl px-3 text-sm font-medium outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          active && 'bg-card',
+          drag?.settledId === list.id && 'bg-brand-tint',
+          isDragging && 'invisible',
+        )}
+      >
+        <SidebarListRow list={list} />
+      </Link>
+    </li>
+  )
+}
+
+/** Lo de dentro de la fila de una lista; levantada, en una tarjeta con sombra (D5). */
+function SidebarListRow({ list, lifted = false }: { list: List; lifted?: boolean }) {
+  const content = (
+    <>
+      <span
+        aria-hidden
+        className={cn('size-3 shrink-0 rounded-[4px]', LIST_COLOR_BG[list.color])}
+      />
+      <span className="truncate">{list.name}</span>
+      <Count value={list.counters.pending} />
+    </>
+  )
+  if (!lifted) return content
+  return (
+    <div className="flex h-10 cursor-grabbing items-center gap-2.5 rounded-xl border border-border-soft bg-card px-3 text-sm font-medium shadow-lift">
+      {content}
+    </div>
   )
 }
 

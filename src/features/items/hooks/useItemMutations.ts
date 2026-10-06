@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 import type { List } from '@/features/lists'
 import { errorMessage, isNetworkError } from '@/lib/errors'
+import { withPositions, type Positioned } from '@/lib/reorder'
 import { queryKeys } from '@/lib/queryKeys'
 
 import {
@@ -14,6 +15,7 @@ import {
   insertItems,
   moveItem,
   updateItem,
+  updateItemPositions,
   updateItemStatus,
   type NewItem,
 } from '../api'
@@ -540,6 +542,31 @@ export function useMoveItem() {
  * el aviso «Deshacer». Deshacer es `useInsertItems`, que lo vuelve a crear igual (una sublista,
  * con lo de dentro).
  */
+/**
+ * Ordenar a mano (2.9, diseño 14): las posiciones nuevas de unos ítems de una lista, al momento y
+ * también sin red (en la fila de las mutaciones de ítems; «Sin conexión, el orden cambia igual,
+ * sin aviso», R13). Si el servidor dice que no, vuelve atrás.
+ */
+export function useReorderItems() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    ...OFFLINE_TOLERANT,
+    mutationFn: ({ changes }: { listId: string; changes: Positioned[] }) =>
+      updateItemPositions(changes),
+    onMutate: ({ listId, changes }) =>
+      applyOptimistic(queryClient, {
+        items: { [listId]: (items) => withPositions(items, changes) },
+        mixed: (items) => withPositions(items, changes),
+      }),
+    onError: (error, _variables, snapshot) => {
+      rollback(queryClient, snapshot, `No se ha podido guardar el orden. ${errorMessage(error)}`)
+    },
+    onSettled: () => {
+      settle(queryClient)
+    },
+  })
+}
+
 export function useDeleteItem() {
   const queryClient = useQueryClient()
   return useMutation({

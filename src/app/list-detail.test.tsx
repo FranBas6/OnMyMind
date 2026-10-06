@@ -7,11 +7,14 @@ import * as itemsApi from '@/features/items/api'
 import type { Item } from '@/features/items'
 import * as listsApi from '@/features/lists/api'
 import type { List } from '@/features/lists'
+import * as profileApi from '@/features/profile/api'
+import { parseSettings } from '@/features/profile'
 import { queryKeys } from '@/lib/queryKeys'
-import { fakeSession, renderRoute } from '@/test/render-route'
+import { fakeSession, renderRoute, testProfile } from '@/test/render-route'
 
 vi.mock('@/features/items/api')
 vi.mock('@/features/lists/api')
+vi.mock('@/features/profile/api')
 
 const session = fakeSession()
 const HOUR = 60 * 60 * 1000
@@ -273,18 +276,37 @@ describe('detalle de «En mente»', () => {
     setDesktop(false)
   })
 
-  it('en escritorio también hay «‹ Listas» y el orden se cambia con un botón', async () => {
+  it('en escritorio también hay «‹ Listas» y el orden se elige en un menú (diseño 14, D7)', async () => {
     const user = userEvent.setup()
     setDesktop(true)
+    // El orden se guarda en la cuenta: este doble hace de Supabase.
+    let saved = parseSettings({})
+    vi.mocked(profileApi.fetchProfile).mockImplementation(() =>
+      Promise.resolve({ ...testProfile(session.user.id), settings: saved }),
+    )
+    vi.mocked(profileApi.updateSettings).mockImplementation((_id, patch) => {
+      saved = { ...saved, ...(patch.inboxSort && { inboxSort: patch.inboxSort }) }
+      return Promise.resolve()
+    })
     renderDetail('i', [dni, pilas])
 
     const back = await screen.findByRole('link', { name: 'Listas' })
     expect(back).toHaveAttribute('href', '/')
     expect(activeRows()[0]).toHaveTextContent('Comprar pilas AA')
 
-    await user.click(screen.getByRole('button', { name: /Ordenar: más reciente/ }))
+    await user.click(screen.getByRole('button', { name: 'Ordenar: Más reciente primero' }))
+    const options = await screen.findAllByRole('menuitemradio')
+    expect(options.map((option) => option.textContent)).toEqual([
+      'Más reciente primero',
+      'Más antigua primero',
+      'A mi maneraArrastra para ordenar',
+    ])
+    await user.click(screen.getByRole('menuitemradio', { name: /Más antigua primero/ }))
     expect(activeRows()[0]).toHaveTextContent('Renovar el DNI')
-    expect(screen.getByRole('button', { name: /Ordenar: más antigua/ })).toBeInTheDocument()
+    expect(profileApi.updateSettings).toHaveBeenCalledWith(session.user.id, { inboxSort: 'oldest' })
+    expect(
+      await screen.findByRole('button', { name: 'Ordenar: Más antigua primero' }),
+    ).toBeInTheDocument()
   })
 
   const pilas = item('pilas', 'Comprar pilas AA', { listId: 'i', kind: 'note' })

@@ -28,6 +28,7 @@ import {
   ItemActionsContext,
   ItemWorkspaceContext,
   useWorkspaceActions,
+  type RowOrder,
   type WorkspaceActions,
 } from './itemActionsContext'
 import { ItemRowMenuSheet } from './ItemRowMenu'
@@ -50,6 +51,8 @@ interface ItemWorkspaceProps {
    * `rename`, entra con el nombre listo para editar. Sin él (Hoy), no hay sublistas en pantalla.
    */
   onOpenSublist?: (item: Item, options?: { rename?: boolean }) => void
+  /** Ordenar a mano sus filas (2.9): solo el detalle de una lista que no es de eventos. */
+  order?: RowOrder
   children: ReactNode
 }
 
@@ -71,6 +74,7 @@ export function ItemWorkspace({
   onOpenItem,
   onFinish,
   onOpenSublist,
+  order,
   children,
 }: ItemWorkspaceProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -191,6 +195,7 @@ export function ItemWorkspace({
     },
     swipeOpenId,
     setSwipeOpenId,
+    order,
   }
 
   return (

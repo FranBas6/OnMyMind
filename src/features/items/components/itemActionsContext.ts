@@ -36,6 +36,21 @@ export interface ItemActions {
   /** La fila abierta a la izquierda al deslizar («Mover» y «Borrar»): solo una a la vez. */
   swipeOpenId: string | undefined
   setSwipeOpenId: (itemId: string | undefined) => void
+  /**
+   * Ordenar a mano (2.9, diseño 14), donde se puede: el detalle de una lista que no es de eventos.
+   * Sin él (Hoy, Buscar, eventos) las filas no se levantan ni tienen «Subir» y «Bajar».
+   */
+  order: RowOrder | undefined
+}
+
+/** El orden a mano de las filas que se ven (lo pone el detalle de lista). */
+export interface RowOrder {
+  /** Lo que se puede ordenar, en el orden en que se ve («Fuera de la cabeza» no). */
+  ids: readonly string[]
+  /** Soltar `movedId` donde estaba `overId` (ocupa su sitio). */
+  drop: (movedId: string, overId: string) => void
+  /** «Subir» y «Bajar» del menú, y ⌥↑ ⌥↓. */
+  step: (item: Item, direction: 'up' | 'down') => void
 }
 
 /** Todo menos la lista: las acciones valen para ítems de cualquier lista (cada uno usa la suya). */

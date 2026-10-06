@@ -9,6 +9,13 @@ export type Theme = (typeof THEMES)[number]
 export const DISPLAY_NAME_MAX_LENGTH = 50
 
 /**
+ * El orden de «En mente» (diseño 14, E2): «Más reciente primero», «Más antigua primero» o «A mi
+ * manera» (a mano, por `position`).
+ */
+export const INBOX_SORTS = ['newest', 'oldest', 'manual'] as const
+export type InboxSort = (typeof INBOX_SORTS)[number]
+
+/**
  * `profiles.settings` tal como se guarda (JSONB, claves en snake_case; 03 §profiles). Cada clave
  * tiene su valor por defecto y `catch`: una clave que falta, o que otra versión de la app dejó con
  * basura, se lee con su valor por defecto en vez de romper la pantalla.
@@ -25,6 +32,8 @@ const settingsRowSchema = z.object({
     .catch(null),
   price_drop_alerts: z.boolean().default(false).catch(false),
   timezone: z.string().min(1).default('Europe/Madrid').catch('Europe/Madrid'),
+  /** El orden de «En mente» (2.9, diseño 14): por fecha o «A mi manera». */
+  inbox_sort: z.enum(INBOX_SORTS).default('newest').catch('newest'),
 })
 
 /** Los ajustes en la app, con nombres de TypeScript. */
@@ -34,6 +43,7 @@ export interface Settings {
   dailySummaryTime: string | null
   priceDropAlerts: boolean
   timezone: string
+  inboxSort: InboxSort
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -51,6 +61,7 @@ export function parseSettings(raw: unknown): Settings {
     dailySummaryTime: row.daily_summary_time,
     priceDropAlerts: row.price_drop_alerts,
     timezone: row.timezone,
+    inboxSort: row.inbox_sort,
   }
 }
 
@@ -62,6 +73,8 @@ export interface SettingsPatch {
   timezone?: string
   /** «Resumen de Hoy» (2.6): la hora (`08:00`), o `null` sin resumen. */
   dailySummaryTime?: string | null
+  /** El orden de «En mente» (2.9). */
+  inboxSort?: InboxSort
 }
 
 /**
@@ -77,6 +90,7 @@ export function mergeSettings(
   if (patch.defaultListId !== undefined) next.default_list_id = patch.defaultListId
   if (patch.timezone !== undefined) next.timezone = patch.timezone
   if (patch.dailySummaryTime !== undefined) next.daily_summary_time = patch.dailySummaryTime
+  if (patch.inboxSort !== undefined) next.inbox_sort = patch.inboxSort
   return next
 }
 

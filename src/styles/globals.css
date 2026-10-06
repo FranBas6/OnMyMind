@@ -124,6 +124,8 @@
   --fab-shadow: 0 12px 28px rgb(90 75 230 / 0.35);
   /* Fila mientras se desliza: sombra hacia el lado de la acción (pantalla 4 v2) */
   --swipe-shadow: 0 0 24px rgb(28 27 34 / 0.1);
+  /* La fila o la tarjeta levantada al ordenar (diseño 14). */
+  --lift-shadow: 0 18px 40px rgb(28 27 34 / 0.22), 0 3px 8px rgb(28 27 34 / 0.1);
   --toast: #1c1b22;
   --toast-foreground: #ffffff;
   --toast-action: #b8b0ff;
@@ -212,6 +214,7 @@
   --panel-shadow: -16px 0 40px rgb(0 0 0 / 0.35);
   --fab-shadow: 0 12px 28px rgb(0 0 0 / 0.45);
   --swipe-shadow: 0 0 24px rgb(0 0 0 / 0.4);
+  --lift-shadow: 0 18px 44px rgb(0 0 0 / 0.6), 0 3px 8px rgb(0 0 0 / 0.4);
   /* Sin versión oscura en el diseño: un punto más claro que el fondo para que se distinga */
   --toast: #2a2937;
   --toast-foreground: #f2f0f7;
@@ -290,6 +293,7 @@
   --shadow-panel: var(--panel-shadow);
   --shadow-fab: var(--fab-shadow);
   --shadow-swipe: var(--swipe-shadow);
+  --shadow-lift: var(--lift-shadow);
   --color-toast: var(--toast);
   --color-toast-foreground: var(--toast-foreground);
   --color-toast-action: var(--toast-action);

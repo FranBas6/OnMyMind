@@ -1,3 +1,4 @@
+import type { Positioned } from '@/lib/reorder'
 import { supabase } from '@/lib/supabase/client'
 
 import { listFormSchema, mergeListsWithCounters, type ListFormValues } from './schemas'
@@ -100,6 +101,15 @@ export async function unarchiveList(listId: string): Promise<void> {
 }
 
 /** Borra la lista y, en cascada, sus ítems. La inbox la protege el trigger `lists_protect_inbox`. */
+/** Guarda el orden a mano de las listas (2.9): sus posiciones nuevas, casi siempre una. */
+export async function updateListPositions(changes: readonly Positioned[]): Promise<void> {
+  const results = await Promise.all(
+    changes.map(({ id, position }) => supabase.from('lists').update({ position }).eq('id', id)),
+  )
+  const failed = results.find((result) => result.error)
+  if (failed?.error) throw failed.error
+}
+
 export async function deleteList(listId: string): Promise<void> {
   const { error } = await supabase.from('lists').delete().eq('id', listId)
   if (error) throw error

@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { isNetworkError } from '@/lib/errors'
 import type { Database } from '@/lib/supabase/database.types'
+import type { Positioned } from '@/lib/reorder'
 import { supabase } from '@/lib/supabase/client'
 
 import type { MovePatch } from './move'
@@ -203,6 +204,18 @@ async function lastPosition(listId: string): Promise<number> {
     .maybeSingle()
   if (error) throw error
   return data?.position ?? 0
+}
+
+/**
+ * Guarda el orden a mano (2.9): las posiciones nuevas. Casi siempre es una fila (el punto medio
+ * entre sus vecinos); al renumerar, varias, en paralelo.
+ */
+export async function updateItemPositions(changes: readonly Positioned[]): Promise<void> {
+  const results = await Promise.all(
+    changes.map(({ id, position }) => supabase.from('items').update({ position }).eq('id', id)),
+  )
+  const failed = results.find((result) => result.error)
+  if (failed?.error) throw failed.error
 }
 
 export async function deleteItem(itemId: string): Promise<void> {

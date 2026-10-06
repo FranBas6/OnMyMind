@@ -3,9 +3,17 @@ import { toast } from 'sonner'
 
 import { schedulePhotoCleanup } from '@/features/items/photoCleanup'
 import { errorMessage } from '@/lib/errors'
+import { withPositions, type Positioned } from '@/lib/reorder'
 import { queryKeys } from '@/lib/queryKeys'
 
-import { archiveList, createList, deleteList, unarchiveList, updateList } from '../api'
+import {
+  archiveList,
+  createList,
+  deleteList,
+  unarchiveList,
+  updateList,
+  updateListPositions,
+} from '../api'
 import type { ListFormValues } from '../schemas'
 import type { List } from '../types'
 
@@ -110,6 +118,33 @@ export function useDeleteList() {
       schedulePhotoCleanup()
     },
     onSettled: () => refetchLists(queryClient),
+  })
+}
+
+const REORDER_KEY = ['lists', 'order'] as const
+
+/**
+ * Ordenar las listas a mano (2.9, diseño 14, I1 y D5): en Inicio y en el sidebar, al momento y
+ * también sin red (espera y se envía al volver). En fila, y la verdad del servidor se pide al
+ * terminar la última: si no, una respuesta a medias haría parpadear el orden.
+ */
+export function useReorderLists() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationKey: REORDER_KEY,
+    scope: { id: 'lists-order' },
+    mutationFn: (changes: Positioned[]) => updateListPositions(changes),
+    onMutate: (changes) =>
+      applyOptimistic(queryClient, {
+        active: (lists) => withPositions(lists, changes).sort((a, b) => a.position - b.position),
+      }),
+    onError: (error, _changes, snapshot) => {
+      rollback(queryClient, snapshot, `No se ha podido guardar el orden. ${errorMessage(error)}`)
+    },
+    onSettled: () => {
+      if (queryClient.isMutating({ mutationKey: REORDER_KEY }) > 1) return
+      return refetchLists(queryClient)
+    },
   })
 }
 

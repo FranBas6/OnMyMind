@@ -1,5 +1,7 @@
 import {
+  ArrowDown,
   ArrowRightLeft,
+  ArrowUp,
   Check,
   Circle,
   CircleCheck,
@@ -15,6 +17,7 @@ import { DropdownMenu } from 'radix-ui'
 import { useRef, useState, type KeyboardEvent } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
+import { canStep } from '@/lib/reorder'
 import { cn } from '@/lib/utils'
 
 import { rowActions, type RowAction, type RowActionId } from '../rowActions'
@@ -65,7 +68,7 @@ export function ItemRowMenuSheet({
   item: Item | undefined
   onClose: () => void
 }) {
-  const { list } = useItemActions()
+  const { list, order } = useItemActions()
   const run = useRunAction()
   const [shown, setShown] = useState(item)
   if (item && item !== shown) setShown(item)
@@ -104,7 +107,22 @@ export function ItemRowMenuSheet({
             </div>
           </div>
           <div className="-mx-2 flex flex-col gap-0.5">
-            {rowActions(shown.kind, shown.status).map((action) => {
+            {withSteps(
+              rowActions(shown.kind, shown.status),
+              order?.ids.includes(shown.id) ?? false,
+            ).map((action) => {
+              if (action === STEPS) {
+                return (
+                  <StepButtons
+                    key="steps"
+                    canUp={order ? canStep(order.ids, shown.id, 'up') : false}
+                    canDown={order ? canStep(order.ids, shown.id, 'down') : false}
+                    onStep={(direction) => {
+                      order?.step(shown, direction)
+                    }}
+                  />
+                )
+              }
               const Icon = iconFor(shown, action)
               const destructive = action.id === 'delete'
               return (
@@ -153,11 +171,18 @@ export function ItemRowDotsMenu({
   variant?: 'row' | 'header'
 }) {
   const run = useRunAction()
+  const { order } = useItemActions()
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
   const actions = rowActions(item.kind, item.status)
+  const sortable = order?.ids.includes(item.id) ?? false
 
   const onKeyDown = (event: KeyboardEvent) => {
+    if (sortable && event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      event.preventDefault()
+      order?.step(item, event.key === 'ArrowUp' ? 'up' : 'down')
+      return
+    }
     const key = event.key === 'Backspace' || event.key === 'Delete' ? '⌫' : event.key.toUpperCase()
     const action = actions.find((entry) => entry.shortcut === key)
     if (!action) return
@@ -199,7 +224,35 @@ export function ItemRowDotsMenu({
           onKeyDown={onKeyDown}
           className="z-50 w-[220px] rounded-2xl border border-border-soft bg-popover p-1.5 text-popover-foreground shadow-popover outline-none"
         >
-          {actions.map((action) => {
+          {withSteps(actions, sortable).map((action) => {
+            if (action === STEPS) {
+              return (
+                <DropdownMenu.Group key="steps" className="mt-1 border-t border-border-soft pt-1">
+                  {(['up', 'down'] as const).map((direction) => (
+                    <DropdownMenu.Item
+                      key={direction}
+                      disabled={!order || !canStep(order.ids, item.id, direction)}
+                      onSelect={(event) => {
+                        // Se queda abierto para subir o bajar varias veces.
+                        event.preventDefault()
+                        order?.step(item, direction)
+                      }}
+                      className="flex h-11 cursor-pointer items-center gap-3 rounded-xl px-3.5 text-sm font-medium outline-none select-none data-disabled:cursor-default data-disabled:opacity-40 data-highlighted:bg-fill"
+                    >
+                      {direction === 'up' ? (
+                        <ArrowUp aria-hidden className="size-4" strokeWidth={2} />
+                      ) : (
+                        <ArrowDown aria-hidden className="size-4" strokeWidth={2} />
+                      )}
+                      <span className="flex-1">{direction === 'up' ? 'Subir' : 'Bajar'}</span>
+                      <kbd aria-hidden className="font-sans text-[11px] text-subtle-foreground">
+                        {direction === 'up' ? '⌥↑' : '⌥↓'}
+                      </kbd>
+                    </DropdownMenu.Item>
+                  ))}
+                </DropdownMenu.Group>
+              )
+            }
             const Icon = iconFor(item, action)
             const destructive = action.id === 'delete'
             return (
@@ -226,6 +279,53 @@ export function ItemRowDotsMenu({
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
+  )
+}
+
+/** El hueco de «Subir» y «Bajar» entre las acciones: justo antes de «Borrar» (diseño 14, R4 y D3). */
+const STEPS = 'steps'
+
+function withSteps(actions: readonly RowAction[], sortable: boolean): (RowAction | typeof STEPS)[] {
+  if (!sortable) return [...actions]
+  const at = actions.findIndex((action) => action.id === 'delete')
+  return at < 0 ? [...actions, STEPS] : [...actions.slice(0, at), STEPS, ...actions.slice(at)]
+}
+
+/**
+ * «Subir» y «Bajar» en la hoja del menú (diseño 14, R4): uno junto al otro, en dos tarjetas. La
+ * hoja se queda abierta para pulsar varias veces. Lo primero no sube y lo último no baja.
+ */
+function StepButtons({
+  canUp,
+  canDown,
+  onStep,
+}: {
+  canUp: boolean
+  canDown: boolean
+  onStep: (direction: 'up' | 'down') => void
+}) {
+  const button = (direction: 'up' | 'down', enabled: boolean) => (
+    <button
+      type="button"
+      disabled={!enabled}
+      onClick={() => {
+        onStep(direction)
+      }}
+      className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl border border-border-soft bg-background text-[15px] font-semibold outline-none active:bg-fill disabled:opacity-40"
+    >
+      {direction === 'up' ? (
+        <ArrowUp aria-hidden className="size-[18px]" strokeWidth={2.2} />
+      ) : (
+        <ArrowDown aria-hidden className="size-[18px]" strokeWidth={2.2} />
+      )}
+      {direction === 'up' ? 'Subir' : 'Bajar'}
+    </button>
+  )
+  return (
+    <div className="mt-1.5 flex gap-2 px-2">
+      {button('up', canUp)}
+      {button('down', canDown)}
+    </div>
   )
 }
 

@@ -131,7 +131,7 @@ describe('deslizar una fila', () => {
     expect(surface).toHaveClass('transition-none')
     fireEvent.pointerUp(surface, { ...touch, clientX: 150, clientY: 300 })
     expect(surface).not.toHaveClass('transition-none')
-    expect(surface).toHaveClass('motion-safe:transition-transform')
+    expect(surface.className).toMatch(/motion-safe:transition-(transform|\[transform)/)
   })
 
   it('un gesto vertical es scroll: la fila no se mueve', async () => {

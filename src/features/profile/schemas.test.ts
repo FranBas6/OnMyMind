@@ -13,6 +13,7 @@ describe('parseSettings', () => {
         daily_summary_time: '08:30',
         price_drop_alerts: true,
         timezone: 'Atlantic/Canary',
+        inbox_sort: 'manual',
       }),
     ).toEqual({
       theme: 'dark',
@@ -20,6 +21,7 @@ describe('parseSettings', () => {
       dailySummaryTime: '08:30',
       priceDropAlerts: true,
       timezone: 'Atlantic/Canary',
+      inboxSort: 'manual',
     })
   })
 
@@ -30,6 +32,7 @@ describe('parseSettings', () => {
       dailySummaryTime: null,
       priceDropAlerts: false,
       timezone: 'Europe/Madrid',
+      inboxSort: 'newest',
     })
   })
 

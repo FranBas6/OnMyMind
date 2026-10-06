@@ -1,30 +1,37 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownUp } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { InboxHeader, ListDetailHeader, type List } from '@/features/lists'
+import { useProfile } from '@/features/profile/hooks/useProfile'
+import { useUpdateSettings } from '@/features/profile/hooks/useProfileMutations'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useOnline } from '@/hooks/useOnline'
+import { dropNeighbors, reorder, stepNeighbors, type Neighbors } from '@/lib/reorder'
+import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 
 import { addPlaceholder } from '../copy'
 import {
   AGE_FILTER_OPTIONS,
+  byPosition,
   EVENT_FILTER_OPTIONS,
   eventsSummary,
   detailSummary,
   listSummary,
   matchesAge,
-  SORT_LABELS,
   splitItems,
   statusFilterOptions,
   type AgeFilter,
   type EventFilter,
-  type SortOrder,
   type StatusFilter,
 } from '../filters'
 import { useItems } from '../hooks/useItems'
-import { nextItemPosition, useCreateItem, useUpdateItem } from '../hooks/useItemMutations'
+import {
+  nextItemPosition,
+  useCreateItem,
+  useReorderItems,
+  useUpdateItem,
+} from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
 import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
 import { isChoosableKind, type AddableKind } from '../kind'
@@ -35,6 +42,8 @@ import type { Item, MovedItem } from '../types'
 import { AddItemBar, type AddItemBarHandle } from './AddItemBar'
 import { EventsList } from './EventsList'
 import { FilterChips } from './FilterChips'
+import { InboxSortMenu } from './InboxSortMenu'
+import { useItemActions, type RowOrder } from './itemActionsContext'
 import { ItemRow } from './ItemRow'
 import {
   AllDoneNote,
@@ -47,6 +56,7 @@ import {
 import { ItemWorkspace, ListScope } from './ItemWorkspace'
 import { OutOfMindSection } from './OutOfMindSection'
 import { PriceTotal } from './PriceTotal'
+import { SortableRows } from './SortableRows'
 import { SublistHeader } from './SublistHeader'
 
 /** Lo que tarda un ítem recién completado en bajar a «Fuera de la cabeza» (06 §Interacción). */
@@ -103,7 +113,11 @@ export function ListDetail({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [eventFilter, setEventFilter] = useState<EventFilter>('all')
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('all')
-  const [sort, setSort] = useState<SortOrder>('newest')
+  const profile = useProfile()
+  const updateSettings = useUpdateSettings()
+  const reorderItems = useReorderItems()
+  // El orden de «En mente» se recuerda en la cuenta (diseño 14, E2).
+  const sort = profile.data?.settings.inboxSort ?? 'newest'
   const inbox = list.kind === 'inbox'
   // Una lista de eventos se agrupa por días y tiene sus filtros (diseño 17); también sus sublistas.
   const events = list.kind === 'events'
@@ -121,6 +135,46 @@ export function ListDetail({
         ? eventsSummary(all)
         : listSummary(list.kind, all)
   const empty = shown?.length === 0
+
+  // Ordenar a mano (2.9, diseño 14): lo que se ve de lo pendiente, salvo en las listas de eventos,
+  // que van por día y hora (decisión de Fran, 2026-10-06). Con un filtro, se ordena entre lo que
+  // se ve (R9); lo escondido conserva su sitio.
+  const visible = inbox ? active.filter((item) => matchesAge(item, ageFilter)) : active
+  const sortableIds = statusFilter === 'closed' && !inbox ? [] : visible.map((item) => item.id)
+  const place = (movedId: string, neighbors: Neighbors) => {
+    // Arrastrar en «En mente» con otro orden puesto pasa a «A mi manera» con el orden que se veía
+    // (E3, E4): se fija entero y se avisa, porque cambia algo que no se tocó directamente.
+    if (inbox && sort !== 'manual') {
+      const changes = reorder(active, movedId, neighbors, { renumber: true })
+      reorderItems.mutate({ listId: list.id, changes })
+      const previous = sort
+      updateSettings.mutate({ inboxSort: 'manual' })
+      showUndoToast({
+        message: 'Orden: a mi manera',
+        onUndo: () => {
+          updateSettings.mutate({ inboxSort: previous })
+        },
+      })
+      return
+    }
+    const siblings = [...(shown ?? [])].sort(byPosition)
+    const changes = reorder(siblings, movedId, neighbors)
+    if (changes.length > 0) reorderItems.mutate({ listId: list.id, changes })
+  }
+  const order: RowOrder | undefined =
+    events || !all
+      ? undefined
+      : {
+          ids: sortableIds,
+          drop: (movedId, overId) => {
+            const neighbors = dropNeighbors(sortableIds, movedId, overId)
+            if (neighbors) place(movedId, neighbors)
+          },
+          step: (item, direction) => {
+            const neighbors = stepNeighbors(sortableIds, item.id, direction)
+            if (neighbors) place(item.id, neighbors)
+          },
+        }
   // Con los ítems ya cargados, el total sigue a lo optimista; mientras, el de la vista.
   const total = !inbox && (
     <PriceTotal
@@ -183,6 +237,7 @@ export function ListDetail({
       onOpenSublist={(item, options) => {
         onOpenSublist(item.id, options)
       }}
+      order={order}
     >
       <ListScope list={list} prices={hasPrices(shown ?? [])}>
         <div
@@ -243,26 +298,12 @@ export function ListDetail({
                 />
               )}
               {inbox && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSort((current) => (current === 'newest' ? 'oldest' : 'newest'))
+                <InboxSortMenu
+                  value={sort}
+                  onChange={(next) => {
+                    updateSettings.mutate({ inboxSort: next })
                   }}
-                  aria-label={`Ordenar: ${SORT_LABELS[sort]}. Cambiar a ${SORT_LABELS[sort === 'newest' ? 'oldest' : 'newest']}`}
-                  // Como el botón secundario de Inicio («+ Nueva lista»), a la altura de los filtros. En
-                  // móvil no cabe el texto junto a las tres píldoras: solo el icono, de 36 px.
-                  className="inline-flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-card text-[13px] font-semibold whitespace-nowrap outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50 md:w-auto md:px-3"
-                >
-                  <ArrowDownUp
-                    aria-hidden
-                    className="size-4 text-muted-foreground md:size-3.5"
-                    strokeWidth={2.2}
-                  />
-                  <span aria-hidden className="hidden md:inline">
-                    <span className="font-normal text-muted-foreground">Ordenar: </span>
-                    {SORT_LABELS[sort]}
-                  </span>
-                </button>
+                />
               )}
             </div>
           )}
@@ -395,7 +436,10 @@ function InboxContent({
   )
 }
 
+/** Las filas: donde se ordena a mano (2.9), con el arrastre; si no, tal cual. */
 function Rows({ items }: { items: Item[] }) {
+  const { order } = useItemActions()
+  if (order) return <SortableRows items={items} order={order} />
   return (
     <ul aria-label="Ítems" className="flex flex-col gap-2">
       {items.map((item) => (

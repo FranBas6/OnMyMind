@@ -22,6 +22,8 @@ interface UseSwipeOptions {
   onStage: (stage: number) => void
   /** Cuando el gesto se confirma como horizontal (p. ej., para cerrar otra fila abierta). */
   onDragStart?: () => void
+  /** Mientras la fila está levantada para ordenarla (2.9), solo cuenta el arrastre vertical. */
+  disabled?: boolean
 }
 
 interface Gesture {
@@ -47,6 +49,7 @@ export function useSwipe({
   onOpenChange,
   onStage,
   onDragStart,
+  disabled = false,
 }: UseSwipeOptions) {
   const [drag, setDrag] = useState<number | null>(null)
   const gesture = useRef<Gesture | null>(null)
@@ -77,6 +80,10 @@ export function useSwipe({
   const onPointerMove = (event: PointerEvent<HTMLElement>) => {
     const current = gesture.current
     if (current?.pointerId !== event.pointerId) return
+    if (disabled) {
+      reset()
+      return
+    }
     const dx = event.clientX - current.x
     const dy = event.clientY - current.y
 
