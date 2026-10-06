@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 
 import { exportableLists } from '../export'
 import { useExportData } from '../hooks/useAccountData'
-import { ProfileSheet } from './ProfileSheet'
+import { ResponsiveSheet } from '@/components/ResponsiveSheet'
 
 interface ExportDialogProps {
   open: boolean
@@ -92,7 +92,7 @@ export function ExportDialog({ open, onOpenChange, isDesktop }: ExportDialogProp
   )
 
   return (
-    <ProfileSheet
+    <ResponsiveSheet
       open={open}
       onOpenChange={close}
       isDesktop={isDesktop}
@@ -199,7 +199,7 @@ export function ExportDialog({ open, onOpenChange, isDesktop }: ExportDialogProp
           ? 'Las fotos van como enlaces. Se descarga un archivo y lo guardas donde quieras.'
           : 'Las sublistas salen como filas con su nombre en la columna «Sublista».'}
       </p>
-    </ProfileSheet>
+    </ResponsiveSheet>
   )
 }
 

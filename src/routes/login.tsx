@@ -14,6 +14,7 @@ import {
   useAccountDeletedNotice,
   type EmailCodeStart,
 } from '@/features/auth'
+import { InviteBanner, inviteTokenFrom } from '@/features/sharing'
 
 export const Route = createFileRoute('/login')({
   validateSearch: authSearchSchema,
@@ -45,6 +46,9 @@ function LoginPage() {
   })
 
   const accountDeleted = useAccountDeletedNotice()
+  // Llegas con un enlace de invitación: el acceso dice quién te invita y a qué (diseño 20, J1).
+  const inviteToken = inviteTokenFrom(search.redirect)
+  const banner = inviteToken ? <InviteBanner token={inviteToken} /> : undefined
 
   const goToDestination = () => {
     void navigate({ href: safeRedirect(search.redirect), replace: true })
@@ -75,6 +79,7 @@ function LoginPage() {
   if (search.mode === 'signup') {
     return (
       <AuthLayout
+        banner={banner}
         footer={
           <>
             ¿Ya tienes cuenta?{' '}
@@ -106,6 +111,7 @@ function LoginPage() {
 
   return (
     <AuthLayout
+      banner={banner}
       footer={
         <>
           ¿Primera vez?{' '}

@@ -95,6 +95,7 @@ src/
     search/         Buscar: búsqueda en cliente sobre todos los ítems
     profile/        Perfil: nombre, ajustes en `profiles.settings` (tema, lista por defecto)
     reminders/      recordatorios y push
+    sharing/        compartir listas: invitar con un enlace, unirse, quién está
     prices/         histórico de precios y gráficas
   components/
     ui/           Componentes generados por shadcn (no editar salvo ajustes de estilo)

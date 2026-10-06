@@ -21,6 +21,7 @@ function list(overrides: Partial<List>): List {
     position: 1000,
     counters: { pending: 0, done: 0, pendingPriceCents: 0 },
     archivedAt: null,
+    isOwner: true,
     ...overrides,
   }
 }

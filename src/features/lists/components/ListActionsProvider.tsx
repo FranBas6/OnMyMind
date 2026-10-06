@@ -1,6 +1,8 @@
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { Archive } from 'lucide-react'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 
+import { ListPeopleSheet } from '@/features/sharing/components/ListPeopleSheet'
 import { showUndoToast } from '@/lib/undoToast'
 
 import { useArchiveList, useDeleteList, useUnarchiveList } from '../hooks/useListMutations'
@@ -21,6 +23,12 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
     onCreated?: ((list: List) => void) | undefined
   }>({ open: false })
   const [toDelete, setToDelete] = useState<List | undefined>(undefined)
+  // Se queda montada al cerrarse, para que la hoja baje con su animación.
+  const [people, setPeople] = useState<{ list: List; confirmLeave: boolean; open: boolean } | null>(
+    null,
+  )
+  const navigate = useNavigate()
+  const pathname = useLocation({ select: (location) => location.pathname })
   const archiveList = useArchiveList()
   const unarchiveList = useUnarchiveList()
   const deleteList = useDeleteList()
@@ -60,9 +68,18 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
       confirmDelete: setToDelete,
       archive,
       unarchive,
+      openPeople: (list, options) => {
+        setPeople({ list, confirmLeave: options?.confirmLeave ?? false, open: true })
+      },
     }),
     [archive, unarchive],
   )
+
+  // Al salir de una lista compartida (M5): si estabas en ella, a Inicio; y el aviso.
+  const left = (list: List) => {
+    if (pathname.startsWith(`/lists/${list.id}`)) void navigate({ to: '/' })
+    showUndoToast({ message: `Has salido de «${list.name}»` })
+  }
 
   return (
     <ListActionsContext value={actions}>
@@ -75,6 +92,18 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
           setForm((current) => ({ ...current, open }))
         }}
       />
+      {people && (
+        <ListPeopleSheet
+          key={`${people.list.id}-${String(people.confirmLeave)}`}
+          list={people.list}
+          open={people.open}
+          confirmLeave={people.confirmLeave}
+          onOpenChange={(open) => {
+            setPeople((current) => current && { ...current, open })
+          }}
+          onLeft={left}
+        />
+      )}
       <DeleteListDialog
         list={toDelete}
         onOpenChange={(open) => {

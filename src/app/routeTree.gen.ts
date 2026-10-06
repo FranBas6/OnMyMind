@@ -17,6 +17,7 @@ import { Route as AuthenticatedProfileRouteImport } from './../routes/_authentic
 import { Route as AuthenticatedSearchRouteImport } from './../routes/_authenticated.search'
 import { Route as AuthenticatedTodayRouteImport } from './../routes/_authenticated.today'
 import { Route as AuthCallbackRouteImport } from './../routes/auth.callback'
+import { Route as ITokenRouteImport } from './../routes/i.$token'
 import { Route as AuthenticatedListsListIdRouteImport } from './../routes/_authenticated.lists.$listId'
 import { Route as AuthenticatedListsListIdSublistIdRouteImport } from './../routes/_authenticated.lists.$listId_.$sublistId'
 
@@ -59,6 +60,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ITokenRoute = ITokenRouteImport.update({
+  id: '/i/$token',
+  path: '/i/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedListsListIdRoute =
   AuthenticatedListsListIdRouteImport.update({
     id: '/lists/$listId',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof AuthenticatedSearchRoute
   '/today': typeof AuthenticatedTodayRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/i/$token': typeof ITokenRoute
   '/lists/$listId': typeof AuthenticatedListsListIdRoute
   '/lists/$listId/$sublistId': typeof AuthenticatedListsListIdSublistIdRoute
 }
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/search': typeof AuthenticatedSearchRoute
   '/today': typeof AuthenticatedTodayRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/i/$token': typeof ITokenRoute
   '/': typeof AuthenticatedIndexRoute
   '/lists/$listId': typeof AuthenticatedListsListIdRoute
   '/lists/$listId/$sublistId': typeof AuthenticatedListsListIdSublistIdRoute
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/_authenticated/search': typeof AuthenticatedSearchRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/i/$token': typeof ITokenRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/lists/$listId': typeof AuthenticatedListsListIdRoute
   '/_authenticated/lists/$listId_/$sublistId': typeof AuthenticatedListsListIdSublistIdRoute
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/today'
     | '/auth/callback'
+    | '/i/$token'
     | '/lists/$listId'
     | '/lists/$listId/$sublistId'
   fileRoutesByTo: FileRoutesByTo
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/today'
     | '/auth/callback'
+    | '/i/$token'
     | '/'
     | '/lists/$listId'
     | '/lists/$listId/$sublistId'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/_authenticated/search'
     | '/_authenticated/today'
     | '/auth/callback'
+    | '/i/$token'
     | '/_authenticated/'
     | '/_authenticated/lists/$listId'
     | '/_authenticated/lists/$listId_/$sublistId'
@@ -148,6 +160,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  ITokenRoute: typeof ITokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/i/$token': {
+      id: '/i/$token'
+      path: '/i/$token'
+      fullPath: '/i/$token'
+      preLoaderRoute: typeof ITokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/lists/$listId': {
       id: '/_authenticated/lists/$listId'
       path: '/lists/$listId'
@@ -254,6 +274,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  ITokenRoute: ITokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

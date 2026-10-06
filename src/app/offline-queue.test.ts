@@ -38,6 +38,7 @@ const casa: List = {
   position: 2000,
   counters: { pending: 1, done: 0, pendingPriceCents: 0 },
   archivedAt: null,
+  isOwner: true,
 }
 const agenda: List = { ...casa, id: 'agenda', name: 'Agenda', kind: 'tasks', position: 3000 }
 

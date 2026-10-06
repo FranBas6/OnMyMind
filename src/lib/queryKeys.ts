@@ -55,4 +55,10 @@ export const queryKeys = {
   reminders: ['reminders'] as const,
   /** Si este dispositivo recibe avisos (`PushState`), que solo sabe el navegador. */
   push: ['push'] as const,
+  /** Compartir (3.2): el enlace activo de una lista, quién está y lo que dice un enlace. */
+  sharing: {
+    invite: (listId: string) => ['sharing', 'invite', listId] as const,
+    people: (listId: string) => ['sharing', 'people', listId] as const,
+    preview: (token: string) => ['sharing', 'preview', token] as const,
+  },
 }

@@ -156,6 +156,14 @@
   /* Algo que ha salido bien (la banda «Ya hay conexión», «Al día» en Perfil, diseño 10) */
   --success: #1f7b72;
   --success-bg: #e4f5f2;
+  /*
+   * Las personas de una lista compartida (diseño 20): quien la creó en índigo y quien entra en
+   * verde azulado, suaves y distintos de los colores de lista para no confundirlos.
+   */
+  --person-owner: var(--primary-strong);
+  --person-owner-bg: var(--brand-tint);
+  --person-member: #1f7b72;
+  --person-member-bg: #e4f5f2;
   --price-up: #d32429;
   --price-up-bg: #fdecec;
   /* Estado «En curso»: borde y medio relleno del checkbox (diseño, pantalla D1) */
@@ -240,6 +248,8 @@
   --price-down-bg: #17302e;
   --success: #4fd1c1;
   --success-bg: #17302e;
+  --person-member: #6fd3c6;
+  --person-member-bg: #1e3532;
   --price-up: #ff8a8e;
   --price-up-bg: #3a2226;
   --in-progress: #2baa9e;
@@ -318,6 +328,10 @@
   --color-price-down-bg: var(--price-down-bg);
   --color-success: var(--success);
   --color-success-bg: var(--success-bg);
+  --color-person-owner: var(--person-owner);
+  --color-person-owner-bg: var(--person-owner-bg);
+  --color-person-member: var(--person-member);
+  --color-person-member-bg: var(--person-member-bg);
   --color-price-up: var(--price-up);
   --color-in-progress: var(--in-progress);
   --color-price-up-bg: var(--price-up-bg);

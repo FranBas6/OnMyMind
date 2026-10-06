@@ -1,17 +1,32 @@
 import { z } from 'zod'
 
 import { LIST_COLORS } from '@/lib/listColors'
-import type { Database } from '@/lib/supabase/database.types'
+import { Constants, type Database } from '@/lib/supabase/database.types'
 
 import type { List, ListCounters } from './types'
 
 type ListRow = Pick<
   Database['public']['Tables']['lists']['Row'],
   'id' | 'name' | 'color' | 'icon' | 'kind' | 'position'
-> & { archived_at?: string | null }
+> & { archived_at?: string | null; is_owner?: boolean }
 type CountersRow = Database['public']['Views']['list_counters']['Row']
 
 export const listColorSchema = z.enum(LIST_COLORS)
+
+/**
+ * Una fila de la vista `my_lists` (3.2): las listas como las ve quien pregunta, con su orden y si
+ * es quien la creó. Postgres da por anulables todas las columnas de una vista; aquí se comprueba.
+ */
+export const myListRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: z.string(),
+  icon: z.string().nullable(),
+  kind: z.enum(Constants.public.Enums.list_kind),
+  position: z.number(),
+  archived_at: z.string().nullable(),
+  is_owner: z.boolean(),
+})
 
 export const LIST_NAME_MAX_LENGTH = 80
 
@@ -76,6 +91,8 @@ export function mergeListsWithCounters(lists: ListRow[], counters: CountersRow[]
     position: row.position,
     counters: countersById.get(row.id) ?? EMPTY_COUNTERS,
     archivedAt: row.archived_at ? new Date(row.archived_at) : null,
+    // Lo que no viene de `my_lists` (crear una lista) es tuyo.
+    isOwner: row.is_owner ?? true,
   }))
 }
 

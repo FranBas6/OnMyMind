@@ -12,6 +12,8 @@ const SIZES = {
   md: 'size-13 rounded-[17px] text-[22px]',
   // Cabecera del detalle en escritorio (D1)
   lg: 'size-14 rounded-[18px] text-2xl',
+  // La lista a la que te invitan (diseño 20, J2)
+  xl: 'size-22 rounded-[26px] text-[40px]',
 } as const
 
 interface ListIconProps {

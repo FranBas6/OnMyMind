@@ -1,15 +1,21 @@
-import { Archive, Pencil, Trash, type LucideIcon } from 'lucide-react'
+import { Archive, LogOut, Pencil, Trash, Users, type LucideIcon } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
+import type { ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import { SublistGlyph } from '@/components/SublistGlyph'
 import { ListIcon } from '@/components/ListIcon'
+import { personName } from '@/features/sharing/copy'
+import { PersonInitial } from '@/features/sharing/components/PersonInitial'
+import { useListPeople } from '@/features/sharing/hooks/useSharing'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 
 import { menuSummary } from '../templates'
 import type { List } from '../types'
-import { useListActions } from './listActionsContext'
+import type { ListPerson } from '@/features/sharing/schemas'
+
+import { useListActions, type ListActions } from './listActionsContext'
 
 interface ListCardMenuProps {
   list: List
@@ -25,10 +31,11 @@ interface ListCardMenuProps {
 }
 
 /**
- * Menú ··· de una tarjeta (diseño 04 Listas): Editar, Archivar y Borrar; en la cabecera del detalle,
- * antes, «Nueva sublista» (diseño 12, S7). En escritorio, popover de
- * 200 px bajo el botón (D1); en móvil, hoja inferior con la lista en la cabecera (L3), que también
- * abre la pulsación larga.
+ * Menú ··· de una tarjeta (diseño 04 Listas): Editar, Compartir (diseño 20, S1 y D1), Archivar y
+ * Borrar; en la cabecera del detalle, antes, «Nueva sublista» (diseño 12, S7). En una lista
+ * compartida contigo, solo «Quién está» y «Salir de la lista», con una nota de que el resto es
+ * cosa de quien la creó (M3 y D4). En escritorio, popover de 200 px bajo el botón (D1); en móvil,
+ * hoja inferior con la lista en la cabecera (L3), que también abre la pulsación larga.
  */
 export function ListCardMenu({
   list,
@@ -39,33 +46,23 @@ export function ListCardMenu({
 }: ListCardMenuProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const actions = useListActions()
+  const shared = !list.isOwner
+  // Quién está, para la cabecera y las iniciales del menú de quien entró (M3).
+  const people = useListPeople(list.id, shared && open)
+  const owner = people.data?.find((person) => person.isOwner)
   const items: readonly MenuEntry[] = [
     ...(onNewSublist
       ? [{ label: 'Nueva sublista', icon: SublistGlyph, accent: true, onSelect: onNewSublist }]
       : []),
-    {
-      label: 'Editar',
-      icon: Pencil,
-      onSelect: () => {
-        actions.openEdit(list)
-      },
-    },
-    {
-      label: 'Archivar',
-      icon: Archive,
-      onSelect: () => {
-        actions.archive(list)
-      },
-    },
-    {
-      label: 'Borrar',
-      icon: Trash,
-      destructive: true,
-      onSelect: () => {
-        actions.confirmDelete(list)
-      },
-    },
+    // Editar, compartir, archivar y borrar son de quien creó la lista (3.2, decisión 2).
+    ...(shared
+      ? memberEntries(list, actions, people.data)
+      : ownerEntries(list, actions, isDesktop)),
   ]
+  const ownerName = personName(owner?.displayName)
+  const memberNote = shared
+    ? `Cambiar el nombre, el color o invitar a alguien es cosa de ${owner ? ownerName : 'quien creó la lista'}${owner ? ', que creó la lista' : ''}.`
+    : null
 
   const trigger = (
     <DotsButton active={open} variant={variant} label={`Opciones de «${list.name}»`} />
@@ -87,7 +84,11 @@ export function ListCardMenu({
                 onSelect={item.onSelect}
                 className={cn(rowClass(item, 'h-11'), 'data-highlighted:bg-fill')}
               >
-                <item.icon aria-hidden className="size-[18px]" strokeWidth={2} />
+                <item.icon
+                  aria-hidden
+                  className={cn('size-[18px]', item.iconClassName)}
+                  strokeWidth={2}
+                />
                 {item.label}
               </DropdownMenu.Item>
             ))}
@@ -114,7 +115,13 @@ export function ListCardMenu({
             <p className="truncate font-display text-lg font-extrabold tracking-[-0.02em]">
               {list.name}
             </p>
-            <p className="text-[13px] text-muted-foreground">{menuSummary(list)}</p>
+            <p className="text-[13px] text-muted-foreground">
+              {shared
+                ? owner
+                  ? `De ${ownerName} · compartida contigo`
+                  : 'Compartida contigo'
+                : menuSummary(list)}
+            </p>
           </div>
         </div>
         <div className="-mx-2 flex flex-col gap-0.5">
@@ -128,19 +135,107 @@ export function ListCardMenu({
               }}
               className={cn(rowClass(item, 'h-13'), 'active:bg-fill')}
             >
-              <item.icon aria-hidden className="size-[18px]" strokeWidth={2} />
-              {item.label}
+              <item.icon
+                aria-hidden
+                className={cn('size-[18px]', item.iconClassName)}
+                strokeWidth={2}
+              />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.trailing}
             </button>
           ))}
         </div>
+        {memberNote && (
+          <p className="-mt-1 text-[13px] leading-[1.45] text-muted-foreground">{memberNote}</p>
+        )}
       </BottomSheet>
     </>
   )
 }
 
+function ownerEntries(list: List, actions: ListActions, isDesktop: boolean): MenuEntry[] {
+  return [
+    {
+      label: 'Editar',
+      icon: Pencil,
+      onSelect: () => {
+        actions.openEdit(list)
+      },
+    },
+    // «En mente» no se comparte nunca.
+    ...(list.kind === 'inbox'
+      ? []
+      : [
+          {
+            label: isDesktop ? 'Compartir…' : 'Compartir',
+            icon: Users,
+            iconClassName: 'text-primary',
+            onSelect: () => {
+              actions.openPeople(list)
+            },
+          },
+        ]),
+    {
+      label: 'Archivar',
+      icon: Archive,
+      onSelect: () => {
+        actions.archive(list)
+      },
+    },
+    {
+      label: 'Borrar',
+      icon: Trash,
+      destructive: true,
+      onSelect: () => {
+        actions.confirmDelete(list)
+      },
+    },
+  ]
+}
+
+function memberEntries(
+  list: List,
+  actions: ListActions,
+  people: readonly ListPerson[] | undefined,
+): MenuEntry[] {
+  return [
+    {
+      label: 'Quién está',
+      icon: Users,
+      trailing: people && (
+        <span aria-hidden className="flex -space-x-1.5">
+          {people.map((person) => (
+            <PersonInitial
+              key={person.userId}
+              name={person.displayName}
+              isOwner={person.isOwner}
+              className="size-[22px] text-[11px] ring-2 ring-card"
+            />
+          ))}
+        </span>
+      ),
+      onSelect: () => {
+        actions.openPeople(list)
+      },
+    },
+    {
+      label: 'Salir de la lista',
+      icon: LogOut,
+      destructive: true,
+      onSelect: () => {
+        actions.openPeople(list, { confirmLeave: true })
+      },
+    },
+  ]
+}
+
 interface MenuEntry {
   label: string
   icon: LucideIcon
+  /** El icono de «Compartir», en índigo (S1). */
+  iconClassName?: string
+  /** A la derecha, en la hoja de móvil: las iniciales de «Quién está» (M3). */
+  trailing?: ReactNode
   destructive?: boolean
   /** «Nueva sublista»: en índigo y con un filete debajo que la separa del resto (S7). */
   accent?: boolean

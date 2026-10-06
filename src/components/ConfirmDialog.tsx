@@ -1,4 +1,5 @@
 import { AlertDialog } from 'radix-ui'
+import type { ReactNode } from 'react'
 
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
@@ -11,6 +12,8 @@ interface ConfirmDialogProps {
   /** El botón rojo: «Borrar», «Borrar sublista y 7 cosas». */
   confirmLabel: string
   onConfirm: () => void
+  /** Delante del título, en la misma línea: la inicial de quien se quita (diseño 20, S8). */
+  icon?: ReactNode
 }
 
 /**
@@ -26,6 +29,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   onConfirm,
+  icon,
 }: ConfirmDialogProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
 
@@ -44,9 +48,12 @@ export function ConfirmDialog({
           {!isDesktop && (
             <div aria-hidden className="mx-auto mt-2.5 h-[5px] w-10 rounded-[3px] bg-border" />
           )}
-          <AlertDialog.Title className={cn('text-[22px] tracking-[-0.02em]', !isDesktop && 'mt-2')}>
-            {title}
-          </AlertDialog.Title>
+          <div className={cn('flex items-center gap-3', !isDesktop && 'mt-2')}>
+            {icon}
+            <AlertDialog.Title className="text-[22px] tracking-[-0.02em]">
+              {title}
+            </AlertDialog.Title>
+          </div>
           <AlertDialog.Description
             className={cn(
               'text-[15px] leading-normal text-muted-foreground',

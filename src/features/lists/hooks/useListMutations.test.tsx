@@ -28,6 +28,7 @@ function list(id: string, position: number): List {
     position,
     counters: { pending: 0, done: 0, pendingPriceCents: 0 },
     archivedAt: null,
+    isOwner: true,
   }
 }
 

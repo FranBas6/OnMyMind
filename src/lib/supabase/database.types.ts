@@ -231,6 +231,13 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'items_left_inbox_id_fkey'
+            columns: ['left_inbox_id']
+            isOneToOne: false
+            referencedRelation: 'my_lists'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'items_list_id_fkey'
             columns: ['list_id']
             isOneToOne: false
@@ -242,6 +249,13 @@ export type Database = {
             columns: ['list_id']
             isOneToOne: false
             referencedRelation: 'lists'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'items_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'my_lists'
             referencedColumns: ['id']
           },
           {
@@ -260,12 +274,72 @@ export type Database = {
           },
         ]
       }
+      list_invites: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          list_id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          list_id: string
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          list_id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'list_invites_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'list_invites_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'list_counters'
+            referencedColumns: ['list_id']
+          },
+          {
+            foreignKeyName: 'list_invites_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'lists'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'list_invites_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'my_lists'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       list_members: {
         Row: {
           accepted_at: string | null
           created_at: string
           invited_email: string | null
           list_id: string
+          position: number
           role: Database['public']['Enums']['member_role']
           user_id: string
         }
@@ -274,6 +348,7 @@ export type Database = {
           created_at?: string
           invited_email?: string | null
           list_id: string
+          position?: number
           role?: Database['public']['Enums']['member_role']
           user_id: string
         }
@@ -282,6 +357,7 @@ export type Database = {
           created_at?: string
           invited_email?: string | null
           list_id?: string
+          position?: number
           role?: Database['public']['Enums']['member_role']
           user_id?: string
         }
@@ -298,6 +374,13 @@ export type Database = {
             columns: ['list_id']
             isOneToOne: false
             referencedRelation: 'lists'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'list_members_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'my_lists'
             referencedColumns: ['id']
           },
           {
@@ -486,8 +569,38 @@ export type Database = {
         }
         Relationships: []
       }
+      my_lists: {
+        Row: {
+          archived_at: string | null
+          color: string | null
+          icon: string | null
+          id: string | null
+          is_owner: boolean | null
+          kind: Database['public']['Enums']['list_kind'] | null
+          name: string | null
+          owner_id: string | null
+          position: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'lists_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Functions: {
+      accept_list_invite: {
+        Args: { p_token: string }
+        Returns: {
+          list_id: string
+          status: string
+        }[]
+      }
+      can_see_photo: { Args: { p_name: string }; Returns: boolean }
       claim_daily_summaries: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -518,6 +631,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      create_list_invite: {
+        Args: { p_list_id: string }
+        Returns: {
+          invite_expires_at: string
+          invite_token: string
+        }[]
+      }
       default_item_kind: {
         Args: { p_kind: Database['public']['Enums']['list_kind'] }
         Returns: Database['public']['Enums']['item_kind']
@@ -532,6 +652,29 @@ export type Database = {
         Returns: string[]
       }
       link_store_name: { Args: { p_site: string; p_url: string }; Returns: string }
+      list_invite_preview: {
+        Args: { p_token: string }
+        Returns: {
+          inviter_name: string
+          list_color: string
+          list_id: string
+          list_kind: Database['public']['Enums']['list_kind']
+          list_name: string
+          member_since: string
+          pending_count: number
+          status: string
+        }[]
+      }
+      list_people: {
+        Args: { p_list_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          is_owner: boolean
+          joined_at: string
+          user_id: string
+        }[]
+      }
       orphan_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
       own_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
       price_savings: { Args: Record<PropertyKey, never>; Returns: number }
@@ -545,10 +688,12 @@ export type Database = {
         }
         Returns: string
       }
+      revoke_list_invite: { Args: { p_list_id: string }; Returns: undefined }
       save_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string; p_user_agent: string }
         Returns: undefined
       }
+      set_list_positions: { Args: { p_changes: Json }; Returns: undefined }
       start_of_user_day: { Args: Record<PropertyKey, never>; Returns: string }
       translate_item_status: {
         Args: { p_kind: Database['public']['Enums']['item_kind']; p_status: string }

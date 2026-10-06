@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 import { confirmsDeletion, deleteSummary } from '../account'
 import { useAccountCounts, useDeleteAccount } from '../hooks/useAccountData'
-import { ProfileSheet } from './ProfileSheet'
+import { ResponsiveSheet } from '@/components/ResponsiveSheet'
 
 interface DeleteAccountDialogProps {
   open: boolean
@@ -63,7 +63,7 @@ export function DeleteAccountDialog({
   )
 
   return (
-    <ProfileSheet
+    <ResponsiveSheet
       open={open}
       onOpenChange={change}
       isDesktop={isDesktop}
@@ -145,6 +145,6 @@ export function DeleteAccountDialog({
           {cancel}
         </div>
       </form>
-    </ProfileSheet>
+    </ResponsiveSheet>
   )
 }

@@ -35,6 +35,7 @@ const inbox: List = {
   position: 1000,
   counters: { pending: 1, done: 0, pendingPriceCents: 0 },
   archivedAt: null,
+  isOwner: true,
 }
 
 function item(id: string, title: string, overrides: Partial<Item> = {}): Item {

@@ -16,6 +16,7 @@ function list(kind: List['kind'], name: string, pending = 3): List {
     position: 1000,
     counters: { pending, done: 0, pendingPriceCents: 0 },
     archivedAt: null,
+    isOwner: true,
   }
 }
 

@@ -1,21 +1,26 @@
+import { z } from 'zod'
+
 import type { Positioned } from '@/lib/reorder'
 import { supabase } from '@/lib/supabase/client'
 
-import { listFormSchema, mergeListsWithCounters, type ListFormValues } from './schemas'
+import {
+  listFormSchema,
+  mergeListsWithCounters,
+  myListRowSchema,
+  type ListFormValues,
+} from './schemas'
 import type { List, RecentCapture } from './types'
 
+const MY_LIST_COLUMNS = 'id, name, color, icon, kind, position, archived_at, is_owner'
+
 /**
- * Listas no archivadas del usuario, en su orden, con sus contadores. Dos consultas en paralelo
- * (tabla y vista) fusionadas en cliente. No se filtra por usuario: RLS ya lo hace, y así la
- * misma consulta servirá para listas compartidas (fase 3).
+ * Listas no archivadas, tuyas y compartidas contigo, en tu orden y con sus contadores. Dos
+ * consultas en paralelo (`my_lists` y `list_counters`) fusionadas en cliente. No se filtra por
+ * usuario: RLS ya lo hace. `my_lists` (3.2) pone tu orden también en las compartidas contigo.
  */
 export async function fetchLists(): Promise<List[]> {
   const [lists, counters] = await Promise.all([
-    supabase
-      .from('lists')
-      .select('id, name, color, icon, kind, position')
-      .is('archived_at', null)
-      .order('position'),
+    supabase.from('my_lists').select(MY_LIST_COLUMNS).is('archived_at', null).order('position'),
     supabase
       .from('list_counters')
       .select('list_id, pending_count, done_count, pending_price_cents'),
@@ -23,7 +28,7 @@ export async function fetchLists(): Promise<List[]> {
 
   if (lists.error) throw lists.error
   if (counters.error) throw counters.error
-  return mergeListsWithCounters(lists.data, counters.data)
+  return mergeListsWithCounters(z.array(myListRowSchema).parse(lists.data), counters.data)
 }
 
 /** Las últimas capturas pendientes de una lista, de la más nueva a la más antigua. */
@@ -40,12 +45,15 @@ export async function fetchRecentCaptures(listId: string, limit: number): Promis
   return data.map((row) => ({ id: row.id, title: row.title, createdAt: new Date(row.created_at) }))
 }
 
-/** Listas archivadas, con sus contadores, de la archivada más recientemente a la más antigua. */
+/**
+ * Tus listas archivadas, con sus contadores, de la archivada más recientemente a la más antigua.
+ * Las compartidas contigo que archive quien las creó no salen: para ti, desaparecen.
+ */
 export async function fetchArchivedLists(): Promise<List[]> {
   const [lists, counters] = await Promise.all([
     supabase
-      .from('lists')
-      .select('id, name, color, icon, kind, position, archived_at')
+      .from('my_lists')
+      .select(MY_LIST_COLUMNS)
       .not('archived_at', 'is', null)
       .order('archived_at', { ascending: false }),
     supabase
@@ -55,7 +63,7 @@ export async function fetchArchivedLists(): Promise<List[]> {
 
   if (lists.error) throw lists.error
   if (counters.error) throw counters.error
-  return mergeListsWithCounters(lists.data, counters.data)
+  return mergeListsWithCounters(z.array(myListRowSchema).parse(lists.data), counters.data)
 }
 
 /**
@@ -100,16 +108,19 @@ export async function unarchiveList(listId: string): Promise<void> {
   if (error) throw error
 }
 
-/** Borra la lista y, en cascada, sus ítems. La inbox la protege el trigger `lists_protect_inbox`. */
-/** Guarda el orden a mano de las listas (2.9): sus posiciones nuevas, casi siempre una. */
+/**
+ * Guarda el orden a mano de las listas (2.9): sus posiciones nuevas, casi siempre una. Una sola
+ * llamada que pone tu orden donde toca: en `lists` las tuyas, en tu fila de `list_members` las
+ * compartidas contigo (3.2), sin mover las de nadie.
+ */
 export async function updateListPositions(changes: readonly Positioned[]): Promise<void> {
-  const results = await Promise.all(
-    changes.map(({ id, position }) => supabase.from('lists').update({ position }).eq('id', id)),
-  )
-  const failed = results.find((result) => result.error)
-  if (failed?.error) throw failed.error
+  const { error } = await supabase.rpc('set_list_positions', {
+    p_changes: changes.map(({ id, position }) => ({ id, position })),
+  })
+  if (error) throw error
 }
 
+/** Borra la lista y, en cascada, sus ítems. La inbox la protege el trigger `lists_protect_inbox`. */
 export async function deleteList(listId: string): Promise<void> {
   const { error } = await supabase.from('lists').delete().eq('id', listId)
   if (error) throw error

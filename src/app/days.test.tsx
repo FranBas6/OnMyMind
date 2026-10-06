@@ -28,6 +28,7 @@ const base: List = {
   position: 1000,
   counters: { pending: 0, done: 0, pendingPriceCents: 0 },
   archivedAt: null,
+  isOwner: true,
 }
 const agenda: List = { ...base, id: 'agenda', name: 'Agenda', color: 'amber', kind: 'events' }
 const trabajo: List = { ...base, id: 'trabajo', name: 'Trabajo', color: 'pink', kind: 'tasks' }

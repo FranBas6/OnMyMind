@@ -9,6 +9,11 @@ export interface ListActions {
   confirmDelete: (list: List) => void
   archive: (list: List) => void
   unarchive: (list: List) => void
+  /**
+   * Quién está en la lista (diseño 20): «Compartir» para quien la creó y «Quién está» para quien
+   * entró. `confirmLeave` la abre ya preguntando si sales (M3 → M5).
+   */
+  openPeople: (list: List, options?: { confirmLeave?: boolean }) => void
 }
 
 export const ListActionsContext = createContext<ListActions | null>(null)

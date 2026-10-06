@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { KeyboardSheetContent } from '@/components/KeyboardSheet'
 import { cn } from '@/lib/utils'
 
-interface ProfileSheetProps {
+interface ResponsiveSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   isDesktop: boolean
@@ -15,17 +15,18 @@ interface ProfileSheetProps {
 }
 
 /**
- * Las hojas de Datos y Cuenta (diseño 18, P7–P10 y D7): en móvil, hoja pegada al teclado con el
+ * Hoja en móvil, diálogo en escritorio: las de Datos y Cuenta de Perfil (diseño 18, P7–P10 y D7)
+ * y la de compartir una lista (diseño 20). En móvil, hoja pegada al teclado con el
  * título arriba; en escritorio, el diálogo de 440 px de las confirmaciones.
  */
-export function ProfileSheet({
+export function ResponsiveSheet({
   open,
   onOpenChange,
   isDesktop,
   title,
   headerAction,
   children,
-}: ProfileSheetProps) {
+}: ResponsiveSheetProps) {
   const heading = (
     <Dialog.Title
       className={cn(

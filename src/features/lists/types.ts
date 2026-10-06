@@ -32,4 +32,9 @@ export interface List {
   counters: ListCounters
   /** Solo en las archivadas. */
   archivedAt: Date | null
+  /**
+   * Si la creaste tú. Una lista compartida contigo (3.2) se usa igual por dentro, pero no se edita,
+   * ni se archiva, ni se borra, ni se comparte: eso es de quien la creó.
+   */
+  isOwner: boolean
 }

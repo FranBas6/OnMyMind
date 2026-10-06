@@ -23,6 +23,7 @@
     "db:status": "supabase status",
     "db:reset": "supabase db reset",
     "db:migration": "supabase migration new",
+    "db:test": "sh scripts/db-test.sh",
     "prepare": "husky"
   },
   "lint-staged": {

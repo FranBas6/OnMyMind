@@ -21,6 +21,7 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     position: 2000,
     counters: { pending: 4, done: 8, pendingPriceCents: 0 },
     archivedAt: null,
+    isOwner: true,
     ...overrides,
   }
 }
