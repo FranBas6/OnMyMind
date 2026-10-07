@@ -53,6 +53,30 @@ export async function updateDisplayName(userId: string, name: string): Promise<v
   if (error) throw error
 }
 
+/**
+ * Tu enlace del Calendario del iPhone (3.7), o `null` si aún no tienes. Leerlo no crea nada: lo crea
+ * `createCalendarToken` al abrir su hoja.
+ */
+export async function fetchCalendarToken(): Promise<string | null> {
+  const { data, error } = await supabase.from('calendar_feeds').select('token').maybeSingle()
+  if (error) throw error
+  return data?.token ?? null
+}
+
+/** Tu enlace, o uno nuevo si no tenías. */
+export async function createCalendarToken(): Promise<string> {
+  const { data, error } = await supabase.rpc('calendar_token')
+  if (error) throw error
+  return data
+}
+
+/** «Cambiar enlace» (C4): uno nuevo; el anterior deja de funcionar ya. */
+export async function rotateCalendarToken(): Promise<string> {
+  const { data, error } = await supabase.rpc('rotate_calendar_token')
+  if (error) throw error
+  return data
+}
+
 /** PostgREST devuelve como mucho mil filas por petición: se piden de mil en mil, por `id`. */
 const PAGE = 1000
 

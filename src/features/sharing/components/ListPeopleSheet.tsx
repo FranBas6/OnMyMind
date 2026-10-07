@@ -1,19 +1,13 @@
-import {
-  Check,
-  Clock,
-  Copy,
-  Link as LinkIcon,
-  LogOut,
-  Share,
-  WifiOff,
-  type LucideIcon,
-} from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Check, Clock, Copy, Link as LinkIcon, LogOut, Share, WifiOff } from 'lucide-react'
+import { useState } from 'react'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { InlineConfirm } from '@/components/InlineConfirm'
+import { OutlineButton } from '@/components/OutlineButton'
 import { ResponsiveSheet } from '@/components/ResponsiveSheet'
 import type { List } from '@/features/lists/types'
 import { useCurrentUser, useProfile } from '@/features/profile/hooks/useProfile'
+import { useCopied } from '@/hooks/useCopied'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useOnline } from '@/hooks/useOnline'
 import { cn } from '@/lib/utils'
@@ -31,8 +25,6 @@ import {
 import type { ListPerson } from '../schemas'
 import { copyText, displayUrl, shareInvite } from '../share'
 import { PersonInitial } from './PersonInitial'
-
-const COPIED_MS = 2000
 
 const RIGHTS =
   'Quien entre podrá añadir, completar, editar, borrar y ordenar lo de dentro. Cambiar la lista o invitar a otros sigue siendo cosa tuya.'
@@ -197,27 +189,11 @@ function InviteSection({ list }: { list: List }) {
   const create = useCreateInvite(list.id)
   const revoke = useRevokeInvite(list.id)
   const [confirmingRevoke, setConfirmingRevoke] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const copiedTimer = useRef<number | undefined>(undefined)
-
-  useEffect(
-    () => () => {
-      window.clearTimeout(copiedTimer.current)
-    },
-    [],
-  )
+  const [copied, markCopied] = useCopied()
 
   const active = invite.data ?? null
   const url = active ? inviteUrl(active.token) : null
   const message = inviteMessage(personName(profile.data?.displayName), list.name)
-
-  const markCopied = () => {
-    setCopied(true)
-    window.clearTimeout(copiedTimer.current)
-    copiedTimer.current = window.setTimeout(() => {
-      setCopied(false)
-    }, COPIED_MS)
-  }
 
   // Invitar (S3): la hoja del sistema y, si el navegador no la tiene, se copia con el texto.
   const send = async (link: string) => {
@@ -421,77 +397,5 @@ function LeaveSection({
       <LogOut aria-hidden className="size-[18px]" strokeWidth={2.2} />
       Salir de la lista
     </button>
-  )
-}
-
-function OutlineButton({
-  icon: Icon,
-  highlighted = false,
-  children,
-  ...props
-}: React.ComponentProps<'button'> & {
-  icon: LucideIcon
-  highlighted?: boolean
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        'flex h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-2 text-[14px] font-semibold outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:text-subtle-foreground',
-        highlighted && 'text-primary',
-      )}
-      {...props}
-    >
-      <Icon aria-hidden className="size-4 shrink-0" strokeWidth={2.2} />
-      <span className="truncate">{children}</span>
-    </button>
-  )
-}
-
-/** Confirmación pequeña dentro de la hoja (S5 y M5): el texto, «Cancelar» y el botón rojo. */
-function InlineConfirm({
-  title,
-  text,
-  confirmLabel,
-  onCancel,
-  onConfirm,
-  pending = false,
-  disabled = false,
-}: {
-  title?: string
-  text: string
-  confirmLabel: string
-  onCancel: () => void
-  onConfirm: () => void
-  pending?: boolean
-  disabled?: boolean
-}) {
-  return (
-    <div
-      role="group"
-      aria-label={title ?? text}
-      className="rounded-2xl border border-border-soft bg-background p-4"
-    >
-      {title && <p className="mb-1 font-display text-lg font-extrabold">{title}</p>}
-      <p className="text-[15px] leading-normal">{text}</p>
-      <div className="mt-3 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="h-11 rounded-xl px-3.5 text-[15px] font-semibold text-muted-foreground outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          disabled={pending || disabled}
-          onClick={onConfirm}
-          className="h-11 rounded-xl bg-destructive px-4 font-display text-[15px] font-bold text-destructive-foreground outline-none hover:brightness-95 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-60"
-        >
-          {confirmLabel}
-        </button>
-      </div>
-    </div>
   )
 }

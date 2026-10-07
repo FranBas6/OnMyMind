@@ -23,6 +23,32 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_feeds: {
+        Row: {
+          created_at: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'calendar_feeds_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       item_completions: {
         Row: {
           done_at: string
@@ -686,6 +712,8 @@ export type Database = {
       }
       broadcast_list: { Args: { p_list_id: string; p_payload: Json }; Returns: undefined }
       broadcast_user: { Args: { p_payload: Json; p_user_id: string }; Returns: undefined }
+      calendar_feed: { Args: { p_token: string }; Returns: Json }
+      calendar_token: { Args: Record<PropertyKey, never>; Returns: string }
       can_see_photo: { Args: { p_name: string }; Returns: boolean }
       change_author: { Args: Record<PropertyKey, never>; Returns: Json }
       claim_daily_summaries: {
@@ -762,6 +790,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      new_calendar_token: { Args: Record<PropertyKey, never>; Returns: string }
       next_occurrence: {
         Args: { p_after: string; p_first: string; p_rule: string; p_tz: string }
         Returns: string
@@ -794,6 +823,7 @@ export type Database = {
         Returns: string
       }
       revoke_list_invite: { Args: { p_list_id: string }; Returns: undefined }
+      rotate_calendar_token: { Args: Record<PropertyKey, never>; Returns: string }
       save_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string; p_user_agent: string }
         Returns: undefined

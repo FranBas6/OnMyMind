@@ -15,6 +15,11 @@ Las edge functions de Supabase (Deno), una carpeta por función:
   WebCrypto). Los textos y qué se envía viven en `messages.ts`, puro y probado con Vitest.
   Necesita el secreto `VAPID_PRIVATE_KEY`, y para encenderla, la dirección en Vault:
   `select vault.create_secret('<url de la función>', 'send_reminders_url');`.
+- **`calendar-feed`** (3.7): los eventos de una persona como calendario suscrito (iCalendar), para
+  el Calendario del iPhone o del Mac: `…/functions/v1/calendar-feed/<enlace>.ics`. Sin la puerta de
+  JWT (`verify_jwt = false`): el Calendario no sabe iniciar sesión, así que el enlace secreto de
+  Perfil es la llave. Lee con `calendar_feed` (solo `service_role`); un enlace que no existe da 404.
+  El texto sale de `ical.ts`, puro y probado con Vitest (`ical.test.ts`). No necesita secretos.
 - Más adelante: el refresco de precios.
 
 Crear o servir una función en local (necesita `[edge_runtime] enabled = true` en `config.toml`,
@@ -32,4 +37,5 @@ Publicarla en la nube (`--use-api` la empaqueta en Supabase, sin bajar la imagen
 ```bash
 pnpm exec supabase functions deploy fetch-metadata --use-api
 pnpm exec supabase functions deploy send-reminders --use-api
+pnpm exec supabase functions deploy calendar-feed --use-api
 ```

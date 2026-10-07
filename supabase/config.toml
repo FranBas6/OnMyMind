@@ -404,7 +404,7 @@ allow_dynamic_registration = false
 
 [edge_runtime]
 # Apagado para ahorrar ~1 GB de imagen. Enciéndelo para servir en local `fetch-metadata` (2a.6) o
-# `send-reminders` (2.7).
+# `send-reminders` (2.7) o `calendar-feed` (3.7).
 enabled = false
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.
@@ -420,6 +420,10 @@ deno_version = 2
 
 # La llama pg_cron (2.7), no un usuario: sin la puerta de JWT. La función exige su cabecera secreta.
 [functions.send-reminders]
+verify_jwt = false
+
+# El Calendario del iPhone pide el feed sin sesión: el enlace secreto de la URL es la llave (3.7).
+[functions.calendar-feed]
 verify_jwt = false
 
 [analytics]
