@@ -19,6 +19,7 @@ import {
   occurrencesBetween,
   occursOn,
   PRIORITY_LABELS,
+  type Completion,
   type Item,
   type Priority,
 } from '@/features/items'
@@ -125,6 +126,43 @@ export interface TodaySection {
 export interface TodayDone {
   item: TodayItem
   list: List
+  /**
+   * Una vez hecha de una tarea que se repite (3.6): la tarea siguió a su siguiente fecha, y esto es
+   * la constancia. El checkbox la deshace.
+   */
+  completion?: Completion
+}
+
+/**
+ * Las veces hechas de un día como filas de «hechas» (diseño 21, B12 y B13): la tarea tachada, con
+ * la hora a la que se hizo. Solo las de listas en caché (las demás no se ven en Hoy).
+ */
+export function completionsOnDay(
+  completions: readonly Completion[],
+  lists: readonly List[],
+  day: Date,
+): TodayDone[] {
+  const byId = new Map(lists.map((list) => [list.id, list]))
+  const { start, end } = todayBounds(day)
+  return completions.flatMap((completion) => {
+    const list = byId.get(completion.item.listId)
+    if (!list || completion.doneAt < start || completion.doneAt >= end) return []
+    const item: TodayItem = {
+      ...completion.item,
+      parent: null,
+      status: 'done',
+      completedAt: completion.doneAt,
+      completedBy: completion.doneBy,
+    }
+    return [{ item, list, completion }]
+  })
+}
+
+/** Lo hecho, con las veces hechas de lo que se repite, lo último primero. */
+export function withCompletions(done: readonly TodayDone[], extra: readonly TodayDone[]) {
+  return [...done, ...extra].sort(
+    (a, b) => (b.item.completedAt?.getTime() ?? 0) - (a.item.completedAt?.getTime() ?? 0),
+  )
 }
 
 export interface TodayEvent {

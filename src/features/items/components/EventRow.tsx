@@ -11,15 +11,8 @@ import { cn } from '@/lib/utils'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
 import { useItemPerson } from '@/features/sharing/hooks/useSharing'
 
-import {
-  eventTime,
-  isEarlierToday,
-  isPastEvent,
-  isRecurrence,
-  occurrence,
-  RECURRENCE_LABELS,
-  shortDay,
-} from '../events'
+import { eventTime, isEarlierToday, isPastEvent, occurrence, shortDay } from '../events'
+import { recurrenceLabel } from '../recurrence'
 import { hasThumb } from '../photos'
 import type { Item } from '../types'
 import { rowHighlight, useItemActions } from './itemActionsContext'
@@ -107,11 +100,12 @@ export function EventRow({ item, byMonth = false }: { item: Item; byMonth?: bool
       </span>,
     )
   }
-  if (isRecurrence(item.recurrence)) {
+  const repeat = recurrenceLabel(item.recurrence, true)
+  if (repeat) {
     meta.push(
-      <span key="repeat" className={cn(META, 'text-muted-foreground')}>
-        <Repeat aria-hidden className="size-3" strokeWidth={2.4} />
-        {RECURRENCE_LABELS[item.recurrence]}
+      <span key="repeat" className={cn(META, 'min-w-0 text-muted-foreground')}>
+        <Repeat aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
+        <span className="truncate">{repeat}</span>
       </span>,
     )
   }

@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 
-import { RECURRENCE_LABELS, isRecurrence } from '@/features/items/events'
+import { recurrenceLabel } from '@/features/items/recurrence'
 import { PRIORITY_LABELS } from '@/features/items/fields'
 import { KIND_LABELS } from '@/features/items/kind'
 import { STATUS_LABELS } from '@/features/items/status'
@@ -23,6 +23,7 @@ export interface ExportTables {
   itemLinks: Record<string, unknown>[]
   itemPrices: Record<string, unknown>[]
   reminders: Record<string, unknown>[]
+  itemCompletions: Record<string, unknown>[]
 }
 
 /**
@@ -53,6 +54,7 @@ export function exportDocument(
     item_links: tables.itemLinks,
     item_prices: tables.itemPrices,
     reminders: tables.reminders,
+    item_completions: tables.itemCompletions,
   }
 }
 
@@ -145,7 +147,7 @@ export function listCsv(items: readonly Item[]): string {
       item.priority ? PRIORITY_LABELS[item.priority] : '',
       dateCell(item.dueAt),
       timed && item.dueAt ? format(item.dueAt, 'HH:mm') : '',
-      isRecurrence(item.recurrence) ? RECURRENCE_LABELS[item.recurrence] : '',
+      recurrenceLabel(item.recurrence) ?? '',
       item.notes ?? '',
       item.url ?? '',
       priceCell(item.priceCents),

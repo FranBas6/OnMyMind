@@ -139,3 +139,16 @@ export interface ItemLinkPatch {
   priceSource?: PriceSource | null
   priceCheckedAt?: Date | null
 }
+
+/**
+ * Una vez hecha de una tarea que se repite (3.6, `item_completions`): la tarea no baja a «Fuera de
+ * la cabeza», pasa a su siguiente fecha, y esto es la constancia («Hecho hoy», «Hecho ese día»).
+ * `item` es la tarea como está ahora (con su fecha nueva); `occurrence`, la fecha que tenía.
+ */
+export interface Completion {
+  id: string
+  item: Item
+  doneAt: Date
+  doneBy: string | null
+  occurrence: Date
+}

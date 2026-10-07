@@ -2,6 +2,7 @@ import { format, isSameYear, startOfDay } from 'date-fns'
 
 import type { NaturalDate } from '@/lib/naturalDate'
 
+import { formatRule, recurrenceLabel, simpleRule } from './recurrence'
 import type { ItemKind } from './status'
 
 /** La fecha con la que nace un ítem (3.5): su `due_at` y si es de todo el día. */
@@ -18,6 +19,8 @@ export interface WrittenDate {
    * en minutos antes de las 00:00 de ese día, como «Ese día a las 9:00» (negativo: después).
    */
   reminderOffsetMinutes: number | null
+  /** «cada martes y viernes» (3.6): la regla de `items.recurrence`; `due` es su primera vez. */
+  recurrence: string | null
 }
 
 /** Si en un ítem de este tipo se interpreta lo escrito: tareas y eventos (no compras ni notas). */
@@ -31,8 +34,19 @@ export function readsWrittenDates(kind: ItemKind): boolean {
  * no lleva fecha.
  */
 export function writtenDateFields(parsed: NaturalDate, kind: ItemKind): WrittenDate | null {
+  const recurrence = parsed.repeat
+    ? formatRule({
+        ...simpleRule(parsed.repeat.freq),
+        interval: parsed.repeat.interval,
+        weekdays: parsed.repeat.weekdays,
+      })
+    : null
   if (kind === 'event') {
-    return { due: { at: parsed.date, allDay: !parsed.hasTime }, reminderOffsetMinutes: null }
+    return {
+      due: { at: parsed.date, allDay: !parsed.hasTime },
+      reminderOffsetMinutes: null,
+      recurrence,
+    }
   }
   if (kind === 'task') {
     return {
@@ -40,6 +54,7 @@ export function writtenDateFields(parsed: NaturalDate, kind: ItemKind): WrittenD
       reminderOffsetMinutes: parsed.hasTime
         ? -(parsed.date.getHours() * 60 + parsed.date.getMinutes())
         : null,
+      recurrence,
     }
   }
   return null
@@ -52,24 +67,38 @@ function dayText(date: Date, now: Date, withMonth: boolean): string {
 }
 
 /**
- * Lo que dice la pastilla (diseño 21, A1–A3): el evento, «Vie 9 oct · 21:00»; la tarea, «Vence
- * mié 7 oct» y, si la hora es su aviso, «Vence mié 7» y aparte «Aviso 10:00» con la campana.
+ * Lo que dice la pastilla (diseño 21, A1–A4 y A8): el evento, «Vie 9 oct · 21:00»; la tarea, «Vence
+ * mié 7 oct» y, si la hora es su aviso, «Vence mié 7» y aparte «Aviso 10:00» con la campana. Lo
+ * que se repite, la regla y desde cuándo: «Cada martes · 19:00 · desde el 13», «Martes y viernes ·
+ * desde vie 9». `repeats` cambia el icono.
  */
 export function writtenDateLabel(
   written: WrittenDate,
   kind: ItemKind,
   now: Date = new Date(),
-): { day: string; reminder: string | null } {
+): { day: string; reminder: string | null; repeats: boolean } {
   const { at, allDay } = written.due
+  const rule = recurrenceLabel(written.recurrence)
+  const reminder =
+    written.reminderOffsetMinutes === null ? null : `Aviso ${clock(-written.reminderOffsetMinutes)}`
+  if (rule) {
+    const parts =
+      kind === 'event'
+        ? [rule, ...(allDay ? [] : [format(at, 'H:mm')]), `desde el ${format(at, 'd')}`]
+        : [rule, `desde ${dayText(at, now, false)}`]
+    return { day: parts.join(' · '), reminder, repeats: true }
+  }
   if (kind === 'event') {
     const day = capitalize(dayText(at, now, true))
-    return { day: allDay ? day : `${day} · ${format(at, 'H:mm')}`, reminder: null }
+    return { day: allDay ? day : `${day} · ${format(at, 'H:mm')}`, reminder: null, repeats: false }
   }
-  const offset = written.reminderOffsetMinutes
-  if (offset === null) return { day: `Vence ${dayText(at, now, true)}`, reminder: null }
-  const minutes = -offset
-  const time = `${String(Math.floor(minutes / 60))}:${String(minutes % 60).padStart(2, '0')}`
-  return { day: `Vence ${dayText(at, now, false)}`, reminder: `Aviso ${time}` }
+  if (!reminder) return { day: `Vence ${dayText(at, now, true)}`, reminder: null, repeats: false }
+  return { day: `Vence ${dayText(at, now, false)}`, reminder, repeats: false }
+}
+
+/** Minutos desde las 00:00 como hora: 600 son las «10:00». */
+function clock(minutes: number): string {
+  return `${String(Math.floor(minutes / 60))}:${String(minutes % 60).padStart(2, '0')}`
 }
 
 function capitalize(text: string): string {

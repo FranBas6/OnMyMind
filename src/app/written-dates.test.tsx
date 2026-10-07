@@ -171,6 +171,25 @@ describe('fechas escritas (3.5, diseño 21)', () => {
     expect(screen.queryByRole('button', { name: /Quitar la fecha/ })).toBeNull()
   })
 
+  it('«cada martes y viernes» en la barra de una lista de tareas: se repite (3.6, A4)', async () => {
+    const user = userEvent.setup()
+    renderAt('/lists/casa')
+    const field = await screen.findByRole('textbox', { name: /Añadir|tarea/ })
+    await user.type(field, 'Sacar la basura cada martes y viernes')
+    expect(
+      screen.getByRole('button', { name: /^Martes y viernes · desde .*\. Quitar la fecha$/ }),
+    ).toBeInTheDocument()
+    await user.type(field, '{Enter}')
+    await waitFor(() => {
+      expect(itemsApi.createItem).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Sacar la basura',
+          recurrence: 'FREQ=WEEKLY;BYDAY=TU,FR',
+        }),
+      )
+    })
+  })
+
   it('lo que no se entiende entero no se toca (A7)', async () => {
     const user = userEvent.setup()
     renderAt('/lists/casa')

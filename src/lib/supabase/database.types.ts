@@ -23,6 +23,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      item_completions: {
+        Row: {
+          done_at: string
+          done_by: string | null
+          id: string
+          item_id: string
+          occurrence: string
+        }
+        Insert: {
+          done_at?: string
+          done_by?: string | null
+          id?: string
+          item_id: string
+          occurrence: string
+        }
+        Update: {
+          done_at?: string
+          done_by?: string | null
+          id?: string
+          item_id?: string
+          occurrence?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'item_completions_done_by_fkey'
+            columns: ['done_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'item_completions_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       item_links: {
         Row: {
           created_at: string
@@ -648,6 +687,7 @@ export type Database = {
       broadcast_list: { Args: { p_list_id: string; p_payload: Json }; Returns: undefined }
       broadcast_user: { Args: { p_payload: Json; p_user_id: string }; Returns: undefined }
       can_see_photo: { Args: { p_name: string }; Returns: boolean }
+      change_author: { Args: Record<PropertyKey, never>; Returns: Json }
       claim_daily_summaries: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -722,6 +762,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      next_occurrence: {
+        Args: { p_after: string; p_first: string; p_rule: string; p_tz: string }
+        Returns: string
+      }
       note_list_departure: {
         Args: { p_list_id: string; p_reason: string; p_user_id?: string }
         Returns: undefined
@@ -729,6 +773,16 @@ export type Database = {
       orphan_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
       own_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
       price_savings: { Args: Record<PropertyKey, never>; Returns: number }
+      recurrence_is_valid: { Args: { p_rule: string }; Returns: boolean }
+      recurrence_occurrence: {
+        Args: { p_first: string; p_from: string; p_rule: string }
+        Returns: string
+      }
+      recurrence_on_day: {
+        Args: { p_day: number; p_month: string; p_time: string }
+        Returns: string
+      }
+      recurrence_rule: { Args: { p_text: string }; Returns: string }
       reminder_time: {
         Args: {
           p_after: string
@@ -761,6 +815,7 @@ export type Database = {
         Args: { p_kind: Database['public']['Enums']['item_kind']; p_status: string }
         Returns: string
       }
+      undo_repeat: { Args: { p_item_id: string }; Returns: undefined }
       user_timezone: { Args: { p_user_id: string }; Returns: string }
       verify_cron_secret: { Args: { p_secret: string }; Returns: boolean }
     }

@@ -1,23 +1,19 @@
-import { Repeat } from 'lucide-react'
+import { ChevronRight, Repeat } from 'lucide-react'
 
 // Por sus rutas y no por el índice: `reminders` usa piezas de `items`.
 import { ReminderBell } from '@/features/reminders/components/ReminderBell'
 import { useItemReminder } from '@/features/reminders/hooks/useReminders'
 import { showsBell } from '@/features/reminders/reminders'
+import { formatDueDate } from '@/lib/date'
 import { cn } from '@/lib/utils'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
 import { LiveDoneNote } from '@/features/sharing/components/LiveDoneNote'
 import { useLiveRow } from '@/features/sharing/hooks/useLiveRow'
 
-import {
-  eventTime,
-  eventWhen,
-  isRecurrence,
-  occurrence,
-  RECURRENCE_LABELS,
-  shortDay,
-} from '../events'
+import { eventTime, eventWhen, occurrence, shortDay } from '../events'
 import { kindMark } from '../kind'
+import { recurrenceLabel } from '../recurrence'
+import { useRepeatMark } from '../repeatMarks'
 import type { Item } from '../types'
 import { DateChip } from './DateChip'
 import { ItemControl } from './ItemControl'
@@ -67,12 +63,19 @@ export function TaskRow({ item }: { item: Item }) {
   // El día y la hora (diseño 17, E8 y D3): en móvil en una línea, en escritorio en dos.
   const eventDate = event ? eventWhen(item) : null
   const at = event ? occurrence(item) : null
-  const repeat = !quiet && event && isRecurrence(item.recurrence) && (
-    <span className={cn(META, 'flex items-center gap-1')}>
-      <Repeat aria-hidden className="size-3" strokeWidth={2.4} />
-      {RECURRENCE_LABELS[item.recurrence]}
+  // Lo que se repite, también una tarea (diseño 21, B7): la regla corta, cortada con puntos si no
+  // cabe.
+  const repeatText = quiet ? null : recurrenceLabel(item.recurrence, true)
+  const repeat = repeatText && (
+    <span className={cn(META, 'flex min-w-0 items-center gap-1')}>
+      <Repeat aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
+      <span className="truncate">{repeatText}</span>
     </span>
   )
+  // Recién completada una que se repite (B9): un segundo marcada y tachada, con la fecha cambiando
+  // delante de ti; después, el borde índigo apagándose (B10).
+  const repeatMark = useRepeatMark(item.id)
+  const justDone = repeatMark?.phase === 'done' ? repeatMark : null
   const mark =
     priority === null && dueAt === null && eventDate === null
       ? kindMark(item.kind, list.kind)
@@ -82,7 +85,13 @@ export function TaskRow({ item }: { item: Item }) {
   ) : mark ? (
     <span className={META}>{mark}</span>
   ) : null
-  const second = quiet ? null : dueAt ? (
+  const second = quiet ? null : justDone && dueAt ? (
+    <span className={cn(META, 'flex items-center gap-1')}>
+      <span className="line-through">{formatDueDate(justDone.from).text}</span>
+      <ChevronRight aria-hidden className="size-3" strokeWidth={2.4} />
+      {formatDueDate(dueAt).text}
+    </span>
+  ) : dueAt ? (
     <DateChip date={dueAt} />
   ) : eventDate ? (
     <span className={cn(META, 'md:min-w-16 md:text-right')}>
@@ -123,14 +132,17 @@ export function TaskRow({ item }: { item: Item }) {
         'group relative flex min-h-14 items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-3.5 hover:border-border hover:shadow-card md:grid md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
         arrived
           ? 'motion-safe:animate-arrive motion-reduce:animate-arrive-still'
-          : 'animate-in duration-200 fade-in',
+          : repeatMark?.phase === 'back'
+            ? 'animate-arrive-still'
+            : 'animate-in duration-200 fade-in',
+        justDone && 'border-primary bg-brand-tint hover:border-primary',
         liveDone && 'border-primary bg-brand-tint hover:border-primary',
         actions.prices ? (thumb ? GRID.thumbPrices : GRID.prices) : thumb ? GRID.thumb : GRID.plain,
         rowHighlight(actions, item),
       )}
     >
       <ItemControl
-        item={item}
+        item={justDone ? { ...item, status: 'done' } : item}
         onToggle={() => {
           actions.toggle(item)
         }}
@@ -140,7 +152,10 @@ export function TaskRow({ item }: { item: Item }) {
       <div className="min-w-0 flex-1 md:contents">
         {/* En escritorio el enlace va bajo el título; las columnas de la derecha no cambian. */}
         <div className="min-w-0">
-          <RowTitle item={item} className={cn(liveDone && 'text-subtle-foreground line-through')} />
+          <RowTitle
+            item={item}
+            className={cn((liveDone || justDone) && 'text-subtle-foreground line-through')}
+          />
           {(link ?? author) && (
             <p className="mt-0.5 hidden items-center gap-1.5 md:flex">
               {author}

@@ -1,17 +1,13 @@
 import {
   addDays,
-  addMonths,
-  addWeeks,
-  addYears,
   differenceInCalendarDays,
-  differenceInCalendarMonths,
-  differenceInCalendarYears,
   format,
   isSameMonth,
   isSameYear,
   startOfDay,
 } from 'date-fns'
 
+import { occurrenceFrom, occurrencesFrom, parseRule, repeats, type Rule } from './recurrence'
 import type { Item } from './types'
 
 /**
@@ -19,21 +15,6 @@ import type { Item } from './types'
  * uno que se repite y los grupos por día de una lista de eventos. Los días son los del
  * dispositivo, como en Hoy: una fecha sin hora se guarda como las 00:00 locales (04 §Fechas).
  */
-
-/** La repetición de un evento (`items.recurrence`). «Personalizada» es de la fase 3. */
-export const RECURRENCES = ['daily', 'weekly', 'monthly', 'yearly'] as const
-export type Recurrence = (typeof RECURRENCES)[number]
-
-export const RECURRENCE_LABELS: Record<Recurrence, string> = {
-  daily: 'Cada día',
-  weekly: 'Cada semana',
-  monthly: 'Cada mes',
-  yearly: 'Cada año',
-}
-
-export function isRecurrence(value: string | null): value is Recurrence {
-  return (RECURRENCES as readonly (string | null)[]).includes(value)
-}
 
 type EventFields = Pick<Item, 'dueAt' | 'allDay' | 'recurrence'>
 
@@ -46,7 +27,7 @@ export function isPastEvent(
   event: Pick<Item, 'dueAt' | 'recurrence'>,
   now: Date = new Date(),
 ): boolean {
-  if (event.dueAt === null || isRecurrence(event.recurrence)) return false
+  if (event.dueAt === null || repeats(event.recurrence)) return false
   return event.dueAt < startOfDay(now)
 }
 
@@ -57,48 +38,11 @@ export function isEarlierToday(event: EventFields, now: Date = new Date()): bool
 }
 
 /**
- * La n-ésima vez de una repetición, contada desde la primera: así el 31 de cada mes es el último
- * día de los meses cortos y vuelve a ser 31 cuando se puede (date-fns ajusta al final del mes), en
- * vez de quedarse en el 28 para siempre. El 29 de febrero pasa al 28 los años que no es bisiesto.
+ * La siguiente vez de uno que se repite: la primera que cae hoy o después, a la misma hora. Si aún
+ * no ha empezado, es la primera. Las cuentas, en `recurrence.ts` (3.6).
  */
-function nth(first: Date, recurrence: Recurrence, n: number): Date {
-  switch (recurrence) {
-    case 'daily':
-      return addDays(first, n)
-    case 'weekly':
-      return addWeeks(first, n)
-    case 'monthly':
-      return addMonths(first, n)
-    case 'yearly':
-      return addYears(first, n)
-  }
-}
-
-/** Cuántas vueltas hay entre la primera vez y `day`, como mucho (puede quedarse una corta). */
-function stepsUntil(first: Date, recurrence: Recurrence, day: Date): number {
-  switch (recurrence) {
-    case 'daily':
-      return differenceInCalendarDays(day, first)
-    case 'weekly':
-      return Math.floor(differenceInCalendarDays(day, first) / 7)
-    case 'monthly':
-      return differenceInCalendarMonths(day, first)
-    case 'yearly':
-      return differenceInCalendarYears(day, first)
-  }
-}
-
-/**
- * La siguiente vez de un evento que se repite: la primera que cae hoy o después, a la misma hora.
- * Si aún no ha empezado, es la primera.
- */
-export function nextOccurrence(first: Date, recurrence: Recurrence, now: Date = new Date()): Date {
-  const today = startOfDay(now)
-  if (first >= today) return first
-  let n = Math.max(0, stepsUntil(first, recurrence, today))
-  let next = nth(first, recurrence, n)
-  while (next < today) next = nth(first, recurrence, ++n)
-  return next
+export function nextOccurrence(first: Date, rule: Rule, now: Date = new Date()): Date {
+  return occurrenceFrom(first, rule, startOfDay(now)) ?? first
 }
 
 /**
@@ -107,9 +51,8 @@ export function nextOccurrence(first: Date, recurrence: Recurrence, now: Date = 
  */
 export function occurrence(event: EventFields, now: Date = new Date()): Date | null {
   if (event.dueAt === null) return null
-  return isRecurrence(event.recurrence)
-    ? nextOccurrence(event.dueAt, event.recurrence, now)
-    : event.dueAt
+  const rule = parseRule(event.recurrence)
+  return rule ? nextOccurrence(event.dueAt, rule, now) : event.dueAt
 }
 
 /**
@@ -118,10 +61,10 @@ export function occurrence(event: EventFields, now: Date = new Date()): Date | n
  */
 export function occursOn(event: EventFields, day: Date): boolean {
   if (event.dueAt === null) return false
-  if (!isRecurrence(event.recurrence)) return differenceInCalendarDays(event.dueAt, day) === 0
-  const start = startOfDay(day)
-  if (event.dueAt >= addDays(start, 1)) return false
-  return differenceInCalendarDays(nextOccurrence(event.dueAt, event.recurrence, start), day) === 0
+  const rule = parseRule(event.recurrence)
+  if (!rule) return differenceInCalendarDays(event.dueAt, day) === 0
+  const at = occurrenceFrom(event.dueAt, rule, startOfDay(day))
+  return at !== null && differenceInCalendarDays(at, day) === 0
 }
 
 /**
@@ -133,11 +76,12 @@ export function occurrencesBetween(event: EventFields, start: Date, end: Date): 
   const { dueAt } = event
   if (dueAt === null) return []
   const from = startOfDay(start)
-  if (!isRecurrence(event.recurrence)) return dueAt >= from && dueAt < end ? [dueAt] : []
+  const rule = parseRule(event.recurrence)
+  if (!rule) return dueAt >= from && dueAt < end ? [dueAt] : []
   const found: Date[] = []
-  let n = Math.max(0, stepsUntil(dueAt, event.recurrence, from) - 1)
-  for (let at = nth(dueAt, event.recurrence, n); at < end; at = nth(dueAt, event.recurrence, ++n)) {
-    if (at >= from) found.push(at)
+  for (const at of occurrencesFrom(dueAt, rule, from)) {
+    if (at >= end) break
+    found.push(at)
   }
   return found
 }
@@ -283,10 +227,12 @@ export function longDay(day: Date, now: Date = new Date()): string {
  * «Siguiente: sábado 25 oct» o, en otro año, «Siguiente: 23 sep de 2027».
  */
 export function followingLabel(event: EventFields, now: Date = new Date()): string | null {
-  if (!isRecurrence(event.recurrence) || event.dueAt === null) return null
+  const rule = parseRule(event.recurrence)
+  if (!rule || event.dueAt === null) return null
   const current = occurrence(event, now)
   if (!current) return null
-  const next = nextOccurrence(event.dueAt, event.recurrence, addDays(startOfDay(current), 1))
+  const next = occurrenceFrom(event.dueAt, rule, addDays(startOfDay(current), 1))
+  if (!next) return null
   const text = isSameYear(next, now) ? format(next, 'EEEE d MMM') : format(next, "d MMM 'de' yyyy")
   return `Siguiente: ${text}`
 }
@@ -302,24 +248,6 @@ export function pastLabel(event: EventFields, now: Date = new Date()): string | 
       )
   const time = event.allDay ? '' : ` a las ${format(event.dueAt, 'HH:mm')}`
   return `Fue el ${day}${time}.`
-}
-
-/**
- * Las opciones de «Repetir» con lo que significan para este día (diseño 17, F7): «Cada semana ·
- * los jueves», «Cada mes · el día 25», «Cada año · el 25 de septiembre».
- */
-export function recurrenceHint(recurrence: Recurrence, day: Date): string | null {
-  switch (recurrence) {
-    case 'daily':
-      return null
-    case 'weekly':
-      // «los jueves», «los sábados»: lunes a viernes no cambian en plural.
-      return `los ${format(day, 'EEEE').replace(/([^s])$/, '$1s')}`
-    case 'monthly':
-      return `el día ${format(day, 'd')}`
-    case 'yearly':
-      return `el ${format(day, "d 'de' MMMM")}`
-  }
 }
 
 /**

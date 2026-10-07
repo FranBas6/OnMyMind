@@ -91,6 +91,7 @@ describe('Perfil · Datos y Cuenta (2.8, diseño 18)', () => {
       item_links: [],
       item_prices: [],
       reminders: [],
+      item_completions: [],
     })
     renderProfile()
 

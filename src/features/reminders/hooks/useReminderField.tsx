@@ -3,7 +3,7 @@ import { Popover } from 'radix-ui'
 import { useState, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
-import { isRecurrence } from '@/features/items/events'
+import { repeats } from '@/features/items/recurrence'
 import { Row, Value } from '@/features/items/components/FieldRow'
 import type { Item } from '@/features/items/types'
 import { useOnline } from '@/hooks/useOnline'
@@ -68,7 +68,7 @@ export function useReminderField({ item, isDesktop }: ReminderFieldProps): {
   }
 
   const silent = reminder !== undefined && state !== undefined && state !== 'on'
-  const sent = reminder?.sentAt != null && !isRecurrence(item.recurrence)
+  const sent = reminder?.sentAt != null && !repeats(item.recurrence)
   const row = (
     <Row
       icon={silent ? BellOff : Bell}

@@ -78,14 +78,19 @@ async function allRows(
  * son de cada navegador. Las fotos, como URLs firmadas de una semana.
  */
 export async function fetchExport(userId: string): Promise<ReturnType<typeof exportDocument>> {
-  const [profile, lists, items, itemLinks, itemPrices, reminders] = await Promise.all([
-    allRows((from, to) => supabase.from('profiles').select('*').eq('id', userId).range(from, to)),
-    allRows((from, to) => supabase.from('lists').select('*').order('id').range(from, to)),
-    allRows((from, to) => supabase.from('items').select('*').order('id').range(from, to)),
-    allRows((from, to) => supabase.from('item_links').select('*').order('id').range(from, to)),
-    allRows((from, to) => supabase.from('item_prices').select('*').order('id').range(from, to)),
-    allRows((from, to) => supabase.from('reminders').select('*').order('id').range(from, to)),
-  ])
+  const [profile, lists, items, itemLinks, itemPrices, reminders, itemCompletions] =
+    await Promise.all([
+      allRows((from, to) => supabase.from('profiles').select('*').eq('id', userId).range(from, to)),
+      allRows((from, to) => supabase.from('lists').select('*').order('id').range(from, to)),
+      allRows((from, to) => supabase.from('items').select('*').order('id').range(from, to)),
+      allRows((from, to) => supabase.from('item_links').select('*').order('id').range(from, to)),
+      allRows((from, to) => supabase.from('item_prices').select('*').order('id').range(from, to)),
+      allRows((from, to) => supabase.from('reminders').select('*').order('id').range(from, to)),
+      // Las veces hechas de lo que se repite (3.6): hecho no es borrado.
+      allRows((from, to) =>
+        supabase.from('item_completions').select('*').order('id').range(from, to),
+      ),
+    ])
   const paths = [
     ...new Set(items.map((item) => item.image_path).filter((path) => typeof path === 'string')),
   ]
@@ -100,7 +105,15 @@ export async function fetchExport(userId: string): Promise<ReturnType<typeof exp
     }
   }
   return exportDocument(
-    { profile: profile[0] ?? null, lists, items, itemLinks, itemPrices, reminders },
+    {
+      profile: profile[0] ?? null,
+      lists,
+      items,
+      itemLinks,
+      itemPrices,
+      reminders,
+      itemCompletions,
+    },
     photoUrls,
   )
 }

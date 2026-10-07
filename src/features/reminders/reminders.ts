@@ -7,7 +7,8 @@ import {
   isSameYear,
 } from 'date-fns'
 
-import { isRecurrence, occurrence, occurrencesBetween } from '@/features/items/events'
+import { occurrence, occurrencesBetween } from '@/features/items/events'
+import { parseRule, repeats, ruleSentence } from '@/features/items/recurrence'
 import { isFinalStatus } from '@/features/items/status'
 import type { Item } from '@/features/items/types'
 
@@ -221,13 +222,6 @@ export function reminderSheetSubtitle(
     : `${item.title} · ${day}`
 }
 
-const EVERY: Record<string, string> = {
-  daily: 'cada día',
-  weekly: 'cada semana',
-  monthly: 'cada mes',
-  yearly: 'cada año',
-}
-
 /**
  * Bajo la caja, en lo que se repite con aviso (diseño 18, R4): «Avisa cada año. El próximo, el
  * domingo 2 nov a las 9:00.». `null` si no se repite o no tiene aviso relativo.
@@ -237,11 +231,12 @@ export function repeatingReminderNote(
   item: ReminderItem,
   now: Date = new Date(),
 ): string | null {
-  if (!isRecurrence(item.recurrence) || reminder.offsetMinutes === null) return null
+  const rule = parseRule(item.recurrence)
+  if (!rule || reminder.offsetMinutes === null) return null
   const at = reminder.remindAt
   const hour = reminderShape(item) === 'dated' ? datedTime() : time(at)
   const day = format(at, isSameYear(at, now) ? 'EEEE d MMM' : 'EEEE d MMM yyyy')
-  return `Avisa ${EVERY[item.recurrence] ?? ''}. El próximo, el ${day} a las ${hour}.`
+  return `Avisa ${ruleSentence(rule)}. El próximo, el ${day} a las ${hour}.`
 }
 
 /** Cómo se llama este dispositivo en los textos: «este iPhone», «este iPad» o «este navegador». */
@@ -280,5 +275,5 @@ export function showsBell(
   item: Pick<Item, 'status' | 'recurrence'>,
 ): reminder is Pick<Reminder, 'sentAt'> {
   if (!reminder || isFinalStatus(item.status)) return false
-  return reminder.sentAt === null || isRecurrence(item.recurrence)
+  return reminder.sentAt === null || repeats(item.recurrence)
 }

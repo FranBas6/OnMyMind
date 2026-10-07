@@ -1,5 +1,5 @@
 import { format, set, startOfDay } from 'date-fns'
-import { Calendar, Check, ChevronRight, Clock, Repeat } from 'lucide-react'
+import { Calendar, ChevronRight, Clock, Repeat } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { useState, type ReactNode } from 'react'
 
@@ -12,19 +12,15 @@ import {
   eventTime,
   followingLabel,
   isPastEvent,
-  isRecurrence,
   longDay,
   occurrence,
   parseTime,
   pastLabel,
-  RECURRENCE_LABELS,
-  RECURRENCES,
-  recurrenceHint,
-  type Recurrence,
 } from '../events'
 import type { Item, ItemPatch } from '../types'
 import { DueDatePicker } from './DueDatePicker'
 import { Row, SheetHeader, Value } from './FieldRow'
+import { RepeatField } from './RepeatField'
 
 /** La hora que se pone al quitar «Todo el día»: luego se cambia. */
 const DEFAULT_HOUR = 10
@@ -58,13 +54,11 @@ export function EventWhenField({
   reminderNote,
 }: EventWhenFieldProps) {
   const [dayOpen, setDayOpen] = useState(false)
-  const [repeatOpen, setRepeatOpen] = useState(false)
   const now = new Date()
   const at = occurrence(item, now)
   const time = eventTime(item)
   const cancelled = item.status === 'cancelled'
   const past = !cancelled && isPastEvent(item, now)
-  const recurrence = isRecurrence(item.recurrence) ? item.recurrence : null
 
   const setDay = (day: Date | null) => {
     if (!day) {
@@ -105,11 +99,6 @@ export function EventWhenField({
       },
     })
   }
-  const setRecurrence = (next: Recurrence | null) => {
-    onChange({ recurrence: next })
-    if (isDesktop) setRepeatOpen(false)
-  }
-
   const dayRow = (
     <Row
       icon={Calendar}
@@ -173,21 +162,6 @@ export function EventWhenField({
     nativeTimeRow
   )
 
-  const repeatRow = (
-    <Row
-      icon={Repeat}
-      label="Repetir"
-      onClick={() => {
-        setRepeatOpen(true)
-      }}
-      highlighted={isDesktop && repeatOpen}
-    >
-      <span className="text-muted-foreground">
-        {recurrence ? RECURRENCE_LABELS[recurrence] : 'No se repite'}
-      </span>
-    </Row>
-  )
-
   const picker = (
     // Uno que se repite se abre en la vez que toca, la misma que dice la fila «Día».
     <DueDatePicker
@@ -246,37 +220,7 @@ export function EventWhenField({
     </>
   )
 
-  const repeatOptions = (
-    <RepeatOptions value={recurrence} day={at ?? now} onChange={setRecurrence} />
-  )
-  const repeatPicker = isDesktop ? (
-    <Popover.Root open={repeatOpen} onOpenChange={setRepeatOpen}>
-      <Popover.Anchor asChild>{repeatRow}</Popover.Anchor>
-      <Popover.Portal>
-        <Popover.Content
-          align="start"
-          sideOffset={8}
-          aria-label="Repetir"
-          className="z-50 w-[var(--radix-popover-trigger-width)] rounded-[18px] border border-border-soft bg-popover p-2 text-popover-foreground shadow-popover outline-none"
-        >
-          {repeatOptions}
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  ) : (
-    <>
-      {repeatRow}
-      <BottomSheet nested open={repeatOpen} onOpenChange={setRepeatOpen} title="Repetir">
-        <SheetHeader
-          title="Repetir"
-          onDone={() => {
-            setRepeatOpen(false)
-          }}
-        />
-        {repeatOptions}
-      </BottomSheet>
-    </>
-  )
+  const repeatPicker = <RepeatField item={item} isDesktop={isDesktop} onChange={onChange} />
 
   const following = followingLabel(item, now)
 
@@ -317,64 +261,6 @@ export function EventWhenField({
       )}
       {reminderNote}
     </section>
-  )
-}
-
-/** «Repetir» (F7): «No se repite» y cada repetición con lo que significa para ese día. */
-function RepeatOptions({
-  value,
-  day,
-  onChange,
-}: {
-  value: Recurrence | null
-  day: Date
-  onChange: (recurrence: Recurrence | null) => void
-}) {
-  const options: { value: Recurrence | null; label: string; hint: string | null }[] = [
-    { value: null, label: 'No se repite', hint: null },
-    ...RECURRENCES.map((recurrence) => ({
-      value: recurrence,
-      label: RECURRENCE_LABELS[recurrence],
-      hint: recurrenceHint(recurrence, day),
-    })),
-  ]
-  return (
-    <div role="radiogroup" aria-label="Repetir" className="flex flex-col gap-0.5">
-      {options.map((option) => {
-        const selected = option.value === value
-        return (
-          <button
-            key={option.label}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => {
-              onChange(option.value)
-            }}
-            className={cn(
-              'flex h-13 items-center justify-between gap-3 rounded-2xl px-3 text-left text-[15px] font-medium outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50 md:h-11 md:rounded-xl',
-              selected && 'bg-brand-tint font-semibold text-primary-strong hover:bg-brand-tint',
-            )}
-          >
-            <span>
-              {option.label}
-              {option.hint && (
-                <span
-                  className={cn(
-                    'font-normal',
-                    selected ? 'text-primary-strong' : 'text-muted-foreground',
-                  )}
-                >
-                  {' '}
-                  · {option.hint}
-                </span>
-              )}
-            </span>
-            {selected && <Check aria-hidden className="size-4" strokeWidth={2.4} />}
-          </button>
-        )
-      })}
-    </div>
   )
 }
 

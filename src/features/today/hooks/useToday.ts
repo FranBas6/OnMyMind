@@ -4,8 +4,16 @@ import { useMemo } from 'react'
 import type { Item } from '@/features/items'
 import { useLists, type List } from '@/features/lists'
 
-import { daysQueryOptions, todayQueryOptions } from '../queries'
-import { groupDay, groupToday, markedDays, monthGrid, stripMonth } from '../today'
+import { completionsQueryOptions, daysQueryOptions, todayQueryOptions } from '../queries'
+import {
+  completionsOnDay,
+  groupDay,
+  groupToday,
+  markedDays,
+  monthGrid,
+  stripMonth,
+  withCompletions,
+} from '../today'
 import { useCurrentDay } from './useCurrentDay'
 
 /**
@@ -28,10 +36,17 @@ function useListsById() {
 export function useToday({ lingering }: { lingering?: ReadonlySet<string> } = {}) {
   const now = useCurrentDay()
   const query = useQuery(todayQueryOptions(now))
+  const completions = useQuery(completionsQueryOptions(now))
   const { ready, byId, listOf } = useListsById()
 
-  const groups =
-    query.data && ready ? groupToday(query.data, [...byId.values()], { now, lingering }) : undefined
+  const lists = [...byId.values()]
+  const grouped =
+    query.data && ready ? groupToday(query.data, lists, { now, lingering }) : undefined
+  // Lo que se repite y se hizo hoy también cuenta en «N hechas hoy» (diseño 21, B12).
+  const groups = grouped && {
+    ...grouped,
+    done: withCompletions(grouped.done, completionsOnDay(completions.data ?? [], lists, now)),
+  }
 
   return { now, query, groups, listOf }
 }
@@ -46,12 +61,19 @@ export function useOtherDay(
 ) {
   const today = useCurrentDay()
   const query = useQuery({ ...daysQueryOptions(stripMonth(day)), enabled })
+  const completions = useQuery({ ...completionsQueryOptions(day), enabled })
   const { ready, byId, listOf } = useListsById()
 
-  const groups =
+  const lists = [...byId.values()]
+  const grouped =
     enabled && query.data && ready
-      ? groupDay(query.data, [...byId.values()], { day, today, lingering })
+      ? groupDay(query.data, lists, { day, today, lingering })
       : undefined
+  // Y en «Hecho ese día» (B13).
+  const groups = grouped && {
+    ...grouped,
+    done: withCompletions(grouped.done, completionsOnDay(completions.data ?? [], lists, day)),
+  }
 
   return { query, groups, listOf }
 }

@@ -184,11 +184,56 @@ describe('fechas escritas: los casos difíciles', () => {
     expect(parse('Pedir 2x1 hoy')?.title).toBe('Pedir 2x1')
   })
 
-  it('«cada martes» es una repetición: hasta la 3.6, no se interpreta nada', () => {
-    expect(parse('Yoga cada martes a las 19h')).toBeNull()
-    expect(parse('Sacar la basura cada martes y viernes')).toBeNull()
-    expect(parse('Regar cada 3 días')).toBeNull()
-    expect(parse('Cada día a las 8 la pastilla')).toBeNull()
+  it('«cada martes y viernes»: se repite, desde mañana (3.6; diseño 21, A4)', () => {
+    // Hoy es miércoles 7: la primera, el viernes 9.
+    expect(parse('Sacar la basura cada martes y viernes')).toMatchObject({
+      title: 'Sacar la basura',
+      date: oct(9),
+      hasTime: false,
+      repeat: { freq: 'WEEKLY', interval: 1, weekdays: ['TU', 'FR'] },
+    })
+    // Escrito un miércoles, «cada miércoles» empieza el que viene (A8: escrito el martes 6, «desde
+    // el 13»).
+    expect(parse('Yoga cada miércoles a las 19h')).toMatchObject({
+      title: 'Yoga',
+      date: oct(14, 19),
+      hasTime: true,
+      repeat: { weekdays: ['WE'] },
+    })
+    expect(parse('Gimnasio todos los lunes, miércoles y viernes')?.repeat?.weekdays).toEqual([
+      'MO',
+      'WE',
+      'FR',
+    ])
+  })
+
+  it('cada día y cada N días, desde mañana', () => {
+    expect(parse('Tomar la pastilla cada día a las 9')).toMatchObject({
+      title: 'Tomar la pastilla',
+      date: oct(8, 9),
+      repeat: { freq: 'DAILY', interval: 1 },
+    })
+    expect(parse('Regar cada 3 días')).toMatchObject({
+      title: 'Regar',
+      date: oct(8),
+      repeat: { freq: 'DAILY', interval: 3 },
+    })
+    expect(parse('Vitaminas todos los días')?.repeat?.freq).toBe('DAILY')
+  })
+
+  it('«cada semana» o «cada mes» a secas no dicen qué día: no se entiende nada', () => {
+    expect(parse('Pagar el alquiler cada mes')).toBeNull()
+    expect(parse('Limpiar cada 2 semanas el viernes')).toBeNull()
+    expect(parse('Revisión cada año')).toBeNull()
+  })
+
+  it('una repetición con otro día: no se adivina', () => {
+    expect(parse('Yoga cada martes mañana')).toBeNull()
+    expect(parse('Yoga cada martes en 2 horas')).toBeNull()
+  })
+
+  it('lo que no se repite no lleva repetición', () => {
+    expect(parse('Cena el viernes')?.repeat).toBeNull()
   })
 
   it('dice dónde está cada trozo, para marcarlo en el texto', () => {

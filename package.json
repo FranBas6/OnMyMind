@@ -24,6 +24,7 @@
     "db:reset": "supabase db reset",
     "db:migration": "supabase migration new",
     "db:test": "sh scripts/db-test.sh",
+    "db:cases": "node --experimental-strip-types --no-warnings scripts/recurrence-cases.js",
     "prepare": "husky"
   },
   "lint-staged": {

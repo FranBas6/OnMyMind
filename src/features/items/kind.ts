@@ -50,7 +50,8 @@ const NONE: KindFields = { priority: false, dueAt: false, recurrence: false, pri
 /** La foto y el enlace (2a.6) los usan todos, así que no se pierden nunca. */
 const KIND_FIELDS: Record<ItemKind, KindFields> = {
   note: NONE,
-  task: { ...NONE, priority: true, dueAt: true },
+  // Desde la 3.6 las tareas también se repiten.
+  task: { ...NONE, priority: true, dueAt: true, recurrence: true },
   // Solo las compras tienen precio (plan 02-fase-2, decisión 5).
   shopping: { ...NONE, price: true },
   event: { ...NONE, dueAt: true, recurrence: true },

@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { format } from 'date-fns'
 import { Copy, Trash2 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
@@ -13,8 +14,11 @@ import {
   useInsertItems,
   useMoveItem,
   useSetItemStatus,
+  useUndoRepeat,
   useUpdateItem,
 } from '../hooks/useItemMutations'
+import { repeatOnDone } from '../recurrence'
+import { markRepeatDone } from '../repeatMarks'
 import { isFinalStatus, nextStatusOnToggle } from '../status'
 import {
   childrenOf,
@@ -79,6 +83,7 @@ export function ItemWorkspace({
 }: ItemWorkspaceProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const statusMutation = useSetItemStatus()
+  const undoRepeat = useUndoRepeat()
   const updateItem = useUpdateItem()
   const moveItem = useMoveItem()
   const deleteItem = useDeleteItem()
@@ -109,6 +114,21 @@ export function ItemWorkspace({
   }, [staleItemId, onOpenItem])
 
   const setStatus = (item: Item, status: ItemStatus) => {
+    // Una tarea que se repite no se va: pasa a su siguiente fecha delante de ti y lo dice el aviso,
+    // con «Deshacer» (diseño 21, B9 y B10).
+    const next = repeatOnDone(item, status)
+    if (next && item.dueAt) {
+      const occurrence = item.dueAt
+      markRepeatDone(item.id, occurrence)
+      statusMutation.mutate({ item, status })
+      showUndoToast({
+        message: `Hecha · vuelve el ${format(next, 'EEEE d')}`,
+        onUndo: () => {
+          undoRepeat.mutate({ item: { ...item, dueAt: next }, occurrence })
+        },
+      })
+      return
+    }
     // Lo que se termina se queda un instante en su sitio antes de irse (06 §Interacción).
     if (isFinalStatus(status) && !isFinalStatus(item.status)) onFinish(item.id)
     statusMutation.mutate({ item, status })
@@ -209,6 +229,11 @@ export function ItemWorkspace({
           isDesktop={isDesktop}
           onToggle={actions.toggle}
           onUpdate={(item, patch) => {
+            // «Hecha» en la ficha de una que se repite: como el check de su fila.
+            if (patch.status && repeatOnDone(item, patch.status)) {
+              setStatus(item, patch.status)
+              return
+            }
             if (patch.status && isFinalStatus(patch.status) && !isFinalStatus(item.status)) {
               onFinish(item.id)
             }

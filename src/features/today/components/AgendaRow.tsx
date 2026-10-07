@@ -4,15 +4,14 @@ import {
   eventTime,
   hasThumb,
   isEarlierToday,
-  isRecurrence,
   ItemRowDotsMenu,
-  RECURRENCE_LABELS,
   RowThumb,
   RowTitle,
   rowHighlight,
   SwipeableRow,
   useItemActions,
 } from '@/features/items'
+import { recurrenceLabel } from '@/features/items/recurrence'
 import { useNow } from '@/hooks/useNow'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -34,6 +33,7 @@ export function AgendaRow({ item, tense = 'today' }: { item: TodayItem; tense?: 
   const time = eventTime(item)
   const earlier = tense === 'past' || (tense === 'today' && isEarlierToday(item, now))
   const route = item.parent ? `${list.name} › ${item.parent.title}` : list.name
+  const repeat = recurrenceLabel(item.recurrence, true)
   return (
     <SwipeableRow
       item={item}
@@ -77,11 +77,11 @@ export function AgendaRow({ item, tense = 'today' }: { item: TodayItem; tense?: 
         <RowTitle item={item} className={cn(earlier && 'text-subtle-foreground')} />
         <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground md:text-[13px]">
           <span className="truncate">{route}</span>
-          {isRecurrence(item.recurrence) && (
+          {repeat && (
             <>
               <span aria-hidden>·</span>
               <Repeat aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
-              <span className="whitespace-nowrap">{RECURRENCE_LABELS[item.recurrence]}</span>
+              <span className="truncate">{repeat}</span>
             </>
           )}
         </p>

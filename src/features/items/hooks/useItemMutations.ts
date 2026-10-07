@@ -18,14 +18,24 @@ import {
   updateItem,
   updateItemPositions,
   updateItemStatus,
+  undoRepeat,
   type NewItem,
 } from '../api'
+import { repeatOnDone } from '../recurrence'
 import { buildMovePatch } from '../move'
 import { schedulePhotoCleanup } from '../photoCleanup'
 import { isFinalStatus, isOutOfMind } from '../status'
 import { patchLink, withLinks } from '../stores'
 import { countItems, type Counts } from '../sublists'
-import type { Item, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus, MovedItem } from '../types'
+import type {
+  Completion,
+  Item,
+  ItemLink,
+  ItemLinkPatch,
+  ItemPatch,
+  ItemStatus,
+  MovedItem,
+} from '../types'
 
 /**
  * Todas las mutaciones de ítems empiezan su clave por `items` y comparten `scope`. El `scope` las
@@ -276,7 +286,7 @@ export function itemFromNew(item: NewItem, position: number): Item {
     priority: null,
     dueAt: item.due?.at ?? null,
     allDay: item.due?.allDay ?? false,
-    recurrence: null,
+    recurrence: item.recurrence ?? null,
     position,
     completedAt: null,
     createdAt: new Date(),
@@ -345,12 +355,22 @@ const setItemStatusMutation = durableMutation(itemMutationKey('status'), (queryC
   ...OFFLINE_TOLERANT,
   mutationFn: ({ item, status }: { item: Item; status: ItemStatus }) =>
     updateItemStatus(item.id, status),
-  onMutate: ({ item, status }) =>
-    applyOptimistic(queryClient, {
+  onMutate: ({ item, status }) => {
+    // Una tarea que se repite no se completa: pasa a su siguiente fecha y queda la vez hecha (3.6).
+    const next = repeatOnDone(item, status)
+    if (next) {
+      addCompletion(queryClient, item, next)
+      return applyOptimistic(queryClient, {
+        items: { [item.listId]: (items) => patchIn(items, item.id, { dueAt: next }) },
+        mixed: (items) => patchIn(items, item.id, { dueAt: next }),
+      })
+    }
+    return applyOptimistic(queryClient, {
       items: { [item.listId]: (items) => patchIn(items, item.id, { status }) },
       mixed: (items) => patchIn(items, item.id, { status }),
       counters: { [item.listId]: statusDelta(item.status, status) },
-    }),
+    })
+  },
   onError: (error, _variables, snapshot) => {
     rollback(queryClient, snapshot, `No se ha podido cambiar. ${errorMessage(error)}`)
   },
@@ -361,6 +381,59 @@ const setItemStatusMutation = durableMutation(itemMutationKey('status'), (queryC
 
 export function useSetItemStatus() {
   return useDurableMutation(setItemStatusMutation)
+}
+
+/**
+ * La vez hecha, en las consultas de veces hechas que haya («Hecho hoy»), antes de que conteste el
+ * servidor. Hoy la pone en su día por `doneAt`; al terminar la mutación se vuelven a pedir.
+ */
+function addCompletion(queryClient: QueryClient, item: Item, next: Date) {
+  if (!item.dueAt) return
+  const completion: Completion = {
+    id: crypto.randomUUID(),
+    item: { ...item, dueAt: next },
+    doneAt: new Date(),
+    doneBy: null,
+    occurrence: item.dueAt,
+  }
+  queryClient.setQueriesData<Completion[]>(
+    { queryKey: queryKeys.items.completionsAll },
+    (completions) => completions && [completion, ...completions],
+  )
+}
+
+/**
+ * «Deshacer» al completar una tarea que se repite (diseño 21, B10): la última vez hecha se borra y
+ * la tarea vuelve a la fecha que tenía (`undo_repeat`). Optimista y en la fila de las mutaciones de
+ * ítems, así que sin red espera detrás de la de completar.
+ */
+const undoRepeatMutation = durableMutation(itemMutationKey('undoRepeat'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: ({ item }: { item: Item; occurrence: Date }) => undoRepeat(item.id),
+  onMutate: ({ item, occurrence }) => {
+    queryClient.setQueriesData<Completion[]>(
+      { queryKey: queryKeys.items.completionsAll },
+      (completions) => {
+        if (!completions) return completions
+        const last = completions.find((completion) => completion.item.id === item.id)
+        return completions.filter((completion) => completion !== last)
+      },
+    )
+    return applyOptimistic(queryClient, {
+      items: { [item.listId]: (items) => patchIn(items, item.id, { dueAt: occurrence }) },
+      mixed: (items) => patchIn(items, item.id, { dueAt: occurrence }),
+    })
+  },
+  onError: (error, _variables, snapshot) => {
+    rollback(queryClient, snapshot, `No se ha podido deshacer. ${errorMessage(error)}`)
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
+
+export function useUndoRepeat() {
+  return useDurableMutation(undoRepeatMutation)
 }
 
 /**
@@ -705,6 +778,7 @@ export function useStoreMutation() {
 export const itemMutations = [
   createItemMutation,
   setItemStatusMutation,
+  undoRepeatMutation,
   updateItemMutation,
   moveItemMutation,
   reorderItemsMutation,

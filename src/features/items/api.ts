@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase/client'
 import type { MovePatch } from './move'
 import { fieldsFor, ITEM_COLUMNS, itemTitleSchema, mapItemRow } from './schemas'
 import type {
+  Completion,
   Item,
   ItemKind,
   ItemLink,
@@ -73,6 +74,8 @@ export interface NewItem {
   link?: NewItemLink
   /** La fecha escrita con el título (3.5, `writtenDateFields`). */
   due?: NewItemDue
+  /** «cada martes» escrito con el título (3.6): la regla. */
+  recurrence?: string
 }
 
 /**
@@ -109,6 +112,7 @@ export async function createItem(item: NewItem): Promise<void> {
       status: item.status,
       position: item.position ?? (await lastPosition(item.listId)) + 1000,
       ...(item.due && { due_at: item.due.at.toISOString(), all_day: item.due.allDay }),
+      ...(item.recurrence && { recurrence: item.recurrence }),
       ...(item.link && {
         url: item.link.url,
         url_title: item.link.urlTitle,
@@ -390,5 +394,35 @@ export async function updateLink(linkId: string, patch: ItemLinkPatch): Promise<
 /** Quita una tienda. Si queda una sola, el trigger la devuelve al ítem. */
 export async function deleteLink(linkId: string): Promise<void> {
   const { error } = await supabase.from('item_links').delete().eq('id', linkId)
+  if (error) throw error
+}
+
+/**
+ * Las veces hechas de tareas que se repiten entre dos momentos (3.6, `item_completions`), con la
+ * tarea como está ahora y de listas sin archivar. RLS deja solo las de listas que ves.
+ */
+export async function fetchCompletions(start: Date, end: Date): Promise<Completion[]> {
+  const { data, error } = await supabase
+    .from('item_completions')
+    .select(
+      `id, done_at, done_by, occurrence, item:items!inner(${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id))`,
+    )
+    .gte('done_at', start.toISOString())
+    .lt('done_at', end.toISOString())
+    .is('item.list.archived_at', null)
+    .order('done_at', { ascending: false })
+  if (error) throw error
+  return data.map((row) => ({
+    id: row.id,
+    item: mapItemRow(row.item),
+    doneAt: new Date(row.done_at),
+    doneBy: row.done_by,
+    occurrence: new Date(row.occurrence),
+  }))
+}
+
+/** Deshace la última vez hecha de una tarea que se repite: vuelve a la fecha que tenía. */
+export async function undoRepeat(itemId: string): Promise<void> {
+  const { error } = await supabase.rpc('undo_repeat', { p_item_id: itemId })
   if (error) throw error
 }

@@ -33,6 +33,7 @@ import { isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
 import type { Item, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus } from '../types'
 import { DueDatePicker } from './DueDatePicker'
 import { EventWhenField } from './EventWhenField'
+import { RepeatField } from './RepeatField'
 import { ItemControl } from './ItemControl'
 import { ItemMedia } from './ItemMedia'
 import { ItemTitleField, NotesField } from './ItemTextFields'
@@ -312,6 +313,14 @@ export function ItemDetail({
                 isDesktop={isDesktop}
                 onChange={(dueAt) => {
                   onUpdate(item, { dueAt })
+                }}
+              />
+              {/* Entre la fecha y el aviso (diseño 21, B1). */}
+              <RepeatField
+                item={item}
+                isDesktop={isDesktop}
+                onChange={(patch) => {
+                  onUpdate(item, patch)
                 }}
               />
               {reminder.row}

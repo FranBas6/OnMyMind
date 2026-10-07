@@ -49,7 +49,7 @@ describe('changeKindPatch', () => {
     })
   })
 
-  it('un evento con repetición que pasa a tarea conserva la fecha y pierde la repetición', () => {
+  it('un evento con repetición que pasa a tarea conserva la fecha y, desde la 3.6, la repetición', () => {
     const evento = {
       status: 'upcoming' as const,
       priority: null,
@@ -62,7 +62,6 @@ describe('changeKindPatch', () => {
       kind: 'task',
       status: 'pending',
       dueAt: new Date(2026, 9, 3),
-      recurrence: null,
     })
   })
 

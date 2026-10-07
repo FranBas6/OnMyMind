@@ -33,7 +33,25 @@ export interface NaturalDate {
   fragments: string[]
   /** Dónde está cada trozo en el texto (`start` incluido, `end` no), para marcarlo. */
   ranges: { start: number; end: number }[]
+  /**
+   * «cada martes y viernes», «cada 3 días» (3.6): la repetición, y `date` es su primera vez, que
+   * es a partir de mañana (diseño 21, A4 y A8). En el formato de `items.recurrence` lo pone
+   * `writtenDateFields`.
+   */
+  repeat: WrittenRepeat | null
 }
+
+/** Una repetición escrita: cada N días, o ciertos días de la semana (de lunes, `MO`, a domingo). */
+export interface WrittenRepeat {
+  freq: 'DAILY' | 'WEEKLY'
+  interval: number
+  weekdays: ('MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU')[]
+}
+
+/** Los días como los guarda la repetición, en el orden de `getDay()` (domingo primero). */
+const RRULE_DAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const
+/** Y en el orden en que se escriben en la regla, de lunes a domingo. */
+const WEEK = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const
 
 const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
 
@@ -76,6 +94,8 @@ interface Found {
   time?: { hours: number; minutes: number }
   /** Un momento exacto («en 2 horas»): día y hora a la vez. */
   instant?: Date
+  /** Una repetición («cada martes»): es el día, el de su primera vez. */
+  repeat?: WrittenRepeat
 }
 
 interface Rule {
@@ -129,8 +149,36 @@ function count(text: string): number | null {
   return Number.isInteger(value) && value > 0 && value < 1000 ? value : null
 }
 
+/** Un día de la semana, sin captura, para las listas («martes y viernes»). */
+const ANY_WD = `(?:${WEEKDAYS.join('|')})`
+
 /** En orden de preferencia: lo más largo primero, para que «el 3 de octubre» no se quede en «el 3». */
 const RULES: readonly Rule[] = [
+  // ─── Repeticiones (3.6): antes que los días sueltos ───
+  {
+    pattern: new RegExp(
+      `\\b(?:cada|todos los|todas las)\\s+(${ANY_WD}(?:\\s*(?:,|y)\\s*${ANY_WD})*)\\b`,
+      'g',
+    ),
+    read: ([, names = '']) => {
+      const said = names.match(new RegExp(ANY_WD, 'g')) ?? []
+      const codes = said.map((name) => RRULE_DAYS[WEEKDAYS.indexOf(name)])
+      // De lunes a domingo, como se guardan.
+      const weekdays = WEEK.filter((day) => codes.includes(day))
+      return { repeat: { freq: 'WEEKLY', interval: 1, weekdays } }
+    },
+  },
+  {
+    pattern: /\b(?:cada\s+dia|todos\s+los\s+dias|a\s+diario)\b/g,
+    read: () => ({ repeat: { freq: 'DAILY', interval: 1, weekdays: [] } }),
+  },
+  {
+    pattern: /\bcada\s+(\d{1,2})\s+dias\b/g,
+    read: ([, amount = '']) => {
+      const n = Number(amount)
+      return n >= 1 ? { repeat: { freq: 'DAILY', interval: n, weekdays: [] } } : null
+    },
+  },
   // ─── En un rato: día y hora a la vez ───
   {
     pattern: /\b(?:en|dentro de)\s+media\s+hora\b/g,
@@ -273,8 +321,11 @@ const RULES: readonly Rule[] = [
   },
 ]
 
-/** «cada día», «cada 2 semanas», «cada martes»…: lo entenderá la repetición personalizada (3.6). */
-const REPEATS = new RegExp(`\\bcada\\s+(?:\\d|dia|semana|mes|ano|${WEEKDAYS.join('|')})`)
+/**
+ * «cada semana», «cada mes», «cada 2 semanas»…: no dicen qué día, así que no se entiende nada (la
+ * repetición se pone en la ficha). Lo que sí se entiende ya lo han leído las reglas de arriba.
+ */
+const VAGUE_REPEAT = /\bcada\s+(?:\d+\s+)?(?:semanas?|mes|meses|anos?)\b/
 
 /** Palabras que se quedan colgando al final del título al quitar la fecha («Pagar para»). */
 const DANGLING = /(?:\s+|^)(?:para|el|la|a|de|en|y|,)\s*$/
@@ -304,8 +355,7 @@ function cleanTitle(text: string, removed: readonly Found[]): string {
  */
 export function parseNaturalDate(text: string, now: Date = new Date()): NaturalDate | null {
   const folded = fold(text)
-  // «cada martes» es una repetición (3.6): hasta entonces, nada; un trozo suelto sería adivinar.
-  if (REPEATS.test(folded)) return null
+  if (VAGUE_REPEAT.test(folded)) return null
   const today = startOfDay(now)
   const found: Found[] = []
   const overlaps = (start: number, end: number) =>
@@ -321,16 +371,20 @@ export function parseNaturalDate(text: string, now: Date = new Date()): NaturalD
     }
   }
 
-  const days = found.filter((entry) => entry.day ?? entry.instant)
+  const days = found.filter((entry) => entry.day ?? entry.instant ?? entry.repeat)
   const times = found.filter((entry) => entry.time ?? entry.instant)
   // Dos días o dos horas («del lunes al martes», «de 10h a 12h»): no se adivina.
   if (found.length === 0 || days.length > 1 || times.length > 1) return null
 
   const instant = found.find((entry) => entry.instant)?.instant
-  const day = days[0]?.day
+  const repeat = found.find((entry) => entry.repeat)?.repeat ?? null
+  // Una repetición empieza mañana (A4, A8): su primera vez es el primer día que toca desde ahí.
+  const day = repeat ? firstRepeatDay(repeat, addDays(today, 1)) : days[0]?.day
   const time = times[0]?.time
   let date: Date
-  if (instant) {
+  if (repeat && instant) {
+    return null
+  } else if (instant) {
     date = instant
   } else if (day) {
     date = time
@@ -358,5 +412,16 @@ export function parseNaturalDate(text: string, now: Date = new Date()): NaturalD
     hasTime: Boolean(instant ?? time),
     fragments: ordered.map((entry) => text.slice(entry.start, entry.end)),
     ranges: ordered.map(({ start, end }) => ({ start, end })),
+    repeat,
   }
+}
+
+/** El primer día desde `from` en que toca una repetición escrita. */
+function firstRepeatDay(repeat: WrittenRepeat, from: Date): Date {
+  if (repeat.freq === 'DAILY' || repeat.weekdays.length === 0) return from
+  for (let ahead = 0; ahead < 7; ahead++) {
+    const day = addDays(from, ahead)
+    if (repeat.weekdays.includes(RRULE_DAYS[day.getDay()] ?? 'MO')) return day
+  }
+  return from
 }

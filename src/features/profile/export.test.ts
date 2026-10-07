@@ -72,6 +72,7 @@ describe('el JSON', () => {
         itemLinks: [],
         itemPrices: [{ id: 'p', price_cents: 1250 }],
         reminders: [{ id: 'r', offset_minutes: 60 }],
+        itemCompletions: [{ id: 'c', item_id: 'a' }],
       },
       new Map([['u1/a/foto.webp', 'https://firmada/foto']]),
       NOW,
@@ -88,6 +89,7 @@ describe('el JSON', () => {
       ],
       item_prices: [{ price_cents: 1250 }],
       reminders: [{ offset_minutes: 60 }],
+      item_completions: [{ item_id: 'a' }],
     })
     expect(document.items).toEqual([
       {

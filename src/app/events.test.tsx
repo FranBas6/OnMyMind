@@ -202,14 +202,18 @@ describe('eventos (2.4, diseño 17)', () => {
     await user.click(within(sheet).getByRole('button', { name: /Repetir/ }))
     // La hoja anidada de vaul aún se está abriendo: sus opciones salen como ocultas.
     const repeat = await screen.findByRole('radiogroup', { name: 'Repetir', hidden: true })
+    // Las de siempre, con lo que significan ese día (diseño 21, B3): «Semanal» y «los viernes».
     const weekly = within(repeat).getByText((_, element) =>
       element?.getAttribute('role') === 'radio'
-        ? element.textContent === 'Cada semana · los viernes'
+        ? element.textContent.startsWith('Semanallos ')
         : false,
     )
     await user.click(weekly)
+    // Y guardan su día escrito (3.6): «BYDAY=FR».
     await waitFor(() => {
-      expect(itemsApi.updateItem).toHaveBeenLastCalledWith(cena.id, { recurrence: 'weekly' })
+      expect(itemsApi.updateItem).toHaveBeenLastCalledWith(cena.id, {
+        recurrence: expect.stringMatching(/^FREQ=WEEKLY;BYDAY=[A-Z]{2}$/) as string,
+      })
     })
   })
 

@@ -28,6 +28,12 @@ export const queryKeys = {
      */
     daysAll: ['items', 'days'] as const,
     days: (month: string) => ['items', 'days', month] as const,
+    /**
+     * Las veces hechas de las tareas que se repiten entre dos días (3.6). Cuelga de `['items']`:
+     * se vuelve a pedir con cualquier cambio de ítems; `completionsAll` las abarca todas.
+     */
+    completionsAll: ['items', 'completions'] as const,
+    completions: (from: string, to: string) => ['items', 'completions', from, to] as const,
     /** Las sublistas de todas las listas: destinos de la captura y de «Mover a…» (2a.5). */
     sublists: ['items', 'sublists'] as const,
     /** Todos los ítems de todas las listas, archivadas incluidas (Buscar, fase 1). */

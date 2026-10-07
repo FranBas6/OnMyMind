@@ -1,4 +1,4 @@
-import { Bell, Calendar, Undo2, X } from 'lucide-react'
+import { Bell, Calendar, Repeat, Undo2, X } from 'lucide-react'
 import type { MouseEvent } from 'react'
 
 import { cn } from '@/lib/utils'
@@ -60,7 +60,11 @@ export function WrittenDatePill({
         className,
       )}
     >
-      <Calendar aria-hidden className="size-4 shrink-0" strokeWidth={2.2} />
+      {label.repeats ? (
+        <Repeat aria-hidden className="size-4 shrink-0" strokeWidth={2.2} />
+      ) : (
+        <Calendar aria-hidden className="size-4 shrink-0" strokeWidth={2.2} />
+      )}
       <span className="flex min-w-0 items-center gap-1.5 truncate">
         {label.day}
         {label.reminder && (

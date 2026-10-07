@@ -155,11 +155,14 @@ export function DoneRow({
   aside,
   meta,
   muted = true,
+  onToggle,
 }: {
   item: Item
   aside?: ReactNode
   meta?: ReactNode
   muted?: boolean
+  /** Lo que hace el checkbox, si no es devolverla a pendiente (la vez hecha de una que se repite). */
+  onToggle?: () => void
 }) {
   const actions = useItemActions()
   const price = itemPrice(item)
@@ -187,7 +190,8 @@ export function DoneRow({
       <ItemControl
         item={item}
         onToggle={() => {
-          actions.toggle(item)
+          if (onToggle) onToggle()
+          else actions.toggle(item)
         }}
         className={cn('z-10', muted && 'opacity-60')}
       />

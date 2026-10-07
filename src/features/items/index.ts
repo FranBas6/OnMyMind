@@ -53,12 +53,10 @@ export {
   eventTime,
   eventWhen,
   isEarlierToday,
-  isRecurrence,
   monthLabel,
   occurrence,
   occurrencesBetween,
   occursOn,
-  RECURRENCE_LABELS,
   shortDay,
 } from './events'
 export { FieldMarks, markedFieldClass } from './components/FieldMarks'
@@ -66,3 +64,7 @@ export { WrittenDatePill } from './components/WrittenDatePill'
 export { useWrittenDate, type WrittenDateState } from './hooks/useWrittenDate'
 export { readsWrittenDates, type WrittenDate } from './writtenDate'
 export { useCreateWithDate } from './hooks/useCreateWithDate'
+export { parseRule, recurrenceLabel, repeats } from './recurrence'
+export { fetchCompletions } from './api'
+export { useUndoRepeat } from './hooks/useItemMutations'
+export type { Completion } from './types'

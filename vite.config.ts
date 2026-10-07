@@ -118,6 +118,9 @@ export default defineConfig({
     env: {
       VITE_SUPABASE_URL: 'http://127.0.0.1:54321',
       VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+      // Las fechas de los tests son de reloj en Madrid (el cambio de hora, la repetición): igual
+      // en cualquier máquina.
+      TZ: 'Europe/Madrid',
     },
   },
 })

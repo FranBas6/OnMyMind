@@ -5,6 +5,8 @@ import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
 import type { TodayDone } from '../today'
+import { useUndoCompletion } from '../hooks/useUndoCompletion'
+import { CompletionMeta } from './CompletionMeta'
 
 /**
  * «Hecho ese día» (diseño 17, C4 y D6): en un día pasado, lo que se terminó ese día, de cualquier
@@ -13,6 +15,7 @@ import type { TodayDone } from '../today'
  */
 export function DoneOnDaySection({ done }: { done: readonly TodayDone[] }) {
   const labelId = useId()
+  const undo = useUndoCompletion()
   return (
     <section aria-labelledby={labelId} className="flex flex-col gap-1.5">
       <h2
@@ -22,19 +25,30 @@ export function DoneOnDaySection({ done }: { done: readonly TodayDone[] }) {
         Hecho ese día
       </h2>
       <ul aria-label="Hecho ese día" className="flex flex-col gap-0.5">
-        {done.map(({ item, list }) => (
-          <ListScope key={item.id} list={list}>
+        {done.map(({ item, list, completion }) => (
+          <ListScope key={completion?.id ?? item.id} list={list}>
             <DoneRow
               item={item}
               muted={false}
+              onToggle={
+                completion &&
+                (() => {
+                  undo(completion)
+                })
+              }
               meta={
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-subtle-foreground">
-                  <span
-                    aria-hidden
-                    className={cn('size-2 shrink-0 rounded-[3px]', LIST_COLOR_BG[list.color])}
-                  />
-                  <span className="truncate">{list.name}</span>
-                </p>
+                // Lo que se repite: su regla, la lista y la hora (B13).
+                completion ? (
+                  <CompletionMeta completion={completion} list={list} past />
+                ) : (
+                  <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-subtle-foreground">
+                    <span
+                      aria-hidden
+                      className={cn('size-2 shrink-0 rounded-[3px]', LIST_COLOR_BG[list.color])}
+                    />
+                    <span className="truncate">{list.name}</span>
+                  </p>
+                )
               }
             />
           </ListScope>

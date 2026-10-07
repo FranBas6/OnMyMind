@@ -14,7 +14,13 @@ export function useCreateWithDate() {
   const createItem = useCreateItem()
   const setReminder = useSetReminder()
   return (item: NewItem, written: WrittenDate | null): NewItem => {
-    const dated: NewItem = written ? { ...item, due: written.due } : item
+    const dated: NewItem = written
+      ? {
+          ...item,
+          due: written.due,
+          ...(written.recurrence && { recurrence: written.recurrence }),
+        }
+      : item
     createItem.mutate(dated)
     if (written && written.reminderOffsetMinutes !== null) {
       const created = itemFromNew(dated, dated.position ?? 0)

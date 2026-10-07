@@ -9,16 +9,22 @@ import {
   monthLabel,
   parseTime,
   pastLabel,
-  recurrenceHint,
   shortDay,
   isEarlierToday,
   isPastEvent,
-  isRecurrence,
   nextOccurrence,
   occurrence,
   occurrencesBetween,
   occursOn,
 } from './events'
+import { parseRule, repeats, type Rule } from './recurrence'
+
+/** La regla de un texto (también lo de antes de la 3.6, `weekly`). */
+const rule = (text: string): Rule => {
+  const parsed = parseRule(text)
+  if (!parsed) throw new Error(text)
+  return parsed
+}
 
 // Martes 22 de septiembre de 2026, a mediodía (hora del dispositivo).
 const now = new Date(2026, 8, 22, 12, 0)
@@ -64,38 +70,44 @@ describe('isEarlierToday', () => {
 
 describe('nextOccurrence', () => {
   it('cada día, semana, mes y año, a la misma hora', () => {
-    expect(nextOccurrence(at(9, 1, 8), 'daily', now)).toEqual(at(9, 22, 8))
+    expect(nextOccurrence(at(9, 1, 8), rule('daily'), now)).toEqual(at(9, 22, 8))
     // Martes 8: los martes.
-    expect(nextOccurrence(at(9, 8, 18), 'weekly', now)).toEqual(at(9, 22, 18))
-    expect(nextOccurrence(at(9, 10, 18), 'weekly', now)).toEqual(at(9, 24, 18))
-    expect(nextOccurrence(at(1, 5, 19, 30), 'monthly', now)).toEqual(at(10, 5, 19, 30))
-    expect(nextOccurrence(at(3, 14, 0, 0, 1990), 'yearly', now)).toEqual(at(3, 14, 0, 0, 2027))
+    expect(nextOccurrence(at(9, 8, 18), rule('weekly'), now)).toEqual(at(9, 22, 18))
+    expect(nextOccurrence(at(9, 10, 18), rule('weekly'), now)).toEqual(at(9, 24, 18))
+    expect(nextOccurrence(at(1, 5, 19, 30), rule('monthly'), now)).toEqual(at(10, 5, 19, 30))
+    expect(nextOccurrence(at(3, 14, 0, 0, 1990), rule('yearly'), now)).toEqual(
+      at(3, 14, 0, 0, 2027),
+    )
   })
 
   it('la vez de hoy cuenta aunque su hora ya haya pasado (sigue hoy hasta medianoche)', () => {
-    expect(nextOccurrence(at(8, 22, 10), 'monthly', now)).toEqual(at(9, 22, 10))
+    expect(nextOccurrence(at(8, 22, 10), rule('monthly'), now)).toEqual(at(9, 22, 10))
   })
 
   it('con el cambio de hora sigue a la misma hora del reloj', () => {
     // El 25 de octubre se atrasa la hora en España: la cena de los martes sigue a las 19:30.
-    const next = nextOccurrence(at(10, 20, 19, 30), 'weekly', at(10, 26))
+    const next = nextOccurrence(at(10, 20, 19, 30), rule('weekly'), at(10, 26))
     expect([next.getDate(), next.getHours(), next.getMinutes()]).toEqual([27, 19, 30])
   })
 
   it('si aún no ha empezado, es la primera', () => {
-    expect(nextOccurrence(at(12, 24, 21), 'yearly', now)).toEqual(at(12, 24, 21))
+    expect(nextOccurrence(at(12, 24, 21), rule('yearly'), now)).toEqual(at(12, 24, 21))
   })
 
   it('el 31 de cada mes es el último día en los meses cortos, y vuelve a ser 31', () => {
     const first = at(1, 31, 9)
-    expect(nextOccurrence(first, 'monthly', at(9, 2))).toEqual(at(9, 30, 9))
-    expect(nextOccurrence(first, 'monthly', at(10, 1))).toEqual(at(10, 31, 9))
+    expect(nextOccurrence(first, rule('monthly'), at(9, 2))).toEqual(at(9, 30, 9))
+    expect(nextOccurrence(first, rule('monthly'), at(10, 1))).toEqual(at(10, 31, 9))
   })
 
   it('el 29 de febrero pasa al 28 los años que no son bisiestos', () => {
     const first = at(2, 29, 0, 0, 2024)
-    expect(nextOccurrence(first, 'yearly', at(1, 10, 0, 0, 2027))).toEqual(at(2, 28, 0, 0, 2027))
-    expect(nextOccurrence(first, 'yearly', at(3, 1, 0, 0, 2027))).toEqual(at(2, 29, 0, 0, 2028))
+    expect(nextOccurrence(first, rule('yearly'), at(1, 10, 0, 0, 2027))).toEqual(
+      at(2, 28, 0, 0, 2027),
+    )
+    expect(nextOccurrence(first, rule('yearly'), at(3, 1, 0, 0, 2027))).toEqual(
+      at(2, 29, 0, 0, 2028),
+    )
   })
 })
 
@@ -118,9 +130,24 @@ describe('occurrence y occursOn', () => {
   })
 
   it('reconoce solo las repeticiones que hay', () => {
-    expect(isRecurrence('weekly')).toBe(true)
-    expect(isRecurrence('custom')).toBe(false)
-    expect(isRecurrence(null)).toBe(false)
+    expect(repeats('weekly')).toBe(true)
+    expect(repeats('FREQ=WEEKLY;BYDAY=TU,FR')).toBe(true)
+    expect(repeats('custom')).toBe(false)
+    expect(repeats(null)).toBe(false)
+  })
+
+  it('una personalizada: martes y viernes (3.6)', () => {
+    const basura = event('Sacar la basura', at(9, 1), {
+      allDay: true,
+      recurrence: 'FREQ=WEEKLY;BYDAY=TU,FR',
+    })
+    // Martes 22: toca hoy; el jueves 24, no; el viernes 25, sí.
+    expect(occursOn(basura, now)).toBe(true)
+    expect(occursOn(basura, at(9, 24))).toBe(false)
+    expect(occursOn(basura, at(9, 25))).toBe(true)
+    expect(occurrencesBetween(basura, at(9, 21), at(10, 1)).map((day) => day.getDate())).toEqual([
+      22, 25, 29,
+    ])
   })
 })
 
@@ -262,15 +289,6 @@ describe('textos de la fila y de la ficha', () => {
     expect(pastLabel(event('Feria', at(8, 2), { allDay: true }), now)).toBe(
       'Fue el domingo 2 de agosto.',
     )
-  })
-
-  it('lo que significa cada repetición para ese día', () => {
-    const day = at(9, 24)
-    expect(recurrenceHint('daily', day)).toBeNull()
-    expect(recurrenceHint('weekly', day)).toBe('los jueves')
-    expect(recurrenceHint('weekly', at(9, 26))).toBe('los sábados')
-    expect(recurrenceHint('monthly', day)).toBe('el día 24')
-    expect(recurrenceHint('yearly', day)).toBe('el 24 de septiembre')
   })
 })
 

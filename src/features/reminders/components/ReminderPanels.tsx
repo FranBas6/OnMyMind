@@ -2,7 +2,7 @@ import { addDays, nextMonday, set, startOfDay } from 'date-fns'
 import { BellOff, Check, ChevronRight, CircleAlert, Repeat, WifiOff } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
-import { isRecurrence } from '@/features/items/events'
+import { repeats } from '@/features/items/recurrence'
 import { DueDatePicker } from '@/features/items/components/DueDatePicker'
 import { SheetHeader } from '@/features/items/components/FieldRow'
 import type { Item } from '@/features/items/types'
@@ -259,7 +259,7 @@ export function ReminderNote({
   device: string
   onPrompt: (kind: PushPromptKind) => void
 }) {
-  const sent = reminder.sentAt !== null && !isRecurrence(item.recurrence)
+  const sent = reminder.sentAt !== null && !repeats(item.recurrence)
   const repeating = repeatingReminderNote(reminder, item)
   const lines: ReactNode[] = []
   if (!online) {
