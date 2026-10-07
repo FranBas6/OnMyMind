@@ -3,11 +3,17 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 import {
   destinationShortName,
+  FieldMarks,
   ITEM_TITLE_MAX_LENGTH,
+  markedFieldClass,
   newItemKindAndStatus,
+  readsWrittenDates,
   useLinkPreview,
+  useWrittenDate,
+  WrittenDatePill,
   type Destination,
   type NewItemLink,
+  type WrittenDate,
 } from '@/features/items'
 import { useOnline } from '@/hooks/useOnline'
 import { cn } from '@/lib/utils'
@@ -18,6 +24,8 @@ import { DestinationChip, InboxMark, MoreButton } from './DestinationChip'
 import { AllListsPopover, SaveInSheet } from './AllLists'
 import { UrlCapturePreview } from './UrlCapturePreview'
 
+/** La letra del campo; la copia con las marcas de la fecha escrita lleva la misma (3.5). */
+const FIELD_TYPE = 'font-display leading-[1.3] font-bold tracking-[-0.02em]'
 /** A partir de aquí el texto baja de 26 a 22 px (diseño 07, C3). */
 const LONG_TEXT = 48
 /**
@@ -37,8 +45,16 @@ interface CaptureFormProps {
   origin: Destination | undefined
   /** La lista por defecto de Perfil: sale elegida si no se abre desde una lista. */
   defaultListId: string | null
-  /** Con un enlace (2.3), también lo que se sabe de su página. */
-  onSave: (title: string, destination: Destination, link: NewItemLink | undefined) => void
+  /**
+   * Con un enlace (2.3), también lo que se sabe de su página; con una fecha escrita (3.5), lo que
+   * se entendió de ella.
+   */
+  onSave: (
+    title: string,
+    destination: Destination,
+    link: NewItemLink | undefined,
+    written: WrittenDate | null,
+  ) => void
   onClose: () => void
 }
 
@@ -103,12 +119,23 @@ export function CaptureForm({
     defaultId: defaultListId,
     proposedId: proposed?.id,
   })
-  const title = link ? captureTitle(link, preview.metadata) : text.trim()
+  const kind = target ? newItemKindAndStatus(target.list.kind).kind : null
+  // Fechas escritas (3.5, diseño 21): solo si se guarda una tarea o un evento, y sin enlace. Con
+  // «En mente» o una lista de compras elegida no hay marca ni pastilla (A6).
+  const dateKind = !link && kind && readsWrittenDates(kind) ? kind : null
+  const dated = useWrittenDate(text, dateKind)
+  const marks = dated.understood && !dated.undone ? dated.understood.parsed.ranges : null
+  const [scrollTop, setScrollTop] = useState(0)
+  const title = link ? captureTitle(link, preview.metadata) : dated.toSave.title
 
   const save = () => {
-    if (!title || !target) return
-    const kind = newItemKindAndStatus(target.list.kind).kind
-    onSave(title, target, link ? capturedLink(link, preview, kind) : undefined)
+    if (!title || !target || !kind) return
+    onSave(
+      title,
+      target,
+      link ? capturedLink(link, preview, kind) : undefined,
+      dated.toSave.written,
+    )
   }
 
   const pick = (destination: Destination) => {
@@ -207,39 +234,58 @@ export function CaptureForm({
         )
       )}
 
-      <textarea
-        ref={(element) => {
-          field.current = element
-          grow(element)
-        }}
-        autoFocus
-        data-vaul-no-drag
-        aria-label="¿Qué tienes en mente?"
-        placeholder="¿Qué tienes en mente?"
-        rows={link?.onlyLink ? 1 : 2}
-        value={text}
-        maxLength={FIELD_MAX_LENGTH}
-        enterKeyHint={dialog ? 'enter' : 'done'}
-        onPaste={() => {
-          pasting.current = true
-        }}
-        onChange={(event) => {
-          changeText(event.target.value)
-          grow(event.currentTarget)
-        }}
-        onFocus={() => {
-          setPicking(false)
-        }}
-        onKeyDown={onKeyDown}
-        className={cn(
-          'max-h-[calc(4*1.3em)] w-full resize-none bg-transparent font-display leading-[1.3] font-bold tracking-[-0.02em] outline-none placeholder:text-placeholder',
-          // Solo el enlace: en índigo, más pequeño y partido por cualquier sitio (K1); en una
-          // línea si cabe, que debajo ya va su tarjeta.
-          link?.onlyLink
-            ? 'min-h-[1.35em] text-[19px] leading-[1.35] tracking-[-0.01em] break-all text-primary'
-            : ['min-h-[calc(2*1.3em)]', text.length > LONG_TEXT ? 'text-[22px]' : 'text-[26px]'],
+      <div className="relative">
+        {marks && (
+          <FieldMarks
+            text={text}
+            ranges={marks}
+            scroll={{ left: 0, top: scrollTop }}
+            multiline
+            className={cn(FIELD_TYPE, text.length > LONG_TEXT ? 'text-[22px]' : 'text-[26px]')}
+          />
         )}
-      />
+        <textarea
+          ref={(element) => {
+            field.current = element
+            grow(element)
+          }}
+          autoFocus
+          data-vaul-no-drag
+          aria-label="¿Qué tienes en mente?"
+          placeholder="¿Qué tienes en mente?"
+          rows={link?.onlyLink ? 1 : 2}
+          value={text}
+          maxLength={FIELD_MAX_LENGTH}
+          enterKeyHint={dialog ? 'enter' : 'done'}
+          onPaste={() => {
+            pasting.current = true
+          }}
+          onChange={(event) => {
+            changeText(event.target.value)
+            grow(event.currentTarget)
+          }}
+          onFocus={() => {
+            setPicking(false)
+          }}
+          onKeyDown={onKeyDown}
+          onScroll={(event) => {
+            setScrollTop(event.currentTarget.scrollTop)
+          }}
+          className={cn(
+            'relative block max-h-[calc(4*1.3em)] w-full resize-none bg-transparent outline-none placeholder:text-placeholder',
+            FIELD_TYPE,
+            marks && markedFieldClass,
+            // Solo el enlace: en índigo, más pequeño y partido por cualquier sitio (K1); en una
+            // línea si cabe, que debajo ya va su tarjeta.
+            link?.onlyLink
+              ? 'min-h-[1.35em] text-[19px] leading-[1.35] tracking-[-0.01em] break-all text-primary'
+              : ['min-h-[calc(2*1.3em)]', text.length > LONG_TEXT ? 'text-[22px]' : 'text-[26px]'],
+          )}
+        />
+      </div>
+
+      {/* Lo que se entendió de la fecha, bajo el texto (diseño 21, A1–A5 y D1). */}
+      <WrittenDatePill state={dated} kind={dateKind} />
 
       {link && (
         <UrlCapturePreview url={link.url} state={preview.state} metadata={preview.metadata} />

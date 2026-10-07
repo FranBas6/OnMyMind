@@ -18,6 +18,7 @@ import type {
   ItemStatus,
   MovedItem,
 } from './types'
+import type { NewItemDue } from './writtenDate'
 
 type ItemUpdate = Database['public']['Tables']['items']['Update']
 
@@ -70,6 +71,8 @@ export interface NewItem {
   position?: number
   /** Lo pegado en la captura con lo que trajo su página (2.3). */
   link?: NewItemLink
+  /** La fecha escrita con el título (3.5, `writtenDateFields`). */
+  due?: NewItemDue
 }
 
 /**
@@ -105,6 +108,7 @@ export async function createItem(item: NewItem): Promise<void> {
       title,
       status: item.status,
       position: item.position ?? (await lastPosition(item.listId)) + 1000,
+      ...(item.due && { due_at: item.due.at.toISOString(), all_day: item.due.allDay }),
       ...(item.link && {
         url: item.link.url,
         url_title: item.link.urlTitle,

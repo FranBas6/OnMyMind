@@ -27,15 +27,12 @@ import {
   type StatusFilter,
 } from '../filters'
 import { useItems } from '../hooks/useItems'
-import {
-  nextItemPosition,
-  useCreateItem,
-  useReorderItems,
-  useUpdateItem,
-} from '../hooks/useItemMutations'
+import { useCreateWithDate } from '../hooks/useCreateWithDate'
+import { nextItemPosition, useReorderItems, useUpdateItem } from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
 import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
 import { isChoosableKind, type AddableKind } from '../kind'
+import type { WrittenDate } from '../writtenDate'
 import { defaultItemKind, initialStatus } from '../status'
 import { hasPrices, pendingTotals } from '../prices'
 import { childrenOf, sublistSummary, topLevel } from '../sublists'
@@ -104,7 +101,7 @@ export function ListDetail({
     ...movedFromInboxQueryOptions(list.id),
     enabled: list.kind === 'inbox',
   })
-  const createItem = useCreateItem()
+  const createItem = useCreateWithDate()
   const updateItem = useUpdateItem()
   const addBarRef = useRef<AddItemBarHandle>(null)
   const queryClient = useQueryClient()
@@ -194,21 +191,24 @@ export function ListDetail({
   const notDownloaded = items.isPending && (items.fetchStatus === 'paused' || !online)
 
   const defaultKind = defaultItemKind(list.kind)
-  const add = (title: string, chosen: AddableKind | undefined) => {
+  const add = (title: string, chosen: AddableKind | undefined, written: WrittenDate | null) => {
     const kind = chosen ?? defaultKind
     // Una lista aún sin descargar empieza vacía en caché, para que lo añadido se vea; al volver
     // la red se descarga entera. La posición la pone el servidor (no sabemos cuál es la última).
     if (!all) queryClient.setQueryData(itemsQueryOptions(list.id).queryKey, [])
     const id = crypto.randomUUID()
-    createItem.mutate({
-      id,
-      listId: list.id,
-      parentId: sublist?.id ?? null,
-      title,
-      kind,
-      status: initialStatus(kind),
-      position: all ? nextItemPosition(all) : undefined,
-    })
+    createItem(
+      {
+        id,
+        listId: list.id,
+        parentId: sublist?.id ?? null,
+        title,
+        kind,
+        status: initialStatus(kind),
+        position: all ? nextItemPosition(all) : undefined,
+      },
+      written,
+    )
     // Una sublista se crea para meterle cosas: se entra en ella (decisión de Fran; diseño 12, S3).
     if (kind === 'sublist') onOpenSublist(id)
   }

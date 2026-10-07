@@ -61,3 +61,8 @@ export {
   RECURRENCE_LABELS,
   shortDay,
 } from './events'
+export { FieldMarks, markedFieldClass } from './components/FieldMarks'
+export { WrittenDatePill } from './components/WrittenDatePill'
+export { useWrittenDate, type WrittenDateState } from './hooks/useWrittenDate'
+export { readsWrittenDates, type WrittenDate } from './writtenDate'
+export { useCreateWithDate } from './hooks/useCreateWithDate'

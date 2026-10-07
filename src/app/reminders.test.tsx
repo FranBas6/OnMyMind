@@ -228,11 +228,12 @@ describe('avisos en la ficha (2.6, diseño 18)', () => {
       { id: 'r2', itemId: seguro.id, remindAt: at(10, 12, 17), offsetMinutes: null, sentAt: null },
     ]
     const row = (title: string) => screen.getByText(title).closest('li')
+    // Con día y aviso ese mismo día, la hora del aviso (diseño 21, A10).
     await waitFor(() => {
-      expect(row('Pagar el alquiler')).toHaveTextContent('Con aviso')
+      expect(row('Pagar el alquiler')).toHaveTextContent('Aviso a las 9:00')
     })
     expect(row('Llamar al seguro')).toHaveTextContent('Lun 12 oct · 17:00')
-    expect(row('Dentista')).not.toHaveTextContent('Con aviso')
+    expect(row('Dentista')).not.toHaveTextContent(/Con aviso|Aviso a las/)
   })
 
   it('el primer aviso en un dispositivo sin avisos pregunta; «Ahora no» deja el «Activar» abajo', async () => {

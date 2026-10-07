@@ -1,4 +1,4 @@
-import { ArrowUp, ChevronDown } from 'lucide-react'
+import { ArrowUp, ChevronDown, CornerDownLeft } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import {
   useImperativeHandle,
@@ -21,14 +21,21 @@ import {
   type AddableKind,
   type ChoosableKind,
 } from '../kind'
+import { useWrittenDate } from '../hooks/useWrittenDate'
 import { ITEM_TITLE_MAX_LENGTH, itemTitleSchema } from '../schemas'
+import { readsWrittenDates, type WrittenDate } from '../writtenDate'
+import { FieldMarks, markedFieldClass } from './FieldMarks'
 import { KindOptions } from './KindOptions'
 import { KIND_ICONS } from './kindIcons'
+import { WrittenDatePill } from './WrittenDatePill'
 
 interface AddItemBarProps {
   placeholder: string
-  /** `kind` es el tipo elegido o, si no se ha tocado nada, el tipo por defecto de la lista. */
-  onAdd: (title: string, kind: AddableKind | undefined) => void
+  /**
+   * `kind` es el tipo elegido o, si no se ha tocado nada, el tipo por defecto de la lista. Con una
+   * fecha escrita en una tarea o un evento (3.5), `written` es lo que se entendió de ella.
+   */
+  onAdd: (title: string, kind: AddableKind | undefined, written: WrittenDate | null) => void
   /**
    * `docked`: móvil, pegado encima de la barra de navegación y siempre visible (pantalla 4).
    * `inline`: escritorio, un campo de 56 px arriba de la lista con la pista ↩ (D1).
@@ -99,13 +106,28 @@ export function AddItemBar({
   const kind = kinds ? (prefixed?.kind ?? chosen ?? kinds.defaultKind) : undefined
   const chip = kinds && kind && kind !== kinds.defaultKind ? kind : null
 
+  // Fechas escritas (3.5, diseño 21, A8, A9 y D2): en tareas y eventos, sin el prefijo de tipo.
+  const body = prefixed ? prefixed.title : title
+  const dateKind = kind && readsWrittenDates(kind) ? kind : null
+  const dated = useWrittenDate(body, dateKind)
+  const offset = title.length - body.length
+  const marks =
+    dated.understood && !dated.undone
+      ? dated.understood.parsed.ranges.map(({ start, end }) => ({
+          start: start + offset,
+          end: end + offset,
+        }))
+      : null
+  const [scrollLeft, setScrollLeft] = useState(0)
+
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const parsed = itemTitleSchema.safeParse(prefixed ? prefixed.title : title)
+    const parsed = itemTitleSchema.safeParse(dated.toSave.title)
     if (!parsed.success) return
-    onAdd(parsed.data, kind)
+    onAdd(parsed.data, kind, dated.toSave.written)
     setTitle('')
     setChosen(null)
+    dated.reset()
     input.current?.focus()
   }
 
@@ -156,20 +178,37 @@ export function AddItemBar({
     >
       {kindButton &&
         (inline ? <Popover.Trigger asChild>{kindButton}</Popover.Trigger> : kindButton)}
-      <input
-        ref={input}
-        value={title}
-        onChange={(event) => {
-          setTitle(event.target.value)
-        }}
-        placeholder={placeholder}
-        aria-label={placeholder}
-        maxLength={ITEM_TITLE_MAX_LENGTH}
-        autoFocus={autoFocus}
-        autoComplete="off"
-        enterKeyHint="enter"
-        className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-subtle-foreground"
-      />
+      <div className="relative h-full min-w-0 flex-1">
+        {marks && (
+          <FieldMarks
+            text={title}
+            ranges={marks}
+            scroll={{ left: scrollLeft, top: 0 }}
+            multiline={false}
+            className="text-base"
+          />
+        )}
+        <input
+          ref={input}
+          value={title}
+          onChange={(event) => {
+            setTitle(event.target.value)
+          }}
+          onScroll={(event) => {
+            setScrollLeft(event.currentTarget.scrollLeft)
+          }}
+          placeholder={placeholder}
+          aria-label={placeholder}
+          maxLength={ITEM_TITLE_MAX_LENGTH}
+          autoFocus={autoFocus}
+          autoComplete="off"
+          enterKeyHint="enter"
+          className={cn(
+            'relative h-full w-full bg-transparent text-base outline-none placeholder:text-subtle-foreground',
+            marks && markedFieldClass,
+          )}
+        />
+      </div>
       {/* Añadir sin tener que saber lo de Intro (decisión de Fran): gris hasta que hay texto. */}
       <button
         type="submit"
@@ -182,6 +221,9 @@ export function AddItemBar({
       </button>
     </form>
   )
+
+  // En móvil encima del campo (A9); en escritorio debajo, con la pista ↩ (D2).
+  const pill = <WrittenDatePill state={dated} kind={dateKind} />
 
   if (!kinds || !kind) {
     if (inline) return field
@@ -203,7 +245,18 @@ export function AddItemBar({
   if (inline) {
     return (
       <Popover.Root open={picking} onOpenChange={setPicking}>
-        <Popover.Anchor asChild>{field}</Popover.Anchor>
+        <div className="flex flex-col gap-2.5">
+          <Popover.Anchor asChild>{field}</Popover.Anchor>
+          {dated.understood && (
+            <div className="flex items-center gap-3">
+              {pill}
+              <span className="flex items-center gap-1 text-[13px] text-subtle-foreground">
+                <CornerDownLeft aria-hidden className="size-3.5" strokeWidth={2.2} />
+                para guardar
+              </span>
+            </div>
+          )}
+        </div>
         <Popover.Portal>
           <Popover.Content
             align="start"
@@ -230,6 +283,7 @@ export function AddItemBar({
 
   return (
     <Docked>
+      {dated.understood && <div className="mb-2.5 flex">{pill}</div>}
       {field}
       <BottomSheet open={picking} onOpenChange={setPicking} title={heading} className="px-4">
         <p className="px-3.5 pt-1 pb-2 text-xs font-bold tracking-[0.06em] text-subtle-foreground uppercase">

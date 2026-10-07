@@ -8,12 +8,13 @@ import {
   destinationShortName,
   destinationsOf,
   newItemKindAndStatus,
-  useCreateItem,
+  useCreateWithDate,
   useDeleteItem,
   useFillCapturedLink,
   useSublists,
   type Destination,
   type NewItemLink,
+  type WrittenDate,
 } from '@/features/items'
 import { useLists, type List } from '@/features/lists'
 import { useProfile } from '@/features/profile'
@@ -51,7 +52,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
   const lists = useLists()
   const sublists = useSublists()
   const profile = useProfile()
-  const createItem = useCreateItem()
+  const createItem = useCreateWithDate()
   const deleteItem = useDeleteItem()
   const fillLink = useFillCapturedLink()
   const [state, setState] = useState<CaptureState>({
@@ -91,17 +92,24 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
 
   // Dentro de una sublista, lo capturado nace con el tipo por defecto de su lista. Con un enlace
   // cuya página aún no había llegado, se completa cuando llegue.
-  const save = (title: string, destination: Destination, link: NewItemLink | undefined) => {
+  const save = (
+    title: string,
+    destination: Destination,
+    link: NewItemLink | undefined,
+    written: WrittenDate | null,
+  ) => {
     const { list, sublist } = destination
-    const item = {
-      id: crypto.randomUUID(),
-      listId: list.id,
-      parentId: sublist?.id ?? null,
-      title,
-      ...newItemKindAndStatus(list.kind),
-      ...(link && { link }),
-    }
-    createItem.mutate(item)
+    const item = createItem(
+      {
+        id: crypto.randomUUID(),
+        listId: list.id,
+        parentId: sublist?.id ?? null,
+        title,
+        ...newItemKindAndStatus(list.kind),
+        ...(link && { link }),
+      },
+      written,
+    )
     fillLink(item)
     close()
     showUndoToast({
