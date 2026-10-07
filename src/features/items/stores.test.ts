@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  alertTracking,
   cheapestLabel,
   cheapestLink,
   extraOver,
@@ -8,6 +9,7 @@ import {
   linkFromItem,
   newLink,
   sameLink,
+  stoppedNote,
   storeName,
   storesLabel,
   withLinks,
@@ -46,6 +48,7 @@ const compra: Item = {
   links: [],
   priceLinkId: null,
   priceStore: null,
+  priceTracking: null,
   createdBy: null,
   completedBy: null,
 }
@@ -59,6 +62,7 @@ const tienda = (id: string, price: number | null, extra: Partial<ItemLink> = {})
   currency: 'EUR',
   priceSource: price === null ? null : 'web',
   priceCheckedAt: NOW,
+  priceTracking: price === null ? null : 'on',
   position: 1000,
   ...extra,
 })
@@ -128,6 +132,7 @@ describe('de una tienda a varias', () => {
       priceCents: 29900,
       priceLinkId: null,
       priceStore: null,
+      priceTracking: null,
       createdBy: null,
       completedBy: null,
     })
@@ -159,5 +164,30 @@ describe('para enseñarlas', () => {
     expect(storeName({ urlSite: null, url: 'https://www.mediamarkt.es/x' })).toBe('mediamarkt.es')
     expect(sameLink('https://www.mediamarkt.es/lg/', 'https://MediaMarkt.es/lg')).toBe(true)
     expect(sameLink('https://www.mediamarkt.es/lg', 'https://www.mediamarkt.es/otro')).toBe(false)
+  })
+})
+
+describe('ya no se puede seguir (3.8, diseño 22, T2)', () => {
+  it('lo dice de la tienda que se dejó de mirar, y si las otras siguen', () => {
+    expect(stoppedNote(['LG'], 3)).toBe(
+      'LG no ha dado el precio tres mañanas seguidas y se ha dejado de mirar. Las otras siguen. Para volver a probar con LG, toca ↻.',
+    )
+    expect(stoppedNote(['LG'], 2)).toBe(
+      'LG no ha dado el precio tres mañanas seguidas y se ha dejado de mirar. La otra sigue. Para volver a probar con LG, toca ↻.',
+    )
+    expect(stoppedNote(['LG', 'Amazon'], 2)).toBe(
+      'LG y Amazon no han dado el precio tres mañanas seguidas y se ha dejado de mirar. Para volver a probar, toca ↻.',
+    )
+  })
+
+  it('una compra se mira sola si alguna tienda se mira; en pausa si ninguna puede', () => {
+    const conTiendas = (a: ItemLink['priceTracking'], b: ItemLink['priceTracking']) => ({
+      ...compra,
+      links: [tienda('a', 100, { priceTracking: a }), tienda('b', 200, { priceTracking: b })],
+    })
+    expect(alertTracking(conTiendas('on', 'stopped'))).toBe('on')
+    expect(alertTracking(conTiendas('stopped', null))).toBe('stopped')
+    expect(alertTracking(conTiendas(null, null))).toBeNull()
+    expect(alertTracking({ ...compra, priceTracking: 'on' })).toBe('on')
   })
 })

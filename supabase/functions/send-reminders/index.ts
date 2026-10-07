@@ -6,32 +6,19 @@
 // Dentro usa `service_role` (la ponen las edge functions en el entorno, nunca sale de aquí): tiene
 // que leer los avisos y las suscripciones de todos. Lo que toca enviar lo reclaman
 // `claim_due_reminders` y `claim_daily_summaries`, que lo marcan a la vez; los textos salen de
-// `messages.ts`. Push con `@negrel/webpush` (WebCrypto, sin Node; cierra el punto de 08): el
-// `web-push` de npm no funciona en el edge runtime.
+// `messages.ts`. El envío es el de `_shared/webpush.ts` (`@negrel/webpush`, WebCrypto, sin Node),
+// que comparte con `refresh-prices`.
 
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0'
-import * as webpush from 'jsr:@negrel/webpush@0.5.0'
 
+import { deliver, type Outgoing } from '../_shared/webpush.ts'
 import {
   groupByUser,
-  isGoneStatus,
   planReminder,
-  type PushMessage,
   summaryMessage,
   toDueReminder,
   toSummaryEntry,
-  VAPID_PUBLIC_KEY,
-  VAPID_SUBJECT,
-  vapidJwk,
 } from './messages.ts'
-
-interface Subscription {
-  id: string
-  user_id: string
-  endpoint: string
-  p256dh: string
-  auth: string
-}
 
 /** Un aviso que llega tarde ya no sirve: el servicio de push lo tira si el móvil no lo recoge. */
 const REMINDER_TTL_SECONDS = 60 * 60
@@ -43,9 +30,7 @@ const supabase = createClient(
   { auth: { persistSession: false, autoRefreshToken: false } },
 )
 
-const vapidKeys = await webpush.importVapidKeys(
-  vapidJwk(VAPID_PUBLIC_KEY, Deno.env.get('VAPID_PRIVATE_KEY') ?? ''),
-)
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -75,7 +60,7 @@ Deno.serve(async (request) => {
   }
 
   // Qué sale para cada persona: sus avisos y, si le toca, su resumen.
-  const outbox: { userId: string; message: PushMessage; ttl: number; urgent: boolean }[] = []
+  const outbox: Outgoing[] = []
   const skipped: Record<string, number> = {}
   for (const row of (reminders.data ?? []) as Record<string, unknown>[]) {
     const reminder = toDueReminder(row)
@@ -101,77 +86,11 @@ Deno.serve(async (request) => {
   }
   if (outbox.length === 0) return json({ sent: 0, skipped, removed: 0 })
 
-  const users = [...new Set(outbox.map((entry) => entry.userId))]
-  const { data: subscriptions, error: subscriptionsError } = await supabase
-    .from('push_subscriptions')
-    .select('id, user_id, endpoint, p256dh, auth')
-    .in('user_id', users)
-  if (subscriptionsError) {
-    console.error('subscriptions', subscriptionsError.message)
+  try {
+    const { sent, removed } = await deliver(supabase, VAPID_PRIVATE_KEY, outbox, now)
+    return json({ sent, skipped, removed })
+  } catch (error) {
+    console.error(String(error))
     return json({ error: 'subscriptions' }, 500)
   }
-
-  const gone = new Set<string>()
-  const used = new Set<string>()
-  let sent = 0
-  await Promise.all(
-    outbox.flatMap(({ userId, message, ttl, urgent }) =>
-      (subscriptions as Subscription[])
-        .filter((subscription) => subscription.user_id === userId)
-        .map(async (subscription) => {
-          try {
-            await push(subscription, message, ttl, urgent)
-            sent += 1
-            used.add(subscription.id)
-          } catch (error) {
-            if (error instanceof webpush.PushMessageError && isGoneStatus(error.response.status)) {
-              gone.add(subscription.id)
-            } else {
-              console.error('push', String(error))
-            }
-          }
-        }),
-    ),
-  )
-
-  if (gone.size > 0) {
-    await supabase
-      .from('push_subscriptions')
-      .delete()
-      .in('id', [...gone])
-  }
-  const usable = [...used].filter((id) => !gone.has(id))
-  if (usable.length > 0) {
-    await supabase
-      .from('push_subscriptions')
-      .update({ last_used_at: now.toISOString() })
-      .in('id', usable)
-  }
-  return json({ sent, skipped, removed: gone.size })
 })
-
-/**
- * Un mensaje a un navegador, cifrado para él (RFC 8291) y firmado con VAPID (RFC 8292). Cada
- * mensaje lleva su propio par de claves efímero, como pide el RFC: por eso un servidor nuevo cada
- * vez (la librería lo genera al crearlo).
- */
-async function push(
-  subscription: Subscription,
-  message: PushMessage,
-  ttl: number,
-  urgent: boolean,
-): Promise<void> {
-  const server = await webpush.ApplicationServer.new({
-    contactInformation: VAPID_SUBJECT,
-    vapidKeys,
-  })
-  await server
-    .subscribe({
-      endpoint: subscription.endpoint,
-      keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-    })
-    .pushTextMessage(JSON.stringify(message), {
-      ttl,
-      urgency: urgent ? webpush.Urgency.High : webpush.Urgency.Normal,
-    })
-}

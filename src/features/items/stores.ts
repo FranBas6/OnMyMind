@@ -92,7 +92,10 @@ function priceFrom(item: Item, link: ItemLink, now: Date): Partial<Item> {
 
 /** Una tienda con un cambio aplicado. */
 export function patchLink(link: ItemLink, patch: ItemLinkPatch): ItemLink {
-  return { ...link, ...patch }
+  const next = { ...link, ...patch }
+  // Como el trigger (3.8): un precio de la web pone la tienda en seguimiento.
+  if (patch.priceSource === 'web' && next.priceCents !== null) next.priceTracking = 'on'
+  return next
 }
 
 /**
@@ -110,6 +113,7 @@ export function linkFromItem(item: Item, id: string): ItemLink | null {
     currency: item.currency,
     priceSource: item.priceSource,
     priceCheckedAt: item.priceCheckedAt,
+    priceTracking: item.priceTracking,
     position: 1000,
   }
 }
@@ -126,6 +130,7 @@ export function newLink(id: string, url: string, after: readonly ItemLink[]): It
     currency: 'EUR',
     priceSource: null,
     priceCheckedAt: null,
+    priceTracking: null,
     position: last + 1000,
   }
 }
@@ -173,4 +178,29 @@ export function cheapestLabel(item: Item): string | null {
 /** «en 3 tiendas» en la meta de la fila (diseño 19, T24). */
 export function storesLabel(item: Pick<Item, 'kind' | 'links'>): string | null {
   return hasStores(item) ? `en ${String(item.links.length)} tiendas` : null
+}
+
+/** Si una compra se mira sola: con varias tiendas, si alguna se mira; `stopped` si ninguna puede. */
+export function alertTracking(item: Item): 'on' | 'stopped' | null {
+  const all = hasStores(item) ? item.links.map((link) => link.priceTracking) : [item.priceTracking]
+  if (all.includes('on')) return 'on'
+  return all.includes('stopped') ? 'stopped' : null
+}
+
+/**
+ * Debajo de la caja, si alguna tienda ya no se puede seguir (diseño 22, T2): «LG no ha dado el
+ * precio tres mañanas seguidas y se ha dejado de mirar. Las otras siguen. Para volver a probar con
+ * LG, toca ↻.».
+ */
+export function stoppedNote(names: readonly string[], total: number): string {
+  const all = names.length === total
+  const who =
+    names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} y ${names.at(-1) ?? ''}`
+  const verb = names.length === 1 ? 'no ha dado' : 'no han dado'
+  const others = all ? '' : names.length === total - 1 ? ' La otra sigue.' : ' Las otras siguen.'
+  const retry =
+    names.length === 1
+      ? `Para volver a probar con ${who ?? ''}, toca ↻.`
+      : 'Para volver a probar, toca ↻.'
+  return `${who ?? ''} ${verb} el precio tres mañanas seguidas y se ha dejado de mirar.${others} ${retry}`
 }

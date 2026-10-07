@@ -4,6 +4,13 @@ import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'rec
 import { formatCents } from '@/lib/money'
 
 import type { ChartPoint, PriceChartData } from '../history'
+import type { PriceSource } from '../types'
+
+const SHORT_ORIGIN: Record<PriceSource, string> = {
+  auto: 'comprobado solo',
+  web: 'de la web',
+  manual: 'a mano',
+}
 
 interface PriceChartProps {
   data: PriceChartData
@@ -55,7 +62,13 @@ export function PriceChart({ data, currency }: PriceChartProps) {
           strokeWidth={2.5}
           isAnimationActive={false}
           dot={(props: { cx?: number; cy?: number; index?: number; payload?: ChartPoint }) => (
-            <PriceDot key={props.index} cx={props.cx} cy={props.cy} show={props.payload?.change} />
+            <PriceDot
+              key={props.index}
+              cx={props.cx}
+              cy={props.cy}
+              show={props.payload?.change}
+              source={props.payload?.source}
+            />
           )}
           activeDot={{
             r: 6,
@@ -69,15 +82,42 @@ export function PriceChart({ data, currency }: PriceChartProps) {
   )
 }
 
-/** El punto de un cambio: un aro índigo sobre la tarjeta. Los de los bordes no se dibujan. */
-function PriceDot({ cx, cy, show }: { cx?: number; cy?: number; show?: boolean }) {
+/**
+ * El punto de un cambio (diseño 22, P1): lleno si se miró solo, un aro si fue al actualizar y un
+ * rombo gris si se escribió a mano. Los de los bordes no se dibujan.
+ */
+function PriceDot({
+  cx,
+  cy,
+  show,
+  source,
+}: {
+  cx?: number
+  cy?: number
+  show?: boolean
+  source?: PriceSource
+}) {
   if (!show || cx === undefined || cy === undefined) return <g />
+  if (source === 'manual') {
+    return (
+      <rect
+        x={cx - 4}
+        y={cy - 4}
+        width={8}
+        height={8}
+        transform={`rotate(45 ${String(cx)} ${String(cy)})`}
+        fill="var(--color-card)"
+        stroke="var(--color-muted-foreground)"
+        strokeWidth={2}
+      />
+    )
+  }
   return (
     <circle
       cx={cx}
       cy={cy}
-      r={4.5}
-      fill="var(--color-card)"
+      r={source === 'auto' ? 3.5 : 4.5}
+      fill={source === 'auto' ? 'var(--color-primary)' : 'var(--color-card)'}
       stroke="var(--color-primary)"
       strokeWidth={2}
     />
@@ -92,15 +132,17 @@ function PointLabel({ point, currency }: { point: ChartPoint; currency: string }
       <p className="text-[13px]">
         <span className="font-display font-extrabold">{formatCents(point.cents, currency)}</span>
         {' · '}
-        {isSameDay(since, new Date()) ? 'hoy' : format(since, 'd MMM')}
+        {isSameDay(since, new Date()) ? `hoy, ${format(since, 'd MMM')}` : format(since, 'd MMM')}
       </p>
       <p className="mt-0.5 text-xs opacity-80">
         {/* Con varias tiendas, dice de cuál era (diseño 19, T20): «MediaMarkt · de la web». */}
         {point.store
-          ? `${point.store} · ${point.source === 'manual' ? 'a mano' : 'de la web'}`
-          : point.source === 'manual'
-            ? 'Puesto a mano'
-            : 'De la web'}
+          ? `${point.store} · ${SHORT_ORIGIN[point.source]}`
+          : point.source === 'auto'
+            ? `Comprobado solo, a las ${format(since, 'H:mm')}`
+            : point.source === 'web'
+              ? 'De la web, al actualizar'
+              : 'Puesto a mano'}
       </p>
     </div>
   )

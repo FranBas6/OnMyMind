@@ -1,4 +1,4 @@
-import { addMonths, format, startOfMonth, subMonths } from 'date-fns'
+import { addMonths, format, isSameDay, startOfMonth, subMonths } from 'date-fns'
 
 import type { PriceRecord, PriceSource } from './types'
 
@@ -107,4 +107,32 @@ export function firstPrice(records: readonly PriceRecord[], currency: string): n
 /** Lo que ahorraste en una compra: lo que bajó desde su primer precio, o 0. */
 export function savedCents(first: number | null, paid: number): number {
   return first !== null && first > paid ? first - paid : 0
+}
+
+/** Lo que pasó esta mañana con el precio de una compra (diseño 22, P2–P4). */
+export interface MorningChange {
+  direction: 'down' | 'up'
+  /** El precio de antes, con su origen: si era a mano, la web lo ha sustituido (P4). */
+  before: PriceRecord
+  /** El de ahora: con varias tiendas, `store` dice cuál bajó (T1). */
+  after: PriceRecord
+}
+
+/**
+ * Si el último cambio del precio lo hizo la consulta de esta mañana (`auto` y de hoy): si bajó o
+ * subió, y desde qué. `null` si no cambió solo hoy.
+ */
+export function morningChange(
+  records: readonly PriceRecord[],
+  currency: string,
+  now: Date = new Date(),
+): MorningChange | null {
+  const rows = records.filter((record) => record.currency === currency)
+  const after = rows.at(-1)
+  const before = rows.at(-2)
+  if (!after || !before || after.source !== 'auto' || !isSameDay(after.recordedAt, now)) {
+    return null
+  }
+  if (after.cents === before.cents) return null
+  return { direction: after.cents < before.cents ? 'down' : 'up', before, after }
 }

@@ -7,7 +7,7 @@ Las edge functions de Supabase (Deno), una carpeta por función:
   precio sale por capas: JSON-LD `Product`, las meta `product:price` y los microdatos (ADR-007). Lee
   hasta 2 MB, porque el JSON-LD suele ir en el cuerpo. Solo contesta a usuarios con sesión (la
   clave `anon` recibe un 401). La extracción vive en `metadata.ts`, que es puro y se prueba con
-  Vitest (`metadata.test.ts`).
+  Vitest (`_shared/metadata.test.ts`).
 - **`send-reminders`** (2.7): envía los avisos vencidos y el resumen de Hoy. La llama `pg_cron`
   cada minuto con `pg_net` y la cabecera `x-cron-secret` (migración `send_reminders_cron`; el
   secreto vive en Vault y lo comprueba `verify_cron_secret`). Sin la puerta de JWT
@@ -20,7 +20,15 @@ Las edge functions de Supabase (Deno), una carpeta por función:
   JWT (`verify_jwt = false`): el Calendario no sabe iniciar sesión, así que el enlace secreto de
   Perfil es la llave. Lee con `calendar_feed` (solo `service_role`); un enlace que no existe da 404.
   El texto sale de `ical.ts`, puro y probado con Vitest (`ical.test.ts`). No necesita secretos.
-- Más adelante: el refresco de precios.
+- **`refresh-prices`** (3.8): cada mañana, de 9:00 a 12:00 en Madrid, vuelve a mirar el precio de
+  las compras cuya tienda lo dio alguna vez, lo guarda como automático y avisa de las bajadas a quien
+  pidió «Avisarme si baja». La llama `pg_cron` como a `send-reminders`, con la misma cabecera
+  secreta, y su dirección va en Vault: `select vault.create_secret('<url de la función>',
+'refresh_prices_url');`. Necesita `VAPID_PRIVATE_KEY`, como `send-reminders`. Lo puro, en
+  `prices.ts`. En local, `REFRESH_PRICES_LOCAL_STORES=true` en el `--env-file` deja llegar a una
+  tienda falsa en el Mac; nunca en la nube.
+- **`_shared/`** (3.8): lo que comparten. `metadata.ts` y `page.ts` (leer una página y su precio),
+  `push.ts` (el mensaje y VAPID, puro) y `webpush.ts` (el envío).
 
 Crear o servir una función en local (necesita `[edge_runtime] enabled = true` en `config.toml`,
 apagado de serie para ahorrar ~1 GB de imagen):
@@ -38,4 +46,5 @@ Publicarla en la nube (`--use-api` la empaqueta en Supabase, sin bajar la imagen
 pnpm exec supabase functions deploy fetch-metadata --use-api
 pnpm exec supabase functions deploy send-reminders --use-api
 pnpm exec supabase functions deploy calendar-feed --use-api
+pnpm exec supabase functions deploy refresh-prices --use-api
 ```

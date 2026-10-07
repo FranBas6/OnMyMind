@@ -61,6 +61,8 @@ export interface Item {
   priceLinkId: string | null
   /** Su nombre («MediaMarkt»), para «En MediaMarkt, la más barata de 3». */
   priceStore: string | null
+  /** Si el precio se mira solo cada mañana (3.8). Con varias tiendas, cuenta el de cada una. */
+  priceTracking: PriceTracking
   /**
    * Quién lo añadió y quién lo completó (3.3): en una lista compartida, la inicial del otro. `null`
    * en lo que aún no ha vuelto del servidor (lo acabas de hacer tú).
@@ -80,11 +82,21 @@ export interface ItemLink {
   currency: string
   priceSource: PriceSource | null
   priceCheckedAt: Date | null
+  priceTracking: PriceTracking
   position: number
 }
 
-/** `manual`: escrito a mano; `web`: de la página, porque se pegó el enlace o se pidió; `auto`: fase 3. */
+/**
+ * `manual`: escrito a mano; `web`: de la página, porque se pegó el enlace o se pidió; `auto`: mirado
+ * solo cada mañana (3.8).
+ */
 export type PriceSource = 'manual' | 'web' | 'auto'
+
+/**
+ * Si el precio se mira solo (3.8): `on`, la tienda lo dio alguna vez y se mira cada mañana;
+ * `stopped`, dejó de darlo tres mañanas seguidas («Ya no se puede seguir»); `null`, nunca lo dio.
+ */
+export type PriceTracking = 'on' | 'stopped' | null
 
 /**
  * Algo que salió de «En mente» y vive ya en otra lista: la inbox lo enseña tachado en su «Fuera

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { hasPrices, othersLabel, pendingTotals, priceLine } from './prices'
+import { priceTracking } from './schemas'
 import type { Item } from './types'
 
 const NOW = new Date(2026, 9, 1, 12)
@@ -36,6 +37,7 @@ function compra(overrides: Partial<Item> = {}): Item {
     links: [],
     priceLinkId: null,
     priceStore: null,
+    priceTracking: null,
     createdBy: null,
     completedBy: null,
     ...overrides,
@@ -107,5 +109,14 @@ describe('priceLine', () => {
         NOW,
       ),
     ).toBe('puesto a mano · ayer')
+  })
+})
+
+describe('priceTracking (3.8)', () => {
+  it('se mira sola si la tienda dio precio, y se deja tras tres mañanas sin darlo', () => {
+    expect(priceTracking(false, 0)).toBeNull()
+    expect(priceTracking(true, 0)).toBe('on')
+    expect(priceTracking(true, 2)).toBe('on')
+    expect(priceTracking(true, 3)).toBe('stopped')
   })
 })

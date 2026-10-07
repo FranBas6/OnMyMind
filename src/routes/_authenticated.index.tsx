@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ListPlus } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { z } from 'zod'
 
 import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PriceDropsSheet } from '@/features/items'
 import {
   ArchivedListsSection,
   InboxCard,
@@ -18,7 +20,16 @@ import {
 import { initialOf, useProfile } from '@/features/profile'
 import { formatHeaderDate } from '@/lib/date'
 
+/**
+ * `?bajadas=hoy` abre «Bajaron esta mañana» (3.8, diseño 22, N3): es a donde lleva el aviso de
+ * varias bajadas a la vez.
+ */
+const searchSchema = z.object({
+  bajadas: z.literal('hoy').optional().catch(undefined),
+})
+
 export const Route = createFileRoute('/_authenticated/')({
+  validateSearch: searchSchema,
   // En escritorio, Inicio va a 880 px para que quepan tres tarjetas (diseño 03 Inicio).
   staticData: { wide: true },
   // Pide las listas antes de pintar: `query()` devuelve la caché si está fresca y, si no, la
@@ -38,6 +49,8 @@ export const Route = createFileRoute('/_authenticated/')({
 function HomePage() {
   const profile = useProfile()
   const lists = useLists()
+  const { bajadas } = Route.useSearch()
+  const navigate = Route.useNavigate()
 
   return (
     <HomeLayout
@@ -66,6 +79,12 @@ function HomePage() {
           <ArchivedListsSection />
         </>
       )}
+      <PriceDropsSheet
+        open={bajadas === 'hoy'}
+        onOpenChange={(open) => {
+          if (!open) void navigate({ search: {}, replace: true })
+        }}
+      />
     </HomeLayout>
   )
 }

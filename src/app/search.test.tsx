@@ -64,6 +64,7 @@ function item(n: number, title: string, overrides: Partial<Item> = {}): Item {
     links: [],
     priceLinkId: null,
     priceStore: null,
+    priceTracking: null,
     createdBy: null,
     completedBy: null,
     ...overrides,

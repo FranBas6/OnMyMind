@@ -77,6 +77,7 @@ const updateSettingsMutation = durableMutation(
         ...(patch.timezone !== undefined && { timezone: patch.timezone }),
         ...(patch.dailySummaryTime !== undefined && { dailySummaryTime: patch.dailySummaryTime }),
         ...(patch.inboxSort !== undefined && { inboxSort: patch.inboxSort }),
+        ...(patch.priceDropAlerts !== undefined && { priceDropAlerts: patch.priceDropAlerts }),
       },
     }),
     updateSettings,

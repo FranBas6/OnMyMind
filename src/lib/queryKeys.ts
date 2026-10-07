@@ -54,6 +54,10 @@ export const queryKeys = {
   prices: (itemId: string) => ['prices', itemId] as const,
   /** «Ahorrado» de Perfil (2.2): fuera de `['prices']`, que son históricos de un ítem. */
   savings: ['savings'] as const,
+  /** Las compras con «Avisarme si baja» (3.8): las tuyas, todas de una vez. */
+  priceAlerts: ['price-alerts'] as const,
+  /** «Bajaron esta mañana» (3.8): se pide al abrir la hoja. */
+  priceDrops: ['price-drops'] as const,
   profile: () => ['profile'] as const,
   /** Tu enlace del Calendario del iPhone (3.7): `null` si aún no tienes. */
   calendarToken: ['calendar-token'] as const,

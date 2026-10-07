@@ -97,6 +97,9 @@ export type Database = {
           position: number
           price_cents: number | null
           price_checked_at: string | null
+          price_failed_at: string | null
+          price_failures: number
+          price_followed: boolean
           price_source: Database['public']['Enums']['price_source'] | null
           url: string
           url_site: string | null
@@ -110,6 +113,9 @@ export type Database = {
           position?: number
           price_cents?: number | null
           price_checked_at?: string | null
+          price_failed_at?: string | null
+          price_failures?: number
+          price_followed?: boolean
           price_source?: Database['public']['Enums']['price_source'] | null
           url: string
           url_site?: string | null
@@ -123,6 +129,9 @@ export type Database = {
           position?: number
           price_cents?: number | null
           price_checked_at?: string | null
+          price_failed_at?: string | null
+          price_failures?: number
+          price_followed?: boolean
           price_source?: Database['public']['Enums']['price_source'] | null
           url?: string
           url_site?: string | null
@@ -199,6 +208,9 @@ export type Database = {
           previous_price_cents: number | null
           price_cents: number | null
           price_checked_at: string | null
+          price_failed_at: string | null
+          price_failures: number
+          price_followed: boolean
           price_link_id: string | null
           price_source: Database['public']['Enums']['price_source'] | null
           price_store: string | null
@@ -232,6 +244,9 @@ export type Database = {
           previous_price_cents?: number | null
           price_cents?: number | null
           price_checked_at?: string | null
+          price_failed_at?: string | null
+          price_failures?: number
+          price_followed?: boolean
           price_link_id?: string | null
           price_source?: Database['public']['Enums']['price_source'] | null
           price_store?: string | null
@@ -265,6 +280,9 @@ export type Database = {
           previous_price_cents?: number | null
           price_cents?: number | null
           price_checked_at?: string | null
+          price_failed_at?: string | null
+          price_failures?: number
+          price_followed?: boolean
           price_link_id?: string | null
           price_source?: Database['public']['Enums']['price_source'] | null
           price_store?: string | null
@@ -552,6 +570,39 @@ export type Database = {
           },
         ]
       }
+      price_alerts: {
+        Row: {
+          created_at: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'price_alerts_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'price_alerts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -758,6 +809,7 @@ export type Database = {
         Returns: Database['public']['Enums']['item_kind']
       }
       delete_own_account: { Args: Record<PropertyKey, never>; Returns: undefined }
+      invoke_refresh_prices: { Args: Record<PropertyKey, never>; Returns: number }
       invoke_send_reminders: { Args: Record<PropertyKey, never>; Returns: number }
       is_active_sublist_status: { Args: { p_status: string }; Returns: boolean }
       is_final_status: { Args: { p_status: string }; Returns: boolean }
@@ -790,6 +842,21 @@ export type Database = {
           user_id: string
         }[]
       }
+      my_price_drops: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          currency: string
+          image_path: string
+          image_url: string
+          item_id: string
+          list_id: string
+          list_name: string
+          previous_price_cents: number
+          price_cents: number
+          store: string
+          title: string
+        }[]
+      }
       new_calendar_token: { Args: Record<PropertyKey, never>; Returns: string }
       next_occurrence: {
         Args: { p_after: string; p_first: string; p_rule: string; p_tz: string }
@@ -801,7 +868,29 @@ export type Database = {
       }
       orphan_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
       own_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
+      price_checks_due: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          target: string
+          url: string
+        }[]
+      }
       price_savings: { Args: Record<PropertyKey, never>; Returns: number }
+      record_price_check: {
+        Args: { p_currency?: string; p_id: string; p_price_cents: number; p_target: string }
+        Returns: {
+          after_cents: number
+          before_cents: number
+          before_checked_at: string
+          currency: string
+          item_id: string
+          list_id: string
+          recipients: string[]
+          store: string
+          title: string
+        }[]
+      }
       recurrence_is_valid: { Args: { p_rule: string }; Returns: boolean }
       recurrence_occurrence: {
         Args: { p_first: string; p_from: string; p_rule: string }

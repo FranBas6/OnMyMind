@@ -1,20 +1,31 @@
 import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, LoaderCircle, Pencil, Plus, Trash2, WifiOff, X } from 'lucide-react'
+import {
+  ExternalLink,
+  LoaderCircle,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  WifiOff,
+  X,
+} from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { format } from 'date-fns'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
+import { morningChange, usePriceHistory } from '@/features/prices'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 import type { RefreshState } from '../hooks/useRefreshPrice'
 import { linkDomain, URL_TITLE_MAX_LENGTH } from '../links'
+import { priceOrigin } from '../prices'
 import { linkMetadataQueryOptions } from '../queries'
-import { cheapestLink, extraOver, sameLink, storeName } from '../stores'
+import { cheapestLink, extraOver, sameLink, stoppedNote, storeName } from '../stores'
 import type { Item, ItemLink, ItemLinkPatch } from '../types'
 import { LinkInput } from './LinkInput'
-import { PriceField } from './PriceBlock'
+import { OriginLine, PriceField } from './PriceBlock'
 
 interface StoresSectionProps {
   item: Item
@@ -24,6 +35,8 @@ interface StoresSectionProps {
   onAdd: (url: string) => void
   onUpdate: (linkId: string, patch: ItemLinkPatch) => void
   onRemove: (link: ItemLink) => void
+  /** Volver a probar una tienda que ya no se podía seguir (↻, diseño 22, T1). */
+  onRetry: (linkId: string) => void
   /** Una frase para el bloque de precio («MediaMarkt es la más barata: 20 € menos…»). */
   onNotice: (text: string) => void
 }
@@ -42,11 +55,16 @@ export function StoresSection({
   onAdd,
   onUpdate,
   onRemove,
+  onRetry,
   onNotice,
 }: StoresSectionProps) {
   const [adding, setAdding] = useState(false)
   const best = cheapestLink(item.links)
   const priced = item.links.filter((link) => link.priceCents !== null).length
+  // Qué tienda bajó (o subió) esta mañana: la del último cambio del precio, si fue solo (T1).
+  const history = usePriceHistory(item.id, item.priceCents, item.previousPriceCents !== null)
+  const morning = history.data ? morningChange(history.data, item.currency) : null
+  const stopped = item.links.filter((link) => link.priceTracking === 'stopped')
 
   return (
     <section aria-label="Dónde comprarlo" className="flex flex-col gap-2">
@@ -68,6 +86,10 @@ export function StoresSection({
             online={online}
             searching={refresh.status === 'searching' && refresh.ids.includes(link.id)}
             failed={refresh.status === 'summary' && refresh.failedIds.includes(link.id)}
+            morning={morning?.after.store === storeName(link) ? morning.direction : null}
+            onRetry={() => {
+              onRetry(link.id)
+            }}
             onUpdate={(patch) => {
               onUpdate(link.id, patch)
             }}
@@ -105,6 +127,11 @@ export function StoresSection({
           )}
         </li>
       </ul>
+      {stopped.length > 0 && (
+        <p className="px-1 text-[14px] leading-snug text-muted-foreground">
+          {stoppedNote(stopped.map(storeName), item.links.length)}
+        </p>
+      )}
     </section>
   )
 }
@@ -191,6 +218,9 @@ interface StoreRowProps {
   searching: boolean
   /** «Actualizar precio» no pudo mirarla: se queda con su último precio (diseño 19, T18). */
   failed: boolean
+  /** Si es la que bajó o subió sola esta mañana (diseño 22, T1). */
+  morning: 'down' | 'up' | null
+  onRetry: () => void
   onUpdate: (patch: ItemLinkPatch) => void
   onRemove: () => void
   onNotice: (text: string) => void
@@ -206,6 +236,8 @@ function StoreRow({
   online,
   searching: refreshing,
   failed,
+  morning,
+  onRetry,
   onUpdate,
   onRemove,
   onNotice,
@@ -217,6 +249,7 @@ function StoreRow({
   const name = storeName(link)
   const domain = linkDomain(link.url)
   const checked = link.priceCheckedAt ? format(link.priceCheckedAt, 'd MMM') : null
+  const stopped = link.priceTracking === 'stopped'
 
   // Lo de debajo del nombre: el dominio y «Más barata», o cómo va (buscando, no da el precio…).
   const detail: ReactNode = searching ? (
@@ -238,7 +271,14 @@ function StoreRow({
     )
   ) : (
     <span className="flex min-w-0 items-center gap-1.5">
-      <span className="truncate">{domain}</span>
+      {/* Cómo se supo su precio (diseño 22, T1); sin precio todavía, su dominio. */}
+      <span className="truncate">
+        {link.priceSource !== null || stopped ? (
+          <OriginLine lead={null} origin={priceOrigin(link, morning, new Date(), true)} />
+        ) : (
+          domain
+        )}
+      </span>
       {cheapest && (
         <span className="shrink-0 rounded-[6px] bg-price-down-bg px-1.5 py-px text-[11px] font-bold text-price-down">
           Más barata
@@ -250,7 +290,12 @@ function StoreRow({
   const price =
     link.priceCents !== null ? (
       <span className="flex flex-col items-end text-right">
-        <span className="font-display text-base font-extrabold tracking-[-0.02em] whitespace-nowrap">
+        <span
+          className={cn(
+            'font-display text-base font-extrabold tracking-[-0.02em] whitespace-nowrap',
+            stopped && 'text-muted-foreground',
+          )}
+        >
           {formatCents(link.priceCents, link.currency)}
         </span>
         {extra && <span className="text-xs text-subtle-foreground">{extra}</span>}
@@ -293,7 +338,9 @@ function StoreRow({
         link.priceCents === null
           ? `${domain} no da el precio. Lo que escribas cuenta solo para esta tienda.`
           : link.priceSource === 'manual'
-            ? 'Escrito a mano. «Actualizar precio» no lo pisa en esta tienda.'
+            ? link.priceTracking === 'on'
+              ? 'Escrito a mano. «Actualizar precio» no lo pisa, pero la consulta de cada mañana sí, si la tienda da el precio.'
+              : 'Escrito a mano. «Actualizar precio» no lo pisa en esta tienda.'
             : undefined
       }
       savedAs="Se guarda como «a mano»."
@@ -406,6 +453,16 @@ function StoreRow({
           className="relative z-10 grid size-9 shrink-0 place-items-center rounded-[10px] text-muted-foreground outline-none hover:bg-fill hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <X aria-hidden className="size-4" strokeWidth={2.2} />
+        </button>
+      ) : stopped ? (
+        <button
+          type="button"
+          aria-label={`Volver a probar ${name}`}
+          disabled={!online}
+          onClick={onRetry}
+          className="relative z-10 grid size-9 shrink-0 place-items-center rounded-[10px] text-primary outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:text-subtle-foreground"
+        >
+          <RefreshCw aria-hidden className="size-4" strokeWidth={2.2} />
         </button>
       ) : (
         <a

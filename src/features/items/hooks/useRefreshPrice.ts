@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { formatCents } from '@/lib/money'
 
 import { fetchLinkMetadata, type LinkMetadata } from '../api'
+import { linkDomain } from '../links'
 import { cheapestLink, hasStores, patchLink, storeName } from '../stores'
 import type { Item, ItemLink, ItemLinkPatch, ItemPatch } from '../types'
 
@@ -38,6 +40,9 @@ type Outcome =
  *   porque se ha pedido; si es el mismo, solo se apunta que se miró.
  * - **Varias:** se miran a la vez todas las que no tienen el precio escrito a mano («Actualizar
  *   precio» no lo pisa en esa tienda, diseño 19, T13), y la compra se queda con la más barata.
+ *   `refreshLink` mira solo una: el ↻ de una tienda que ya no se podía seguir (diseño 22, T1).
+ * - **Si ya no se podía seguir** (3.8) y ahora da precio, vuelve a mirarse cada mañana y se dice:
+ *   «Keychron vuelve a mirarse cada mañana» (T4).
  */
 export function useRefreshPrice(
   item: Item,
@@ -55,6 +60,9 @@ export function useRefreshPrice(
         setState({ status: readable(metadata) ? 'none' : 'blocked' })
         return
       }
+      if (item.priceTracking === 'stopped') {
+        toast(`${item.urlSite ?? linkDomain(url)} vuelve a mirarse cada mañana`)
+      }
       if (price.cents === item.priceCents && price.currency === item.currency) {
         onUpdate(item, { priceSource: 'web', priceCheckedAt: new Date() })
         setState({ status: 'same', text: formatCents(price.cents, price.currency) })
@@ -67,8 +75,10 @@ export function useRefreshPrice(
     }
   }
 
-  const refreshStores = async () => {
-    const targets = item.links.filter((link) => link.priceSource !== 'manual')
+  const refreshStores = async (only?: string) => {
+    const targets = item.links.filter((link) =>
+      only ? link.id === only : link.priceSource !== 'manual',
+    )
     setState({ status: 'searching', ids: targets.map((link) => link.id) })
     const now = new Date()
     const outcomes: Outcome[] = await Promise.all(
@@ -96,8 +106,12 @@ export function useRefreshPrice(
       }),
     )
     for (const outcome of outcomes) {
-      if (outcome.result === 'new' || outcome.result === 'same')
+      if (outcome.result === 'new' || outcome.result === 'same') {
         onUpdateLink(item, outcome.link.id, outcome.patch)
+        if (outcome.link.priceTracking === 'stopped') {
+          toast(`${storeName(outcome.link)} vuelve a mirarse cada mañana`)
+        }
+      }
     }
     setState(storesSummary(item.links, outcomes))
   }
@@ -108,6 +122,7 @@ export function useRefreshPrice(
       if (hasStores(item)) await refreshStores()
       else if (item.url) await refreshOne(item.url)
     },
+    refreshLink: (linkId: string) => refreshStores(linkId),
     reset: () => {
       setState({ status: 'idle' })
     },

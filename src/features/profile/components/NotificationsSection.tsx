@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { Switch } from '@/components/Switch'
+import { usePriceAlerts } from '@/features/prices'
 // Por sus rutas y no por el índice: `reminders` usa piezas de `profile`.
 import { PushPrompt, type PushPromptKind } from '@/features/reminders/components/PushPrompt'
 import { usePush } from '@/features/reminders/hooks/usePush'
@@ -33,6 +34,8 @@ export function NotificationsSection({ isDesktop }: { isDesktop: boolean }) {
   const on = state === 'on'
   const summary = profile.data?.settings.dailySummaryTime ?? null
   const pending = enable.isPending || disable.isPending
+  const drops = profile.data?.settings.priceDropAlerts ?? false
+  const alerts = usePriceAlerts().data?.length ?? 0
 
   const toggle = (next: boolean) => {
     if (!next) {
@@ -199,9 +202,42 @@ export function NotificationsSection({ isDesktop }: { isDesktop: boolean }) {
           : 'El resumen llega cuando los avisos están activados.'}
       </Note>
 
+      {/* «Bajadas de precio» (3.8, diseño 22, PF1–PF4): el general de los «Avisarme si baja».
+          Va en su tarjeta y no en la del resumen, que se apaga con los avisos de este dispositivo:
+          este es de la cuenta. */}
+      <div className="mt-1 overflow-hidden rounded-2xl border border-border-soft bg-card">
+        <div className="flex h-13 items-center justify-between gap-3 px-4 text-[15px] font-medium">
+          Bajadas de precio
+          <Switch
+            checked={drops}
+            onCheckedChange={(next) => {
+              updateSettings.mutate({ priceDropAlerts: next })
+            }}
+            label="Bajadas de precio"
+          />
+        </div>
+      </div>
+      <Note>
+        {drops ? (
+          <>
+            Avisa cuando baja una compra con «Avisarme si baja». Ahora:{' '}
+            <strong className="font-semibold text-foreground">{alertsLabel(alerts)}</strong>. Se
+            mira cada mañana a las 9:00.
+          </>
+        ) : (
+          'Si lo enciendes, te avisa cuando baja una compra en la que hayas elegido «Avisarme si baja». Apagado, las calla todas sin quitarlas.'
+        )}
+      </Note>
+
       <PushPrompt kind={prompt} onKindChange={setPrompt} device={device} isDesktop={isDesktop} />
     </div>
   )
+}
+
+/** «3 compras», «1 compra», «ninguna compra». */
+function alertsLabel(count: number): string {
+  if (count === 0) return 'ninguna compra'
+  return `${String(count)} ${count === 1 ? 'compra' : 'compras'}`
 }
 
 /** «8:00» sin el cero delante, como dibuja el diseño. */

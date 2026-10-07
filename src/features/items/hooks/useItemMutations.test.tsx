@@ -62,6 +62,7 @@ const grifo: Item = {
   links: [],
   priceLinkId: null,
   priceStore: null,
+  priceTracking: null,
   createdBy: null,
   completedBy: null,
 }

@@ -1,14 +1,29 @@
-import { Check, Euro, LoaderCircle, Pencil, RefreshCw, WifiOff } from 'lucide-react'
+import { Check, Clock, Euro, LoaderCircle, Pencil, RefreshCw, WifiOff } from 'lucide-react'
 import { useId, useRef, useState, type KeyboardEvent } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
-import { firstPrice, PriceHistory, savedCents, usePriceHistory } from '@/features/prices'
+import {
+  firstPrice,
+  morningChange,
+  PriceHistory,
+  savedCents,
+  usePriceHistory,
+} from '@/features/prices'
 import { centsToInput, currencySymbol, formatCents, parsePriceInput } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 import type { WebPriceState } from '../hooks/useLinkMetadata'
 import type { RefreshState } from '../hooks/useRefreshPrice'
-import { changeDescription, changeLabel, itemPrice, priceLine } from '../prices'
+import { linkDomain } from '../links'
+import {
+  changeAmountLabel,
+  changeDescription,
+  changeLabel,
+  itemPrice,
+  priceLine,
+  priceOrigin,
+  type PriceOrigin,
+} from '../prices'
 import { isFinalStatus } from '../status'
 import { cheapestLabel, cheapestLink, hasStores, storeName } from '../stores'
 import type { Item, ItemLink, ItemPatch } from '../types'
@@ -144,6 +159,20 @@ export function PriceBlock({
     />
   )
   const best = cheapestLink(item.links)
+  // Lo que cambió esta mañana, si lo hizo la consulta de cada día (diseño 22, P2–P4).
+  const morning = history.data ? morningChange(history.data, item.currency) : null
+  // Con varias tiendas, el seguimiento es el de la más barata, que es la del precio.
+  const origin = priceOrigin(
+    stores
+      ? {
+          priceSource: item.priceSource,
+          priceCheckedAt: item.priceCheckedAt,
+          priceTracking: best?.priceTracking ?? null,
+        }
+      : item,
+    morning?.direction ?? null,
+  )
+  const site = item.urlSite ?? (item.url ? linkDomain(item.url) : null)
   const where =
     stores && item.priceStore
       ? `en ${item.priceStore}${item.priceLinkId === best?.id ? ', la más barata' : ''}`
@@ -157,9 +186,7 @@ export function PriceBlock({
       ]
         .filter(Boolean)
         .join(' · ') || priceLine(item)
-    : stores
-      ? [cheapestLabel(item), priceWhen(item)].filter(Boolean).join(' · ')
-      : priceLine(item)
+    : null
   const { state } = refresh
   const searching = state.status === 'searching'
   const searchingLabel =
@@ -194,7 +221,9 @@ export function PriceBlock({
             )}
           >
             <span aria-hidden>
-              {changeLabel(change)} desde {formatCents(item.previousPriceCents, item.currency)}
+              {item.priceSource === 'auto'
+                ? changeAmountLabel(change, item.previousPriceCents, item.priceCents, item.currency)
+                : `${changeLabel(change)} desde ${formatCents(item.previousPriceCents, item.currency)}`}
             </span>
             <span className="sr-only">
               {`${changeDescription(change)} desde ${formatCents(item.previousPriceCents, item.currency)}`}
@@ -202,7 +231,23 @@ export function PriceBlock({
           </span>
         )}
       </div>
-      <p className="mt-2 text-[13px] text-muted-foreground">{line}</p>
+      <p className="mt-2 text-[13px] text-muted-foreground">
+        {line ?? <OriginLine lead={stores ? cheapestLabel(item) : item.urlSite} origin={origin} />}
+      </p>
+      {!bought && !stores && (
+        <OriginNote
+          origin={origin}
+          site={site}
+          url={item.url}
+          tracked={item.priceTracking !== null}
+          manual={item.priceSource === 'manual'}
+          replacedManual={
+            morning?.before.source === 'manual'
+              ? formatCents(morning.before.cents, item.currency)
+              : null
+          }
+        />
+      )}
       {saved > 0 && (
         <p className="mt-3 self-start rounded-[10px] bg-price-down-bg px-2.5 py-1 text-[13px] font-bold text-price-down">
           Ahorraste {formatCents(saved, item.currency)}
@@ -275,15 +320,73 @@ export function PriceBlock({
   )
 }
 
-/** «mirado el 30 jul», «ahora», «hoy»: la fecha de la línea con varias tiendas. */
-function priceWhen(item: Item): string | null {
-  // `priceLine` sin la tienda ni el origen: con varias, lo dice «En MediaMarkt…».
-  return (
-    priceLine({ urlSite: null, priceSource: 'web', priceCheckedAt: item.priceCheckedAt }).replace(
-      /^de la web( · )?/,
-      '',
-    ) || null
+const ORIGIN_ICONS = { auto: Clock, web: RefreshCw, manual: Pencil } as const
+
+/**
+ * La línea del origen (diseño 22, P1–P5): lo de delante (la tienda o «En MediaMarkt, la más
+ * barata de 3») y cómo se supo, con su icono: ⏱ «comprobado solo · hoy», ↻ «de la web · ahora»,
+ * ✎ «puesto a mano · 21 sep». Si ya no se puede seguir, «Ya no se puede seguir · último precio el
+ * 3 oct» (T3).
+ */
+export function OriginLine({ lead, origin }: { lead: string | null; origin: PriceOrigin }) {
+  const front = lead && (
+    <>
+      <span className="font-semibold text-foreground">{lead}</span>
+      {' · '}
+    </>
   )
+  if (origin.kind === 'stopped') {
+    return (
+      <span>
+        {front}
+        <strong className="font-semibold text-foreground">Ya no se puede seguir</strong>
+        {origin.text && ` · ${origin.text}`}
+      </span>
+    )
+  }
+  const Icon = ORIGIN_ICONS[origin.kind]
+  return (
+    <span>
+      {front}
+      <Icon
+        aria-hidden
+        className="mr-1 inline size-3.5 -translate-y-px align-middle"
+        strokeWidth={2.2}
+      />
+      {origin.text}
+    </span>
+  )
+}
+
+/**
+ * La frase de debajo, con una sola tienda (diseño 22): la web sustituyó un precio a mano (P4), la
+ * tienda no da el precio (P5) o ya no se puede seguir (T3). En lo demás, nada.
+ */
+function OriginNote({
+  origin,
+  site,
+  url,
+  tracked,
+  manual,
+  replacedManual,
+}: {
+  origin: PriceOrigin
+  site: string | null
+  url: string | null
+  tracked: boolean
+  manual: boolean
+  replacedManual: string | null
+}) {
+  const store = site ?? 'La web'
+  const text =
+    origin.kind === 'stopped'
+      ? `${store} no ha dado el precio tres mañanas seguidas y se ha dejado de mirar. Prueba con «Actualizar precio» o escríbelo tú.`
+      : replacedManual
+        ? `Antes estaba a ${replacedManual} puesto a mano. Ahora manda el de la web; si quieres otro, «Cambiar».`
+        : url && !tracked && manual
+          ? `${store} no da el precio a la app. Se queda el que pongas.`
+          : null
+  return text ? <p className="mt-3 text-[14px] leading-snug text-muted-foreground">{text}</p> : null
 }
 
 /**

@@ -258,6 +258,12 @@ function patchItem(item: Item, patch: CachePatch): Item {
   }
   if (patch.previousPriceCents !== undefined) next.previousPriceCents = patch.previousPriceCents
   if (patch.priceCheckedAt !== undefined) next.priceCheckedAt = patch.priceCheckedAt
+  // Lo que hace `price_follow_before` (3.8): un enlace nuevo empieza sin seguir; un precio de la web
+  // lo pone en seguimiento (también si había dejado de poderse seguir).
+  if (patch.url !== undefined && patch.url !== item.url) next.priceTracking = null
+  if ((patch.priceSource === 'web' || patch.priceSource === 'auto') && next.priceCents !== null) {
+    next.priceTracking = 'on'
+  }
   return next
 }
 
@@ -305,6 +311,8 @@ export function itemFromNew(item: NewItem, position: number): Item {
     links: [],
     priceLinkId: null,
     priceStore: null,
+    // El precio que trae al pegarlo es de la web: desde ahí se mira solo (3.8).
+    priceTracking: link?.price ? 'on' : null,
     createdBy: null,
     completedBy: null,
   }

@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { parseTaskFields } from './fields'
 import { ITEM_KINDS, ITEM_STATUSES } from './status'
-import type { Item, ItemLink } from './types'
+import type { Item, ItemLink, PriceTracking } from './types'
 
 /** Mismo límite que el `check` de `items.title` (03 §items). */
 export const ITEM_TITLE_MAX_LENGTH = 300
@@ -16,7 +16,7 @@ const priceSourceSchema = z.enum(['manual', 'web', 'auto']).nullable()
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at, price_link_id, price_store, created_by, completed_by, links:item_links!item_links_item_id_fkey(id, url, url_title, url_site, price_cents, currency, price_source, price_checked_at, position)'
+  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at, price_link_id, price_store, price_followed, price_failures, created_by, completed_by, links:item_links!item_links_item_id_fkey(id, url, url_title, url_site, price_cents, currency, price_source, price_checked_at, price_followed, price_failures, position)'
 
 /** Límite de las notas: el `check` de `items.notes`. */
 export const ITEM_NOTES_MAX_LENGTH = 5000
@@ -50,6 +50,8 @@ export interface ItemRow {
   price_checked_at: string | null
   price_link_id: string | null
   price_store: string | null
+  price_followed: boolean
+  price_failures: number
   created_by: string
   completed_by: string | null
   links: ItemLinkRow[]
@@ -64,6 +66,8 @@ export interface ItemLinkRow {
   currency: string
   price_source: string | null
   price_checked_at: string | null
+  price_followed: boolean
+  price_failures: number
   position: number
 }
 
@@ -78,11 +82,21 @@ export function mapItemLinkRow(row: ItemLinkRow): ItemLink {
     currency: row.currency,
     priceSource: priceSourceSchema.parse(row.price_source),
     priceCheckedAt: toDate(row.price_checked_at),
+    priceTracking: priceTracking(row.price_followed, row.price_failures),
     position: row.position,
   }
 }
 
 const toDate = (value: string | null) => (value === null ? null : new Date(value))
+
+/** Las mañanas seguidas sin precio con las que se deja de mirar (`price_checks_due`). */
+export const PRICE_FAILURES_TO_STOP = 3
+
+/** Si se mira solo (3.8): de `price_followed` y `price_failures`. */
+export function priceTracking(followed: boolean, failures: number): PriceTracking {
+  if (!followed) return null
+  return failures >= PRICE_FAILURES_TO_STOP ? 'stopped' : 'on'
+}
 
 /** Fila de Supabase → ítem de la app (fechas como `Date`, estado validado, prioridad de `fields`). */
 export function mapItemRow(row: ItemRow): Item {
@@ -116,6 +130,7 @@ export function mapItemRow(row: ItemRow): Item {
     links: row.links.map(mapItemLinkRow).sort((a, b) => a.position - b.position),
     priceLinkId: row.price_link_id,
     priceStore: row.price_store,
+    priceTracking: priceTracking(row.price_followed, row.price_failures),
     createdBy: row.created_by,
     completedBy: row.completed_by,
   }

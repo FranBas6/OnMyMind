@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 
 import { itemMutations } from '@/features/items'
 import { listMutations } from '@/features/lists'
+import { priceMutations } from '@/features/prices'
 import { profileMutations } from '@/features/profile'
 import { reminderMutations } from '@/features/reminders'
 
@@ -14,6 +15,7 @@ const DURABLE_MUTATIONS = [
   ...reminderMutations,
   ...listMutations,
   ...profileMutations,
+  ...priceMutations,
 ]
 
 export function createQueryClient() {

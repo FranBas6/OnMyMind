@@ -75,6 +75,8 @@ export interface SettingsPatch {
   dailySummaryTime?: string | null
   /** El orden de «En mente» (2.9). */
   inboxSort?: InboxSort
+  /** «Bajadas de precio» (3.8): el interruptor general de los avisos de cada compra. */
+  priceDropAlerts?: boolean
 }
 
 /**
@@ -91,6 +93,7 @@ export function mergeSettings(
   if (patch.timezone !== undefined) next.timezone = patch.timezone
   if (patch.dailySummaryTime !== undefined) next.daily_summary_time = patch.dailySummaryTime
   if (patch.inboxSort !== undefined) next.inbox_sort = patch.inboxSort
+  if (patch.priceDropAlerts !== undefined) next.price_drop_alerts = patch.priceDropAlerts
   return next
 }
 

@@ -10,6 +10,7 @@ import * as listsApi from '@/features/lists/api'
 import * as pricesApi from '@/features/prices/api'
 import type { List } from '@/features/lists'
 import { queryKeys } from '@/lib/queryKeys'
+import { lineText } from '@/test/text'
 import { fakeSession, renderRoute } from '@/test/render-route'
 
 vi.mock('@/features/items/api')
@@ -71,6 +72,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     links: [],
     priceLinkId: null,
     priceStore: null,
+    priceTracking: null,
     createdBy: null,
     completedBy: null,
     ...overrides,
@@ -116,6 +118,7 @@ const tienda = (
   currency: 'EUR',
   priceSource: price === null ? null : 'web',
   priceCheckedAt: new Date(2026, 6, 30, 12),
+  priceTracking: price === null ? null : 'on',
   position: 1000,
   ...extra,
 })
@@ -135,6 +138,7 @@ const monitor = (overrides: Partial<Item> = {}) =>
     links: TRES,
     priceLinkId: 'mm',
     priceStore: 'MediaMarkt',
+    priceTracking: null,
     ...overrides,
   })
 const uno = () =>
@@ -280,7 +284,7 @@ describe('varias tiendas en una compra (diseño 19)', () => {
     expect(amazon).toHaveTextContent('No da el precio')
     expect(
       within(await block()).getByText(
-        'En MediaMarkt, la más barata de 3 con precio · mirado el 30 jul',
+        lineText('En MediaMarkt, la más barata de 3 con precio · de la web · mirado el 30 jul'),
       ),
     ).toBeInTheDocument()
 

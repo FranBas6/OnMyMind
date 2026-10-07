@@ -8,6 +8,7 @@ import type { Item } from '@/features/items'
 import * as listsApi from '@/features/lists/api'
 import type { List } from '@/features/lists'
 import { queryKeys } from '@/lib/queryKeys'
+import { lineText } from '@/test/text'
 import { fakeSession, renderRoute } from '@/test/render-route'
 
 vi.mock('@/features/items/api')
@@ -70,6 +71,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     links: [],
     priceLinkId: null,
     priceStore: null,
+    priceTracking: null,
     createdBy: null,
     completedBy: null,
     ...overrides,
@@ -190,7 +192,9 @@ describe('el precio de las compras (diseño 16)', () => {
     })
     const block = await within(sheet).findByRole('region', { name: 'Precio' })
     expect(block).toHaveTextContent('100 €')
-    expect(within(block).getByText('Real Madrid CF · de la web · ahora')).toBeInTheDocument()
+    expect(
+      within(block).getByText(lineText('Real Madrid CF · de la web · ahora')),
+    ).toBeInTheDocument()
   })
 
   it('lo escrito a mano no se pisa con el precio de la web', async () => {
@@ -304,7 +308,7 @@ describe('el precio de las compras (diseño 16)', () => {
     const block = within(sheet).getByRole('region', { name: 'Precio' })
     expect(block).toHaveTextContent('↓ 8 % desde 302 €')
     expect(
-      within(block).getByText('PcComponentes · de la web · mirado el 30 jul'),
+      within(block).getByText(lineText('PcComponentes · de la web · mirado el 30 jul')),
     ).toBeInTheDocument()
     expect(within(block).queryByText(/Es el primer precio/)).not.toBeInTheDocument()
     // Lo comprado no suma al total.

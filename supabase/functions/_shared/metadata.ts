@@ -1,7 +1,7 @@
 // Lo que se saca de una página para enseñar un enlace (04 §fetch-metadata): título, imagen y
 // nombre del sitio, de las etiquetas OpenGraph (y Twitter, o `<title>`, si no las hay), y el precio
 // de un producto por capas (ADR-007, sesión 2.1). Es puro, sin Deno ni red, para probarlo con
-// Vitest desde la app.
+// Vitest desde la app. Lo usan `fetch-metadata` y, desde la 3.8, `refresh-prices`.
 
 export interface PagePrice {
   /** En céntimos, como `items.price_cents`. */

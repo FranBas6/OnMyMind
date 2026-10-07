@@ -3,18 +3,14 @@
 // El navegador no puede leer otra web (CORS), así que lo hace esta función.
 //
 // Entrada `{ url }`; salida `{ title, image, siteName, price, domain }` (todo puede ser `null`).
-// Sin JavaScript, como mucho 8 s, 2 MB y tres redirecciones, cada una revisada (`allowedUrl`).
+// Sin JavaScript, como mucho 8 s, 2 MB y tres redirecciones, cada una revisada (`allowedUrl`): la
+// descarga y la lectura son las de `_shared/`, que comparte con `refresh-prices`.
 // Pide la sesión de un usuario: la puerta de Supabase verifica la firma del JWT (`verify_jwt`), pero
 // también deja pasar la clave pública `anon`, que va en la app; por eso aquí se mira además que el
 // token sea de alguien con sesión (`role = authenticated`). Así no sirve de proxy abierto.
 
-import { allowedUrl, isUserToken, parseMetadata, type PageMetadata } from './metadata.ts'
-
-const TIMEOUT_MS = 8000
-// IKEA pone su `Product` pasado el primer mega de la página (2.1).
-const MAX_BYTES = 2_000_000
-const MAX_REDIRECTS = 3
-const USER_AGENT = 'Mozilla/5.0 (compatible; OnMyMindBot/1.0; +https://onmymind.pages.dev)'
+import { allowedUrl, isUserToken, parseMetadata, type PageMetadata } from '../_shared/metadata.ts'
+import { fetchPage } from '../_shared/page.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -57,70 +53,3 @@ Deno.serve(async (request) => {
     return json({ ...EMPTY, domain })
   }
 })
-
-/**
- * La página en HTML, siguiendo como mucho tres redirecciones; si la URL es una imagen, su dirección;
- * `null` si no es ninguna de las dos o falla.
- */
-async function fetchPage(
-  start: URL,
-): Promise<{ html: string; url: string; image?: undefined } | { image: string } | null> {
-  const signal = AbortSignal.timeout(TIMEOUT_MS)
-  let url = start
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    const response = await fetch(url, {
-      redirect: 'manual',
-      signal,
-      headers: {
-        'User-Agent': USER_AGENT,
-        Accept: 'text/html,application/xhtml+xml',
-        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
-      },
-    })
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get('location')
-      await response.body?.cancel()
-      const next = location ? allowedUrl(new URL(location, url).href) : null
-      if (!next) return null
-      url = next
-      continue
-    }
-    const type = response.headers.get('content-type') ?? ''
-    if (response.ok && /^image\/(jpeg|png|webp|gif|avif)/i.test(type)) {
-      await response.body?.cancel()
-      return { image: url.href }
-    }
-    if (!response.ok || !/html/i.test(type)) {
-      await response.body?.cancel()
-      return null
-    }
-    return { html: await readLimited(response, type), url: url.href }
-  }
-  return null
-}
-
-/**
- * Lee hasta 2 MB, en la codificación que diga la cabecera (o UTF-8). Sigue tras el `<head>`: el
- * JSON-LD del producto, con su precio, suele ir en el cuerpo (2.1).
- */
-async function readLimited(response: Response, type: string): Promise<string> {
-  const charset = /charset=([^;]+)/i.exec(type)?.[1]?.trim() ?? 'utf-8'
-  let decoder: TextDecoder
-  try {
-    decoder = new TextDecoder(charset)
-  } catch {
-    decoder = new TextDecoder('utf-8')
-  }
-  const reader = response.body?.getReader()
-  if (!reader) return ''
-  let html = ''
-  let bytes = 0
-  while (bytes < MAX_BYTES) {
-    const { done, value } = await reader.read()
-    if (done) break
-    bytes += value.byteLength
-    html += decoder.decode(value, { stream: true })
-  }
-  await reader.cancel()
-  return html + decoder.decode()
-}

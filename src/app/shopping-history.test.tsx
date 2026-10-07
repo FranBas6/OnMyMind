@@ -9,6 +9,7 @@ import * as listsApi from '@/features/lists/api'
 import * as pricesApi from '@/features/prices/api'
 import type { List } from '@/features/lists'
 import { queryKeys } from '@/lib/queryKeys'
+import { lineText } from '@/test/text'
 import { fakeSession, renderRoute } from '@/test/render-route'
 
 vi.mock('@/features/items/api')
@@ -70,6 +71,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     links: [],
     priceLinkId: null,
     priceStore: null,
+    priceTracking: null,
     createdBy: null,
     completedBy: null,
     ...overrides,
@@ -167,7 +169,9 @@ describe('la ficha de compra (diseño 16, 2.2)', () => {
     expect(await within(price).findByText('Precio nuevo de la web, ahora.')).toBeInTheDocument()
     expect(price).toHaveTextContent('259 €')
     expect(price).toHaveTextContent('↓ 7 % desde 279 €')
-    expect(within(price).getByText('PcComponentes · de la web · ahora')).toBeInTheDocument()
+    expect(
+      within(price).getByText(lineText('PcComponentes · de la web · ahora')),
+    ).toBeInTheDocument()
   })
 
   it('con el mismo precio solo apunta que se miró', async () => {
@@ -249,7 +253,8 @@ describe('la ficha de compra (diseño 16, 2.2)', () => {
     renderList(compras, [sony()], ID.auriculares)
     const price = await block()
 
-    expect(await within(price).findByText('Histórico del precio más bajo')).toBeInTheDocument()
+    // Con una sola tienda, «Histórico de precios» (diseño 16, B1); el «más bajo» es de varias (19).
+    expect(await within(price).findByText('Histórico de precios')).toBeInTheDocument()
     expect(within(price).getByText('6 meses')).toBeInTheDocument()
     expect(pricesApi.fetchPriceHistory).toHaveBeenCalledWith(ID.auriculares)
     // Para quien no ve la gráfica, la misma historia en una frase.
@@ -264,7 +269,7 @@ describe('la ficha de compra (diseño 16, 2.2)', () => {
     expect(
       within(price).getByText('Es el primer precio. El histórico aparece cuando cambie.'),
     ).toBeInTheDocument()
-    expect(within(price).queryByText('Histórico del precio más bajo')).not.toBeInTheDocument()
+    expect(within(price).queryByText('Histórico de precios')).not.toBeInTheDocument()
     expect(pricesApi.fetchPriceHistory).not.toHaveBeenCalled()
   })
 

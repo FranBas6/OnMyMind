@@ -38,6 +38,7 @@ import { ItemControl } from './ItemControl'
 import { ItemMedia } from './ItemMedia'
 import { ItemTitleField, NotesField } from './ItemTextFields'
 import { KindField } from './KindField'
+import { PriceAlertCard } from './PriceAlertCard'
 import { PriceBlock } from './PriceBlock'
 import { StoresSection } from './Stores'
 import { SegmentedControl, type SegmentOption } from './SegmentedControl'
@@ -261,6 +262,9 @@ export function ItemDetail({
             updateLink(item, linkId, patch)
           }}
           onRemove={removeStore}
+          onRetry={(linkId) => {
+            void refresh.refreshLink(linkId)
+          }}
           onNotice={setNotice}
         />
       )}
@@ -280,6 +284,9 @@ export function ItemDetail({
           onUpdate={onUpdate}
         />
       )}
+
+      {/* Bajo el bloque de precio, en las compras que se miran solas (diseño 22, A1). */}
+      {item.kind === 'shopping' && <PriceAlertCard item={item} isDesktop={isDesktop} />}
 
       {isChoosable(item) && (
         <KindField

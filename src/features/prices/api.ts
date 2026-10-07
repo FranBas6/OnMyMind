@@ -51,3 +51,58 @@ export async function fetchSavings(): Promise<number> {
   if (error) throw error
   return z.number().int().nonnegative().parse(data)
 }
+
+/**
+ * Las compras en las que pediste «Avisarme si baja» (3.8): solo las tuyas (RLS). Pocas, todas de
+ * una vez.
+ */
+export async function fetchPriceAlerts(): Promise<string[]> {
+  const { data, error } = await supabase.from('price_alerts').select('item_id')
+  if (error) throw error
+  return data.map((row) => row.item_id)
+}
+
+/**
+ * Pide o deja de pedir el aviso de una compra. Se puede repetir sin efecto (al volver la red, la
+ * cola de la 2.10 lo reenvía): pedirlo dos veces no duplica y quitarlo dos veces no falla.
+ */
+export async function setPriceAlert(itemId: string, userId: string, on: boolean): Promise<void> {
+  const { error } = on
+    ? await supabase
+        .from('price_alerts')
+        .upsert({ item_id: itemId, user_id: userId }, { ignoreDuplicates: true })
+    : await supabase.from('price_alerts').delete().eq('item_id', itemId).eq('user_id', userId)
+  if (error) throw error
+}
+
+/** Una compra que bajó sola esta mañana (diseño 22, N3). */
+export interface PriceDrop {
+  itemId: string
+  listId: string
+  listName: string
+  title: string
+  store: string | null
+  imageUrl: string | null
+  imagePath: string | null
+  priceCents: number
+  previousPriceCents: number
+  currency: string
+}
+
+/** «Bajaron esta mañana»: tus compras con «Avisarme si baja» que bajaron solas hoy. */
+export async function fetchPriceDrops(): Promise<PriceDrop[]> {
+  const { data, error } = await supabase.rpc('my_price_drops')
+  if (error) throw error
+  return data.map((row) => ({
+    itemId: row.item_id,
+    listId: row.list_id,
+    listName: row.list_name,
+    title: row.title,
+    store: row.store,
+    imageUrl: row.image_url,
+    imagePath: row.image_path,
+    priceCents: row.price_cents,
+    previousPriceCents: row.previous_price_cents,
+    currency: row.currency,
+  }))
+}

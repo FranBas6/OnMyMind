@@ -370,6 +370,8 @@ export async function insertLinks(itemId: string, links: readonly ItemLink[]): P
       currency: link.currency,
       price_source: link.priceSource,
       price_checked_at: link.priceCheckedAt?.toISOString() ?? null,
+      // La de siempre sigue en seguimiento si lo estaba, aunque su precio fuera a mano (3.8).
+      price_followed: link.priceTracking !== null,
       position: link.position,
     })),
     { onConflict: 'id', ignoreDuplicates: true },

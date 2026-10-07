@@ -19,6 +19,8 @@ interface PushPromptProps {
   device: string
   /** El aviso que lo ha traído: su ítem y la frase («Dentista», «1 h antes»). Sin él, Perfil. */
   reminder?: { title: string; phrase: string }
+  /** O la compra de «Avisarme si baja» que lo ha traído (diseño 22, A4). */
+  priceAlert?: string
   isDesktop: boolean
   /** Abierta desde otra hoja (la ficha en el móvil). */
   nested?: boolean
@@ -37,6 +39,7 @@ export function PushPrompt({
   onKindChange,
   device,
   reminder,
+  priceAlert,
   isDesktop,
   nested = false,
 }: PushPromptProps) {
@@ -65,6 +68,11 @@ export function PushPrompt({
           Para que «{reminder.title}» te avise {reminder.phrase}, {device} tiene que poder mostrar
           avisos. Se activan una vez y sirven para todo.
         </>
+      ) : priceAlert ? (
+        <>
+          Para que te avisemos cuando baje «{priceAlert}», {device} tiene que poder mostrar avisos.
+          Se activan una vez y sirven para todo.
+        </>
       ) : (
         <>
           Para que tus avisos suenen aquí, {device} tiene que poder mostrarlos. Se activan una vez y
@@ -78,7 +86,9 @@ export function PushPrompt({
         <>
           {reminder
             ? `El aviso de «${reminder.title}» está guardado, pero aquí no puede sonar.`
-            : 'Tus avisos están guardados, pero aquí no pueden sonar.'}{' '}
+            : priceAlert
+              ? `El aviso de «${priceAlert}» está guardado, pero aquí no puede sonar.`
+              : 'Tus avisos están guardados, pero aquí no pueden sonar.'}{' '}
           Se arregla en un momento en {ios ? 'Ajustes' : 'los ajustes del navegador'}:
         </>
       ),
@@ -88,8 +98,8 @@ export function PushPrompt({
       body: (
         <>
           En el iPhone, los avisos solo llegan con la app en la pantalla de inicio.
-          {reminder &&
-            ` El aviso de «${reminder.title}» ya está guardado: sonará en cuanto la instales.`}
+          {(reminder ?? priceAlert) &&
+            ` El aviso de «${reminder?.title ?? priceAlert ?? ''}» ya está guardado: sonará en cuanto la instales.`}
         </>
       ),
     },
