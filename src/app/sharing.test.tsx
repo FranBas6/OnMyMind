@@ -18,6 +18,7 @@ vi.mock('@/features/sharing/api', async (importOriginal) => {
   const original = await importOriginal<typeof sharingApi>()
   return {
     ...original,
+    subscribeToLiveChanges: () => () => undefined,
     fetchActiveInvite: vi.fn(),
     createInvite: vi.fn(),
     revokeInvite: vi.fn(),

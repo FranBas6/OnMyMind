@@ -24,11 +24,13 @@ vi.mock('@/features/reminders/api', () => ({
 }))
 
 // Quién está en las listas compartidas (3.3) se pide en cualquier pantalla con listas o filas: por
-// defecto, nadie comparte nada. Lo demás de compartir, de verdad (un test lo simula a su manera).
+// defecto, nadie comparte nada. El canal en directo (3.4) no se abre: lo que llega por él se prueba
+// en `live.test.ts`. Lo demás de compartir, de verdad (un test lo simula a su manera).
 vi.mock('@/features/sharing/api', async (importOriginal) => ({
   ...(await importOriginal<typeof SharingApi>()),
   fetchSharedPeople: () => Promise.resolve(new Map()),
   fetchDeparture: () => Promise.resolve(null),
+  subscribeToLiveChanges: () => () => undefined,
 }))
 
 // La limpieza de fotos (2.8) va a la red un rato después de borrar o cambiar una foto: en los

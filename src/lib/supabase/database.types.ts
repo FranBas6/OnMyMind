@@ -645,6 +645,8 @@ export type Database = {
           status: string
         }[]
       }
+      broadcast_list: { Args: { p_list_id: string; p_payload: Json }; Returns: undefined }
+      broadcast_user: { Args: { p_payload: Json; p_user_id: string }; Returns: undefined }
       can_see_photo: { Args: { p_name: string }; Returns: boolean }
       claim_daily_summaries: {
         Args: Record<PropertyKey, never>

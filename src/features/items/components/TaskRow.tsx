@@ -6,7 +6,8 @@ import { useItemReminder } from '@/features/reminders/hooks/useReminders'
 import { showsBell } from '@/features/reminders/reminders'
 import { cn } from '@/lib/utils'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
-import { useItemPerson } from '@/features/sharing/hooks/useSharing'
+import { LiveDoneNote } from '@/features/sharing/components/LiveDoneNote'
+import { useLiveRow } from '@/features/sharing/hooks/useLiveRow'
 
 import {
   eventTime,
@@ -54,6 +55,11 @@ const GRID = {
 export function TaskRow({ item }: { item: Item }) {
   const actions = useItemActions()
   const { list, isDesktop } = actions
+  // En una lista compartida, la inicial de quien lo añadió si no fuiste tú (diseño 20, M2); y en
+  // directo, lo que acaba de añadir (M7) o de terminar (M8) la otra persona.
+  const { person, arrived, done: liveDone } = useLiveRow(item)
+  // Lo que otro acaba de terminar dice solo eso, con su inicial, hasta que baja (M8).
+  const quiet = liveDone
   const task = item.kind === 'task'
   const priority = task ? item.priority : null
   const dueAt = task ? item.dueAt : null
@@ -61,7 +67,7 @@ export function TaskRow({ item }: { item: Item }) {
   // El día y la hora (diseño 17, E8 y D3): en móvil en una línea, en escritorio en dos.
   const eventDate = event ? eventWhen(item) : null
   const at = event ? occurrence(item) : null
-  const repeat = event && isRecurrence(item.recurrence) && (
+  const repeat = !quiet && event && isRecurrence(item.recurrence) && (
     <span className={cn(META, 'flex items-center gap-1')}>
       <Repeat aria-hidden className="size-3" strokeWidth={2.4} />
       {RECURRENCE_LABELS[item.recurrence]}
@@ -71,12 +77,12 @@ export function TaskRow({ item }: { item: Item }) {
     priority === null && dueAt === null && eventDate === null
       ? kindMark(item.kind, list.kind)
       : null
-  const first = priority ? (
+  const first = quiet ? null : priority ? (
     <PriorityChip priority={priority} />
   ) : mark ? (
     <span className={META}>{mark}</span>
   ) : null
-  const second = dueAt ? (
+  const second = quiet ? null : dueAt ? (
     <DateChip date={dueAt} />
   ) : eventDate ? (
     <span className={cn(META, 'md:min-w-16 md:text-right')}>
@@ -91,18 +97,20 @@ export function TaskRow({ item }: { item: Item }) {
     </span>
   ) : null
   // La campana del aviso (diseño 18, R13): junto a la fecha; sin fecha, con su momento.
-  const bell = showsBell(useItemReminder(item.id), item) ? (
-    <ReminderBell item={item} className={META} />
-  ) : null
+  const reminder = useItemReminder(item.id)
+  const bell =
+    !quiet && showsBell(reminder, item) ? <ReminderBell item={item} className={META} /> : null
   const thumb = hasThumb(item)
-  const link = item.url ? <LinkMeta url={item.url} item={item} className={META} /> : null
-  // En una lista compartida, la inicial de quien lo añadió si no fuiste tú (diseño 20, M2).
-  const person = useItemPerson(item)
-  const author = person && (
-    <span className="flex shrink-0 items-center">
-      <ItemPersonMark person={person} item={item} />
-    </span>
-  )
+  const link = !quiet && item.url ? <LinkMeta url={item.url} item={item} className={META} /> : null
+  const author =
+    person &&
+    (liveDone ? (
+      <LiveDoneNote person={person} item={item} />
+    ) : (
+      <span className="flex shrink-0 items-center">
+        <ItemPersonMark person={person} item={item} />
+      </span>
+    ))
   const dot = (
     <span aria-hidden className={META}>
       ·
@@ -112,7 +120,11 @@ export function TaskRow({ item }: { item: Item }) {
     <SwipeableRow
       item={item}
       surfaceClassName={cn(
-        'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-3.5 duration-200 fade-in hover:border-border hover:shadow-card md:grid md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
+        'group relative flex min-h-14 items-start gap-3.5 rounded-[18px] border border-border-soft bg-card px-4 py-3.5 hover:border-border hover:shadow-card md:grid md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
+        arrived
+          ? 'motion-safe:animate-arrive motion-reduce:animate-arrive-still'
+          : 'animate-in duration-200 fade-in',
+        liveDone && 'border-primary bg-brand-tint hover:border-primary',
         actions.prices ? (thumb ? GRID.thumbPrices : GRID.prices) : thumb ? GRID.thumb : GRID.plain,
         rowHighlight(actions, item),
       )}
@@ -128,7 +140,7 @@ export function TaskRow({ item }: { item: Item }) {
       <div className="min-w-0 flex-1 md:contents">
         {/* En escritorio el enlace va bajo el título; las columnas de la derecha no cambian. */}
         <div className="min-w-0">
-          <RowTitle item={item} />
+          <RowTitle item={item} className={cn(liveDone && 'text-subtle-foreground line-through')} />
           {(link ?? author) && (
             <p className="mt-0.5 hidden items-center gap-1.5 md:flex">
               {author}
@@ -177,7 +189,7 @@ export function TaskRow({ item }: { item: Item }) {
           </>
         )}
       </div>
-      <RowPrice item={item} className="md:w-full" />
+      <RowPrice item={item} className={cn('md:w-full', liveDone && 'text-subtle-foreground')} />
       {actions.prices && !itemPrice(item) && <span className="hidden md:block" />}
       {isDesktop && <ItemRowDotsMenu item={item} />}
     </SwipeableRow>

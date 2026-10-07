@@ -1,3 +1,4 @@
+import { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js'
 import { z } from 'zod'
 
 import { supabase } from '@/lib/supabase/client'
@@ -124,4 +125,27 @@ export const removeMember = leaveList
 export function inviteTokenFrom(path: string | undefined): string | null {
   const match = path?.match(/^\/i\/([A-Za-z0-9_-]+)$/)
   return match?.[1] ?? null
+}
+
+/**
+ * Escucha tu canal de cambios en directo (3.4): `user:<tu id>`, privado, al que los triggers de la
+ * base mandan lo que cambia en tus listas (migración `live_lists`). `onJoin` salta cada vez que el
+ * canal queda conectado: la primera y cada vez que vuelve tras perder la conexión. Devuelve cómo
+ * dejar de escuchar.
+ */
+export function subscribeToLiveChanges(
+  userId: string,
+  { onChange, onJoin }: { onChange: (payload: unknown) => void; onJoin: () => void },
+): () => void {
+  const channel = supabase
+    .channel(`user:${userId}`, { config: { private: true } })
+    .on('broadcast', { event: 'change' }, (message) => {
+      onChange(message.payload)
+    })
+    .subscribe((status) => {
+      if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) onJoin()
+    })
+  return () => {
+    void supabase.removeChannel(channel)
+  }
 }

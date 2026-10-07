@@ -8,6 +8,7 @@ import { CaptureProvider } from '@/features/capture'
 import { cleanupPhotosDaily } from '@/features/items'
 import { ListActionsProvider } from '@/features/lists'
 import { ThemeSync } from '@/features/profile'
+import { useLiveLists } from '@/features/sharing'
 
 /**
  * Layout de todas las rutas privadas (el `_` hace que no añada segmento a la URL).
@@ -39,6 +40,13 @@ function AuthenticatedLayout() {
   useEffect(() => {
     if (sessionState.status === 'authenticated') cleanupPhotosDaily()
   }, [sessionState.status])
+
+  // En directo (3.4): lo que hace otra persona en tus listas llega sin recargar.
+  useLiveLists(
+    sessionState.status === 'authenticated'
+      ? { userId: sessionState.session.user.id, accessToken: sessionState.session.access_token }
+      : undefined,
+  )
 
   return (
     <ListActionsProvider>

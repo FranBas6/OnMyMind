@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 
 import { InboxHeader, ListDetailHeader, type List } from '@/features/lists'
 import { useProfile } from '@/features/profile/hooks/useProfile'
+import { useWithCompletedLive } from '@/features/sharing/liveRows'
 import { useUpdateSettings } from '@/features/profile/hooks/useProfileMutations'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useOnline } from '@/hooks/useOnline'
@@ -125,7 +126,9 @@ export function ListDetail({
   const all = items.data
   // Lo de dentro de una sublista sale en su pantalla, no suelto en la lista (ADR-010).
   const shown = all && (sublist ? childrenOf(all, sublist.id) : topLevel(all))
-  const { active, outOfMind } = splitItems(shown ?? [], list.kind, { lingering, sort })
+  // Lo que termina otra persona en directo se queda un momento, como lo tuyo (diseño 20, M8).
+  const staying = useWithCompletedLive(lingering)
+  const { active, outOfMind } = splitItems(shown ?? [], list.kind, { lingering: staying, sort })
   // El resumen no espera a la animación: cuenta lo que ya está hecho aunque aún se vea arriba.
   const summary = !all
     ? detailSummary(list.kind, list.counters.pending, list.counters.done)

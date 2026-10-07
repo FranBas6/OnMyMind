@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { startOfDay } from 'date-fns'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,6 +10,7 @@ import * as listsApi from '@/features/lists/api'
 import * as pricesApi from '@/features/prices/api'
 import * as profileApi from '@/features/profile/api'
 import * as sharingApi from '@/features/sharing/api'
+import { markArrived, markCompleted, resetLiveRows } from '@/features/sharing/liveRows'
 import type { ListPerson } from '@/features/sharing/schemas'
 import * as todayApi from '@/features/today/api'
 import { dayKey } from '@/features/today/today'
@@ -27,6 +28,7 @@ vi.mock('@/features/sharing/api', async (importOriginal) => ({
   fetchDeparture: vi.fn(),
   fetchListPeople: vi.fn(),
   fetchActiveInvite: vi.fn(),
+  subscribeToLiveChanges: () => () => undefined,
 }))
 
 const session = fakeSession()
@@ -133,6 +135,7 @@ function setDesktop(on: boolean) {
 describe('una lista compartida en el día a día (3.3, diseño 20)', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    resetLiveRows()
   })
   afterEach(() => {
     setDesktop(false)
@@ -200,6 +203,46 @@ describe('una lista compartida en el día a día (3.3, diseño 20)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Compartir «Compras»' }))
     expect(await screen.findByRole('dialog', { name: 'Compartir «Compras»' })).toBeInTheDocument()
+  })
+
+  it('en directo: lo que añade Marta entra resaltado y lo que compra se queda un momento (M7, M8)', async () => {
+    const lists = seedLists()
+    const leche = item('leche', 'Leche', { createdBy: MARTA })
+    const pan = item('pan', 'Pan', {
+      createdBy: MARTA,
+      status: 'bought',
+      completedAt: new Date(),
+      completedBy: MARTA,
+      position: 2000,
+      priceCents: 320,
+    })
+    vi.mocked(itemsApi.fetchItems).mockResolvedValue([leche, pan])
+    // Lo que marca el canal al llegar el mensaje de Marta (`createLiveSync`).
+    markArrived(['leche'])
+    markCompleted(['pan'])
+    renderRoute('/lists/compras', {
+      session,
+      seed: (queryClient) => {
+        queryClient.setQueryData(queryKeys.lists.all, lists)
+        queryClient.setQueryData(queryKeys.items.byList('compras'), [leche, pan])
+      },
+    })
+
+    const rows = await screen.findByRole('list', { name: 'Ítems' })
+    const row = (title: string) =>
+      within(rows).getByRole('button', { name: title }).closest('li') as HTMLElement
+    // Dos veces: la línea de móvil y la de escritorio (una de las dos, oculta).
+    expect(await within(rows).findAllByText('Marta lo ha comprado')).toHaveLength(2)
+    expect(within(row('Pan')).getByRole('button', { name: 'Pan' })).toHaveClass('line-through')
+    expect(row('Leche').querySelector('[class*="animate-arrive"]')).not.toBeNull()
+
+    // Pasado el momento, baja a «Fuera de la cabeza» con su inicial, como siempre.
+    act(() => {
+      resetLiveRows()
+    })
+    expect(within(rows).queryByRole('button', { name: 'Pan' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Lo completó Marta')).toBeInTheDocument()
+    expect(row('Leche').querySelector('[class*="animate-arrive"]')).toBeNull()
   })
 
   it('Hoy: el grupo de una lista compartida dice con quién (M6)', async () => {

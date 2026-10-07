@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { expiresLabel, invitedListSummary, inviteMessage, personDetail, personName } from './copy'
+import {
+  completedNote,
+  expiresLabel,
+  invitedListSummary,
+  inviteMessage,
+  personDetail,
+  personName,
+} from './copy'
 
 const NOW = new Date(2026, 9, 6, 12)
 
@@ -58,5 +65,14 @@ describe('una lista que ya no tienes (diseño 20, M9 y M10)', () => {
     expect(goneCopy({ reason: 'archived', listName: 'Compras', ownerName: null }).title).toBe(
       'Alguien ha archivado «Compras»',
     )
+  })
+})
+
+describe('lo que termina el otro en directo (diseño 20, M8)', () => {
+  it('dice quién y qué, con el verbo de cada cosa', () => {
+    expect(completedNote('Fran', 'bought')).toBe('Fran lo ha comprado')
+    expect(completedNote('Marta', 'done')).toBe('Marta lo ha hecho')
+    expect(completedNote(null, 'discarded')).toBe('Alguien lo ha descartado')
+    expect(completedNote('Ana', 'cancelled')).toBe('Ana lo ha cancelado')
   })
 })

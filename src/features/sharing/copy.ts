@@ -1,5 +1,6 @@
 import { format, isSameYear } from 'date-fns'
 
+import type { ItemStatus } from '@/features/items/status'
 import type { ListKind } from '@/features/lists/types'
 
 import type { Departure } from './schemas'
@@ -101,4 +102,19 @@ export function goneCopy({ reason, listName, ownerName }: Departure): {
         text: 'Ya no la tienes entre tus listas. Si la desarchiva, volverá.',
       }
   }
+}
+
+const DONE_VERBS: Partial<Record<ItemStatus, string>> = {
+  bought: 'lo ha comprado',
+  done: 'lo ha hecho',
+  discarded: 'lo ha descartado',
+  cancelled: 'lo ha cancelado',
+}
+
+/**
+ * Lo que dice la fila que otro acaba de terminar en directo (diseño 20, M8): «Fran lo ha
+ * comprado». El diseño solo dibuja la compra; las demás, con su verbo. *(Nivel 1)*
+ */
+export function completedNote(displayName: string | null, status: ItemStatus): string {
+  return `${personName(displayName)} ${DONE_VERBS[status] ?? 'lo ha terminado'}`
 }
