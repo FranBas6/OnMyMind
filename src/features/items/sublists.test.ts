@@ -131,6 +131,53 @@ describe('duplicar', () => {
     ])
   })
 
+  it('una compra con varias tiendas se copia con todas, con ids nuevos y el precio de la más barata', () => {
+    const tienda = (id: string, site: string, priceCents: number, position: number) => ({
+      id,
+      url: `https://${site}.es/monitor`,
+      urlTitle: 'Monitor',
+      urlSite: site,
+      priceCents,
+      currency: 'EUR',
+      priceSource: 'web' as const,
+      priceCheckedAt: new Date(2026, 9, 1),
+      priceTracking: 'on' as const,
+      position,
+    })
+    // Comprada en la más cara: la copia vuelve a estar pendiente y cuenta la más barata.
+    const monitor = item('monitor', {
+      parentId: 'lisboa',
+      kind: 'shopping',
+      status: 'bought',
+      completedAt: new Date(2026, 9, 2),
+      url: 'https://PcComponentes.es/monitor',
+      priceCents: 26900,
+      priceSource: 'web',
+      links: [tienda('pc', 'PcComponentes', 26900, 1000), tienda('mm', 'MediaMarkt', 24900, 2000)],
+      priceLinkId: 'pc',
+      priceStore: 'PcComponentes',
+    })
+    let n = 0
+    const [, copia] = duplicateSublist(lisboa, [monitor], {
+      newId: () => `nuevo-${++n}`,
+      position: 1500,
+    })
+
+    expect(copia?.links.map((link) => [link.id, link.urlSite, link.priceCents])).toEqual([
+      ['nuevo-3', 'PcComponentes', 26900],
+      ['nuevo-4', 'MediaMarkt', 24900],
+    ])
+    expect(copia).toMatchObject({
+      status: 'pending',
+      priceCents: 24900,
+      priceLinkId: 'nuevo-4',
+      priceStore: 'MediaMarkt',
+      url: 'https://PcComponentes.es/monitor',
+    })
+    // La original no se toca.
+    expect(monitor.links.map((link) => link.id)).toEqual(['pc', 'mm'])
+  })
+
   it('el título no pasa del límite y la posición cae entre la original y la siguiente', () => {
     expect(copyTitle('x'.repeat(300))).toHaveLength(300)
     const lista = [item('a', { position: 1000 }), item('b', { position: 2000 })]

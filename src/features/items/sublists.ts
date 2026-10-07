@@ -1,5 +1,6 @@
 import { ITEM_TITLE_MAX_LENGTH } from './schemas'
 import { initialStatus, isActiveSublistStatus, isOutOfMind, STATUS_LABELS } from './status'
+import { withLinks } from './stores'
 import type { Item } from './types'
 
 /** Lo que cuenta una lista o una sublista: lo pendiente y lo que ya está fuera de la cabeza. */
@@ -124,22 +125,35 @@ export function copyTitle(title: string): string {
  * Duplica una sublista con lo de dentro (la maleta de cada viaje, diseño 12, S6): la copia va justo
  * debajo de la original, pendiente, y lo de dentro se copia en su orden, todo pendiente. `newId`
  * da los ids (en la app, `crypto.randomUUID`), así que la copia optimista es la que se guarda.
+ * Una compra con varias tiendas se copia con todas (4.1), con ids nuevos y, como ya no está
+ * comprada, con el precio de la más barata, como lo pondrá `item_links_sync`.
  */
 export function duplicateSublist(
   sublist: Item,
   children: readonly Item[],
   { newId, position, now = new Date() }: { newId: () => string; position: number; now?: Date },
 ): Item[] {
-  const fresh = (item: Item, overrides: Partial<Item>): Item => ({
-    ...item,
-    id: newId(),
-    status: initialStatus(item.kind),
-    completedAt: null,
-    createdAt: now,
-    leftInboxId: null,
-    leftInboxAt: null,
-    ...overrides,
-  })
+  const fresh = (item: Item, overrides: Partial<Item>): Item => {
+    const copy: Item = {
+      ...item,
+      id: newId(),
+      status: initialStatus(item.kind),
+      completedAt: null,
+      createdAt: now,
+      leftInboxId: null,
+      leftInboxAt: null,
+      links: [],
+      priceLinkId: null,
+      priceStore: null,
+      ...overrides,
+    }
+    if (item.links.length === 0) return copy
+    return withLinks(
+      copy,
+      item.links.map((link) => ({ ...link, id: newId() })),
+      now,
+    )
+  }
   const copy = fresh(sublist, { title: copyTitle(sublist.title), position, parentId: null })
   return [copy, ...children.map((child) => fresh(child, { parentId: copy.id }))]
 }

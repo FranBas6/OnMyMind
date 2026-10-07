@@ -42,7 +42,8 @@ Lema: "Sácalo de la cabeza". Mobile-first, instalable y usable offline, con Sup
   `git switch main && git merge --ff-only develop && git push`. Si el fast-forward falla, `main`
   tiene algo que `develop` no, y se investiga antes de seguir.
 - **Sin pull requests**: el proyecto es de una sola persona. La comprobación la hace el hook
-  `.husky/pre-push` (typecheck, lint y tests): un push con algo en rojo no sale. Para probar en el
+  `.husky/pre-push` (typecheck, `deno check` de las edge functions, lint y tests): un push con algo
+  en rojo no sale. Para probar en el
   iPhone antes de avanzar `main`, Cloudflare Pages publica una URL de previsualización por rama
   (`develop` incluida).
 - Los commits dentro de la rama siguen siendo Conventional Commits en español.
@@ -78,7 +79,8 @@ Lema: "Sácalo de la cabeza". Mobile-first, instalable y usable offline, con Sup
   next-themes (modo oscuro con clase `.dark`), sonner (toasts).
 - **Tooling**: ESLint 9 (flat config, typescript-eslint type-checked, react-hooks,
   react-refresh), Prettier + prettier-plugin-tailwindcss, Vitest + Testing Library + jsdom,
-  Husky + lint-staged (pre-commit) y typecheck + lint + tests (pre-push).
+  Husky + lint-staged (pre-commit) y typecheck + `deno check` + lint + tests (pre-push). Deno
+  (Homebrew) solo comprueba los tipos de `supabase/functions/`.
 
 ## Estructura
 
@@ -147,6 +149,7 @@ pnpm dev              # servidor de desarrollo (http://localhost:5173)
 pnpm build            # typecheck + build de producción (genera el service worker)
 pnpm preview          # sirve el build (para probar la PWA)
 pnpm typecheck        # tsc -b
+pnpm functions:check  # deno check de las edge functions (sus index.ts y lo que importan)
 pnpm lint             # ESLint (0 warnings)
 pnpm format           # Prettier (escribe); pnpm format:check solo comprueba
 pnpm test             # Vitest una vez; pnpm test:watch en modo watch

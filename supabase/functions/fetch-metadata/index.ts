@@ -46,7 +46,7 @@ Deno.serve(async (request) => {
     const page = await fetchPage(start)
     if (!page) return json({ ...EMPTY, domain })
     // El enlace es una imagen («Copiar dirección de la imagen»): esa es la foto.
-    if (page.image) return json({ ...EMPTY, image: page.image, domain })
+    if (page.image !== undefined) return json({ ...EMPTY, image: page.image, domain })
     return json({ ...parseMetadata(page.html, page.url), domain })
   } catch {
     // Una web caída, lenta o que no deja pasar: se queda el dominio, sin error (diseño 15, M5).

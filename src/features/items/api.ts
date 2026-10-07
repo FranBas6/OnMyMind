@@ -237,6 +237,11 @@ export async function deleteItem(itemId: string): Promise<void> {
  * llamada, con la sublista delante de lo suyo: los triggers de cada fila ven las anteriores del
  * mismo `insert`, así que `items_validate_parent` encuentra a la madre. Idempotente como
  * `createItem`.
+ *
+ * Las compras con varias tiendas (2.2b) vuelven con todas (4.1), en una segunda llamada: la tienda
+ * tiene que encontrar su compra. Al llegar todas a la vez, `item_links_sync` ya ve dos o más y le
+ * pone a la compra el enlace de la primera y el precio de la más barata. Comprada no lo recalcula:
+ * dónde se compró (`price_link_id`) se vuelve a apuntar al final, cuando esa tienda ya existe.
  */
 export async function insertItems(items: readonly Item[]): Promise<void> {
   const { data: auth } = await supabase.auth.getSession()
@@ -275,10 +280,29 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
       price_source: item.priceSource,
       previous_price_cents: item.previousPriceCents,
       price_checked_at: item.priceCheckedAt?.toISOString() ?? null,
+      // La tienda del precio, para que el histórico diga la buena y no la primera.
+      price_store: item.priceStore,
+      price_followed: item.priceTracking !== null,
     })),
     { onConflict: 'id', ignoreDuplicates: true },
   )
   if (error) throw error
+
+  const links = ordered.flatMap((item) => item.links.map((link) => linkRow(item.id, link)))
+  if (links.length === 0) return
+  const { error: linksError } = await supabase
+    .from('item_links')
+    .upsert(links, { onConflict: 'id', ignoreDuplicates: true })
+  if (linksError) throw linksError
+
+  const bought = ordered.filter((item) => item.status === 'bought' && item.priceLinkId !== null)
+  const results = await Promise.all(
+    bought.map((item) =>
+      supabase.from('items').update({ price_link_id: item.priceLinkId }).eq('id', item.id),
+    ),
+  )
+  const failed = results.find((result) => result.error)
+  if (failed?.error) throw failed.error
 }
 
 /**
@@ -360,23 +384,31 @@ function functionStatus(error: FunctionsHttpError): number | null {
  */
 export async function insertLinks(itemId: string, links: readonly ItemLink[]): Promise<void> {
   const { error } = await supabase.from('item_links').upsert(
-    links.map((link) => ({
-      id: link.id,
-      item_id: itemId,
-      url: link.url,
-      url_title: link.urlTitle,
-      url_site: link.urlSite,
-      price_cents: link.priceCents,
-      currency: link.currency,
-      price_source: link.priceSource,
-      price_checked_at: link.priceCheckedAt?.toISOString() ?? null,
-      // La de siempre sigue en seguimiento si lo estaba, aunque su precio fuera a mano (3.8).
-      price_followed: link.priceTracking !== null,
-      position: link.position,
-    })),
+    links.map((link) => linkRow(itemId, link)),
     { onConflict: 'id', ignoreDuplicates: true },
   )
   if (error) throw error
+}
+
+/** Una tienda como fila de `item_links`. */
+function linkRow(
+  itemId: string,
+  link: ItemLink,
+): Database['public']['Tables']['item_links']['Insert'] {
+  return {
+    id: link.id,
+    item_id: itemId,
+    url: link.url,
+    url_title: link.urlTitle,
+    url_site: link.urlSite,
+    price_cents: link.priceCents,
+    currency: link.currency,
+    price_source: link.priceSource,
+    price_checked_at: link.priceCheckedAt?.toISOString() ?? null,
+    // La de siempre sigue en seguimiento si lo estaba, aunque su precio fuera a mano (3.8).
+    price_followed: link.priceTracking !== null,
+    position: link.position,
+  }
 }
 
 /** Cambia una tienda: lo que trae su web, o su precio escrito a mano. */

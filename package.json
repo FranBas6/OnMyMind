@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc -b",
+    "functions:check": "DENO_NO_PACKAGE_JSON=1 deno check --no-lock supabase/functions/*/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "supabase:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts && prettier --write --ignore-path /dev/null src/lib/supabase/database.types.ts",

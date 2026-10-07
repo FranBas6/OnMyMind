@@ -261,6 +261,27 @@ describe('varias tiendas en una compra (diseño 19)', () => {
     })
   })
 
+  it('borrar la compra y «Deshacer»: vuelve con sus tres tiendas y la más barata (4.1)', async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    vi.mocked(itemsApi.deleteItem).mockResolvedValue()
+    vi.mocked(itemsApi.insertItems).mockResolvedValue()
+    renderList(compras, [monitor()], ID.auriculares)
+
+    await user.click(within(await detail()).getByRole('button', { name: 'Borrar' }))
+    expect(itemsApi.deleteItem).toHaveBeenCalledWith(ID.auriculares)
+    await user.click(await screen.findByRole('button', { name: 'Deshacer' }))
+
+    await waitFor(() => {
+      expect(itemsApi.insertItems).toHaveBeenCalledWith([
+        expect.objectContaining({ id: ID.auriculares, links: TRES, priceLinkId: 'mm' }),
+      ])
+    })
+    await waitFor(() => {
+      expect(rows()[0]).toHaveTextContent('en 3 tiendas')
+    })
+    expect(rows()[0]).toHaveTextContent('249 €')
+  })
+
   it('una tienda que no da el precio: se escribe a mano en esa tienda', async () => {
     const user = userEvent.setup()
     renderList(

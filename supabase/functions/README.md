@@ -30,6 +30,12 @@ Las edge functions de Supabase (Deno), una carpeta por función:
 - **`_shared/`** (3.8): lo que comparten. `metadata.ts` y `page.ts` (leer una página y su precio),
   `push.ts` (el mensaje y VAPID, puro) y `webpush.ts` (el envío).
 
+Los tipos se comprueban con `pnpm functions:check` (también en el pre-push, desde la 4.1):
+`deno check` de cada `index.ts`, que arrastra todo lo que importa. Necesita Deno
+(`brew install deno`). Va con `DENO_NO_PACKAGE_JSON=1` y `--no-lock` para que no lea el
+`package.json` de la app (descargaría todas sus dependencias) ni deje un `deno.lock` en la raíz.
+Los `*.test.ts` no entran: usan el alias `@/` de la app y los corre Vitest.
+
 Crear o servir una función en local (necesita `[edge_runtime] enabled = true` en `config.toml`,
 apagado de serie para ahorrar ~1 GB de imagen):
 
