@@ -9,6 +9,8 @@ export interface ListActions {
   confirmDelete: (list: List) => void
   archive: (list: List) => void
   unarchive: (list: List) => void
+  /** «Duplicar» (4.4, diseño 23, C): abre la hoja con el nombre de la copia. */
+  duplicate: (list: List) => void
   /**
    * Quién está en la lista (diseño 20): «Compartir» para quien la creó y «Quién está» para quien
    * entró. `confirmLeave` la abre ya preguntando si sales (M3 → M5).

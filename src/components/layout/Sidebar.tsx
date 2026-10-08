@@ -7,6 +7,7 @@ import { useEffect, type ReactNode, type SyntheticEvent } from 'react'
 import { useCapture } from '@/features/capture'
 import {
   ARCHIVED_SECTION_ID,
+  ListContextMenu,
   ListsDnd,
   useArchivedLists,
   useListActions,
@@ -170,26 +171,28 @@ function SortableSidebarList({ list, active }: { list: List; active: boolean }) 
         isDragging && 'border border-dashed border-primary/50 bg-brand-tint',
       )}
     >
-      <Link
-        to="/lists/$listId"
-        params={{ listId: list.id }}
-        aria-current={active ? 'page' : undefined}
-        onMouseDown={onMouseDown}
-        onClickCapture={(event) => {
-          if (drag?.swallowsClick()) {
-            event.preventDefault()
-            event.stopPropagation()
-          }
-        }}
-        className={cn(
-          'flex h-10 items-center gap-2.5 rounded-xl px-3 text-sm font-medium outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
-          active && 'bg-card',
-          drag?.settledId === list.id && 'bg-brand-tint',
-          isDragging && 'invisible',
-        )}
-      >
-        <SidebarListRow list={list} />
-      </Link>
+      <ListContextMenu list={list}>
+        <Link
+          to="/lists/$listId"
+          params={{ listId: list.id }}
+          aria-current={active ? 'page' : undefined}
+          onMouseDown={onMouseDown}
+          onClickCapture={(event) => {
+            if (drag?.swallowsClick()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+          }}
+          className={cn(
+            'flex h-10 items-center gap-2.5 rounded-xl px-3 text-sm font-medium outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            active && 'bg-card',
+            drag?.settledId === list.id && 'bg-brand-tint',
+            isDragging && 'invisible',
+          )}
+        >
+          <SidebarListRow list={list} />
+        </Link>
+      </ListContextMenu>
     </li>
   )
 }

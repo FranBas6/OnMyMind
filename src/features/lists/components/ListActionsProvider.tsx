@@ -8,11 +8,13 @@ import { showUndoToast } from '@/lib/undoToast'
 import { useArchiveList, useDeleteList, useUnarchiveList } from '../hooks/useListMutations'
 import type { List } from '../types'
 import { DeleteListDialog } from './DeleteListDialog'
+import { DuplicateListDialog } from './DuplicateListDialog'
 import { ListActionsContext, type ListActions } from './listActionsContext'
 import { ListFormDialog } from './ListFormDialog'
 
 /**
- * Acciones sobre listas para toda la zona privada: crear, editar, archivar, desarchivar y borrar.
+ * Acciones sobre listas para toda la zona privada: crear, editar, archivar, desarchivar, duplicar
+ * y borrar.
  * El formulario y la confirmación se montan una sola vez aquí; cualquier botón («+ Nueva lista»
  * del sidebar, la cabecera, la tarjeta punteada, el menú ···) los abre con `useListActions`.
  */
@@ -27,6 +29,8 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
   const [people, setPeople] = useState<{ list: List; confirmLeave: boolean; open: boolean } | null>(
     null,
   )
+  // Como la de quién está: montada al cerrarse, para que baje con su animación.
+  const [toDuplicate, setToDuplicate] = useState<{ list: List; open: boolean } | null>(null)
   const navigate = useNavigate()
   const pathname = useLocation({ select: (location) => location.pathname })
   const archiveList = useArchiveList()
@@ -71,6 +75,9 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
       openPeople: (list, options) => {
         setPeople({ list, confirmLeave: options?.confirmLeave ?? false, open: true })
       },
+      duplicate: (list) => {
+        setToDuplicate({ list, open: true })
+      },
     }),
     [archive, unarchive],
   )
@@ -102,6 +109,16 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
             setPeople((current) => current && { ...current, open })
           }}
           onLeft={left}
+        />
+      )}
+      {toDuplicate && (
+        <DuplicateListDialog
+          key={toDuplicate.list.id}
+          list={toDuplicate.list}
+          open={toDuplicate.open}
+          onOpenChange={(open) => {
+            setToDuplicate((current) => current && { ...current, open })
+          }}
         />
       )}
       <DeleteListDialog

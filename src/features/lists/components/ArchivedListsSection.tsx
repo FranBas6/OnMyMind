@@ -25,7 +25,7 @@ export function ArchivedListsSection() {
   const [open, setOpen] = useState(hash === ARCHIVED_SECTION_ID)
   const [selected, setSelected] = useState<List | undefined>(undefined)
   const isDesktop = useMediaQuery('(min-width: 768px)')
-  const { unarchive } = useListActions()
+  const { unarchive, duplicate } = useListActions()
   const panelId = useId()
 
   const lists = archived.data ?? []
@@ -79,6 +79,18 @@ export function ArchivedListsSection() {
                   </span>
                 </span>
               </button>
+              {/* En escritorio no hay hoja: «Duplicar…» va junto a «Desarchivar» (diseño 23, C6). */}
+              {isDesktop && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    duplicate(list)
+                  }}
+                  className="flex h-9 shrink-0 items-center rounded-[11px] px-3 text-[13px] font-semibold text-muted-foreground outline-none hover:bg-card hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  Duplicar…
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {

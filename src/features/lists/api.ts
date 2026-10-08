@@ -125,3 +125,35 @@ export async function deleteList(listId: string): Promise<void> {
   const { error } = await supabase.from('lists').delete().eq('id', listId)
   if (error) throw error
 }
+
+const duplicatedSchema = z.object({
+  list_id: z.uuid(),
+  items: z.number().int().nonnegative(),
+  photos: z.array(z.object({ item_id: z.uuid(), path: z.string() })),
+})
+
+/** Lo que devuelve duplicar: la copia, cuántas cosas tiene y las fotos subidas que faltan. */
+export interface DuplicatedList {
+  listId: string
+  items: number
+  photos: { itemId: string; path: string }[]
+}
+
+/**
+ * Duplica una lista (4.4, diseño 23, C) con `duplicate_list`, de una vez en la base: la copia es
+ * tuya, con todo pendiente, sin fechas, avisos ni personas. Las fotos subidas no se comparten entre
+ * dos ítems: vuelven aquí para copiarlas en Storage (`copyItemPhoto`).
+ */
+export async function duplicateList(listId: string, name: string): Promise<DuplicatedList> {
+  const { data, error } = await supabase.rpc('duplicate_list', {
+    p_list_id: listId,
+    p_name: name,
+  })
+  if (error) throw error
+  const parsed = duplicatedSchema.parse(data)
+  return {
+    listId: parsed.list_id,
+    items: parsed.items,
+    photos: parsed.photos.map((photo) => ({ itemId: photo.item_id, path: photo.path })),
+  }
+}

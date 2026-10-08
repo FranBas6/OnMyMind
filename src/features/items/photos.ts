@@ -111,3 +111,27 @@ export async function signedPhotoUrl(path: string, size: 'thumb' | 'full'): Prom
   if (error) throw error
   return data.signedUrl
 }
+
+/**
+ * Copia la foto subida de otro ítem para uno nuevo (4.4, al duplicar una lista): la grande y su
+ * miniatura, a tu carpeta (`{tú}/{ítem}/{uuid}`), y se la pone. Dos ítems no comparten archivo:
+ * cambiar la foto de uno borraría la del otro. La de una lista compartida contigo se puede leer
+ * (`can_see_photo`), así que también se copia.
+ */
+export async function copyItemPhoto(itemId: string, sourcePath: string): Promise<void> {
+  const { data: auth } = await supabase.auth.getSession()
+  const userId = auth.session?.user.id
+  if (!userId) throw new Error('Sin sesión')
+
+  const extension = /\.([a-z0-9]+)$/i.exec(sourcePath)?.[1] ?? 'webp'
+  const path = `${userId}/${itemId}/${crypto.randomUUID()}.${extension}`
+  const bucket = supabase.storage.from(PHOTO_BUCKET)
+  const copy = async (from: string, to: string) => {
+    const { error } = await bucket.copy(from, to)
+    if (error) throw error
+  }
+  await copy(thumbPath(sourcePath), thumbPath(path))
+  await copy(sourcePath, path)
+  const { error } = await supabase.from('items').update({ image_path: path }).eq('id', itemId)
+  if (error) throw error
+}

@@ -1,6 +1,6 @@
-import { Archive, LogOut, Pencil, Trash, Users, type LucideIcon } from 'lucide-react'
-import { DropdownMenu } from 'radix-ui'
-import type { ReactNode } from 'react'
+import { Archive, CopyPlus, LogOut, Pencil, Trash, Users, type LucideIcon } from 'lucide-react'
+import { ContextMenu, DropdownMenu } from 'radix-ui'
+import { useState, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import { SublistGlyph } from '@/components/SublistGlyph'
@@ -31,10 +31,10 @@ interface ListCardMenuProps {
 }
 
 /**
- * Menú ··· de una tarjeta (diseño 04 Listas): Editar, Compartir (diseño 20, S1 y D1), Archivar y
- * Borrar; en la cabecera del detalle, antes, «Nueva sublista» (diseño 12, S7). En una lista
- * compartida contigo, solo «Quién está» y «Salir de la lista», con una nota de que el resto es
- * cosa de quien la creó (M3 y D4). En escritorio, popover de 200 px bajo el botón (D1); en móvil,
+ * Menú ··· de una tarjeta (diseño 04 Listas): Editar, Compartir (diseño 20, S1 y D1), Duplicar
+ * (diseño 23, C1), Archivar y Borrar; en la cabecera del detalle, antes, «Nueva sublista» (diseño
+ * 12, S7). En una lista compartida contigo, «Quién está», «Duplicar» (C4) y «Salir de la lista»,
+ * con una nota de que el resto es cosa de quien la creó (M3 y D4). En escritorio, popover de 200 px bajo el botón (D1); en móvil,
  * hoja inferior con la lista en la cabecera (L3), que también abre la pulsación larga.
  */
 export function ListCardMenu({
@@ -45,20 +45,7 @@ export function ListCardMenu({
   onNewSublist,
 }: ListCardMenuProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
-  const actions = useListActions()
-  const shared = !list.isOwner
-  // Quién está, para la cabecera y las iniciales del menú de quien entró (M3).
-  const people = useListPeople(list.id, shared && open)
-  const owner = people.data?.find((person) => person.isOwner)
-  const items: readonly MenuEntry[] = [
-    ...(onNewSublist
-      ? [{ label: 'Nueva sublista', icon: SublistGlyph, accent: true, onSelect: onNewSublist }]
-      : []),
-    // Editar, compartir, archivar y borrar son de quien creó la lista (3.2, decisión 2).
-    ...(shared
-      ? memberEntries(list, actions, people.data)
-      : ownerEntries(list, actions, isDesktop)),
-  ]
+  const { items, shared, owner } = useMenuEntries(list, open, isDesktop, onNewSublist)
   const ownerName = personName(owner?.displayName)
   const memberNote = shared
     ? `Cambiar el nombre, el color o invitar a alguien es cosa de ${owner ? ownerName : 'quien creó la lista'}${owner ? ', que creó la lista' : ''}.`
@@ -153,6 +140,65 @@ export function ListCardMenu({
   )
 }
 
+/** Lo que lleva el menú de una lista, según sea tuya o compartida contigo. */
+function useMenuEntries(
+  list: List,
+  open: boolean,
+  isDesktop: boolean,
+  onNewSublist?: () => void,
+): { items: readonly MenuEntry[]; shared: boolean; owner: ListPerson | undefined } {
+  const actions = useListActions()
+  const shared = !list.isOwner
+  // Quién está, para la cabecera y las iniciales del menú de quien entró (M3).
+  const people = useListPeople(list.id, shared && open)
+  const owner = people.data?.find((person) => person.isOwner)
+  const items: readonly MenuEntry[] = [
+    ...(onNewSublist
+      ? [{ label: 'Nueva sublista', icon: SublistGlyph, accent: true, onSelect: onNewSublist }]
+      : []),
+    // Editar, compartir, archivar y borrar son de quien creó la lista (3.2, decisión 2).
+    ...(shared
+      ? memberEntries(list, actions, people.data, isDesktop)
+      : ownerEntries(list, actions, isDesktop)),
+  ]
+  return { items, shared, owner }
+}
+
+/**
+ * El mismo menú con el botón derecho sobre una lista del sidebar (diseño 23, E4): el sidebar no
+ * tiene ···, y en escritorio el menú contextual es lo esperable. Se abre donde está el ratón.
+ */
+export function ListContextMenu({ list, children }: { list: List; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const { items } = useMenuEntries(list, open, true)
+  return (
+    <ContextMenu.Root onOpenChange={setOpen} modal={false}>
+      <ContextMenu.Trigger asChild>{children}</ContextMenu.Trigger>
+      <ContextMenu.Portal>
+        <ContextMenu.Content
+          aria-label={`Opciones de «${list.name}»`}
+          className="z-50 w-[200px] rounded-2xl border border-border-soft bg-card p-1.5 text-foreground shadow-popover outline-none"
+        >
+          {items.map((item) => (
+            <ContextMenu.Item
+              key={item.label}
+              onSelect={item.onSelect}
+              className={cn(rowClass(item, 'h-11'), 'data-highlighted:bg-fill')}
+            >
+              <item.icon
+                aria-hidden
+                className={cn('size-[18px]', item.iconClassName)}
+                strokeWidth={2}
+              />
+              {item.label}
+            </ContextMenu.Item>
+          ))}
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  )
+}
+
 function ownerEntries(list: List, actions: ListActions, isDesktop: boolean): MenuEntry[] {
   return [
     {
@@ -174,6 +220,7 @@ function ownerEntries(list: List, actions: ListActions, isDesktop: boolean): Men
               actions.openPeople(list)
             },
           },
+          duplicateEntry(list, actions, isDesktop),
         ]),
     {
       label: 'Archivar',
@@ -193,10 +240,22 @@ function ownerEntries(list: List, actions: ListActions, isDesktop: boolean): Men
   ]
 }
 
+/** «Duplicar», después de «Compartir» o «Quién está» (diseño 23, C1, C4 y E4). */
+function duplicateEntry(list: List, actions: ListActions, isDesktop: boolean): MenuEntry {
+  return {
+    label: isDesktop ? 'Duplicar…' : 'Duplicar',
+    icon: CopyPlus,
+    onSelect: () => {
+      actions.duplicate(list)
+    },
+  }
+}
+
 function memberEntries(
   list: List,
   actions: ListActions,
   people: readonly ListPerson[] | undefined,
+  isDesktop: boolean,
 ): MenuEntry[] {
   return [
     {
@@ -207,6 +266,7 @@ function memberEntries(
         actions.openPeople(list)
       },
     },
+    duplicateEntry(list, actions, isDesktop),
     {
       label: 'Salir de la lista',
       icon: LogOut,

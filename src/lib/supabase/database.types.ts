@@ -809,6 +809,7 @@ export type Database = {
         Returns: Database['public']['Enums']['item_kind']
       }
       delete_own_account: { Args: Record<PropertyKey, never>; Returns: undefined }
+      duplicate_list: { Args: { p_list_id: string; p_name: string }; Returns: Json }
       invoke_refresh_prices: { Args: Record<PropertyKey, never>; Returns: number }
       invoke_send_reminders: { Args: Record<PropertyKey, never>; Returns: number }
       is_active_sublist_status: { Args: { p_status: string }; Returns: boolean }

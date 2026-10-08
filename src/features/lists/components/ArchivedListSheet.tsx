@@ -9,7 +9,8 @@ import { useListActions } from './listActionsContext'
 
 /**
  * Hoja de una lista archivada en móvil (diseño 04 Listas, L13): «Archivada el 12 sep · 2
- * pendientes · 84 €», qué pasa al desarchivarla, «Desarchivar» y «Borrar». La abren la sección de
+ * pendientes · 84 €», qué pasa al desarchivarla, «Desarchivar», «Duplicar» (diseño 23, C6) y
+ * «Borrar». La abren la sección de
  * archivadas de Inicio y los resultados de Buscar.
  */
 export function ArchivedListSheet({
@@ -19,7 +20,7 @@ export function ArchivedListSheet({
   list: List | undefined
   onClose: () => void
 }) {
-  const { unarchive, confirmDelete } = useListActions()
+  const { unarchive, duplicate, confirmDelete } = useListActions()
   // Al cerrarse, la hoja se anima hacia abajo: sigue pintando la última lista hasta desaparecer.
   const [shown, setShown] = useState(list)
   if (list && list !== shown) setShown(list)
@@ -57,6 +58,17 @@ export function ArchivedListSheet({
           >
             <ArchiveRestore aria-hidden className="size-[18px]" strokeWidth={2} />
             Desarchivar
+          </button>
+          {/* Una archivada sirve de plantilla (4.4, diseño 23, C6): la copia sale en tus listas. */}
+          <button
+            type="button"
+            onClick={() => {
+              duplicate(shown)
+              onClose()
+            }}
+            className="-mb-3 h-13 font-display text-[15px] font-bold text-foreground outline-none focus-visible:underline"
+          >
+            Duplicar
           </button>
           <button
             type="button"
