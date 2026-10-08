@@ -21,12 +21,15 @@ import {
   type AddableKind,
   type ChoosableKind,
 } from '../kind'
+import { usePastedLines } from '../hooks/usePastedLines'
 import { useWrittenDate } from '../hooks/useWrittenDate'
+import { linesToSave, type LineToSave } from '../pastedLines'
 import { ITEM_TITLE_MAX_LENGTH, itemTitleSchema } from '../schemas'
 import { readsWrittenDates, type WrittenDate } from '../writtenDate'
 import { FieldMarks, markedFieldClass } from './FieldMarks'
 import { KindOptions } from './KindOptions'
 import { KIND_ICONS } from './kindIcons'
+import { PastedLinesBox } from './PastedLinesBox'
 import { WrittenDatePill } from './WrittenDatePill'
 
 interface AddItemBarProps {
@@ -36,6 +39,8 @@ interface AddItemBarProps {
    * fecha escrita en una tarea o un evento (3.5), `written` es lo que se entendió de ella.
    */
   onAdd: (title: string, kind: AddableKind | undefined, written: WrittenDate | null) => void
+  /** Pegar varias líneas (4.3, diseño 23, B4–B6): una cosa por cada una, en orden. */
+  onAddMany: (lines: LineToSave[], kind: AddableKind | undefined) => void
   /**
    * `docked`: móvil, pegado encima de la barra de navegación y siempre visible (pantalla 4).
    * `inline`: escritorio, un campo de 56 px arriba de la lista con la pista ↩ (D1).
@@ -76,10 +81,16 @@ const keepFocus = (event: MouseEvent) => {
  * 2026-10-01: antes era un «+» que confundía, y el tipo distinto salía como chip, diseño 12 T3).
  * En escritorio, además, los prefijos «> » (compra) y «@ » (evento). El texto va a 16 px en móvil
  * (el diseño dice 15): por debajo de 16, Safari en iOS amplía la página al enfocar.
+ *
+ * Pegar una lista con el campo vacío (4.3, diseño 23, B4 y B5) la enseña en su caja, una cosa por
+ * línea: encima del campo en móvil, debajo en escritorio. El campo dice «4 líneas pegadas» y el
+ * botón, «Añadir 4». El tipo se puede cambiar igual; «Como una sola» deja el texto en el campo,
+ * con los saltos de línea como espacios (lo que haría el campo al pegarlo).
  */
 export function AddItemBar({
   placeholder,
   onAdd,
+  onAddMany,
   variant,
   autoFocus = false,
   kinds,
@@ -89,6 +100,7 @@ export function AddItemBar({
   const [chosen, setChosen] = useState<AddableKind | null>(null)
   const [picking, setPicking] = useState(false)
   const input = useRef<HTMLInputElement>(null)
+  const lines = usePastedLines()
   const inline = variant === 'inline'
   const offered: readonly AddableKind[] = kinds?.sublists
     ? [...CHOOSABLE_KINDS, 'sublist']
@@ -122,6 +134,14 @@ export function AddItemBar({
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (lines.pasted) {
+      if (lines.count === 0) return
+      onAddMany(linesToSave(lines.pasted.rows, kind ?? null), kind)
+      lines.clear()
+      setChosen(null)
+      input.current?.focus()
+      return
+    }
     const parsed = itemTitleSchema.safeParse(dated.toSave.title)
     if (!parsed.success) return
     onAdd(parsed.data, kind, dated.toSave.written)
@@ -137,7 +157,7 @@ export function AddItemBar({
     input.current?.focus()
   }
 
-  const empty = title.trim() === ''
+  const empty = lines.pasted ? lines.count === 0 : title.trim() === ''
   // El tipo con el que se va a añadir, a la izquierda (decisión de Fran, 2026-10-01): su icono y
   // una flechita, para que se lea «tipo» y no «añadir». Resaltado si no es el de por defecto.
   const KindIcon = kind ? KIND_ICONS[kind] : null
@@ -191,13 +211,20 @@ export function AddItemBar({
         <input
           ref={input}
           value={title}
+          readOnly={lines.pasted !== null}
           onChange={(event) => {
             setTitle(event.target.value)
+          }}
+          onPaste={(event) => {
+            // Una lista pegada en el campo vacío se ofrece una cosa por línea (4.3).
+            if (title.trim() === '' && lines.offer(event.clipboardData.getData('text'))) {
+              event.preventDefault()
+            }
           }}
           onScroll={(event) => {
             setScrollLeft(event.currentTarget.scrollLeft)
           }}
-          placeholder={placeholder}
+          placeholder={lines.pasted ? `${String(lines.count)} líneas pegadas` : placeholder}
           aria-label={placeholder}
           maxLength={ITEM_TITLE_MAX_LENGTH}
           autoFocus={autoFocus}
@@ -212,12 +239,18 @@ export function AddItemBar({
       {/* Añadir sin tener que saber lo de Intro (decisión de Fran): gris hasta que hay texto. */}
       <button
         type="submit"
-        aria-label="Añadir"
+        aria-label={lines.pasted ? undefined : 'Añadir'}
         disabled={empty}
         onMouseDown={keepFocus}
-        className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:bg-control disabled:text-white"
+        className={cn(
+          'grid shrink-0 place-items-center rounded-full bg-primary text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:bg-control disabled:text-white',
+          lines.pasted
+            ? 'flex h-9 items-center gap-1.5 px-3.5 font-display text-sm font-bold'
+            : 'size-9',
+        )}
       >
         <ArrowUp aria-hidden className="size-[18px]" strokeWidth={2.6} />
+        {lines.pasted && `Añadir ${String(lines.count)}`}
       </button>
     </form>
   )
@@ -225,9 +258,43 @@ export function AddItemBar({
   // En móvil encima del campo (A9); en escritorio debajo, con la pista ↩ (D2).
   const pill = <WrittenDatePill state={dated} kind={dateKind} />
 
+  const box = lines.pasted && (
+    <PastedLinesBox
+      rows={lines.pasted.rows}
+      overflow={lines.pasted.overflow}
+      kind={kind ?? null}
+      onToggleRemoved={lines.toggleRemoved}
+      onToggleDate={lines.toggleDate}
+      onSingle={() => {
+        const text = lines.pasted?.text ?? ''
+        lines.clear()
+        setTitle(
+          text
+            .replace(/\s*[\r\n]+\s*/g, ' ')
+            .trim()
+            .slice(0, ITEM_TITLE_MAX_LENGTH),
+        )
+        input.current?.focus()
+      }}
+      className={inline ? undefined : 'mb-2.5'}
+    />
+  )
+
   if (!kinds || !kind) {
-    if (inline) return field
-    return <Docked>{field}</Docked>
+    if (inline) {
+      return (
+        <div className="flex flex-col gap-2.5">
+          {field}
+          {box}
+        </div>
+      )
+    }
+    return (
+      <Docked>
+        {box}
+        {field}
+      </Docked>
+    )
   }
 
   const heading = `Añadir a ${kinds.listName}`
@@ -247,6 +314,7 @@ export function AddItemBar({
       <Popover.Root open={picking} onOpenChange={setPicking}>
         <div className="flex flex-col gap-2.5">
           <Popover.Anchor asChild>{field}</Popover.Anchor>
+          {box}
           {dated.understood && (
             <div className="flex items-center gap-3">
               {pill}
@@ -283,6 +351,7 @@ export function AddItemBar({
 
   return (
     <Docked>
+      {box}
       {dated.understood && <div className="mb-2.5 flex">{pill}</div>}
       {field}
       <BottomSheet open={picking} onOpenChange={setPicking} title={heading} className="px-4">

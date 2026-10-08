@@ -294,7 +294,8 @@ export function itemFromNew(item: NewItem, position: number): Item {
     allDay: item.due?.allDay ?? false,
     recurrence: item.recurrence ?? null,
     position,
-    completedAt: null,
+    // Una línea pegada con «[x] » nace hecha (4.3): el trigger le pone la fecha.
+    completedAt: isFinalStatus(item.status) ? new Date() : null,
     createdAt: new Date(),
     leftInboxId: null,
     leftInboxAt: null,
@@ -333,7 +334,7 @@ const createItemMutation = durableMutation(itemMutationKey('create'), (queryClie
           itemFromNew(item, item.position ?? nextItemPosition(items)),
         ],
       },
-      counters: { [item.listId]: { pending: 1, done: 0 } },
+      counters: { [item.listId]: counted(item.status) },
     }),
   onError: (error, item, snapshot) => {
     rollback(

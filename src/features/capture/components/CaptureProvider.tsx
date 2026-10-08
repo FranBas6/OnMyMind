@@ -7,12 +7,15 @@ import { KeyboardSheetContent } from '@/components/KeyboardSheet'
 import {
   destinationShortName,
   destinationsOf,
+  firstFinalStatus,
   newItemKindAndStatus,
+  pastedLinesSaved,
   useCreateWithDate,
   useDeleteItem,
   useFillCapturedLink,
   useSublists,
   type Destination,
+  type LineToSave,
   type NewItemLink,
   type WrittenDate,
 } from '@/features/items'
@@ -121,6 +124,35 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  // Pegar varias líneas (4.3, diseño 23, B3): una cosa por línea, en orden (la cola de ítems las
+  // envía de una en una, también sin red), y un solo aviso, «6 cosas en Compras», cuyo «Deshacer»
+  // las borra todas.
+  const saveMany = (lines: LineToSave[], destination: Destination) => {
+    const { list, sublist } = destination
+    const base = newItemKindAndStatus(list.kind)
+    const items = lines.map((line) =>
+      createItem(
+        {
+          id: crypto.randomUUID(),
+          listId: list.id,
+          parentId: sublist?.id ?? null,
+          title: line.title,
+          kind: base.kind,
+          status: line.done ? firstFinalStatus(base.kind) : base.status,
+        },
+        line.written,
+      ),
+    )
+    close()
+    showUndoToast({
+      icon: Check,
+      message: pastedLinesSaved(items.length, destinationShortName(destination)),
+      onUndo: () => {
+        for (const item of items) deleteItem.mutate(item)
+      },
+    })
+  }
+
   const api = useMemo<CaptureApi>(() => ({ open, isOpen: state.open }), [open, state.open])
 
   const form = (
@@ -132,6 +164,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       origin={origin}
       defaultListId={profile.data?.settings.defaultListId ?? null}
       onSave={save}
+      onSaveMany={saveMany}
       onClose={close}
     />
   )

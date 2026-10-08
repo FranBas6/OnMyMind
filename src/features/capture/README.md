@@ -10,3 +10,8 @@ chips de destino (`destinations.ts`) y todas las listas, el atajo ⌘⇧Espacio 
 se propone la lista de compras más usada (`shoppingDestination`). La consulta de la página es la
 del detalle (`useLinkPreview` en `features/items`), y lo guardado antes de que llegue lo completa
 `useFillCapturedLink`.
+
+**Pegar varias líneas (4.3):** una lista pegada con el campo vacío se enseña una cosa por línea
+(`PastedLinesBox` y `usePastedLines`, en `features/items`, que comparte con la barra de añadir), y
+`CaptureProvider.saveMany` crea una por línea con un solo «Deshacer». Lo puro, en
+`features/items/pastedLines.ts`.

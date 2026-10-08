@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Check } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { InboxHeader, ListDetailHeader, type List } from '@/features/lists'
@@ -28,12 +29,18 @@ import {
 } from '../filters'
 import { useItems } from '../hooks/useItems'
 import { useCreateWithDate } from '../hooks/useCreateWithDate'
-import { nextItemPosition, useReorderItems, useUpdateItem } from '../hooks/useItemMutations'
+import {
+  nextItemPosition,
+  useDeleteItem,
+  useReorderItems,
+  useUpdateItem,
+} from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
 import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
 import { isChoosableKind, type AddableKind } from '../kind'
 import type { WrittenDate } from '../writtenDate'
-import { defaultItemKind, initialStatus } from '../status'
+import { pastedLinesSaved, type LineToSave } from '../pastedLines'
+import { defaultItemKind, firstFinalStatus, initialStatus } from '../status'
 import { hasPrices, pendingTotals } from '../prices'
 import { childrenOf, sublistSummary, topLevel } from '../sublists'
 import type { Item, MovedItem } from '../types'
@@ -103,6 +110,7 @@ export function ListDetail({
   })
   const createItem = useCreateWithDate()
   const updateItem = useUpdateItem()
+  const deleteItem = useDeleteItem()
   const addBarRef = useRef<AddItemBarHandle>(null)
   const queryClient = useQueryClient()
   const online = useOnline()
@@ -213,6 +221,36 @@ export function ListDetail({
     if (kind === 'sublist') onOpenSublist(id)
   }
 
+  // Pegar varias líneas (4.3, diseño 23, B6): una cosa por línea, en orden y al final de la lista,
+  // y un solo aviso («3 cosas en Casa») cuyo «Deshacer» las borra todas. Una sublista pegada no se
+  // abre: son varias.
+  const addMany = (lines: LineToSave[], chosen: AddableKind | undefined) => {
+    const kind = chosen ?? defaultKind
+    if (!all) queryClient.setQueryData(itemsQueryOptions(list.id).queryKey, [])
+    const first = all ? nextItemPosition(all) : undefined
+    const items = lines.map((line, index) =>
+      createItem(
+        {
+          id: crypto.randomUUID(),
+          listId: list.id,
+          parentId: sublist?.id ?? null,
+          title: line.title,
+          kind,
+          status: line.done ? firstFinalStatus(kind) : initialStatus(kind),
+          position: first === undefined ? undefined : first + index * 1000,
+        },
+        line.written,
+      ),
+    )
+    showUndoToast({
+      icon: Check,
+      message: pastedLinesSaved(items.length, sublist?.title ?? list.name),
+      onUndo: () => {
+        for (const item of items) deleteItem.mutate(item)
+      },
+    })
+  }
+
   const showFilters = all !== undefined && (inbox ? active.length > 0 : !empty)
   const addBar = (all ?? notDownloaded) && (
     <AddItemBar
@@ -222,6 +260,7 @@ export function ListDetail({
       placeholder={sublist ? `Añadir a ${sublist.title}…` : addPlaceholder(list, empty)}
       autoFocus={empty && renameKey === undefined}
       onAdd={add}
+      onAddMany={addMany}
       kinds={
         isChoosableKind(defaultKind)
           ? { defaultKind, listName: sublist?.title ?? list.name, sublists: !sublist }

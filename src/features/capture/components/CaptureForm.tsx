@@ -5,13 +5,17 @@ import {
   destinationShortName,
   FieldMarks,
   ITEM_TITLE_MAX_LENGTH,
+  linesToSave,
   markedFieldClass,
   newItemKindAndStatus,
+  PastedLinesBox,
   readsWrittenDates,
+  usePastedLines,
   useLinkPreview,
   useWrittenDate,
   WrittenDatePill,
   type Destination,
+  type LineToSave,
   type NewItemLink,
   type WrittenDate,
 } from '@/features/items'
@@ -56,6 +60,8 @@ interface CaptureFormProps {
     link: NewItemLink | undefined,
     written: WrittenDate | null,
   ) => void
+  /** Pegar varias líneas (4.3): una cosa por cada una, en orden. */
+  onSaveMany: (lines: LineToSave[], destination: Destination) => void
   onClose: () => void
 }
 
@@ -70,6 +76,10 @@ interface CaptureFormProps {
  * frase («Parece un producto. Lo guardo en **Compras** como compra.»), salvo que ya se haya
  * elegido un destino a mano. Se puede guardar sin esperar a la página. El portapapeles solo se lee
  * cuando se pega: leerlo al abrir haría salir el globo de permiso de iOS cada vez.
+ *
+ * **Varias líneas (4.3, diseño 23, B1–B3, B7 y E3):** pegar una lista con el campo vacío la enseña
+ * en su caja, una cosa por línea, en lugar del campo; «Guardar» pasa a «Añadir 7». «Como una sola»
+ * vuelve al campo con el texto tal cual. Con algo ya escrito, se pega como siempre.
  */
 export function CaptureForm({
   variant,
@@ -78,6 +88,7 @@ export function CaptureForm({
   origin,
   defaultListId,
   onSave,
+  onSaveMany,
   onClose,
 }: CaptureFormProps) {
   const [text, setText] = useState(initialText)
@@ -88,6 +99,7 @@ export function CaptureForm({
   const [touched, setTouched] = useState(false)
   const [picking, setPicking] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
+  const lines = usePastedLines()
   const online = useOnline()
   const dialog = variant === 'dialog'
 
@@ -130,6 +142,12 @@ export function CaptureForm({
   const title = link ? captureTitle(link, preview.metadata) : dated.toSave.title
 
   const save = () => {
+    if (lines.pasted) {
+      if (lines.count > 0 && target && kind) {
+        onSaveMany(linesToSave(lines.pasted.rows, kind), target)
+      }
+      return
+    }
     if (!title || !target || !kind) return
     onSave(
       title,
@@ -203,8 +221,18 @@ export function CaptureForm({
     )
   }
 
+  // Con la lista pegada no hay campo: ⌘↩ (o Ctrl↩) guarda desde cualquier sitio de la captura.
+  const onListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!lines.pasted || event.key !== 'Enter' || !(event.metaKey || event.ctrlKey)) return
+    event.preventDefault()
+    save()
+  }
+
+  const saveLabel = lines.pasted ? `Añadir ${String(lines.count)}` : 'Guardar'
+  const canSave = lines.pasted ? lines.count > 0 : Boolean(title)
+
   return (
-    <div className="flex flex-col gap-3.5 md:gap-4">
+    <div className="flex flex-col gap-3.5 md:gap-4" onKeyDown={onListKeyDown}>
       {dialog ? (
         <div className="flex items-center justify-between gap-3 text-xs text-subtle-foreground">
           <span className="flex items-center gap-2">
@@ -236,67 +264,93 @@ export function CaptureForm({
         )
       )}
 
-      <div className="relative">
-        {marks && (
-          <FieldMarks
-            text={text}
-            ranges={marks}
-            scroll={{ left: 0, top: scrollTop }}
-            multiline
-            className={cn(FIELD_TYPE, text.length > LONG_TEXT ? 'text-[22px]' : 'text-[26px]')}
-          />
-        )}
-        <textarea
-          ref={(element) => {
-            field.current = element
-            grow(element)
+      {lines.pasted ? (
+        <PastedLinesBox
+          rows={lines.pasted.rows}
+          overflow={lines.pasted.overflow}
+          kind={kind}
+          onToggleRemoved={lines.toggleRemoved}
+          onToggleDate={lines.toggleDate}
+          onSingle={() => {
+            const pastedText = lines.pasted?.text ?? ''
+            lines.clear()
+            changeText(pastedText)
+            requestAnimationFrame(() => field.current?.focus())
           }}
-          autoFocus
-          data-vaul-no-drag
-          aria-label="¿Qué tienes en mente?"
-          placeholder="¿Qué tienes en mente?"
-          rows={link?.onlyLink ? 1 : 2}
-          value={text}
-          maxLength={FIELD_MAX_LENGTH}
-          enterKeyHint={dialog ? 'enter' : 'done'}
-          onPaste={() => {
-            pasting.current = true
-          }}
-          onChange={(event) => {
-            changeText(event.target.value)
-            grow(event.currentTarget)
-          }}
-          onFocus={() => {
-            setPicking(false)
-          }}
-          onKeyDown={onKeyDown}
-          onScroll={(event) => {
-            setScrollTop(event.currentTarget.scrollTop)
-          }}
-          className={cn(
-            'relative block max-h-[calc(4*1.3em)] w-full resize-none bg-transparent outline-none placeholder:text-placeholder',
-            FIELD_TYPE,
-            marks && markedFieldClass,
-            // Solo el enlace: en índigo, más pequeño y partido por cualquier sitio (K1); en una
-            // línea si cabe, que debajo ya va su tarjeta.
-            link?.onlyLink
-              ? 'min-h-[1.35em] text-[19px] leading-[1.35] tracking-[-0.01em] break-all text-primary'
-              : ['min-h-[calc(2*1.3em)]', text.length > LONG_TEXT ? 'text-[22px]' : 'text-[26px]'],
-          )}
         />
-      </div>
+      ) : (
+        <>
+          <div className="relative">
+            {marks && (
+              <FieldMarks
+                text={text}
+                ranges={marks}
+                scroll={{ left: 0, top: scrollTop }}
+                multiline
+                className={cn(FIELD_TYPE, text.length > LONG_TEXT ? 'text-[22px]' : 'text-[26px]')}
+              />
+            )}
+            <textarea
+              ref={(element) => {
+                field.current = element
+                grow(element)
+              }}
+              autoFocus
+              data-vaul-no-drag
+              aria-label="¿Qué tienes en mente?"
+              placeholder="¿Qué tienes en mente?"
+              rows={link?.onlyLink ? 1 : 2}
+              value={text}
+              maxLength={FIELD_MAX_LENGTH}
+              enterKeyHint={dialog ? 'enter' : 'done'}
+              onPaste={(event) => {
+                // Una lista pegada en el campo vacío se ofrece una cosa por línea (4.3).
+                if (text.trim() === '' && lines.offer(event.clipboardData.getData('text'))) {
+                  event.preventDefault()
+                  return
+                }
+                pasting.current = true
+              }}
+              onChange={(event) => {
+                changeText(event.target.value)
+                grow(event.currentTarget)
+              }}
+              onFocus={() => {
+                setPicking(false)
+              }}
+              onKeyDown={onKeyDown}
+              onScroll={(event) => {
+                setScrollTop(event.currentTarget.scrollTop)
+              }}
+              className={cn(
+                'relative block max-h-[calc(4*1.3em)] w-full resize-none bg-transparent outline-none placeholder:text-placeholder',
+                FIELD_TYPE,
+                marks && markedFieldClass,
+                // Solo el enlace: en índigo, más pequeño y partido por cualquier sitio (K1); en una
+                // línea si cabe, que debajo ya va su tarjeta.
+                link?.onlyLink
+                  ? 'min-h-[1.35em] text-[19px] leading-[1.35] tracking-[-0.01em] break-all text-primary'
+                  : [
+                      'min-h-[calc(2*1.3em)]',
+                      text.length > LONG_TEXT ? 'text-[22px]' : 'text-[26px]',
+                    ],
+              )}
+            />
+          </div>
 
-      {/* Lo que se entendió de la fecha, bajo el texto (diseño 21, A1–A5 y D1). */}
-      <WrittenDatePill state={dated} kind={dateKind} />
+          {/* Lo que se entendió de la fecha, bajo el texto (diseño 21, A1–A5 y D1). */}
+          <WrittenDatePill state={dated} kind={dateKind} />
 
-      {link && (
-        <UrlCapturePreview url={link.url} state={preview.state} metadata={preview.metadata} />
-      )}
-      {asShopping && (
-        // Una sola frase con la lista en negrita: la pantalla 9 la rompía en columnas.
-        <p className="rounded-[14px] bg-brand-tint px-3.5 py-3 text-sm leading-[1.45] text-primary-strong">
-          Parece un producto. Lo guardo en <b>{destinationShortName(target)}</b> como compra.
-        </p>
+          {link && (
+            <UrlCapturePreview url={link.url} state={preview.state} metadata={preview.metadata} />
+          )}
+          {asShopping && (
+            // Una sola frase con la lista en negrita: la pantalla 9 la rompía en columnas.
+            <p className="rounded-[14px] bg-brand-tint px-3.5 py-3 text-sm leading-[1.45] text-primary-strong">
+              Parece un producto. Lo guardo en <b>{destinationShortName(target)}</b> como compra.
+            </p>
+          )}
+        </>
       )}
 
       <div
@@ -342,13 +396,13 @@ export function CaptureForm({
             />
           )}
         </div>
-        {dialog && <SaveButton disabled={!title} onClick={save} compact />}
+        {dialog && <SaveButton label={saveLabel} disabled={!canSave} onClick={save} compact />}
       </div>
 
       {!dialog && (
         <div className="flex items-center justify-between gap-3 pb-3.5">
           <span className="text-[13px] text-subtle-foreground">{hint}</span>
-          <SaveButton disabled={!title} onClick={save} />
+          <SaveButton label={saveLabel} disabled={!canSave} onClick={save} />
         </div>
       )}
     </div>
@@ -363,10 +417,12 @@ function grow(element: HTMLTextAreaElement | null) {
 }
 
 function SaveButton({
+  label,
   disabled,
   onClick,
   compact = false,
 }: {
+  label: string
   disabled: boolean
   onClick: () => void
   compact?: boolean
@@ -387,7 +443,7 @@ function SaveButton({
           : 'h-12 rounded-2xl px-[26px] text-[15px]',
       )}
     >
-      Guardar
+      {label}
     </button>
   )
 }

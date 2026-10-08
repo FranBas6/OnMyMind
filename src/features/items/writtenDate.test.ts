@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import { parseNaturalDate } from '@/lib/naturalDate'
 
-import { readsWrittenDates, writtenDateFields, writtenDateLabel } from './writtenDate'
+import {
+  compactWrittenDateLabel,
+  readsWrittenDates,
+  writtenDateFields,
+  writtenDateLabel,
+  type WrittenDate,
+} from './writtenDate'
 
 /** Miércoles 7 de octubre de 2026 a las 12:00. */
 const NOW = new Date(2026, 9, 7, 12, 0)
@@ -115,6 +121,40 @@ describe('lo que se repite, escrito (3.6; diseño 21, A4 y A8)', () => {
       day: 'Cada martes · 19:00 · desde el 13',
       reminder: null,
       repeats: true,
+    })
+  })
+})
+
+describe('compactWrittenDateLabel (diseño 23, B5)', () => {
+  const now = new Date(2026, 9, 7, 9)
+  const task = (at: Date, reminder: number | null): WrittenDate => ({
+    due: { at, allDay: true },
+    reminderOffsetMinutes: reminder,
+    recurrence: null,
+  })
+
+  it('«Mañana · 🔔 10:00» en una tarea con aviso; «Hoy» y el día corto', () => {
+    expect(compactWrittenDateLabel(task(new Date(2026, 9, 8), -600), 'task', now)).toEqual({
+      day: 'Mañana',
+      time: '10:00',
+      bell: true,
+      repeats: false,
+    })
+    expect(compactWrittenDateLabel(task(new Date(2026, 9, 7), null), 'task', now).day).toBe('Hoy')
+    expect(compactWrittenDateLabel(task(new Date(2026, 9, 9), null), 'task', now).day).toBe('Vie 9')
+  })
+
+  it('un evento con su hora y sin campana', () => {
+    const event: WrittenDate = {
+      due: { at: new Date(2026, 9, 9, 21), allDay: false },
+      reminderOffsetMinutes: null,
+      recurrence: null,
+    }
+    expect(compactWrittenDateLabel(event, 'event', now)).toEqual({
+      day: 'Vie 9',
+      time: '21:00',
+      bell: false,
+      repeats: false,
     })
   })
 })

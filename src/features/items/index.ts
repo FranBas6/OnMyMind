@@ -33,6 +33,7 @@ export {
 export { useSublists } from './hooks/useSublists'
 export {
   checkboxState,
+  firstFinalStatus,
   initialStatus,
   isActiveSublistStatus,
   isFinalStatus,
@@ -69,3 +70,6 @@ export { fetchCompletions } from './api'
 export { useUndoRepeat } from './hooks/useItemMutations'
 export { PriceDropsSheet } from './components/PriceDropsSheet'
 export type { Completion } from './types'
+export { PastedLinesBox } from './components/PastedLinesBox'
+export { usePastedLines } from './hooks/usePastedLines'
+export { linesToSave, pastedLinesSaved, type LineToSave } from './pastedLines'

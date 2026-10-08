@@ -1,4 +1,4 @@
-import { format, isSameYear, startOfDay } from 'date-fns'
+import { addDays, format, isSameDay, isSameYear, startOfDay } from 'date-fns'
 
 import type { NaturalDate } from '@/lib/naturalDate'
 
@@ -94,6 +94,37 @@ export function writtenDateLabel(
   }
   if (!reminder) return { day: `Vence ${dayText(at, now, true)}`, reminder: null, repeats: false }
   return { day: `Vence ${dayText(at, now, false)}`, reminder, repeats: false }
+}
+
+/**
+ * La pastilla corta de una línea pegada (diseño 23, B5): «Mañana · 🔔 10:00». El día como se dice
+ * («Hoy», «Mañana», «Vie 9») o la regla si se repite; la hora del evento, o la del aviso de la
+ * tarea con su campana (`bell`).
+ */
+export function compactWrittenDateLabel(
+  written: WrittenDate,
+  kind: ItemKind,
+  now: Date = new Date(),
+): { day: string; time: string | null; bell: boolean; repeats: boolean } {
+  const { at, allDay } = written.due
+  const rule = recurrenceLabel(written.recurrence)
+  const day =
+    rule ??
+    (isSameDay(at, now)
+      ? 'Hoy'
+      : isSameDay(at, addDays(now, 1))
+        ? 'Mañana'
+        : capitalize(dayText(at, now, false)))
+  if (kind === 'event') {
+    return { day, time: allDay ? null : format(at, 'H:mm'), bell: false, repeats: rule !== null }
+  }
+  const reminder = written.reminderOffsetMinutes
+  return {
+    day,
+    time: reminder === null ? null : clock(-reminder),
+    bell: reminder !== null,
+    repeats: rule !== null,
+  }
 }
 
 /** Minutos desde las 00:00 como hora: 600 son las «10:00». */
