@@ -129,14 +129,14 @@ export async function deleteList(listId: string): Promise<void> {
 const duplicatedSchema = z.object({
   list_id: z.uuid(),
   items: z.number().int().nonnegative(),
-  photos: z.array(z.object({ item_id: z.uuid(), path: z.string() })),
+  photos: z.array(z.object({ item_id: z.uuid(), path: z.string(), position: z.number().int() })),
 })
 
 /** Lo que devuelve duplicar: la copia, cuántas cosas tiene y las fotos subidas que faltan. */
 export interface DuplicatedList {
   listId: string
   items: number
-  photos: { itemId: string; path: string }[]
+  photos: { itemId: string; path: string; position: number }[]
 }
 
 /**
@@ -154,6 +154,10 @@ export async function duplicateList(listId: string, name: string): Promise<Dupli
   return {
     listId: parsed.list_id,
     items: parsed.items,
-    photos: parsed.photos.map((photo) => ({ itemId: photo.item_id, path: photo.path })),
+    photos: parsed.photos.map((photo) => ({
+      itemId: photo.item_id,
+      path: photo.path,
+      position: photo.position,
+    })),
   }
 }

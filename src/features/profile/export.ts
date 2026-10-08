@@ -14,13 +14,16 @@ import type { List } from '@/features/lists/types'
  */
 
 /** La versión de la forma del JSON: si cambia, un importador sabrá qué tiene delante. */
-export const EXPORT_FORMAT = 1
+/** 2 (4.5): con `item_images`, todas las fotos de cada cosa. */
+export const EXPORT_FORMAT = 2
 
 export interface ExportTables {
   profile: Record<string, unknown> | null
   lists: Record<string, unknown>[]
   items: Record<string, unknown>[]
   itemLinks: Record<string, unknown>[]
+  /** Las fotos de cada cosa, en orden (4.5). */
+  itemImages: Record<string, unknown>[]
   itemPrices: Record<string, unknown>[]
   reminders: Record<string, unknown>[]
   itemCompletions: Record<string, unknown>[]
@@ -28,7 +31,8 @@ export interface ExportTables {
 
 /**
  * El documento del JSON. Las fotos van como enlaces (diseño 18, P7): cada ítem con foto lleva
- * `photo_url`, una URL firmada que dura una semana, además de su `image_path`. Van también las
+ * `photo_url`, una URL firmada que dura una semana, además de su `image_path`; y todas sus fotos van
+ * en `item_images`, cada una con su `photo_url` (4.5). Van también las
  * listas compartidas contigo (3.3, decisión de Fran: todo lo que ves), cada una con
  * `created_by_me` para distinguirlas de las tuyas.
  */
@@ -52,6 +56,11 @@ export function exportDocument(
       return url ? { ...item, photo_url: url } : item
     }),
     item_links: tables.itemLinks,
+    // Cada foto con su enlace firmado, como la de la cosa.
+    item_images: tables.itemImages.map((image) => {
+      const url = typeof image.path === 'string' ? photoUrls.get(image.path) : undefined
+      return url ? { ...image, photo_url: url } : image
+    }),
     item_prices: tables.itemPrices,
     reminders: tables.reminders,
     item_completions: tables.itemCompletions,

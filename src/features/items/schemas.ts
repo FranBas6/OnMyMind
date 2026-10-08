@@ -16,7 +16,7 @@ const priceSourceSchema = z.enum(['manual', 'web', 'auto']).nullable()
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at, price_link_id, price_store, price_followed, price_failures, created_by, completed_by, links:item_links!item_links_item_id_fkey(id, url, url_title, url_site, price_cents, currency, price_source, price_checked_at, price_followed, price_failures, position)'
+  'id, list_id, kind, parent_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at, price_link_id, price_store, price_followed, price_failures, created_by, completed_by, links:item_links!item_links_item_id_fkey(id, url, url_title, url_site, price_cents, currency, price_source, price_checked_at, price_followed, price_failures, position), images:item_images(id, path, position)'
 
 /** Límite de las notas: el `check` de `items.notes`. */
 export const ITEM_NOTES_MAX_LENGTH = 5000
@@ -55,6 +55,7 @@ export interface ItemRow {
   created_by: string
   completed_by: string | null
   links: ItemLinkRow[]
+  images: { id: string; path: string; position: number }[]
 }
 
 export interface ItemLinkRow {
@@ -128,6 +129,7 @@ export function mapItemRow(row: ItemRow): Item {
     previousPriceCents: row.previous_price_cents,
     priceCheckedAt: toDate(row.price_checked_at),
     links: row.links.map(mapItemLinkRow).sort((a, b) => a.position - b.position),
+    images: [...row.images].sort((a, b) => a.position - b.position),
     priceLinkId: row.price_link_id,
     priceStore: row.price_store,
     priceTracking: priceTracking(row.price_followed, row.price_failures),

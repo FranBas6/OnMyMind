@@ -143,6 +143,9 @@ export function duplicateSublist(
       leftInboxId: null,
       leftInboxAt: null,
       links: [],
+      // Las fotos van con ella, con ids nuevos; comparten archivo, y `orphan_photos` lo tiene en
+      // cuenta (4.5).
+      images: item.images.map((image) => ({ ...image, id: newId() })),
       priceLinkId: null,
       priceStore: null,
       ...overrides,

@@ -88,6 +88,38 @@ export type Database = {
           },
         ]
       }
+      item_images: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          path: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          path: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          path?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'item_images_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       item_links: {
         Row: {
           created_at: string

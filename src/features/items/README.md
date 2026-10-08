@@ -18,3 +18,8 @@ la siguiente vez de uno que se repite, los grupos por días y los textos), `Even
 en una lista de eventos, y `EventWhenField` («Cuándo») en el detalle.
 
 Desde la 2.8, `photoCleanup.ts` borra del bucket las fotos que ya no usa ningún ítem (`orphan_photos`) un rato después de quitar o cambiar una foto, o de borrar un ítem o una lista, y una vez al día al abrir la app. En los tests lo sustituye `src/test/setup.ts`.
+
+**Varias fotos (4.5):** las fotos de una cosa están en `item_images` (`Item.images`) y la primera
+es `imagePath`. `usePhotoUploads` sube varias a la vez (hasta `MAX_PHOTOS`), `useImageMutation` las
+añade, mueve, cambia y quita, `PhotoStrip` es la tira de la ficha (ordenar arrastrando y su menú) y
+`PhotoViewer` el visor con varias. `copyItemPhoto` copia una al duplicar una lista.

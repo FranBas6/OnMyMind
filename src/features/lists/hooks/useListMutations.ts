@@ -215,7 +215,7 @@ export function useDuplicateList() {
     onSuccess: (copy) => {
       if (copy.photos.length === 0) return
       void Promise.allSettled(
-        copy.photos.map((photo) => copyItemPhoto(photo.itemId, photo.path)),
+        copy.photos.map((photo) => copyItemPhoto(photo.itemId, photo.path, photo.position)),
       ).then(() => queryClient.invalidateQueries({ queryKey: queryKeys.items.byList(copy.listId) }))
     },
     onSettled: () => refetchLists(queryClient),

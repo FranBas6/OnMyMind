@@ -71,6 +71,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     previousPriceCents: 9900,
     priceCheckedAt: NINE,
     links: [],
+    images: [],
     priceLinkId: null,
     priceStore: null,
     priceTracking: 'on',

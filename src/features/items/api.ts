@@ -13,6 +13,7 @@ import type {
   Completion,
   Item,
   ItemKind,
+  ItemImage,
   ItemLink,
   ItemLinkPatch,
   ItemPatch,
@@ -162,7 +163,6 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
   if (patch.url !== undefined) row.url = patch.url
   if (patch.urlTitle !== undefined) row.url_title = patch.urlTitle
   if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl
-  if (patch.imagePath !== undefined) row.image_path = patch.imagePath
   if (patch.recurrence !== undefined) row.recurrence = patch.recurrence
   if (patch.urlSite !== undefined) row.url_site = patch.urlSite
   if (patch.priceCents !== undefined) row.price_cents = patch.priceCents
@@ -287,6 +287,12 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
     { onConflict: 'id', ignoreDuplicates: true },
   )
   if (error) throw error
+
+  // Sus fotos (4.5): con los mismos ids; `item_images_sync` vuelve a poner la primera.
+  const images = ordered.flatMap((item) =>
+    item.images.map((image) => ({ ...image, item_id: item.id })),
+  )
+  if (images.length > 0) await insertImages(images)
 
   const links = ordered.flatMap((item) => item.links.map((link) => linkRow(item.id, link)))
   if (links.length === 0) return
@@ -458,5 +464,40 @@ export async function fetchCompletions(start: Date, end: Date): Promise<Completi
 /** Deshace la última vez hecha de una tarea que se repite: vuelve a la fecha que tenía. */
 export async function undoRepeat(itemId: string): Promise<void> {
   const { error } = await supabase.rpc('undo_repeat', { p_item_id: itemId })
+  if (error) throw error
+}
+
+/**
+ * Añade fotos a cosas (4.5), con sus ids generados en el cliente: subir, «Deshacer» un borrado y
+ * duplicar. El trigger `item_images_sync` pone la primera en la cosa. Idempotente, como
+ * `createItem`.
+ */
+export async function insertImages(
+  images: readonly (ItemImage & { item_id: string })[],
+): Promise<void> {
+  const { error } = await supabase.from('item_images').upsert(
+    images.map((image) => ({
+      id: image.id,
+      item_id: image.item_id,
+      path: image.path,
+      position: image.position,
+    })),
+    { onConflict: 'id', ignoreDuplicates: true },
+  )
+  if (error) throw error
+}
+
+/** Cambia una foto de sitio («Poner la primera», arrastrar) o de archivo («Cambiar»). */
+export async function updateImage(
+  imageId: string,
+  patch: Partial<Pick<ItemImage, 'path' | 'position'>>,
+): Promise<void> {
+  const { error } = await supabase.from('item_images').update(patch).eq('id', imageId)
+  if (error) throw error
+}
+
+/** Quita una foto. Su archivo lo borra después la limpieza de huérfanas (2.8). */
+export async function deleteImage(imageId: string): Promise<void> {
+  const { error } = await supabase.from('item_images').delete().eq('id', imageId)
   if (error) throw error
 }

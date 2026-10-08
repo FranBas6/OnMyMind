@@ -60,6 +60,7 @@ const grifo: Item = {
   previousPriceCents: null,
   priceCheckedAt: null,
   links: [],
+  images: [],
   priceLinkId: null,
   priceStore: null,
   priceTracking: null,

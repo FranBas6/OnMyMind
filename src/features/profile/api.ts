@@ -97,17 +97,19 @@ async function allRows(
 
 /**
  * Todo lo tuyo, para el JSON de «Exportar mis datos» (diseño 18, P7): el perfil con sus ajustes,
- * las listas (también las archivadas), los ítems (con las sublistas y lo de dentro), las tiendas,
+ * las listas (también las archivadas), los ítems (con las sublistas y lo de dentro), sus fotos, las tiendas,
  * el histórico de precios y los avisos. RLS ya deja solo lo tuyo. Las suscripciones a avisos no:
  * son de cada navegador. Las fotos, como URLs firmadas de una semana.
  */
 export async function fetchExport(userId: string): Promise<ReturnType<typeof exportDocument>> {
-  const [profile, lists, items, itemLinks, itemPrices, reminders, itemCompletions] =
+  const [profile, lists, items, itemLinks, itemImages, itemPrices, reminders, itemCompletions] =
     await Promise.all([
       allRows((from, to) => supabase.from('profiles').select('*').eq('id', userId).range(from, to)),
       allRows((from, to) => supabase.from('lists').select('*').order('id').range(from, to)),
       allRows((from, to) => supabase.from('items').select('*').order('id').range(from, to)),
       allRows((from, to) => supabase.from('item_links').select('*').order('id').range(from, to)),
+      // Todas las fotos de cada cosa (4.5), no solo la primera.
+      allRows((from, to) => supabase.from('item_images').select('*').order('id').range(from, to)),
       allRows((from, to) => supabase.from('item_prices').select('*').order('id').range(from, to)),
       allRows((from, to) => supabase.from('reminders').select('*').order('id').range(from, to)),
       // Las veces hechas de lo que se repite (3.6): hecho no es borrado.
@@ -116,7 +118,11 @@ export async function fetchExport(userId: string): Promise<ReturnType<typeof exp
       ),
     ])
   const paths = [
-    ...new Set(items.map((item) => item.image_path).filter((path) => typeof path === 'string')),
+    ...new Set(
+      [...items.map((item) => item.image_path), ...itemImages.map((image) => image.path)].filter(
+        (path) => typeof path === 'string',
+      ),
+    ),
   ]
   const photoUrls = new Map<string, string>()
   for (let start = 0; start < paths.length; start += 100) {
@@ -134,6 +140,7 @@ export async function fetchExport(userId: string): Promise<ReturnType<typeof exp
       lists,
       items,
       itemLinks,
+      itemImages,
       itemPrices,
       reminders,
       itemCompletions,

@@ -12,16 +12,27 @@ import type { Item } from '../types'
 
 /**
  * La miniatura de 44 px de la fila, tras el control (diseño 15, L1 y D1; base: diseño 13, I1). Si
- * la imagen de la web ya no carga, queda el cuadrado vacío en `fill`, sin icono roto.
+ * la imagen de la web ya no carga, queda el cuadrado vacío en `fill`, sin icono roto. Con varias
+ * fotos, la primera y un número pequeño con cuántas son (diseño 23, D y E5).
  */
-export function RowThumb({ item, className }: { item: Item; className?: string }) {
+export function RowThumb({
+  item,
+  className,
+}: {
+  item: Pick<Item, 'imagePath' | 'imageUrl' | 'images'>
+  className?: string
+}) {
   const { src } = usePhotoSrc(item, 'thumb')
   const [broken, setBroken] = useState<string | null>(null)
   if (!hasThumb(item)) return null
+  const count = item.images.length
   return (
     <span
       aria-hidden
-      className={cn('block size-11 shrink-0 overflow-hidden rounded-[12px] bg-fill', className)}
+      className={cn(
+        'relative block size-11 shrink-0 overflow-hidden rounded-[12px] bg-fill',
+        className,
+      )}
     >
       {src && broken !== src && (
         <img
@@ -34,6 +45,11 @@ export function RowThumb({ item, className }: { item: Item; className?: string }
           }}
           className="size-full object-cover"
         />
+      )}
+      {count > 1 && (
+        <span className="absolute right-0.5 bottom-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-foreground/80 px-1 text-[10px] leading-none font-bold text-background">
+          {count}
+        </span>
       )}
     </span>
   )

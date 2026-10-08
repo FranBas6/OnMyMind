@@ -57,6 +57,11 @@ export interface Item {
    * tienda o ninguna: entonces el enlace y el precio son los del ítem, como en la 2.1.
    */
   links: ItemLink[]
+  /**
+   * Sus fotos propias, por su orden (4.5, diseño 23, D): hasta 10. La primera es `imagePath`, la de
+   * la miniatura de la fila; la mantiene el trigger `item_images_sync`.
+   */
+  images: ItemImage[]
   /** La tienda de la que sale el precio: la más barata o, comprada, donde se compró. */
   priceLinkId: string | null
   /** Su nombre («MediaMarkt»), para «En MediaMarkt, la más barata de 3». */
@@ -69,6 +74,13 @@ export interface Item {
    */
   createdBy: string | null
   completedBy: string | null
+}
+
+/** Una foto propia de una cosa (`item_images`): su archivo en Storage y su sitio. */
+export interface ItemImage {
+  id: string
+  path: string
+  position: number
 }
 
 /** Una tienda de una compra (`item_links`): su enlace y su precio, de la web o a mano. */
@@ -125,11 +137,13 @@ export interface ItemPatch {
   kind?: ItemKind
   /** Se quita al pasar a un tipo que no la usa (y vuelve si el cambio falla). */
   recurrence?: string | null
-  /** La foto y el enlace (2a.6): se guardan como el resto, campo a campo. */
+  /**
+   * El enlace y la imagen de la web (2a.6): se guardan como el resto, campo a campo. Las fotos
+   * propias van aparte, en `item_images` (4.5).
+   */
   url?: string | null
   urlTitle?: string | null
   imageUrl?: string | null
-  imagePath?: string | null
   urlSite?: string | null
   /** El precio va siempre con su origen (y su moneda, si viene de la web): el trigger los copia. */
   priceCents?: number | null

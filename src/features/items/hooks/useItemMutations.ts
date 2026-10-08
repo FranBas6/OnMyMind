@@ -10,8 +10,11 @@ import { queryKeys } from '@/lib/queryKeys'
 import {
   createItem,
   deleteItem,
+  deleteImage,
   deleteLink,
+  insertImages,
   insertLinks,
+  updateImage,
   updateLink,
   insertItems,
   moveItem,
@@ -30,6 +33,7 @@ import { countItems, type Counts } from '../sublists'
 import type {
   Completion,
   Item,
+  ItemImage,
   ItemLink,
   ItemLinkPatch,
   ItemPatch,
@@ -244,7 +248,6 @@ function patchItem(item: Item, patch: CachePatch): Item {
   if (patch.url !== undefined) next.url = patch.url
   if (patch.urlTitle !== undefined) next.urlTitle = patch.urlTitle
   if (patch.imageUrl !== undefined) next.imageUrl = patch.imageUrl
-  if (patch.imagePath !== undefined) next.imagePath = patch.imagePath
   if (patch.recurrence !== undefined) next.recurrence = patch.recurrence
   if (patch.urlSite !== undefined) next.urlSite = patch.urlSite
   if (patch.currency !== undefined) next.currency = patch.currency
@@ -310,6 +313,7 @@ export function itemFromNew(item: NewItem, position: number): Item {
     previousPriceCents: null,
     priceCheckedAt: link?.price ? new Date() : null,
     links: [],
+    images: [],
     priceLinkId: null,
     priceStore: null,
     // El precio que trae al pegarlo es de la web: desde ahí se mira solo (3.8).
@@ -503,7 +507,6 @@ const updateItemMutation = durableMutation(itemMutationKey('update'), (queryClie
       if (patch.url !== undefined) previous.url = before.url
       if (patch.urlTitle !== undefined) previous.urlTitle = before.urlTitle
       if (patch.imageUrl !== undefined) previous.imageUrl = before.imageUrl
-      if (patch.imagePath !== undefined) previous.imagePath = before.imagePath
       if (patch.recurrence !== undefined) previous.recurrence = before.recurrence
       if (patch.urlSite !== undefined) previous.urlSite = before.urlSite
       if (patch.currency !== undefined) previous.currency = before.currency
@@ -529,10 +532,6 @@ const updateItemMutation = durableMutation(itemMutationKey('update'), (queryClie
         adjustCounters(item.listId, negate(context.delta))
       }
       toast.error(`No se ha podido guardar. ${errorMessage(error)}`)
-    },
-    onSuccess: (_data, { patch }) => {
-      // La foto de antes (cambiada o quitada) puede haberse quedado sin nadie que la use (2.8).
-      if (patch.imagePath !== undefined) schedulePhotoCleanup()
     },
     onSettled: () => {
       settle(queryClient)
@@ -783,6 +782,83 @@ export function useStoreMutation() {
   return useDurableMutation(storeMutation)
 }
 
+/** Lo que se hace con las fotos de una cosa (4.5, diseño 23, D). */
+export type ImageChange =
+  | { type: 'add'; item: Item; images: ItemImage[] }
+  | {
+      type: 'update'
+      item: Item
+      imageId: string
+      patch: Partial<Pick<ItemImage, 'path' | 'position'>>
+    }
+  | { type: 'remove'; item: Item; imageId: string }
+
+/** Las fotos después del cambio, por su orden. */
+export function imagesAfter(images: readonly ItemImage[], change: ImageChange): ItemImage[] {
+  const next =
+    change.type === 'add'
+      ? [
+          ...images.filter((image) => !change.images.some((added) => added.id === image.id)),
+          ...change.images,
+        ]
+      : change.type === 'update'
+        ? images.map((image) =>
+            image.id === change.imageId ? { ...image, ...change.patch } : image,
+          )
+        : images.filter((image) => image.id !== change.imageId)
+  return next.sort((a, b) => a.position - b.position)
+}
+
+/** La cosa con estas fotos, como la deja `item_images_sync`: la primera es la suya. */
+export function withImages(item: Item, images: ItemImage[]): Item {
+  const [first] = images
+  return {
+    ...item,
+    images,
+    imagePath: first?.path ?? null,
+    imageUrl: first ? null : item.imageUrl,
+  }
+}
+
+/**
+ * Las fotos (optimista): añadir las ya subidas, ponerlas en otro sitio, cambiar una y quitarla. En
+ * la cola de ítems, como lo demás. Lo que se queda sin usar lo borra la limpieza de huérfanas.
+ */
+const imageMutation = durableMutation(itemMutationKey('image'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: (change: ImageChange) => {
+    if (change.type === 'add') {
+      return insertImages(change.images.map((image) => ({ ...image, item_id: change.item.id })))
+    }
+    if (change.type === 'update') return updateImage(change.imageId, change.patch)
+    return deleteImage(change.imageId)
+  },
+  onMutate: (change) => {
+    const update = (items: Item[]) =>
+      items.map((entry) =>
+        entry.id === change.item.id ? withImages(entry, imagesAfter(entry.images, change)) : entry,
+      )
+    return applyOptimistic(queryClient, {
+      items: { [change.item.listId]: update },
+      mixed: update,
+    })
+  },
+  onError: (error, _change, snapshot) => {
+    rollback(queryClient, snapshot, `No se ha podido guardar la foto. ${errorMessage(error)}`)
+  },
+  onSuccess: (_data, change) => {
+    // La foto quitada o cambiada puede haberse quedado sin nadie que la use (2.8).
+    if (change.type !== 'add') schedulePhotoCleanup()
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
+
+export function useImageMutation() {
+  return useDurableMutation(imageMutation)
+}
+
 /** Las mutaciones de ítems que se registran en el QueryClient (`setMutationDefaults`, 2.10). */
 export const itemMutations = [
   createItemMutation,
@@ -794,4 +870,5 @@ export const itemMutations = [
   deleteItemMutation,
   insertItemsMutation,
   storeMutation,
+  imageMutation,
 ]

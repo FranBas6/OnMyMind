@@ -67,6 +67,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     previousPriceCents: null,
     priceCheckedAt: null,
     links: [],
+    images: [],
     priceLinkId: null,
     priceStore: null,
     priceTracking: null,
@@ -209,6 +210,7 @@ describe('una foto y un enlace en cualquier ítem (diseño 15)', () => {
 
   it('subir una foto: «Subiendo…», y si falla, «Reintentar»', async () => {
     const user = userEvent.setup()
+    vi.mocked(itemsApi.insertImages).mockResolvedValue()
     vi.mocked(photos.uploadItemPhoto)
       .mockRejectedValueOnce(new Error('caída'))
       .mockResolvedValueOnce('u/i/foto.webp')
@@ -217,36 +219,40 @@ describe('una foto y un enlace en cualquier ítem (diseño 15)', () => {
     const sheet = await detail()
 
     const file = new File(['png'], 'pizarra.png', { type: 'image/png' })
-    await user.upload(within(sheet).getByLabelText('Elegir una foto'), file)
+    await user.upload(within(sheet).getByLabelText('Elegir fotos'), file)
 
-    expect(await within(sheet).findByText('No se ha podido subir la foto.')).toBeInTheDocument()
-    expect(itemsApi.updateItem).not.toHaveBeenCalled()
+    expect(await within(sheet).findByText('No se ha podido subir una foto.')).toBeInTheDocument()
+    expect(itemsApi.insertImages).not.toHaveBeenCalled()
     await user.click(within(sheet).getByRole('button', { name: 'Reintentar' }))
 
+    // Va a sus fotos (4.5): la primera, que es la de la fila.
     await waitFor(() => {
-      expect(itemsApi.updateItem).toHaveBeenCalledWith(ID.pizarra, {
-        imagePath: 'u/i/foto.webp',
-        imageUrl: null,
-      })
+      expect(itemsApi.insertImages).toHaveBeenCalledWith([
+        expect.objectContaining({ item_id: ID.pizarra, path: 'u/i/foto.webp', position: 1000 }),
+      ])
     })
     expect(photos.uploadItemPhoto).toHaveBeenCalledTimes(2)
     expect(photos.uploadItemPhoto).toHaveBeenLastCalledWith(ID.pizarra, file)
     expect(
-      await within(sheet).findByRole('button', {
-        name: 'Ver la foto de «Pizarra de la reunión del lunes»',
-      }),
-    ).toBeEnabled()
+      await within(sheet).findByRole('button', { name: 'Foto 1 de 1, la miniatura' }),
+    ).toBeInTheDocument()
   })
 
-  it('la foto en grande, con «Cambiar» y «Quitar»', async () => {
-    const user = userEvent.setup()
+  it('la foto en grande, con «Cambiar» y «Quitar», que se deshace', async () => {
+    // El aviso sale con la hoja del detalle abierta (vaul quita los clics de fuera).
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    vi.mocked(itemsApi.deleteImage).mockResolvedValue()
+    vi.mocked(itemsApi.insertImages).mockResolvedValue()
     vi.mocked(photos.signedPhotoUrl).mockImplementation((path, size) =>
       Promise.resolve(`https://storage.local/${path}-${size}`),
     )
-    renderInbox([item(ID.pizarra, 'Pizarra', { imagePath: 'u/i/foto.webp' })], ID.pizarra)
+    const foto = { id: 'foto', path: 'u/i/foto.webp', position: 1000 }
+    renderInbox([item(ID.pizarra, 'Pizarra', { imagePath: foto.path, images: [foto] })], ID.pizarra)
     const sheet = await detail()
 
-    await user.click(await within(sheet).findByRole('button', { name: 'Ver la foto de «Pizarra»' }))
+    await user.click(
+      await within(sheet).findByRole('button', { name: 'Foto 1 de 1, la miniatura' }),
+    )
     const viewer = await screen.findByRole('dialog', { name: 'Pizarra' })
     expect(await within(viewer).findByRole('img', { name: 'Foto de «Pizarra»' })).toHaveAttribute(
       'src',
@@ -255,14 +261,21 @@ describe('una foto y un enlace en cualquier ítem (diseño 15)', () => {
     expect(within(viewer).getByRole('button', { name: 'Cambiar' })).toBeEnabled()
     await user.click(within(viewer).getByRole('button', { name: 'Quitar' }))
 
-    expect(itemsApi.updateItem).toHaveBeenCalledWith(ID.pizarra, {
-      imagePath: null,
-      imageUrl: null,
+    await waitFor(() => {
+      expect(itemsApi.deleteImage).toHaveBeenCalledWith('foto')
     })
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'Pizarra' })).not.toBeInTheDocument()
     })
     expect(await within(sheet).findByRole('button', { name: '+ Foto' })).toBeInTheDocument()
+
+    // «Foto quitada · Deshacer» la devuelve tal cual (D10).
+    const undo = (await screen.findAllByRole('button', { name: 'Deshacer' })).at(-1)
+    if (!undo) throw new Error('sin «Deshacer»')
+    await user.click(undo)
+    await waitFor(() => {
+      expect(itemsApi.insertImages).toHaveBeenCalledWith([{ ...foto, item_id: ID.pizarra }])
+    })
   })
 
   it('sin conexión: el enlace espera su título y la foto necesita conexión', async () => {

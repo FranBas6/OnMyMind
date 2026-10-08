@@ -1,16 +1,20 @@
-import { Camera, CircleAlert, ExternalLink, Link2, LoaderCircle, WifiOff, X } from 'lucide-react'
+import { Camera, ExternalLink, Link2, LoaderCircle, Trash2, WifiOff, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 
+import { dropNeighbors, reorder, POSITION_STEP } from '@/lib/reorder'
+import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 
+import { useImageMutation } from '../hooks/useItemMutations'
 import type { LinkState } from '../hooks/useLinkMetadata'
-import { usePhotoSrc, usePhotoUpload } from '../hooks/usePhoto'
+import { usePhotoSrc, usePhotoUploads } from '../hooks/usePhoto'
 import { linkDomain, linkPath } from '../links'
-import type { Item, ItemPatch } from '../types'
+import type { Item, ItemImage, ItemPatch } from '../types'
 import { hasStores, sameLink } from '../stores'
 import { LinkInput } from './LinkInput'
 import { AddStoreButton } from './Stores'
-import { PhotoViewer } from './PhotoViewer'
+import { PhotoStrip } from './PhotoStrip'
+import { PhotoViewer, type ViewerPhoto } from './PhotoViewer'
 
 interface ItemMediaProps {
   item: Item
@@ -24,11 +28,12 @@ interface ItemMediaProps {
 }
 
 /**
- * La foto y el enlace de un ítem, debajo de las notas (diseño 15). Sin nada, dos botones a medias,
- * «+ Foto» y «+ Enlace». Lo que hay ocupa su sitio en orden fijo (la foto, un cuadrado de 96 px;
- * después la fila del enlace) y el botón que falta va debajo, a todo el ancho. Pegar un enlace lo
- * guarda al momento y busca solo el título y la imagen de la página (`useLinkMetadata`): si la
- * cosa aún no tenía foto, esa imagen pasa a serlo, con «De la web».
+ * Las fotos y el enlace de un ítem, debajo de las notas (diseño 15; diseño 23, D). Sin nada, dos
+ * botones a medias, «+ Foto» y «+ Enlace» (D1). Con fotos propias, su tira, con «5 de 10» y el
+ * «+ Foto» al final (`PhotoStrip`); con solo la imagen de la web, su cuadrado de 96 px con «De la
+ * web», como en la 2a.6. Después la fila del enlace, y el botón que falta va debajo, a todo el
+ * ancho. Pegar un enlace lo guarda al momento y busca solo el título y la imagen de la página
+ * (`useLinkMetadata`): si la cosa aún no tenía foto, esa imagen pasa a serlo, con «De la web».
  */
 export function ItemMedia({
   item,
@@ -40,18 +45,30 @@ export function ItemMedia({
 }: ItemMediaProps) {
   const [editingLink, setEditingLink] = useState(false)
   const [addingStore, setAddingStore] = useState(false)
-  const [viewing, setViewing] = useState(false)
+  const [viewing, setViewing] = useState<number | null>(null)
+  // «Cambiar» en el visor: la foto que se sustituye al elegir otra.
+  const replacing = useRef<ItemImage | null>(null)
   const picker = useRef<HTMLInputElement>(null)
-  const upload = usePhotoUpload(item, onUpdate)
-  const photo = usePhotoSrc(item, 'thumb')
+  const images = useImageMutation()
+  const upload = usePhotoUploads(item, {
+    onUploaded: (image) => {
+      images.mutate({ type: 'add', item, images: [image] })
+    },
+    onReplaced: (imageId, path) => {
+      images.mutate({ type: 'update', item, imageId, patch: { path } })
+    },
+  })
+  const web = usePhotoSrc({ imagePath: null, imageUrl: item.imageUrl }, 'thumb')
 
-  const hasPhoto =
-    item.imagePath !== null || item.imageUrl !== null || upload.state.status !== 'idle'
-  // Con varias tiendas el enlace vive en «Dónde comprarlo» (diseño 19, T10); aquí queda la foto.
+  const own = item.images
+  const hasOwn = own.length > 0 || upload.pending.length > 0
+  const webOnly = !hasOwn && item.imageUrl !== null
+  // Con varias tiendas el enlace vive en «Dónde comprarlo» (diseño 19, T10); aquí quedan las fotos.
   const stores = hasStores(item)
   const hasLink = item.url !== null && !stores
 
-  const pickPhoto = () => {
+  const pickPhotos = (replace: ItemImage | null = null) => {
+    replacing.current = replace
     picker.current?.click()
   }
   const saveLink = (url: string) => {
@@ -59,13 +76,58 @@ export function ItemMedia({
     onUpdate(item, { url, urlTitle: null, urlSite: null })
   }
 
+  // Quitar, con «Deshacer», que la devuelve tal cual (D10). El archivo lo borra la limpieza de
+  // huérfanas cuando ya no se puede deshacer.
+  const remove = (index: number) => {
+    const image = own[index]
+    if (!image) return
+    images.mutate({ type: 'remove', item, imageId: image.id })
+    showUndoToast({
+      icon: Trash2,
+      message: 'Foto quitada',
+      onUndo: () => {
+        images.mutate({ type: 'add', item, images: [image] })
+      },
+    })
+  }
+  const makeFirst = (index: number) => {
+    const image = own[index]
+    const first = own[0]
+    if (!image || !first || index === 0) return
+    images.mutate({
+      type: 'update',
+      item,
+      imageId: image.id,
+      patch: { position: first.position - POSITION_STEP },
+    })
+  }
+  const move = (imageId: string, overId: string) => {
+    const ids = own.map((image) => image.id)
+    const neighbors = dropNeighbors(ids, imageId, overId)
+    if (!neighbors) return
+    for (const change of reorder(own, imageId, neighbors)) {
+      images.mutate({
+        type: 'update',
+        item,
+        imageId: change.id,
+        patch: { position: change.position },
+      })
+    }
+  }
+
+  const viewerPhotos: ViewerPhoto[] = webOnly
+    ? [{ key: 'web', path: null, url: item.imageUrl }]
+    : own.map((image) => ({ key: image.id, path: image.path, url: null }))
+
   const photoButton = (
     <MediaButton
       icon={Camera}
       label="+ Foto"
       note={online ? undefined : 'Necesita conexión'}
       disabled={!online}
-      onClick={pickPhoto}
+      onClick={() => {
+        pickPhotos()
+      }}
     />
   )
   const linkButton = (
@@ -84,33 +146,51 @@ export function ItemMedia({
         ref={picker}
         type="file"
         accept="image/*"
+        multiple
         hidden
-        aria-label="Elegir una foto"
+        aria-label="Elegir fotos"
         onChange={(event) => {
-          const file = event.target.files?.[0]
+          const files = [...(event.target.files ?? [])]
           event.target.value = ''
-          if (file) upload.start(file)
+          const replace = replacing.current
+          replacing.current = null
+          const [first] = files
+          if (replace && first) upload.replace(replace, first)
+          else if (files.length > 0) upload.add(files)
         }}
       />
 
-      {!hasPhoto && !hasLink && !editingLink && !stores ? (
+      {!hasOwn && !webOnly && !hasLink && !editingLink && !stores ? (
         <div className="grid grid-cols-2 gap-2.5">
           {photoButton}
           {linkButton}
         </div>
       ) : (
         <>
-          {hasPhoto && (
-            <PhotoSquare
-              src={upload.state.status === 'idle' ? photo.src : upload.state.preview}
-              fromWeb={upload.state.status === 'idle' && photo.fromWeb}
-              status={upload.state.status}
-              title={item.title}
-              onOpen={() => {
-                setViewing(true)
+          {hasOwn && (
+            <PhotoStrip
+              images={own}
+              pending={upload.pending}
+              online={online}
+              isDesktop={isDesktop}
+              onOpen={setViewing}
+              onAdd={() => {
+                pickPhotos()
               }}
+              onMove={move}
+              onMakeFirst={makeFirst}
+              onRemove={remove}
               onRetry={upload.retry}
               onDiscard={upload.discard}
+            />
+          )}
+          {webOnly && (
+            <WebPhotoSquare
+              src={web.src}
+              title={item.title}
+              onOpen={() => {
+                setViewing(0)
+              }}
             />
           )}
           {hasLink && item.url && (
@@ -155,24 +235,46 @@ export function ItemMedia({
               }}
             />
           )}
-          {!hasPhoto && photoButton}
+          {!hasOwn && !webOnly && photoButton}
           {!hasLink && !editingLink && !stores && linkButton}
         </>
       )}
 
       <PhotoViewer
-        open={viewing}
-        onOpenChange={setViewing}
-        item={item}
+        open={viewing !== null}
+        onOpenChange={(open) => {
+          if (!open) setViewing(null)
+        }}
+        title={item.title}
+        photos={viewerPhotos}
+        index={Math.min(viewing ?? 0, Math.max(0, viewerPhotos.length - 1))}
+        onIndexChange={setViewing}
         isDesktop={isDesktop}
         online={online}
-        onChange={() => {
-          setViewing(false)
-          pickPhoto()
+        onChange={(index) => {
+          setViewing(null)
+          // La de la web se sustituye añadiendo una propia, que manda sobre ella.
+          pickPhotos(webOnly ? null : (own[index] ?? null))
         }}
-        onRemove={() => {
-          setViewing(false)
-          onUpdate(item, { imagePath: null, imageUrl: null })
+        onMakeFirst={
+          webOnly
+            ? undefined
+            : (index) => {
+                makeFirst(index)
+                // El visor la sigue: ahora es la primera.
+                setViewing(0)
+              }
+        }
+        onRemove={(index) => {
+          if (webOnly) {
+            setViewing(null)
+            onUpdate(item, { imageUrl: null })
+            return
+          }
+          // Con más, el visor sigue en la de al lado; con la última, se cierra.
+          if (own.length <= 1) setViewing(null)
+          else setViewing(Math.min(index, own.length - 2))
+          remove(index)
         }}
       />
     </div>
@@ -206,88 +308,31 @@ function MediaButton({
   )
 }
 
-/** La foto: un cuadrado de 96 px que se abre en grande, o su estado mientras sube o si falla. */
-function PhotoSquare({
+/** La imagen de la web de su enlace, sin fotos propias: un cuadrado de 96 px con «De la web». */
+function WebPhotoSquare({
   src,
-  fromWeb,
-  status,
   title,
   onOpen,
-  onRetry,
-  onDiscard,
 }: {
   src: string | null
-  fromWeb: boolean
-  status: 'idle' | 'uploading' | 'error'
   title: string
   onOpen: () => void
-  onRetry: () => void
-  onDiscard: () => void
 }) {
-  if (status === 'error') {
-    return (
-      <div className="flex items-center gap-3">
-        <div className="flex size-24 shrink-0 flex-col items-center justify-center gap-1.5 rounded-md border-[1.5px] border-error bg-priority-high-bg text-error">
-          <CircleAlert aria-hidden className="size-5" strokeWidth={2.2} />
-          <span className="text-[11px] font-bold">No se subió</span>
-        </div>
-        <div className="flex flex-col gap-1">
-          <p role="alert" className="text-[13px] text-error">
-            No se ha podido subir la foto.
-          </p>
-          <div className="flex gap-3 text-[13px] font-semibold">
-            <button
-              type="button"
-              onClick={onRetry}
-              className="text-primary outline-none hover:text-primary-hover focus-visible:underline"
-            >
-              Reintentar
-            </button>
-            <button
-              type="button"
-              onClick={onDiscard}
-              className="text-muted-foreground outline-none hover:text-foreground focus-visible:underline"
-            >
-              Quitar
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const uploading = status === 'uploading'
   return (
-    <div className="flex items-end gap-3">
-      <button
-        type="button"
-        onClick={onOpen}
-        disabled={uploading}
-        aria-label={uploading ? 'Subiendo la foto…' : `Ver la foto de «${title}»`}
-        className="relative size-24 shrink-0 overflow-hidden rounded-md bg-fill outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      >
-        {src && (
-          <img src={src} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
-        )}
-        {uploading && (
-          <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-scrim text-white">
-            <LoaderCircle aria-hidden className="size-7 animate-spin" strokeWidth={2.4} />
-            <span className="text-[11px] font-bold">Subiendo…</span>
-          </span>
-        )}
-        {fromWeb && !uploading && (
-          <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-[7px] bg-card px-1.5 py-0.5 text-[10.5px] font-bold text-foreground shadow-xs">
-            <Link2 aria-hidden className="size-3" strokeWidth={2.4} />
-            De la web
-          </span>
-        )}
-      </button>
-      {uploading && (
-        <p className="pb-1 text-[13px] leading-snug text-subtle-foreground">
-          Puedes seguir escribiendo. Se guarda sola.
-        </p>
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Ver la foto de «${title}»`}
+      className="relative size-24 shrink-0 overflow-hidden rounded-md bg-fill outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      {src && (
+        <img src={src} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
       )}
-    </div>
+      <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-[7px] bg-card px-1.5 py-0.5 text-[10.5px] font-bold text-foreground shadow-xs">
+        <Link2 aria-hidden className="size-3" strokeWidth={2.4} />
+        De la web
+      </span>
+    </button>
   )
 }
 

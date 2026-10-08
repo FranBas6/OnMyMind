@@ -150,7 +150,7 @@ describe('duplicar una lista (4.4, diseño 23, C)', () => {
     vi.mocked(api.duplicateList).mockResolvedValue({
       listId: COPY,
       items: 24,
-      photos: [{ itemId: 'nuevo-neceser', path: 'ana/neceser/foto.webp' }],
+      photos: [{ itemId: 'nuevo-neceser', path: 'ana/neceser/foto.webp', position: 1000 }],
     })
     renderHome()
     await user.click(await screen.findByRole('button', { name: 'Opciones de «Maleta de viaje»' }))
@@ -159,7 +159,11 @@ describe('duplicar una lista (4.4, diseño 23, C)', () => {
       within(await sheet('Maleta de viaje')).getByRole('button', { name: 'Duplicar' }),
     )
     await waitFor(() => {
-      expect(photos.copyItemPhoto).toHaveBeenCalledWith('nuevo-neceser', 'ana/neceser/foto.webp')
+      expect(photos.copyItemPhoto).toHaveBeenCalledWith(
+        'nuevo-neceser',
+        'ana/neceser/foto.webp',
+        1000,
+      )
     })
   })
 

@@ -35,6 +35,7 @@ function item(title: string, overrides: Partial<Item> = {}): Item {
     previousPriceCents: null,
     priceCheckedAt: null,
     links: [],
+    images: [],
     priceLinkId: null,
     priceStore: null,
     priceTracking: null,
@@ -71,16 +72,23 @@ describe('el JSON', () => {
           { id: 'b', title: 'Sin foto', image_path: null },
         ],
         itemLinks: [],
+        itemImages: [
+          { id: 'f1', item_id: 'a', path: 'u1/a/foto.webp', position: 1000 },
+          { id: 'f2', item_id: 'a', path: 'u1/a/otra.webp', position: 2000 },
+        ],
         itemPrices: [{ id: 'p', price_cents: 1250 }],
         reminders: [{ id: 'r', offset_minutes: 60 }],
         itemCompletions: [{ id: 'c', item_id: 'a' }],
       },
-      new Map([['u1/a/foto.webp', 'https://firmada/foto']]),
+      new Map([
+        ['u1/a/foto.webp', 'https://firmada/foto'],
+        ['u1/a/otra.webp', 'https://firmada/otra'],
+      ]),
       NOW,
     )
     expect(document).toMatchObject({
       app: 'OnMyMind',
-      format: 1,
+      format: 2,
       exported_at: NOW.toISOString(),
       profile: { settings: { theme: 'dark' } },
       // Las compartidas contigo van también, marcadas (3.3).
@@ -100,6 +108,11 @@ describe('el JSON', () => {
         photo_url: 'https://firmada/foto',
       },
       { id: 'b', title: 'Sin foto', image_path: null },
+    ])
+    // Todas las fotos de cada cosa, cada una con su enlace (4.5).
+    expect(document.item_images.map((image) => image.photo_url)).toEqual([
+      'https://firmada/foto',
+      'https://firmada/otra',
     ])
   })
 })

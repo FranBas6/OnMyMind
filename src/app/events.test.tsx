@@ -65,6 +65,7 @@ function evento(title: string, overrides: Partial<Item> = {}): Item {
     previousPriceCents: null,
     priceCheckedAt: null,
     links: [],
+    images: [],
     priceLinkId: null,
     priceStore: null,
     priceTracking: null,

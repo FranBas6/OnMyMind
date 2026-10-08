@@ -3,6 +3,9 @@ import { supabase } from '@/lib/supabase/client'
 /** Bucket privado de las fotos (03 §Storage). */
 export const PHOTO_BUCKET = 'item-images'
 
+/** Cuántas fotos puede tener una cosa (4.5; el trigger `item_images_limit` lo impide en la base). */
+export const MAX_PHOTOS = 10
+
 /** La foto del detalle, de 800 px de ancho como mucho, y la miniatura cuadrada de las filas. */
 const FULL_WIDTH = 800
 const THUMB_SIZE = 200
@@ -113,12 +116,15 @@ export async function signedPhotoUrl(path: string, size: 'thumb' | 'full'): Prom
 }
 
 /**
- * Copia la foto subida de otro ítem para uno nuevo (4.4, al duplicar una lista): la grande y su
- * miniatura, a tu carpeta (`{tú}/{ítem}/{uuid}`), y se la pone. Dos ítems no comparten archivo:
- * cambiar la foto de uno borraría la del otro. La de una lista compartida contigo se puede leer
- * (`can_see_photo`), así que también se copia.
+ * Copia una foto subida de otro ítem para uno nuevo (4.4 y 4.5, al duplicar una lista): la grande y
+ * su miniatura, a tu carpeta (`{tú}/{ítem}/{uuid}`), y la añade a sus fotos en su sitio. La de una
+ * lista compartida contigo se puede leer (`can_see_photo`), así que también se copia.
  */
-export async function copyItemPhoto(itemId: string, sourcePath: string): Promise<void> {
+export async function copyItemPhoto(
+  itemId: string,
+  sourcePath: string,
+  position: number,
+): Promise<void> {
   const { data: auth } = await supabase.auth.getSession()
   const userId = auth.session?.user.id
   if (!userId) throw new Error('Sin sesión')
@@ -132,6 +138,6 @@ export async function copyItemPhoto(itemId: string, sourcePath: string): Promise
   }
   await copy(thumbPath(sourcePath), thumbPath(path))
   await copy(sourcePath, path)
-  const { error } = await supabase.from('items').update({ image_path: path }).eq('id', itemId)
+  const { error } = await supabase.from('item_images').insert({ item_id: itemId, path, position })
   if (error) throw error
 }

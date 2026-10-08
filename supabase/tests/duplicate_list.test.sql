@@ -56,10 +56,13 @@ insert into public.items (id, list_id, created_by, kind, parent_id, title, notes
    '{"priority": "high"}', 2000, now() - interval '3 days', true, 'FREQ=WEEKLY;BYDAY=FR',
    null, null, null, null, null),
   (:neceser, :maleta, :ana, 'task', null, 'Neceser', null, 'pending', '{}', 3000, null, false,
-   null, null, null, null, null, :ana || '/' || :neceser || '/foto.webp'),
+   null, null, null, null, null, null),
   (:adaptador, :maleta, :ana, 'shopping', null, 'Adaptador de enchufe', null, 'pending', '{}',
    4000, null, false, null, 'https://www.amazon.es/adaptador', 'Adaptador', 'Amazon',
    'https://m.media-amazon.com/adaptador.jpg', null);
+-- La foto subida, en `item_images` desde la 4.5.
+insert into public.item_images (item_id, path, position)
+values (:neceser, :ana || '/' || :neceser || '/foto.webp', 1000);
 insert into public.items (id, list_id, created_by, kind, parent_id, title, status, position,
                           due_at, all_day) values
   (:dni, :maleta, :ana, 'task', :docs, 'Renovar el DNI', 'done', 1000, now() + interval '9 days',
@@ -144,7 +147,8 @@ select is(
   (:'result'::jsonb -> 'photos'),
   jsonb_build_array(jsonb_build_object(
     'item_id', (select id from public.items where list_id = :'copy'::uuid and title = 'Neceser'),
-    'path', '00000000-0000-4000-a440-00000000000a/00000000-0000-4000-a440-0000000000d5/foto.webp')),
+    'path', '00000000-0000-4000-a440-00000000000a/00000000-0000-4000-a440-0000000000d5/foto.webp',
+    'position', 1000)),
   'y la función dice cuál era, para que la app la copie');
 
 -- Lo que no se copia.
