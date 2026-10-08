@@ -6,6 +6,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
 
 import { UndoToast } from '@/components/UndoToast'
 import { PwaContext, type PwaApi } from '@/hooks/usePwa'
+import type { InstallPromptEvent } from '@/lib/device'
 import { isIosSafari, isStandalone, readInstallHint, writeInstallHint } from '@/lib/installHint'
 
 /** Cada cuánto se busca una versión nueva con la app abierta (además de al abrirla). */
@@ -46,6 +47,39 @@ export function PwaProvider({ children }: { children: ReactNode }) {
   const [canInstall] = useState(
     () => isIosSafari(navigator.userAgent, navigator.maxTouchPoints) && !isStandalone(),
   )
+  const [installed, setInstalled] = useState(isStandalone)
+  // El instalador del navegador (4.2): se guarda el evento para abrirlo cuando se toque la fila.
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
+
+  useEffect(() => {
+    const keep = (event: Event) => {
+      // Sin la barra de Chrome que sale sola: se instala desde Perfil · App.
+      event.preventDefault()
+      setInstallPrompt(event as InstallPromptEvent)
+    }
+    const done = () => {
+      setInstallPrompt(null)
+      setInstalled(true)
+    }
+    window.addEventListener('beforeinstallprompt', keep)
+    window.addEventListener('appinstalled', done)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', keep)
+      window.removeEventListener('appinstalled', done)
+    }
+  }, [])
+
+  /**
+   * El evento solo sirve una vez: aceptado o no, se suelta. Si se cancela, la fila vuelve cuando el
+   * navegador lo ofrezca otra vez (al volver a abrir la app).
+   */
+  const promptInstall = useCallback(async () => {
+    if (!installPrompt) return null
+    setInstallPrompt(null)
+    await installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    return outcome
+  }, [installPrompt])
 
   const {
     needRefresh: [needRefresh],
@@ -151,6 +185,9 @@ export function PwaProvider({ children }: { children: ReactNode }) {
         setInstallOpen(true)
       },
       closeInstall,
+      installed,
+      canPromptInstall: installPrompt !== null,
+      promptInstall,
     }),
     [
       updateAvailable,
@@ -163,6 +200,9 @@ export function PwaProvider({ children }: { children: ReactNode }) {
       canInstall,
       installOpen,
       closeInstall,
+      installed,
+      installPrompt,
+      promptInstall,
     ],
   )
 

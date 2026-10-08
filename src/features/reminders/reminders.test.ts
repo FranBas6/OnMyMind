@@ -190,5 +190,6 @@ describe('los textos de la ficha y la hoja (diseño 18)', () => {
     )
     expect(deviceName('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 5)).toBe('este iPad')
     expect(deviceName('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 0)).toBe('este navegador')
+    expect(deviceName('Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile', 5)).toBe('este móvil')
   })
 })

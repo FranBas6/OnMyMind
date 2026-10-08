@@ -12,17 +12,18 @@ import { calendarFeedUrl, subscribeUrl } from '../calendar'
 const NEEDS_NETWORK = { networkMode: 'online' } as const
 
 /**
- * Tu enlace del Calendario del iPhone: `token` (`null` si aún no tienes) y su dirección `webcal://`.
- * Se guarda con la caché, así que sin red se sigue viendo y copiando.
+ * Tu enlace del Calendario: `token` (`null` si aún no tienes), su dirección `webcal://` (`url`), la
+ * que se suscribe en Apple, y la `https://` (`httpsUrl`), la que se pega en Google Calendar o en
+ * Outlook (4.2). Se guarda con la caché, así que sin red se sigue viendo y copiando.
  */
 export function useCalendarFeed() {
   const token = useQuery({ queryKey: queryKeys.calendarToken, queryFn: fetchCalendarToken })
   const value = token.data ?? null
+  const httpsUrl = value ? calendarFeedUrl(value, import.meta.env.VITE_SUPABASE_URL ?? '') : null
   return {
     ...token,
-    url: value
-      ? subscribeUrl(calendarFeedUrl(value, import.meta.env.VITE_SUPABASE_URL ?? ''))
-      : null,
+    url: httpsUrl ? subscribeUrl(httpsUrl) : null,
+    httpsUrl,
   }
 }
 

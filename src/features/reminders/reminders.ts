@@ -239,12 +239,14 @@ export function repeatingReminderNote(
   return `Avisa ${ruleSentence(rule)}. El próximo, el ${day} a las ${hour}.`
 }
 
-/** Cómo se llama este dispositivo en los textos: «este iPhone», «este iPad» o «este navegador». */
+/** Cómo se llama este dispositivo en los textos: «este iPhone», «este iPad», «este móvil» o «este navegador». */
 export function deviceName(userAgent: string, maxTouchPoints: number): string {
   if (/iPhone|iPod/.test(userAgent)) return 'este iPhone'
   if (userAgent.includes('iPad') || (userAgent.includes('Macintosh') && maxTouchPoints > 1)) {
     return 'este iPad'
   }
+  // Android (diseño 23, A1): «Avisos en este móvil».
+  if (userAgent.includes('Android')) return 'este móvil'
   return 'este navegador'
 }
 

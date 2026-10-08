@@ -2,6 +2,7 @@ import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { Search, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { shortcutKey } from '@/lib/device'
 
 import { focusSearchField } from '../searchField'
 
@@ -61,7 +62,7 @@ export function SidebarSearchField() {
         </button>
       ) : (
         <kbd className="rounded-[5px] bg-secondary px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground">
-          ⌘K
+          {shortcutKey() === '⌘' ? '⌘K' : 'Ctrl K'}
         </kbd>
       )}
     </div>

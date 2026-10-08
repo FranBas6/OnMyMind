@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { PwaContext, type PwaApi } from '@/hooks/usePwa'
+import { pretendDevice } from '@/test/device'
 
 import { AppSection } from './AppSection'
 
@@ -24,6 +25,9 @@ function pwa(overrides: Partial<PwaApi> = {}): PwaApi {
     installOpen: false,
     openInstall: vi.fn(),
     closeInstall: vi.fn(),
+    installed: false,
+    canPromptInstall: false,
+    promptInstall: vi.fn(),
     ...overrides,
   }
 }
@@ -40,6 +44,7 @@ function renderWith(api: PwaApi) {
 describe('Perfil · App', () => {
   afterEach(() => {
     onlineManager.setOnline(true)
+    vi.restoreAllMocks()
   })
 
   it('al día: la fecha de tu versión, cuándo se comprobó y «Buscar actualización»', async () => {
@@ -92,5 +97,39 @@ describe('Perfil · App', () => {
     const api = renderWith(pwa({ canInstall: true }))
     await user.click(screen.getByRole('button', { name: /Instalar en el iPhone/ }))
     expect(api.openInstall).toHaveBeenCalled()
+  })
+
+  it('en Android, «Instalar la app» abre el instalador del navegador (diseño 23, A1 y A4)', async () => {
+    pretendDevice('android')
+    const user = userEvent.setup()
+    const api = renderWith(pwa({ canPromptInstall: true }))
+
+    await user.click(screen.getByRole('button', { name: /Instalar la app/ }))
+    expect(api.promptInstall).toHaveBeenCalledOnce()
+    expect(
+      screen.getByText('Abre como una app, sin la barra del navegador, y funciona sin conexión.'),
+    ).toBeInTheDocument()
+  })
+
+  it('en el ordenador, en su propia ventana (E2)', () => {
+    pretendDevice('windows')
+    renderWith(pwa({ canPromptInstall: true }))
+    expect(screen.getByRole('button', { name: /Instalar la app/ })).toBeInTheDocument()
+    expect(
+      screen.getByText('Abre en su propia ventana, sin pestañas, y funciona sin conexión.'),
+    ).toBeInTheDocument()
+  })
+
+  it('ya instalada: sin la fila, y lo dice (A5)', () => {
+    pretendDevice('android')
+    renderWith(pwa({ installed: true }))
+    expect(screen.queryByRole('button', { name: /Instalar la app/ })).not.toBeInTheDocument()
+    expect(screen.getByText('Ya está instalada en este móvil.')).toBeInTheDocument()
+  })
+
+  it('en el iPhone, todo como antes: ni la fila ni la línea', () => {
+    pretendDevice('iphone')
+    renderWith(pwa({ installed: true }))
+    expect(screen.queryByText(/Instalar la app|Ya está instalada/)).not.toBeInTheDocument()
   })
 })

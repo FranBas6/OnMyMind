@@ -22,6 +22,15 @@ export interface PwaApi {
   openInstall: () => void
   /** «Lo haré después» (o la ×) vuelve a los siete días; «No volver a mostrar», nunca. */
   closeInstall: (choice: 'later' | 'never') => void
+  /** La app ya está instalada: abierta como app, o instalada ahora desde el navegador (4.2). */
+  installed: boolean
+  /**
+   * El navegador sabe instalar la app y aún no está instalada (Chrome o Edge, en Android o en el
+   * ordenador; 4.2): «Instalar la app» abre su instalador.
+   */
+  canPromptInstall: boolean
+  /** Abre el instalador del navegador. `accepted` si se instaló; `null` si ya no se puede. */
+  promptInstall: () => Promise<'accepted' | 'dismissed' | null>
 }
 
 const noop = () => undefined
@@ -40,6 +49,9 @@ const STILL: PwaApi = {
   installOpen: false,
   openInstall: noop,
   closeInstall: noop,
+  installed: false,
+  canPromptInstall: false,
+  promptInstall: () => Promise.resolve(null),
 }
 
 export const PwaContext = createContext<PwaApi | null>(null)

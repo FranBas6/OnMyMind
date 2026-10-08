@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { List } from '@/features/lists'
-import { thisDevice } from '@/lib/device'
+import { shortcutKey, thisDevice } from '@/lib/device'
 import { LIST_COLOR_TEXT, LIST_COLOR_TINT } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
@@ -112,7 +112,7 @@ export function InboxEmpty({ isDesktop }: EmptyProps) {
           <>
             Disfrútalo. Cuando algo aparezca, escríbelo arriba o pulsa{' '}
             <kbd className="rounded-md bg-fill px-1.5 py-0.5 font-sans text-xs font-semibold text-foreground">
-              ⌘⇧Espacio
+              {shortcutKey()}⇧Espacio
             </kbd>
           </>
         ) : (

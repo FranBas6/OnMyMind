@@ -8,6 +8,7 @@ import * as listsApi from '@/features/lists/api'
 import * as pricesApi from '@/features/prices/api'
 import * as profileApi from '@/features/profile/api'
 import { queryKeys } from '@/lib/queryKeys'
+import { pretendDevice } from '@/test/device'
 import { fakeSession, renderRoute, testProfile } from '@/test/render-route'
 
 vi.mock('@/features/lists/api')
@@ -63,9 +64,12 @@ describe('Perfil · Calendario del iPhone (3.7, diseño 21)', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     onlineManager.setOnline(true)
+    // Apple sin la hoja «Instalar en el iPhone», que en Safari del iPhone sale sola.
+    pretendDevice('mac')
   })
   afterEach(() => {
     onlineManager.setOnline(true)
+    vi.restoreAllMocks()
   })
 
   it('la fila dice «Enlace activo» y la hoja enseña el enlace para suscribirse y copiarlo (C1–C3)', async () => {
@@ -149,5 +153,93 @@ describe('Perfil · Calendario del iPhone (3.7, diseño 21)', () => {
 
     await user.click(within(sheet).getByRole('button', { name: 'Copiar enlace' }))
     expect(writeText).toHaveBeenCalledWith(feedUrl(TOKEN))
+  })
+})
+
+describe('Perfil · el calendario fuera de Apple (4.2, diseño 23)', () => {
+  const httpsUrl = (token: string) =>
+    `http://127.0.0.1:54321/functions/v1/calendar-feed/${token}.ics`
+  const openOther = async (user: ReturnType<typeof userEvent.setup>) => {
+    const section = await screen.findByRole('region', { name: 'Calendario' })
+    await user.click(within(section).getByRole('button', { name: /Añadir a tu calendario/ }))
+    return screen.findByRole('dialog', { name: 'Añadir a tu calendario' })
+  }
+  const howTo = (sheet: HTMLElement) =>
+    within(sheet)
+      .getAllByRole('term')
+      .map((term) => term.textContent)
+
+  beforeEach(() => {
+    vi.resetAllMocks()
+    onlineManager.setOnline(true)
+  })
+  afterEach(() => {
+    onlineManager.setOnline(true)
+    vi.restoreAllMocks()
+  })
+
+  it('en Android: «Añadir a tu calendario», copia el https:// y dice cómo, Google primero (A1–A3)', async () => {
+    pretendDevice('android')
+    const user = userEvent.setup()
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    renderProfile(TOKEN)
+
+    const section = await screen.findByRole('region', { name: 'Calendario' })
+    expect(
+      within(section).getByText(
+        'Tus eventos en Google Calendar, Outlook u otro calendario, solo para ver.',
+      ),
+    ).toBeInTheDocument()
+    expect(within(section).queryByText(/iPhone/)).not.toBeInTheDocument()
+
+    const sheet = await openOther(user)
+    expect(within(sheet).queryByRole('link')).not.toBeInTheDocument()
+    expect(within(sheet).queryByText(/Suscribirse en el Calendario/)).not.toBeInTheDocument()
+    expect(within(sheet).getByText(/El calendario los pone al día solo/)).toBeInTheDocument()
+    expect(await within(sheet).findByText(httpsUrl(TOKEN))).toBeInTheDocument()
+    expect(howTo(sheet)).toEqual(['Google Calendar', 'Outlook'])
+    expect(
+      within(sheet).getByText('Otros calendarios › Desde URL, y pega el enlace.'),
+    ).toBeInTheDocument()
+
+    await user.click(within(sheet).getByRole('button', { name: 'Copiar enlace' }))
+    expect(writeText).toHaveBeenCalledWith(httpsUrl(TOKEN))
+    expect(await within(sheet).findByRole('button', { name: 'Enlace copiado' })).toBeInTheDocument()
+  })
+
+  it('en Windows: Outlook primero; cambiarlo pide añadir el nuevo (E1)', async () => {
+    pretendDevice('windows')
+    const user = userEvent.setup()
+    renderProfile(TOKEN)
+    const sheet = await openOther(user)
+    expect(howTo(sheet)).toEqual(['Outlook', 'Google Calendar'])
+
+    await user.click(within(sheet).getByRole('button', { name: 'Cambiar enlace' }))
+    expect(
+      within(sheet).getByRole('group', {
+        name: /tu calendario dejará de ponerse al día hasta que añadas el nuevo/,
+      }),
+    ).toBeInTheDocument()
+    await user.click(within(sheet).getByRole('button', { name: 'Cambiar' }))
+    expect(await within(sheet).findByText(httpsUrl(NEW_TOKEN))).toBeInTheDocument()
+    expect(
+      within(sheet).getByText(/cópialo y añádelo otra vez a tu calendario/),
+    ).toBeInTheDocument()
+  })
+
+  it('sin conexión, copiar sigue; cambiar no', async () => {
+    pretendDevice('android')
+    const user = userEvent.setup()
+    renderProfile(TOKEN)
+    expect(await screen.findByText('Enlace activo')).toBeInTheDocument()
+    onlineManager.setOnline(false)
+
+    const sheet = await openOther(user)
+    expect(
+      within(sheet).getByText('Para cambiar el enlace hace falta conexión.'),
+    ).toBeInTheDocument()
+    expect(within(sheet).getByRole('button', { name: 'Copiar enlace' })).toBeEnabled()
+    expect(within(sheet).getByRole('button', { name: 'Cambiar enlace' })).toBeDisabled()
   })
 })

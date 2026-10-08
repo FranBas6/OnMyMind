@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppSection } from '@/features/profile/components/AppSection'
+import { usePwa } from '@/hooks/usePwa'
 
 import { PwaProvider } from './pwa'
 
@@ -56,5 +57,68 @@ describe('buscar actualización sin service worker', () => {
     await waitFor(() => {
       expect(screen.getByText(/No se ha podido comprobar/)).toBeInTheDocument()
     })
+  })
+})
+
+/** Lo justo para ver el instalador del navegador desde fuera. */
+function InstallProbe({ onOutcome }: { onOutcome: (outcome: string | null) => void }) {
+  const { canPromptInstall, promptInstall } = usePwa()
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void promptInstall().then(onOutcome)
+      }}
+    >
+      {canPromptInstall ? 'Se puede instalar' : 'No se puede instalar'}
+    </button>
+  )
+}
+
+describe('el instalador del navegador (4.2)', () => {
+  it('se guarda al llegar, se abre al tocar y se suelta al instalar', async () => {
+    const user = userEvent.setup()
+    const onOutcome = vi.fn()
+    render(
+      <PwaProvider>
+        <InstallProbe onOutcome={onOutcome} />
+      </PwaProvider>,
+    )
+    expect(screen.getByRole('button')).toHaveTextContent('No se puede instalar')
+
+    const prompt = vi.fn(() => Promise.resolve())
+    const event = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+      prompt,
+      userChoice: Promise.resolve({ outcome: 'accepted' as const }),
+    })
+    act(() => {
+      window.dispatchEvent(event)
+    })
+    // Sin la barra que Chrome saca solo.
+    expect(event.defaultPrevented).toBe(true)
+    expect(screen.getByRole('button')).toHaveTextContent('Se puede instalar')
+
+    await user.click(screen.getByRole('button'))
+    expect(prompt).toHaveBeenCalledOnce()
+    await waitFor(() => {
+      expect(onOutcome).toHaveBeenCalledWith('accepted')
+    })
+    expect(screen.getByRole('button')).toHaveTextContent('No se puede instalar')
+  })
+
+  it('instalada desde el menú del navegador, deja de ofrecerse', () => {
+    render(
+      <PwaProvider>
+        <InstallProbe onOutcome={vi.fn()} />
+      </PwaProvider>,
+    )
+    act(() => {
+      window.dispatchEvent(new Event('beforeinstallprompt', { cancelable: true }))
+    })
+    expect(screen.getByRole('button')).toHaveTextContent('Se puede instalar')
+    act(() => {
+      window.dispatchEvent(new Event('appinstalled'))
+    })
+    expect(screen.getByRole('button')).toHaveTextContent('No se puede instalar')
   })
 })

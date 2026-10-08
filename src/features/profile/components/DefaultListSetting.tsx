@@ -6,6 +6,7 @@ import { BottomSheet } from '@/components/BottomSheet'
 import { ListIcon } from '@/components/ListIcon'
 import { InboxMark } from '@/features/capture'
 import { KIND_TEMPLATES, useArchivedLists, useLists, type List } from '@/features/lists'
+import { shortcutKey } from '@/lib/device'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
@@ -105,7 +106,9 @@ export function DefaultListSetting({ isDesktop }: { isDesktop: boolean }) {
         {isDesktop && (
           <div className="flex h-13 items-center justify-between border-t border-border-soft px-4 text-[15px]">
             <span className="font-medium">Atajo de teclado</span>
-            <kbd className="font-sans font-medium text-muted-foreground">⌘ ⇧ Espacio</kbd>
+            <kbd className="font-sans font-medium text-muted-foreground">
+              {shortcutKey()} ⇧ Espacio
+            </kbd>
           </div>
         )}
       </div>

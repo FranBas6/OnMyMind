@@ -17,6 +17,7 @@ import {
 } from '@/features/items'
 import { useOnline } from '@/hooks/useOnline'
 import { cn } from '@/lib/utils'
+import { shortcutKey } from '@/lib/device'
 
 import { defaultDestination, destinationChips, shoppingDestination } from '../destinations'
 import { captureLink, capturedLink, captureTitle } from '../links'
@@ -170,6 +171,7 @@ export function CaptureForm({
   }
 
   const waiting = link !== null && preview.state === 'searching'
+  const saveKeys = `${shortcutKey()}↩ para guardar`
   const hint = !online ? (
     <span className="flex items-center gap-1.5">
       <WifiOff aria-hidden className="size-3.5" strokeWidth={2.2} />
@@ -177,9 +179,9 @@ export function CaptureForm({
     </span>
   ) : dialog ? (
     waiting ? (
-      'Puedes guardar ya · ⌘↩ para guardar'
+      `Puedes guardar ya · ${saveKeys}`
     ) : (
-      '⌘↩ para guardar'
+      saveKeys
     )
   ) : waiting ? (
     'Puedes guardar ya'

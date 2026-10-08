@@ -21,6 +21,7 @@ import { SidebarSharedIcon } from '@/features/sharing/components/SharedInitials'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { cn } from '@/lib/utils'
+import { shortcutKey } from '@/lib/device'
 
 import { isDestinationActive } from './navigation'
 
@@ -64,7 +65,7 @@ export function Sidebar() {
         <Plus aria-hidden className="size-4" strokeWidth={2.4} />
         ¿Qué tienes en mente?
         <kbd className="ml-auto rounded-[5px] bg-white/20 px-1.5 py-0.5 font-sans text-[10px] font-semibold">
-          ⌘⇧␣
+          {shortcutKey()}⇧␣
         </kbd>
       </button>
 

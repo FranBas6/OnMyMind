@@ -8,6 +8,7 @@ import * as listsApi from '@/features/lists/api'
 import type { List } from '@/features/lists'
 import { queryKeys } from '@/lib/queryKeys'
 import { fakeSession, renderRoute } from '@/test/render-route'
+import { pretendDevice } from '@/test/device'
 
 vi.mock('@/features/items/api')
 vi.mock('@/features/lists/api')
@@ -93,6 +94,7 @@ describe('captura rápida', () => {
   afterEach(() => {
     setDesktop(false)
     onlineManager.setOnline(true)
+    vi.restoreAllMocks()
   })
 
   it('el + abre la hoja con el campo listo y guarda en «En mente» con «Deshacer»', async () => {
@@ -164,6 +166,7 @@ describe('captura rápida', () => {
   })
 
   it('en escritorio, el atajo dentro de una lista la trae elegida', async () => {
+    pretendDevice('mac')
     setDesktop(true)
     renderAt('/lists/casa')
     await screen.findByRole('heading', { level: 1, name: 'Casa' })
