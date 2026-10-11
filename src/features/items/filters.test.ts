@@ -116,13 +116,13 @@ describe('splitItems', () => {
 })
 
 describe('filtros', () => {
-  it('etiquetas del tipo', () => {
-    expect(statusFilterOptions('tasks').map((option) => option.label)).toEqual([
+  it('etiquetas comunes; la agenda, próximos y pasados (5.3)', () => {
+    expect(statusFilterOptions('list').map((option) => option.label)).toEqual([
       'Todas',
       'Pendientes',
       'Hechas',
     ])
-    expect(statusFilterOptions('events').map((option) => option.label)).toEqual([
+    expect(statusFilterOptions('agenda').map((option) => option.label)).toEqual([
       'Todas',
       'Próximos',
       'Pasados',
@@ -141,11 +141,11 @@ describe('filtros', () => {
 
 describe('detailSummary', () => {
   it.each([
-    ['tasks', 4, 2, '4 pendientes · 2 hechas'],
-    ['tasks', 0, 6, '0 pendientes · 6 hechas'],
-    ['tasks', 1, 1, '1 pendiente · 1 hecha'],
-    ['tasks', 0, 0, 'Tareas · recién creada'],
-    ['events', 2, 1, '2 próximos · 1 pasado'],
+    ['list', 4, 2, '4 pendientes · 2 hechas'],
+    ['list', 0, 6, '0 pendientes · 6 hechas'],
+    ['list', 1, 1, '1 pendiente · 1 hecha'],
+    ['list', 0, 0, 'Lista · recién creada'],
+    ['agenda', 2, 1, '2 próximos · 1 pasado'],
     ['inbox', 5, 2, '5 cosas sin ordenar'],
     ['inbox', 0, 2, 'Nada sin ordenar'],
   ] as const)('%s con %i y %i → «%s»', (kind, pending, done, expected) => {

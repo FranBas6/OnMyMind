@@ -2,18 +2,16 @@ import { format } from 'date-fns'
 
 import { formatCents } from '@/lib/money'
 
-import type { List, ListKind } from './types'
+import type { List, ListStyle } from './types'
 
 interface Plural {
   one: string
   other: string
 }
 
-interface KindTemplate {
-  /** Nombre del tipo en la interfaz («Tareas»). */
+interface StyleTemplate {
+  /** Cómo se llama en la interfaz: «En mente», «Lista» o «Agenda». */
   label: string
-  /** Descripción corta del selector de tipo (diseño 12, T6). */
-  description: string
   /** Qué cuenta la lista cuando ya no queda nada pendiente («31 hechas»). */
   doneCounter: Plural
   /** Qué cuenta el contador de pendientes (02 §Inicio, diseño pantalla 2). */
@@ -21,54 +19,52 @@ interface KindTemplate {
 }
 
 /**
- * Plantillas de los tipos base. El esquema de campos de cada tipo llega con los formularios
- * de ítem (1.8); aquí solo lo que Inicio necesita saber del tipo. Los estados de cada tipo viven
+ * Los textos de cada lista (5.3, ADR-012). Las listas ya no tienen tipo: lo que cambia los textos
+ * es si es «En mente», una lista o una agenda (su vista). Los estados de cada tipo de ítem viven
  * en `features/items/status.ts`.
  */
-export const KIND_TEMPLATES: Record<ListKind, KindTemplate> = {
+export const STYLE_TEMPLATES: Record<ListStyle, StyleTemplate> = {
   inbox: {
     label: 'En mente',
-    description: 'Lo que capturas sin elegir lista.',
     doneCounter: { one: 'hecha', other: 'hechas' },
     counter: { one: 'cosa sin ordenar', other: 'cosas sin ordenar' },
   },
-  tasks: {
-    label: 'Tareas',
-    description: 'Prioridad, fecha límite y estado.',
+  list: {
+    label: 'Lista',
     doneCounter: { one: 'hecha', other: 'hechas' },
     counter: { one: 'pendiente', other: 'pendientes' },
   },
-  shopping: {
-    label: 'Compras',
-    description: 'Precio, tienda e histórico.',
-    doneCounter: { one: 'comprada', other: 'compradas' },
-    counter: { one: 'pendiente', other: 'pendientes' },
-  },
-  events: {
-    label: 'Eventos',
-    description: 'Fecha y hora, recordatorio.',
+  agenda: {
+    label: 'Agenda',
     doneCounter: { one: 'pasado', other: 'pasados' },
     counter: { one: 'próximo', other: 'próximos' },
   },
-  custom: {
-    label: 'Personalizada',
-    description: 'Tú decides los campos.',
-    doneCounter: { one: 'hecha', other: 'hechas' },
-    counter: { one: 'pendiente', other: 'pendientes' },
-  },
+}
+
+/** Si una lista es «En mente», una lista o una agenda. */
+export function listStyle(list: Pick<List, 'kind' | 'view'>): ListStyle {
+  return list.kind === 'inbox' ? 'inbox' : list.view
 }
 
 /** «4 pendientes», «1 próximo», «3 cosas sin ordenar»; la inbox vacía, «Nada sin ordenar» (05). */
-export function counterLabel(kind: ListKind, count: number): string {
-  if (kind === 'inbox' && count === 0) return 'Nada sin ordenar'
-  const { counter } = KIND_TEMPLATES[kind]
+export function counterLabel(style: ListStyle, count: number): string {
+  if (style === 'inbox' && count === 0) return 'Nada sin ordenar'
+  const { counter } = STYLE_TEMPLATES[style]
   return `${count} ${count === 1 ? counter.one : counter.other}`
 }
 
 /** Lo que ya está fuera de la cabeza: «2 hechas», «1 pasado». */
-export function doneLabel(kind: ListKind, count: number): string {
-  const { doneCounter } = KIND_TEMPLATES[kind]
+export function doneLabel(style: ListStyle, count: number): string {
+  const { doneCounter } = STYLE_TEMPLATES[style]
   return `${count} ${count === 1 ? doneCounter.one : doneCounter.other}`
+}
+
+/**
+ * Lo que tiene sin ordenar «En mente»: lo pendiente y las notas, que no son algo por hacer pero
+ * siguen ahí (5.3). En las demás listas, lo pendiente.
+ */
+export function waitingCount(list: Pick<List, 'kind' | 'counters'>): number {
+  return list.kind === 'inbox' ? list.counters.pending + list.counters.notes : list.counters.pending
 }
 
 /**
@@ -80,9 +76,9 @@ export function pendingTotal(list: List): string | null {
   return formatCents(list.counters.pendingPriceCents)
 }
 
-/** Total de ítems de la lista (pendientes y fuera de la cabeza). */
+/** Total de ítems de la lista (pendientes, notas y fuera de la cabeza). */
 export function itemCount(list: List): number {
-  return list.counters.pending + list.counters.done
+  return list.counters.pending + list.counters.notes + list.counters.done
 }
 
 /** «12 ítems», «1 ítem». */
@@ -92,24 +88,25 @@ export function itemsLabel(count: number): string {
 
 /** Contador de una lista: lo pendiente o, si no queda nada, lo hecho («31 hechas»). */
 function statusLabel(list: List): string {
-  if (list.counters.pending > 0 || list.counters.done === 0) {
-    return counterLabel(list.kind, list.counters.pending)
-  }
-  return doneLabel(list.kind, list.counters.done)
+  const style = listStyle(list)
+  const waiting = waitingCount(list)
+  if (waiting > 0 || list.counters.done === 0) return counterLabel(style, waiting)
+  return doneLabel(style, list.counters.done)
 }
 
-/** Cabecera del menú ···: «Tareas · 6 pendientes · 12 ítems» (diseño 04 Listas, L3). */
+/** Cabecera del menú ···: «Lista · 6 pendientes · 12 ítems» (diseño 04 Listas, L3). */
 export function menuSummary(list: List): string {
+  const style = listStyle(list)
   return [
-    KIND_TEMPLATES[list.kind].label,
-    counterLabel(list.kind, list.counters.pending),
+    STYLE_TEMPLATES[style].label,
+    counterLabel(style, waitingCount(list)),
     itemsLabel(itemCount(list)),
   ].join(' · ')
 }
 
-/** Fila de una archivada: «Compras · 2 pendientes · archivada el 12 sep» (L12). */
+/** Fila de una archivada: «Lista · 2 pendientes · archivada el 12 sep» (L12). */
 export function archivedSummary(list: List): string {
-  const parts = [KIND_TEMPLATES[list.kind].label, statusLabel(list)]
+  const parts = [STYLE_TEMPLATES[listStyle(list)].label, statusLabel(list)]
   if (list.archivedAt) parts.push(`archivada el ${format(list.archivedAt, 'd MMM')}`)
   return parts.join(' · ')
 }

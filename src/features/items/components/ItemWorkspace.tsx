@@ -218,7 +218,9 @@ export function ItemWorkspace({
     },
     toggle: (item) => {
       const list = listOf(item)
-      if (list) setStatus(item, nextStatusOnToggle(item.kind, item.status))
+      const next = nextStatusOnToggle(item.kind, item.status)
+      // Una nota no tiene a dónde ir (5.3): no se marca hecha.
+      if (list && next !== item.status) setStatus(item, next)
     },
     setStatus,
     openMenu: (item) => {

@@ -25,8 +25,15 @@ function list(id: string, position: number): List {
     color: 'coral',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position,
-    counters: { pending: 0, done: 0, pendingPriceCents: 0 },
+    counters: {
+      pending: 0,
+      done: 0,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
   }
@@ -142,15 +149,12 @@ describe('mutaciones de listas', () => {
     const { result } = renderHook(() => useCreateList(), { wrapper })
 
     act(() => {
-      result.current.mutate({ name: 'Nueva', color: 'coral', kind: 'tasks' })
+      result.current.mutate({ name: 'Nueva', color: 'coral' })
     })
 
     await waitFor(() => {
       expect(ids(queryKeys.lists.all)).toEqual(['casa', 'compras', 'nueva'])
     })
-    expect(api.createList).toHaveBeenCalledWith(
-      { name: 'Nueva', color: 'coral', kind: 'tasks' },
-      5000,
-    )
+    expect(api.createList).toHaveBeenCalledWith({ name: 'Nueva', color: 'coral' }, 5000)
   })
 })

@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check } from 'lucide-react'
 import { useRef, useState } from 'react'
 
-import { InboxHeader, ListDetailHeader, type List } from '@/features/lists'
+import { InboxHeader, ListDetailHeader, listStyle, waitingCount, type List } from '@/features/lists'
 import { useProfile } from '@/features/profile/hooks/useProfile'
 import { useWithCompletedLive } from '@/features/sharing/liveRows'
 import { useUpdateSettings } from '@/features/profile/hooks/useProfileMutations'
@@ -40,10 +40,10 @@ import {
 } from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
 import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
-import { isChoosableKind, type AddableKind } from '../kind'
+import { isChoosableKind, proposedKind, type AddableKind } from '../kind'
 import type { WrittenDate } from '../writtenDate'
 import { pastedLinesSaved, type LineToSave } from '../pastedLines'
-import { defaultItemKind, firstFinalStatus, initialStatus } from '../status'
+import { firstFinalStatus, initialStatus } from '../status'
 import { hasPrices, pendingTotals } from '../prices'
 import { childrenOf, sublistSummary, topLevel } from '../sublists'
 import type { Item, MovedItem } from '../types'
@@ -136,8 +136,9 @@ export function ListDetail({
   // El orden de «En mente» se recuerda en la cuenta (diseño 14, E2).
   const sort = profile.data?.settings.inboxSort ?? 'newest'
   const inbox = list.kind === 'inbox'
-  // Una lista de eventos se agrupa por días y tiene sus filtros (diseño 17); también sus sublistas.
-  const events = list.kind === 'events'
+  // Una lista que se ve como agenda se agrupa por días y tiene sus filtros (diseño 17); también
+  // sus sublistas. Desde la 5.3 lo dice su vista, no su tipo.
+  const events = list.view === 'agenda'
 
   const all = items.data
   // Lo de dentro de una sublista sale en su pantalla, no suelto en la lista (ADR-010).
@@ -153,12 +154,12 @@ export function ListDetail({
   const { active, outOfMind } = splitItems(shown ?? [], list.kind, { lingering: staying, sort })
   // El resumen no espera a la animación: cuenta lo que ya está hecho aunque aún se vea arriba.
   const summary = !all
-    ? detailSummary(list.kind, list.counters.pending, list.counters.done)
+    ? detailSummary(listStyle(list), waitingCount(list), list.counters.done)
     : sublist
       ? sublistSummary(sublist, shown ?? [], list.name)
       : events
         ? eventsSummary(all)
-        : listSummary(list.kind, all)
+        : listSummary(listStyle(list), all)
   const empty = shown?.length === 0
 
   // Ordenar a mano (2.9, diseño 14): lo que se ve de lo pendiente, salvo en las listas de eventos,
@@ -235,7 +236,8 @@ export function ListDetail({
   // (Sin esperar a que la consulta quede en pausa, que tarda lo que su primer intento.)
   const notDownloaded = items.isPending && (items.fetchStatus === 'paused' || !online)
 
-  const defaultKind = defaultItemKind(list.kind)
+  // El tipo que más hay (ADR-012): en una sublista, el de lo de dentro; vacía, el de su lista.
+  const defaultKind = proposedKind(list, sublist && shown && shown.length > 0 ? shown : all)
   const add = (title: string, chosen: AddableKind | undefined, written: WrittenDate | null) => {
     const kind = chosen ?? defaultKind
     // Una lista aún sin descargar empieza vacía en caché, para que lo añadido se vea; al volver
@@ -299,7 +301,7 @@ export function ListDetail({
           ? isChoosing(sublist)
             ? `Añadir una opción a ${sublist.title}…`
             : `Añadir a ${sublist.title}…`
-          : addPlaceholder(list, empty)
+          : addPlaceholder(list, empty, defaultKind)
       }
       autoFocus={empty && renameKey === undefined}
       onAdd={add}
@@ -388,7 +390,7 @@ export function ListDetail({
                 ) : (
                   <FilterChips
                     label="Filtrar por estado"
-                    options={statusFilterOptions(list.kind)}
+                    options={statusFilterOptions(listStyle(list))}
                     value={statusFilter}
                     onChange={setStatusFilter}
                   />

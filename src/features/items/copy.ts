@@ -1,28 +1,34 @@
 import { differenceInCalendarDays, format, isSameYear } from 'date-fns'
 
-import { counterLabel, KIND_TEMPLATES, type List, type ListKind } from '@/features/lists'
+import { counterLabel, listStyle, STYLE_TEMPLATES, waitingCount, type List } from '@/features/lists'
 import { formatCaptureAge } from '@/lib/date'
 
-import { moveLossLabel, type MoveLoss } from './move'
 import { isFinalStatus, STATUS_LABELS } from './status'
-import type { Item } from './types'
+import type { Item, ItemKind } from './types'
 
-/** Cómo se llama lo primero que se añade, para el texto del vacío («Escribe la primera tarea…»). */
-const FIRST_ITEM: Record<Exclude<ListKind, 'inbox'>, { noun: string; placeholder: string }> = {
-  tasks: { noun: 'la primera tarea', placeholder: 'Primera tarea…' },
+/**
+ * Cómo se llama lo primero que se añade, por el tipo que propone la lista (`proposedKind`), para el
+ * texto del vacío («Escribe la primera tarea…»).
+ */
+const FIRST_ITEM: Record<ItemKind, { noun: string; placeholder: string }> = {
+  note: { noun: 'la primera nota', placeholder: 'Primera nota…' },
+  task: { noun: 'la primera tarea', placeholder: 'Primera tarea…' },
   shopping: { noun: 'el primer producto', placeholder: 'Primer producto…' },
-  events: { noun: 'el primer evento', placeholder: 'Primer evento…' },
-  custom: { noun: 'lo primero', placeholder: 'Primer elemento…' },
+  event: { noun: 'el primer evento', placeholder: 'Primer evento…' },
+  sublist: { noun: 'lo primero', placeholder: 'Primer elemento…' },
 }
 
-export function firstItemNoun(kind: ListKind): string {
-  return FIRST_ITEM[kind === 'inbox' ? 'tasks' : kind].noun
+export function firstItemNoun(kind: ItemKind): string {
+  return FIRST_ITEM[kind].noun
 }
 
-/** Texto del campo de añadir: «¿Qué tienes en mente?», «Primera tarea…» o «Añadir a Casa…». */
-export function addPlaceholder(list: List, empty: boolean): string {
+/**
+ * Texto del campo de añadir: «¿Qué tienes en mente?», «Primera tarea…» (con el tipo que propone la
+ * lista) o «Añadir a Casa…».
+ */
+export function addPlaceholder(list: List, empty: boolean, proposed: ItemKind): string {
   if (list.kind === 'inbox') return '¿Qué tienes en mente?'
-  return empty ? FIRST_ITEM[list.kind].placeholder : `Añadir a ${list.name}…`
+  return empty ? FIRST_ITEM[proposed].placeholder : `Añadir a ${list.name}…`
 }
 
 /** «hoy», «ayer» o «el 14 sep»: un día pasado, para frases como «hecha hoy». */
@@ -55,34 +61,12 @@ export function itemMoment(
   return `creada ${dayPhrase(item.createdAt, now)}`
 }
 
-/** Cómo se llama un ítem del tipo en la línea de aviso de mover («Se guarda como evento…»). */
-const ITEM_NOUN: Record<ListKind, string> = {
-  inbox: 'captura',
-  tasks: 'tarea',
-  shopping: 'producto',
-  events: 'evento',
-  custom: 'elemento',
-}
-
-/**
- * Línea de aviso de «Mover a…»: lo que se pierde si se pierde algo (diseño 06) y, al ordenar
- * desde «En mente», cómo se guardará (diseño 05: «Se guarda como evento en Agenda. Podrás
- * ponerle fecha después.»).
- */
-export function moveHint(from: ListKind, to: List, loss: MoveLoss): string | null {
-  const lost = moveLossLabel(loss)
-  if (lost) return lost
-  if (from !== 'inbox') return null
-  const saved = `Se guarda como ${ITEM_NOUN[to.kind]} en ${to.name}.`
-  if (to.kind === 'events') return `${saved} Podrás ponerle fecha después.`
-  return saved
-}
-
-/** Subtítulo de un destino en la hoja: «Tareas · 4 pendientes», «Sin ordenar · 5 cosas». */
+/** Subtítulo de un destino en la hoja: «Lista · 4 pendientes», «Sin ordenar · 5 cosas». */
 export function destinationSummary(list: List): string {
   if (list.kind === 'inbox') {
-    const count = list.counters.pending
+    const count = waitingCount(list)
     return `Sin ordenar · ${count} ${count === 1 ? 'cosa' : 'cosas'}`
   }
-  return `${KIND_TEMPLATES[list.kind].label} · ${counterLabel(list.kind, list.counters.pending)}`
+  const style = listStyle(list)
+  return `${STYLE_TEMPLATES[style].label} · ${counterLabel(style, list.counters.pending)}`
 }

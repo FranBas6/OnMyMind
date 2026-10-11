@@ -51,7 +51,7 @@ export function DuplicateListDialog({
   // Mientras no se toca, sigue la propuesta (el nombre del dueño llega un momento después).
   const [typed, setTyped] = useState<string | null>(null)
   const name = typed ?? proposed
-  const count = list.counters.pending + list.counters.done
+  const count = list.counters.pending + list.counters.notes + list.counters.done
   const valid = name.trim().length > 0
 
   const submit = () => {

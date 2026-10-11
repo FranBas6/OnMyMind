@@ -4,10 +4,10 @@ import { useState, type KeyboardEvent, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import { ListIcon } from '@/components/ListIcon'
-import { KIND_TEMPLATES, useLists, type List } from '@/features/lists'
+import { listStyle, STYLE_TEMPLATES, useLists, type List } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
-import { destinationSummary, moveHint } from '../copy'
+import { destinationSummary } from '../copy'
 import {
   destinationName,
   destinationShortName,
@@ -18,7 +18,6 @@ import {
 } from '../destinations'
 import { useItems } from '../hooks/useItems'
 import { useSublists } from '../hooks/useSublists'
-import { moveLoss } from '../move'
 import { childrenOf } from '../sublists'
 import type { Item } from '../types'
 import { DateChip } from './DateChip'
@@ -160,17 +159,20 @@ interface MenuProps {
   onClose: () => void
 }
 
-function useHint(item: Item, from: List, option: MoveOption | null): string | null {
+/**
+ * La línea de aviso al elegir destino: qué pasa con lo de dentro de una sublista. Mover ya no
+ * cambia el tipo ni quita nada (ADR-012), así que no hay más que avisar.
+ */
+function useHint(item: Item, option: MoveOption | null): string | null {
   const inside = useInside(item)
   if (!option || option.takeOut) return null
-  const to = option.destination.list
-  return inside ?? moveHint(from.kind, to, moveLoss(item, to.kind))
+  return inside
 }
 
 function MobileSheet({ item, from, destinations, onMove, onMoveToNewList, onClose }: MenuProps) {
   const [chosen, setChosen] = useState<MoveOption | null>(null)
   const [query, setQuery] = useState('')
-  const hint = useHint(item, from, chosen)
+  const hint = useHint(item, chosen)
   const takeOut = destinations.find((option) => option.takeOut)
   const matches = new Set(
     filterDestinations(
@@ -276,7 +278,7 @@ function optionNote(option: MoveOption, compact: boolean): string | null {
   if (!compact) return destinationSummary(destination.list)
   return destination.list.kind === 'inbox'
     ? 'Sin ordenar'
-    : KIND_TEMPLATES[destination.list.kind].label
+    : STYLE_TEMPLATES[listStyle(destination.list)].label
 }
 
 function MobileOption({
@@ -320,7 +322,7 @@ function MobileOption({
 
 function DesktopMenu({ item, from, destinations, onMove, onMoveToNewList, onClose }: MenuProps) {
   const [hovered, setHovered] = useState<MoveOption | null>(null)
-  const hint = useHint(item, from, hovered)
+  const hint = useHint(item, hovered)
   const choose = (option: MoveOption) => {
     onClose()
     onMove(item, option.destination)

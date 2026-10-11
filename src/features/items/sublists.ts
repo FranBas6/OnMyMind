@@ -4,10 +4,14 @@ import { initialStatus, isActiveSublistStatus, isOutOfMind, STATUS_LABELS } from
 import { withLinks } from './stores'
 import type { Item } from './types'
 
-/** Lo que cuenta una lista o una sublista: lo pendiente y lo que ya está fuera de la cabeza. */
+/**
+ * Lo que cuenta una lista o una sublista: lo pendiente, lo que ya está fuera de la cabeza y las
+ * notas, que no son algo por hacer y van aparte (5.3).
+ */
 export interface Counts {
   pending: number
   done: number
+  notes: number
 }
 
 /**
@@ -15,13 +19,14 @@ export interface Counts {
  * (ADR-010): la sublista en sí no cuenta (es un contenedor), lo de dentro de una sublista activa
  * cuenta como cualquier ítem, y lo de dentro de una pausada o hecha se calla. Las opciones
  * pendientes de una «para elegir una» (5.1) cuentan como una sola cosa: solo se va a hacer una.
- * Con esto se calculan los cambios optimistas de los contadores de Inicio y el sidebar.
+ * Las notas van aparte (5.3). Con esto se calculan los cambios optimistas de los contadores de
+ * Inicio y el sidebar.
  */
 export function countItems(items: readonly Item[], now: Date = new Date()): Counts {
   const parents = new Map(
     items.filter((item) => item.kind === 'sublist').map((item) => [item.id, item]),
   )
-  const counts: Counts = { pending: 0, done: 0 }
+  const counts: Counts = { pending: 0, done: 0, notes: 0 }
   const choosing = new Set<string>()
   for (const item of items) {
     if (item.kind === 'sublist') continue
@@ -29,6 +34,7 @@ export function countItems(items: readonly Item[], now: Date = new Date()): Coun
     if (parent && !isActiveSublistStatus(parent.status)) continue
     if (isOutOfMind(item, now)) counts.done += 1
     else if (parent && isChoosing(parent)) choosing.add(parent.id)
+    else if (item.kind === 'note') counts.notes += 1
     else counts.pending += 1
   }
   counts.pending += choosing.size
@@ -48,7 +54,8 @@ export function topLevel(items: readonly Item[]): Item[] {
 /** Lo de dentro, contado por su cuenta (en la fila de la sublista cuenta aunque esté pausada). */
 export function countChildren(children: readonly Item[], now: Date = new Date()): Counts {
   const done = children.filter((item) => isOutOfMind(item, now)).length
-  return { pending: children.length - done, done }
+  const notes = children.filter((item) => item.kind === 'note').length
+  return { pending: children.length - done - notes, done, notes }
 }
 
 /** Lo que miran la meta y el resumen de una sublista: su estado y si es «para elegir una». */

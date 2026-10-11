@@ -7,13 +7,13 @@ import {
   ITEM_TITLE_MAX_LENGTH,
   linesToSave,
   markedFieldClass,
-  newItemKindAndStatus,
   PastedLinesBox,
   readsWrittenDates,
   usePastedLines,
   useLinkPreview,
   useWrittenDate,
   WrittenDatePill,
+  proposedKind,
   type Destination,
   type LineToSave,
   type NewItemLink,
@@ -121,18 +121,18 @@ export function CaptureForm({
   // Un producto va a la lista de compras más usada, si no se ha elegido otra cosa (K1).
   const product = link !== null && Boolean(preview.metadata?.price)
   const proposed =
-    product && !touched && chosen?.list.kind !== 'shopping'
+    product && !touched && chosen && proposedKind(chosen.list) !== 'shopping'
       ? shoppingDestination(destinations)
       : undefined
   const target = proposed ?? chosen
-  const asShopping = product && target?.list.kind === 'shopping'
+  const asShopping = product && target !== undefined && proposedKind(target.list) === 'shopping'
   const chips = destinationChips(destinations, {
     chosenId: target?.id,
     originId: origin?.id,
     defaultId: defaultListId,
     proposedId: proposed?.id,
   })
-  const kind = target ? newItemKindAndStatus(target.list.kind).kind : null
+  const kind = target ? proposedKind(target.list) : null
   // Fechas escritas (3.5, diseño 21): solo si se guarda una tarea o un evento, y sin enlace. Con
   // «En mente» o una lista de compras elegida no hay marca ni pastilla (A6).
   const dateKind = !link && kind && readsWrittenDates(kind) ? kind : null

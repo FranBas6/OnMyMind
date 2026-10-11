@@ -32,8 +32,15 @@ function list(id: string, overrides: Partial<List> = {}): List {
     color: 'coral',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 1000,
-    counters: { pending: 0, done: 0, pendingPriceCents: 0 },
+    counters: {
+      pending: 0,
+      done: 0,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -259,7 +266,7 @@ describe('sublistas en Hoy (diseño 12, A1)', () => {
 })
 
 describe('«Agenda» (diseño 17, H1)', () => {
-  const agenda = list('agenda', { kind: 'events', color: 'amber', position: 1000 })
+  const agenda = list('agenda', { kind: 'events', view: 'agenda', color: 'amber', position: 1000 })
   const evento = (id: string, overrides: Partial<Item> = {}) =>
     item(id, { listId: 'agenda', kind: 'event', status: 'upcoming', allDay: false, ...overrides })
 

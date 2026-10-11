@@ -13,6 +13,7 @@ import {
   useListActions,
   useListDrag,
   useLists,
+  waitingCount,
   type List,
 } from '@/features/lists'
 import { ProfileLink } from '@/features/profile'
@@ -79,7 +80,7 @@ export function Sidebar() {
             params={{ listId: inbox.id }}
             icon={Inbox}
             active={pathname === `/lists/${inbox.id}`}
-            count={inbox.counters.pending}
+            count={waitingCount(inbox)}
           >
             {inbox.name}
           </SidebarLink>

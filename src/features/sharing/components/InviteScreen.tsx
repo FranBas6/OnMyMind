@@ -131,7 +131,7 @@ export function InviteScreen({ token }: { token: string }) {
             <Message
               figure={figure('inviter')}
               title={`${inviter} te invita a «${listName}»`}
-              text={`${invitedListSummary(data.listKind, data.pendingCount)} Podrás añadir, completar, editar y ordenar lo de dentro.`}
+              text={`${invitedListSummary(data.pendingCount)} Podrás añadir, completar, editar y ordenar lo de dentro.`}
               error={
                 accept.isError ? 'No hemos podido abrir la invitación. Prueba otra vez.' : undefined
               }

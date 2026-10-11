@@ -1,7 +1,6 @@
 import { format, isSameYear } from 'date-fns'
 
 import type { ItemStatus } from '@/features/items/status'
-import type { ListKind } from '@/features/lists/types'
 
 import type { Departure } from './schemas'
 
@@ -41,18 +40,13 @@ export function personDetail(
   return day ? `Entró el ${day}` : 'Entró hace poco'
 }
 
-const KIND_NAMES: Partial<Record<ListKind, string>> = {
-  tasks: 'de tareas',
-  shopping: 'de compras',
-  events: 'de eventos',
-}
-
-/** «Una lista de compras con 7 cosas.» en la invitación (J2). */
-export function invitedListSummary(kind: ListKind | null, pending: number): string {
-  const kindName = kind ? KIND_NAMES[kind] : undefined
-  const list = kindName ? `Una lista ${kindName}` : 'Una lista'
-  if (pending === 0) return `${list}, aún vacía.`
-  return `${list} con ${String(pending)} ${pending === 1 ? 'cosa' : 'cosas'}.`
+/**
+ * «Una lista con 7 cosas.» en la invitación (J2). Las listas ya no tienen tipo (5.3, ADR-012): no
+ * se dice «de compras».
+ */
+export function invitedListSummary(pending: number): string {
+  if (pending === 0) return 'Una lista, aún vacía.'
+  return `Una lista con ${String(pending)} ${pending === 1 ? 'cosa' : 'cosas'}.`
 }
 
 /** «Marta», «Marta y Luis», «Ana, Luis y Marta». */

@@ -578,6 +578,7 @@ export type Database = {
           owner_id: string
           position: number
           updated_at: string
+          view: string
         }
         Insert: {
           archived_at?: string | null
@@ -591,6 +592,7 @@ export type Database = {
           owner_id: string
           position?: number
           updated_at?: string
+          view?: string
         }
         Update: {
           archived_at?: string | null
@@ -604,6 +606,7 @@ export type Database = {
           owner_id?: string
           position?: number
           updated_at?: string
+          view?: string
         }
         Relationships: [
           {
@@ -769,9 +772,14 @@ export type Database = {
       list_counters: {
         Row: {
           done_count: number | null
+          event_total: number | null
           list_id: string | null
+          note_total: number | null
+          notes_count: number | null
           pending_count: number | null
           pending_price_cents: number | null
+          shopping_total: number | null
+          task_total: number | null
         }
         Relationships: []
       }
@@ -786,6 +794,7 @@ export type Database = {
           name: string | null
           owner_id: string | null
           position: number | null
+          view: string | null
         }
         Relationships: [
           {
@@ -986,7 +995,7 @@ export type Database = {
     }
     Enums: {
       item_kind: 'note' | 'task' | 'shopping' | 'event' | 'sublist'
-      list_kind: 'inbox' | 'tasks' | 'shopping' | 'events' | 'custom'
+      list_kind: 'inbox' | 'tasks' | 'shopping' | 'events' | 'list'
       member_role: 'owner' | 'editor'
       price_source: 'manual' | 'web' | 'auto'
     }
@@ -1104,7 +1113,7 @@ export const Constants = {
   public: {
     Enums: {
       item_kind: ['note', 'task', 'shopping', 'event', 'sublist'],
-      list_kind: ['inbox', 'tasks', 'shopping', 'events', 'custom'],
+      list_kind: ['inbox', 'tasks', 'shopping', 'events', 'list'],
       member_role: ['owner', 'editor'],
       price_source: ['manual', 'web', 'auto'],
     },

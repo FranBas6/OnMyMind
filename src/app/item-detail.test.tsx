@@ -22,8 +22,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'coral',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 2000,
-    counters: { pending: 1, done: 0, pendingPriceCents: 0 },
+    counters: {
+      pending: 1,
+      done: 0,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -293,12 +300,12 @@ describe('mover desde «En mente»', () => {
     // En «En mente» no sale ella misma como destino.
     expect(within(sheet).queryByRole('button', { name: /^En mente/ })).not.toBeInTheDocument()
     await user.click(within(sheet).getByRole('button', { name: /^Casa/ }))
-    expect(within(sheet).getByText('Se guarda como tarea en Casa.')).toBeInTheDocument()
     await user.click(within(sheet).getByRole('button', { name: 'Mover a Casa' }))
 
+    // Mover nunca cambia el tipo (5.3, ADR-012): la nota sigue siendo nota en Casa.
     expect(itemsApi.moveItem).toHaveBeenCalledWith(
       ID.pilas,
-      expect.objectContaining({ listId: 'casa', status: 'pending', priority: null }),
+      expect.objectContaining({ listId: 'casa', kind: 'note', status: 'pending', priority: null }),
     )
     await waitFor(() => {
       expect(screen.getByText('Nada en mente.')).toBeInTheDocument()
@@ -307,8 +314,9 @@ describe('mover desde «En mente»', () => {
     expect(screen.getByText(/movida a Casa/)).toBeInTheDocument()
   })
 
-  it('mover una tarea con campos avisa de lo que se pierde', async () => {
+  it('una tarea con campos va a «En mente» como tarea, sin perder nada (5.3)', async () => {
     const user = userEvent.setup()
+    vi.mocked(itemsApi.moveItem).mockReturnValue(new Promise(() => undefined))
     renderAt(`/lists/casa?item=${ID.grifo}`, { casa: [grifo], i: [] })
     const detail = await screen.findByRole('dialog', { name: /Detalle de/ })
 
@@ -317,6 +325,11 @@ describe('mover desde «En mente»', () => {
     expect(within(sheet).getByRole('button', { name: /Casa/ })).toBeDisabled()
     await user.click(within(sheet).getByRole('button', { name: /^En mente/ }))
 
-    expect(within(sheet).getByText('Se quita la prioridad.')).toBeInTheDocument()
+    expect(within(sheet).queryByText(/Se quita/)).not.toBeInTheDocument()
+    await user.click(within(sheet).getByRole('button', { name: 'Mover a En mente' }))
+    expect(itemsApi.moveItem).toHaveBeenCalledWith(
+      ID.grifo,
+      expect.objectContaining({ listId: 'i', kind: 'task', priority: grifo.priority }),
+    )
   })
 })

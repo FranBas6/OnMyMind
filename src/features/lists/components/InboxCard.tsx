@@ -5,7 +5,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { formatCaptureAge } from '@/lib/date'
 
 import { useRecentCaptures } from '../hooks/useRecentCaptures'
-import { counterLabel } from '../templates'
+import { counterLabel, waitingCount } from '../templates'
 import type { List } from '../types'
 
 /**
@@ -32,7 +32,7 @@ export function InboxCard({ inbox }: { inbox: List }) {
           {inbox.name}
         </span>
         <span className="text-sm opacity-85 md:opacity-100">
-          {counterLabel('inbox', inbox.counters.pending)}
+          {counterLabel('inbox', waitingCount(inbox))}
         </span>
       </div>
 

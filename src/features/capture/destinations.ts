@@ -1,10 +1,11 @@
-import type { Destination } from '@/features/items'
+import { proposedKind, type Destination } from '@/features/items'
 
 /** Chips de «Guardar en» que caben sin el «···» (diseño 07: el origen o «En mente» y los más usados). */
 export const CHIP_COUNT = 4
 
 /** Uso de una lista: todo lo que tiene, pendiente o hecho. */
-const usage = ({ list }: Destination) => list.counters.pending + list.counters.done
+const usage = ({ list }: Destination) =>
+  list.counters.pending + list.counters.notes + list.counters.done
 
 interface ChipOptions {
   chosenId: string | undefined
@@ -81,11 +82,17 @@ export function defaultDestination(
 }
 
 /**
- * Adonde se propone guardar un producto (2.3): la lista de compras más usada, con la misma regla
- * que los chips. Sin ninguna, no se propone nada.
+ * Adonde se propone guardar un producto (2.3): las listas no tienen tipo (5.3), así que es la que
+ * más compras tiene entre las que proponen compra, y a igualdad, la más usada. Sin ninguna, no se
+ * propone nada.
  */
 export function shoppingDestination(destinations: readonly Destination[]): Destination | undefined {
   return destinations
-    .filter((entry) => !entry.sublist && entry.list.kind === 'shopping')
-    .sort((a, b) => usage(b) - usage(a) || a.list.position - b.list.position)[0]
+    .filter((entry) => !entry.sublist && proposedKind(entry.list) === 'shopping')
+    .sort(
+      (a, b) =>
+        b.list.counters.kinds.shopping - a.list.counters.kinds.shopping ||
+        usage(b) - usage(a) ||
+        a.list.position - b.list.position,
+    )[0]
 }

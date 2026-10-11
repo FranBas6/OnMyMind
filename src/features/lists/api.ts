@@ -11,7 +11,11 @@ import {
 } from './schemas'
 import type { List, RecentCapture } from './types'
 
-const MY_LIST_COLUMNS = 'id, name, color, icon, kind, position, archived_at, is_owner'
+const MY_LIST_COLUMNS = 'id, name, color, icon, kind, view, position, archived_at, is_owner'
+
+/** Lo que se pide de `list_counters` (5.3: también las notas y cuántas hay de cada tipo). */
+const COUNTER_COLUMNS =
+  'list_id, pending_count, done_count, pending_price_cents, notes_count, note_total, task_total, shopping_total, event_total'
 
 /**
  * Listas no archivadas, tuyas y compartidas contigo, en tu orden y con sus contadores. Dos
@@ -21,9 +25,7 @@ const MY_LIST_COLUMNS = 'id, name, color, icon, kind, position, archived_at, is_
 export async function fetchLists(): Promise<List[]> {
   const [lists, counters] = await Promise.all([
     supabase.from('my_lists').select(MY_LIST_COLUMNS).is('archived_at', null).order('position'),
-    supabase
-      .from('list_counters')
-      .select('list_id, pending_count, done_count, pending_price_cents'),
+    supabase.from('list_counters').select(COUNTER_COLUMNS),
   ])
 
   if (lists.error) throw lists.error
@@ -56,9 +58,7 @@ export async function fetchArchivedLists(): Promise<List[]> {
       .select(MY_LIST_COLUMNS)
       .not('archived_at', 'is', null)
       .order('archived_at', { ascending: false }),
-    supabase
-      .from('list_counters')
-      .select('list_id, pending_count, done_count, pending_price_cents'),
+    supabase.from('list_counters').select(COUNTER_COLUMNS),
   ])
 
   if (lists.error) throw lists.error
@@ -71,15 +71,16 @@ export async function fetchArchivedLists(): Promise<List[]> {
  * tiene la sesión: RLS exige `owner_id = auth.uid()`. Valida con el esquema del formulario.
  */
 export async function createList(values: ListFormValues, position: number): Promise<List> {
-  const { name, color, kind } = listFormSchema.parse(values)
+  const { name, color } = listFormSchema.parse(values)
   const { data: auth } = await supabase.auth.getSession()
   const ownerId = auth.session?.user.id
   if (!ownerId) throw new Error('Sin sesión')
 
   const { data, error } = await supabase
     .from('lists')
-    .insert({ owner_id: ownerId, name, color, kind, position })
-    .select('id, name, color, icon, kind, position')
+    // Sin tipo (5.3): la base le pone `list`, y se ve como lista.
+    .insert({ owner_id: ownerId, name, color, position })
+    .select('id, name, color, icon, kind, view, position')
     .single()
 
   if (error) throw error
@@ -88,10 +89,10 @@ export async function createList(values: ListFormValues, position: number): Prom
   return list
 }
 
-/** Cambia nombre y color (y el tipo, si la lista no tiene ítems: lo decide la interfaz). */
+/** Cambia nombre y color. Las listas ya no tienen tipo (5.3). */
 export async function updateList(listId: string, values: ListFormValues): Promise<void> {
-  const { name, color, kind } = listFormSchema.parse(values)
-  const { error } = await supabase.from('lists').update({ name, color, kind }).eq('id', listId)
+  const { name, color } = listFormSchema.parse(values)
+  const { error } = await supabase.from('lists').update({ name, color }).eq('id', listId)
   if (error) throw error
 }
 

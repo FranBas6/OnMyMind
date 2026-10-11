@@ -48,7 +48,8 @@ describe('rightActions', () => {
   })
 
   it('fuera de Tareas, un tramo con el final del tipo', () => {
-    expect(labels('note', 'pending')).toEqual(['Hecha'])
+    // La nota no se marca hecha (5.3): no se desliza a ninguna parte.
+    expect(labels('note', 'pending')).toEqual([])
     expect(labels('shopping', 'pending')).toEqual(['Comprado'])
     expect(labels('event', 'upcoming')).toEqual(['Cancelado'])
     expect(labels('shopping', 'bought')).toEqual(['Pendiente'])

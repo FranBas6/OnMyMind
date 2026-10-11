@@ -29,8 +29,15 @@ const inbox: List = {
   color: 'indigo',
   icon: null,
   kind: 'inbox',
+  view: 'list',
   position: 1000,
-  counters: { pending: 0, done: 0, pendingPriceCents: 0 },
+  counters: {
+    pending: 0,
+    done: 0,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
   archivedAt: null,
   isOwner: true,
 }
@@ -118,7 +125,19 @@ function setDesktop(on: boolean) {
 }
 
 function renderTrabajo(items: Item[] = [informe, reunion, soporte, cable, demo], path = '') {
-  const lists = [inbox, { ...trabajo, counters: { pending: 4, done: 1, pendingPriceCents: 0 } }]
+  const lists = [
+    inbox,
+    {
+      ...trabajo,
+      counters: {
+        pending: 4,
+        done: 1,
+        pendingPriceCents: 0,
+        notes: 0,
+        kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+      },
+    },
+  ]
   vi.mocked(listsApi.fetchLists).mockResolvedValue(lists)
   vi.mocked(listsApi.fetchArchivedLists).mockResolvedValue([])
   vi.mocked(itemsApi.fetchItems).mockReturnValue(new Promise(() => undefined))
@@ -221,8 +240,9 @@ describe('lista con tipos mezclados (diseño 12)', () => {
         }),
       )
     })
-    // Tras guardar vuelve al tipo por defecto, y el campo se queda vacío y con «Añadir» en gris.
-    expect(screen.getByRole('button', { name: 'Tipo: Tarea. Cambiar' })).toBeVisible()
+    // Tras guardar vuelve al tipo que propone la lista, que es el que más hay (5.3): con esta, en
+    // «Trabajo» hay ya más compras que tareas. El campo se queda vacío y con «Añadir» en gris.
+    expect(screen.getByRole('button', { name: 'Tipo: Compra. Cambiar' })).toBeVisible()
     expect(field).toHaveValue('')
     expect(screen.getByRole('button', { name: 'Añadir' })).toBeDisabled()
   })

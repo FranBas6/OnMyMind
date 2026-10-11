@@ -25,12 +25,26 @@ const base: List = {
   color: 'indigo',
   icon: null,
   kind: 'inbox',
+  view: 'list',
   position: 1000,
-  counters: { pending: 0, done: 0, pendingPriceCents: 0 },
+  counters: {
+    pending: 0,
+    done: 0,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
   archivedAt: null,
   isOwner: true,
 }
-const agenda: List = { ...base, id: 'agenda', name: 'Agenda', color: 'amber', kind: 'events' }
+const agenda: List = {
+  ...base,
+  id: 'agenda',
+  name: 'Agenda',
+  color: 'amber',
+  kind: 'events',
+  view: 'agenda',
+}
 const trabajo: List = { ...base, id: 'trabajo', name: 'Trabajo', color: 'pink', kind: 'tasks' }
 const regalos: List = { ...base, id: 'regalos', name: 'Regalos', color: 'green', kind: 'tasks' }
 const lists = [base, agenda, trabajo, regalos]

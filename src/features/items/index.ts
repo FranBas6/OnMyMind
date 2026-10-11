@@ -41,6 +41,7 @@ export {
   newItemKindAndStatus,
   STATUS_LABELS,
 } from './status'
+export { proposedKind } from './kind'
 export type { Item, ItemKind, ItemStatus, Priority } from './types'
 export { LinkMeta, RowPrice, RowThumb } from './components/RowMedia'
 export { hasThumb } from './photos'

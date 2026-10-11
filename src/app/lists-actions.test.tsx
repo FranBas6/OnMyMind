@@ -18,8 +18,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'coral',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 2000,
-    counters: { pending: 4, done: 8, pendingPriceCents: 0 },
+    counters: {
+      pending: 4,
+      done: 8,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -74,7 +81,13 @@ describe('acciones sobre listas', () => {
     const created = list('trabajo', 'Trabajo', {
       color: 'teal',
       position: 4000,
-      counters: { pending: 0, done: 0, pendingPriceCents: 0 },
+      counters: {
+        pending: 0,
+        done: 0,
+        pendingPriceCents: 0,
+        notes: 0,
+        kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+      },
     })
     renderHome({ desktop: true })
     // Como el servidor de verdad: tras crear, la lista nueva sale también al volver a pedirlas.
@@ -102,10 +115,8 @@ describe('acciones sobre listas', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
-    expect(api.createList).toHaveBeenCalledWith(
-      { name: 'Trabajo', color: 'teal', kind: 'tasks' },
-      4000,
-    )
+    // Sin tipo (5.3): la lista se crea con nombre y color.
+    expect(api.createList).toHaveBeenCalledWith({ name: 'Trabajo', color: 'teal' }, 4000)
     expect(
       within(screen.getByRole('list', { name: 'Mis listas' })).getByRole('link', {
         name: /Trabajo/,
@@ -113,7 +124,7 @@ describe('acciones sobre listas', () => {
     ).toBeInTheDocument()
   })
 
-  it('editar con ítems: el tipo por defecto se puede cambiar y no toca lo que ya hay', async () => {
+  it('editar: nombre y color, sin tipo (5.3)', async () => {
     const user = userEvent.setup()
     renderHome({ desktop: true })
 
@@ -122,15 +133,7 @@ describe('acciones sobre listas', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Editar lista' })
     expect(within(dialog).getByLabelText('Nombre de la lista')).toHaveValue('Casa')
-    const kinds = within(dialog).getByRole('radiogroup', { name: 'Tipo por defecto' })
-    expect(
-      within(dialog).getByText('Cambiarlo no toca lo que ya hay en la lista.'),
-    ).toBeInTheDocument()
-    await user.click(within(kinds).getByRole('radio', { name: /Compras/ }))
-    expect(within(kinds).getByRole('radio', { name: /Compras/ })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    )
+    expect(within(dialog).queryByRole('radiogroup', { name: 'Tipo por defecto' })).toBeNull()
   })
 
   it('archivar: sale de la rejilla al instante y ofrece «Deshacer»', async () => {
@@ -182,7 +185,7 @@ describe('acciones sobre listas', () => {
 
     const section = screen.getByRole('region', { name: 'Listas archivadas' })
     expect(
-      within(section).getByText('Tareas · 4 pendientes · archivada el 12 sep'),
+      within(section).getByText('Lista · 4 pendientes · archivada el 12 sep'),
     ).toBeInTheDocument()
     await user.click(within(section).getByRole('button', { name: 'Desarchivar' }))
     expect(api.unarchiveList).toHaveBeenCalledWith('viejas')

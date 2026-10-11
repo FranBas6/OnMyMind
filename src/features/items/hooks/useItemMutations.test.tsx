@@ -26,8 +26,15 @@ const casa: List = {
   color: 'coral',
   icon: null,
   kind: 'tasks',
+  view: 'list',
   position: 2000,
-  counters: { pending: 1, done: 0, pendingPriceCents: 0 },
+  counters: {
+    pending: 1,
+    done: 0,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
   archivedAt: null,
   isOwner: true,
 }

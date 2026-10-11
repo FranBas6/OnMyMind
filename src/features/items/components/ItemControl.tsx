@@ -24,6 +24,8 @@ interface ItemControlProps {
  * deslizando). Es la misma forma en cualquier lista, también en Buscar.
  */
 export function ItemControl({ item, onToggle, large = false, tone, className }: ItemControlProps) {
+  // La nota no tiene casilla (5.3, ADR-012): no se marca hecha. Su fila la diseña la 5.4.
+  if (item.kind === 'note') return null
   if (item.kind === 'sublist') {
     return (
       <SublistIcon

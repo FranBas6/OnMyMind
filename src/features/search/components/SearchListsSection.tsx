@@ -4,7 +4,14 @@ import type { ReactNode } from 'react'
 
 import { ListIcon } from '@/components/ListIcon'
 import { InboxMark } from '@/features/capture'
-import { counterLabel, DimmedIcon, KIND_TEMPLATES, type List } from '@/features/lists'
+import {
+  counterLabel,
+  DimmedIcon,
+  listStyle,
+  STYLE_TEMPLATES,
+  waitingCount,
+  type List,
+} from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import type { ListMatch } from '../search'
@@ -65,8 +72,9 @@ export function SearchListsSection({ matches, activeId, onOpenArchived }: Search
 }
 
 function ListRowContent({ list, name }: { list: List; name: ReactNode }) {
-  const kind = KIND_TEMPLATES[list.kind].label
-  const counter = counterLabel(list.kind, list.counters.pending)
+  const style = listStyle(list)
+  const kind = STYLE_TEMPLATES[style].label
+  const counter = counterLabel(style, waitingCount(list))
   return (
     <>
       {list.kind === 'inbox' ? (

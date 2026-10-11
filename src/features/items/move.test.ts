@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildMovePatch, kindAfterMove, moveLoss, moveLossLabel, translateStatus } from './move'
+import { buildMovePatch, translateStatus } from './move'
 
 const tarea = {
   kind: 'task' as const,
@@ -11,7 +11,7 @@ const tarea = {
   recurrence: null,
 }
 
-const captura = {
+const nota = {
   kind: 'note' as const,
   status: 'pending' as const,
   priority: null,
@@ -28,7 +28,9 @@ describe('translateStatus (la misma regla que translate_item_status)', () => {
     ['done', 'event', 'cancelled'],
     ['pending', 'event', 'upcoming'],
     ['bought', 'task', 'done'],
-    ['discarded', 'note', 'done'],
+    // La nota no tiene estado final (5.3): lo terminado queda pendiente.
+    ['discarded', 'note', 'pending'],
+    ['done', 'note', 'pending'],
     ['cancelled', 'shopping', 'bought'],
     ['upcoming', 'task', 'pending'],
   ] as const)('%s → %s queda %s', (status, to, expected) => {
@@ -36,107 +38,36 @@ describe('translateStatus (la misma regla que translate_item_status)', () => {
   })
 })
 
-describe('kindAfterMove (la misma regla que items_adopt_kind)', () => {
-  it('lo que sale de «En mente» toma el tipo por defecto del destino', () => {
-    expect(kindAfterMove('note', 'shopping')).toBe('shopping')
-    expect(kindAfterMove('note', 'events')).toBe('event')
-    expect(kindAfterMove('note', 'tasks')).toBe('task')
-  })
-
-  it('entre listas normales el tipo no cambia', () => {
-    expect(kindAfterMove('task', 'shopping')).toBe('task')
-    expect(kindAfterMove('shopping', 'events')).toBe('shopping')
-  })
-
-  it('lo que entra en «En mente» vuelve a no tener tipo', () => {
-    expect(kindAfterMove('task', 'inbox')).toBe('note')
-    expect(kindAfterMove('note', 'inbox')).toBe('note')
-  })
-})
-
-describe('buildMovePatch', () => {
-  it('una tarea en curso que va a «En mente» queda como captura pendiente, sin prioridad ni fecha', () => {
+describe('buildMovePatch: mover nunca cambia el tipo (ADR-012)', () => {
+  it('una tarea en curso que va a «En mente» sigue siendo tarea, con su prioridad y su fecha', () => {
     expect(buildMovePatch(tarea, { id: 'i', kind: 'inbox' })).toEqual({
+      ...tarea,
       listId: 'i',
       parentId: null,
-      kind: 'note',
-      status: 'pending',
-      priority: null,
-      dueAt: null,
-      allDay: false,
-      recurrence: null,
     })
   })
 
-  it('una tarea que va a Compras sigue siendo una tarea, con su estado, prioridad y fecha', () => {
-    expect(buildMovePatch(tarea, { id: 'c', kind: 'shopping' })).toEqual({
-      ...tarea,
+  it('una nota que sale de «En mente» sigue siendo nota', () => {
+    expect(buildMovePatch(nota, { id: 'c', kind: 'list' })).toEqual({
+      ...nota,
       listId: 'c',
       parentId: null,
     })
   })
 
   it('mover algo de dentro de una sublista a otra lista lo saca de ella (ADR-010)', () => {
-    expect(buildMovePatch(tarea, { id: 'c', kind: 'shopping' }).parentId).toBeNull()
+    expect(buildMovePatch(tarea, { id: 'c', kind: 'list' }).parentId).toBeNull()
   })
 
   it('a una sublista va con su id; a «En mente», nunca dentro de nada', () => {
-    expect(buildMovePatch(tarea, { id: 'v', kind: 'tasks' }, 'lisboa').parentId).toBe('lisboa')
+    expect(buildMovePatch(tarea, { id: 'v', kind: 'list' }, 'lisboa').parentId).toBe('lisboa')
     expect(buildMovePatch(tarea, { id: 'i', kind: 'inbox' }, 'lisboa').parentId).toBeNull()
   })
 
-  it('«leche», de «En mente» a Compras, pasa a ser una compra pendiente', () => {
-    expect(buildMovePatch(captura, { id: 'c', kind: 'shopping' })).toMatchObject({
-      kind: 'shopping',
-      status: 'pending',
-    })
-  })
-
-  it('una captura hecha que va a Agenda queda como evento cancelado (el primer final)', () => {
-    expect(
-      buildMovePatch({ ...captura, status: 'done' }, { id: 'a', kind: 'events' }),
-    ).toMatchObject({ kind: 'event', status: 'cancelled' })
-  })
-
-  it('un evento con repetición la conserva en cualquier lista, salvo en «En mente»', () => {
+  it('un evento con repetición la conserva en cualquier lista, también en «En mente»', () => {
     const evento = { ...tarea, kind: 'event' as const, status: 'upcoming' as const, priority: null }
     const conRepeticion = { ...evento, recurrence: 'yearly' }
-    expect(buildMovePatch(conRepeticion, { id: 't', kind: 'tasks' }).recurrence).toBe('yearly')
-    expect(buildMovePatch(conRepeticion, { id: 'i', kind: 'inbox' }).recurrence).toBeNull()
-  })
-})
-
-describe('aviso de lo que se pierde', () => {
-  it.each([
-    ['inbox', 'Se quitan la prioridad y la fecha.'],
-    ['shopping', null],
-    ['events', null],
-    ['tasks', null],
-  ] as const)('una tarea con prioridad y fecha a %s → %s', (to, expected) => {
-    expect(moveLossLabel(moveLoss(tarea, to))).toBe(expected)
-  })
-
-  it('solo la fecha', () => {
-    expect(
-      moveLossLabel(moveLoss({ kind: 'task', priority: null, dueAt: new Date() }, 'inbox')),
-    ).toBe('Se quita la fecha.')
-  })
-
-  it('una captura sin campos no pierde nada', () => {
-    expect(
-      moveLossLabel(moveLoss({ kind: 'note', priority: null, dueAt: null }, 'shopping')),
-    ).toBeNull()
-  })
-
-  it('una compra o un evento que vuelve a «En mente» pierde su tipo (diseño 12, A5)', () => {
-    expect(
-      moveLossLabel(moveLoss({ kind: 'shopping', priority: null, dueAt: null }, 'inbox')),
-    ).toBe('Se quita el tipo Compra.')
-    expect(
-      moveLossLabel(moveLoss({ kind: 'event', priority: null, dueAt: new Date() }, 'inbox')),
-    ).toBe('Se quitan el tipo Evento y la fecha.')
-    expect(
-      moveLossLabel(moveLoss({ kind: 'shopping', priority: null, dueAt: null }, 'tasks')),
-    ).toBeNull()
+    expect(buildMovePatch(conRepeticion, { id: 't', kind: 'list' }).recurrence).toBe('yearly')
+    expect(buildMovePatch(conRepeticion, { id: 'i', kind: 'inbox' }).recurrence).toBe('yearly')
   })
 })

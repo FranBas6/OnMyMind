@@ -32,8 +32,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'teal',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 2000,
-    counters: { pending: 20, done: 4, pendingPriceCents: 0 },
+    counters: {
+      pending: 20,
+      done: 4,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -45,10 +52,17 @@ const inbox = list('i', 'En mente', { kind: 'inbox', color: 'indigo', position: 
 const maleta = list('maleta', 'Maleta de viaje')
 const compras = list('compras', 'Compras', {
   kind: 'shopping',
+  view: 'list',
   color: 'blue',
   position: 3000,
   isOwner: false,
-  counters: { pending: 5, done: 0, pendingPriceCents: 0 },
+  counters: {
+    pending: 5,
+    done: 0,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
 })
 const mudanza = list('mudanza', 'Mudanza', { archivedAt: new Date(2026, 8, 12) })
 

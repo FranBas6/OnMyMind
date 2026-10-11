@@ -89,7 +89,8 @@ export function rowActions(
   } else if (status !== initial) {
     actions.push({ id: 'reopen', label: REOPEN_LABEL[kind], shortcut: 'E', status: initial })
   }
-  if (!isFinalStatus(status)) {
+  // La nota no se marca hecha (5.3): no tiene estado final.
+  if (!isFinalStatus(status) && isFinalStatus(final)) {
     actions.push({ id: 'finish', label: FINISH_LABEL[kind], shortcut: 'H', status: final })
   }
   actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })

@@ -26,8 +26,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'coral',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 2000,
-    counters: { pending: 2, done: 1, pendingPriceCents: 0 },
+    counters: {
+      pending: 2,
+      done: 1,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -242,7 +249,7 @@ describe('detalle de una lista de tareas', () => {
     renderDetail('casa', [])
 
     expect(await screen.findByText('Aún no hay nada aquí.')).toBeInTheDocument()
-    expect(screen.getByText('Tareas · recién creada')).toBeInTheDocument()
+    expect(screen.getByText('Lista · recién creada')).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Primera tarea…' })).toHaveFocus()
     expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()
   })

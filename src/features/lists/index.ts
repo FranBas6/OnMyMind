@@ -19,5 +19,21 @@ export { useArchivedLists } from './hooks/useArchivedLists'
 export { listMutations } from './hooks/useListMutations'
 export { useLists, type ListsByRole } from './hooks/useLists'
 export { archivedListsQueryOptions, listsQueryOptions } from './queries'
-export { counterLabel, doneLabel, KIND_TEMPLATES, pendingTotal } from './templates'
-export type { List, ListColor, ListCounters, ListKind, RecentCapture } from './types'
+export {
+  counterLabel,
+  doneLabel,
+  listStyle,
+  pendingTotal,
+  STYLE_TEMPLATES,
+  waitingCount,
+} from './templates'
+export type {
+  KindTotals,
+  List,
+  ListColor,
+  ListCounters,
+  ListKind,
+  ListStyle,
+  ListView,
+  RecentCapture,
+} from './types'

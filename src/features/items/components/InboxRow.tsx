@@ -3,13 +3,11 @@ import { ArrowRightLeft, ChevronDown } from 'lucide-react'
 import { formatCaptureAge } from '@/lib/date'
 import { cn } from '@/lib/utils'
 
-import { checkboxState } from '../status'
 import type { Item } from '../types'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { hasThumb } from '../photos'
 import { LinkMeta, RowThumb } from './RowMedia'
 import { RowNotes, RowTitle } from './RowTitle'
-import { StatusCheckbox } from './StatusCheckbox'
 import { SwipeableRow } from './SwipeableRow'
 
 /**
@@ -17,8 +15,9 @@ import { SwipeableRow } from './SwipeableRow'
  * «ayer», «martes»), debajo en móvil y a la derecha en escritorio, sin prioridad ni fecha. A la
  * derecha, «Mover a…», la acción principal de la inbox: en móvil un botón de 40 px con el icono;
  * en escritorio, con texto. Tocar la fila abre el detalle; mantenerla pulsada, el menú; deslizarla,
- * sus acciones. Con foto, su miniatura tras el checkbox; con enlace, su dominio delante de la
- * antigüedad (diseño 15, L1 y D1).
+ * sus acciones. Con foto, su miniatura delante; con enlace, su dominio delante de la antigüedad
+ * (diseño 15, L1 y D1). Es la fila de la nota, que no tiene casilla: no se marca hecha (5.3,
+ * ADR-012). La 5.4 le da su diseño.
  */
 export function InboxRow({ item }: { item: Item }) {
   const actions = useItemActions()
@@ -30,19 +29,11 @@ export function InboxRow({ item }: { item: Item }) {
       surfaceClassName={cn(
         'relative flex min-h-12 animate-in items-center gap-3 rounded-[18px] border border-border-soft bg-card py-2 pr-2.5 pl-4 duration-200 fade-in hover:border-border hover:shadow-card md:grid md:min-h-15 md:gap-4 md:rounded-2xl md:py-2.5 md:pl-[18px]',
         thumb
-          ? 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto_auto]'
-          : 'md:grid-cols-[24px_minmax(0,1fr)_auto_auto]',
+          ? 'md:grid-cols-[44px_minmax(0,1fr)_auto_auto]'
+          : 'md:grid-cols-[minmax(0,1fr)_auto_auto]',
         rowHighlight(actions, item),
       )}
     >
-      <StatusCheckbox
-        state={checkboxState(item.status)}
-        label={item.title}
-        onToggle={() => {
-          actions.toggle(item)
-        }}
-        className="z-10"
-      />
       <RowThumb item={item} />
       <div className="min-w-0 flex-1 md:contents">
         <div className="min-w-0">

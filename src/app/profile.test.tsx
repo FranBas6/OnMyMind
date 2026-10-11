@@ -25,8 +25,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'coral',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 2000,
-    counters: { pending: 2, done: 3, pendingPriceCents: 0 },
+    counters: {
+      pending: 2,
+      done: 3,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -35,16 +42,29 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
 
 const inbox = list('i', 'En mente', {
   kind: 'inbox',
+  view: 'list',
   color: 'indigo',
   position: 1000,
-  counters: { pending: 1, done: 4, pendingPriceCents: 0 },
+  counters: {
+    pending: 1,
+    done: 4,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
 })
 const casa = list('casa', 'Casa')
 const trabajo = list('trabajo', 'Trabajo', { color: 'pink', position: 3000 })
 const regalos = list('regalos', 'Regalos', {
   color: 'green',
   archivedAt: new Date(2026, 8, 1),
-  counters: { pending: 0, done: 2, pendingPriceCents: 0 },
+  counters: {
+    pending: 0,
+    done: 2,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
 })
 
 function setDesktop(on: boolean) {

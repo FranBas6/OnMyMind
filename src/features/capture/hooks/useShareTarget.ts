@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 
 import {
   newItemKindAndStatus,
+  proposedKind,
   useCreateWithDate,
   useDeleteItem,
   useFillCapturedLink,
@@ -46,7 +47,7 @@ export function useShareTarget(shared: SharedData) {
         id: crypto.randomUUID(),
         listId: inbox.id,
         title: item.title,
-        ...newItemKindAndStatus(inbox.kind),
+        ...newItemKindAndStatus(proposedKind(inbox)),
         ...(item.link && { link: item.link }),
         ...(item.notes && { notes: item.notes }),
       },

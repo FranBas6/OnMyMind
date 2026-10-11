@@ -25,8 +25,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'coral',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 2000,
-    counters: { pending: 3, done: 0, pendingPriceCents: 0 },
+    counters: {
+      pending: 3,
+      done: 0,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -76,7 +83,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
 
 const inbox = list('i', 'En mente', { kind: 'inbox', color: 'indigo', position: 1000 })
 const casa = list('casa', 'Casa')
-const agenda = list('agenda', 'Agenda', { kind: 'events', position: 3000 })
+const agenda = list('agenda', 'Agenda', { kind: 'events', view: 'agenda', position: 3000 })
 
 const grifo = item('grifo', 'Arreglar el grifo', { position: 1000 })
 const lampara = item('lampara', 'Lámpara para el salón', { position: 2000 })

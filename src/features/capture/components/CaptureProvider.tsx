@@ -14,6 +14,7 @@ import {
   useDeleteItem,
   useFillCapturedLink,
   useSublists,
+  proposedKind,
   type Destination,
   type LineToSave,
   type NewItemLink,
@@ -108,7 +109,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
         listId: list.id,
         parentId: sublist?.id ?? null,
         title,
-        ...newItemKindAndStatus(list.kind),
+        ...newItemKindAndStatus(proposedKind(list)),
         ...(link && { link }),
       },
       written,
@@ -129,7 +130,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
   // las borra todas.
   const saveMany = (lines: LineToSave[], destination: Destination) => {
     const { list, sublist } = destination
-    const base = newItemKindAndStatus(list.kind)
+    const base = newItemKindAndStatus(proposedKind(list))
     const items = lines.map((line) =>
       createItem(
         {

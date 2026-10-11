@@ -11,7 +11,7 @@ import { LiveDoneNote } from '@/features/sharing/components/LiveDoneNote'
 import { useLiveRow } from '@/features/sharing/hooks/useLiveRow'
 
 import { eventTime, eventWhen, occurrence, shortDay } from '../events'
-import { kindMark } from '../kind'
+import { kindMark, proposedKind } from '../kind'
 import { recurrenceLabel } from '../recurrence'
 import { useRepeatMark } from '../repeatMarks'
 import type { Item } from '../types'
@@ -83,7 +83,7 @@ export function TaskRow({ item }: { item: Item }) {
   const option = useOptionMark(item)
   const mark =
     priority === null && dueAt === null && eventDate === null
-      ? kindMark(item.kind, list.kind)
+      ? kindMark(item.kind, proposedKind(list))
       : null
   const first = quiet ? null : priority ? (
     <PriorityChip priority={priority} />

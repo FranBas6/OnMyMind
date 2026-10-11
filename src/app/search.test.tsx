@@ -23,8 +23,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'coral',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 2000,
-    counters: { pending: 1, done: 0, pendingPriceCents: 0 },
+    counters: {
+      pending: 1,
+      done: 0,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -216,7 +223,7 @@ describe('Buscar', () => {
 
     const lists = await screen.findByRole('region', { name: 'Listas' })
     const link = within(lists).getByRole('link', { name: /Casa/ })
-    expect(link).toHaveTextContent('Tareas · 1 pendiente')
+    expect(link).toHaveTextContent('Lista · 1 pendiente')
     // Solo coincide la lista: no hay «No hay nada con…».
     expect(screen.queryByText(/No hay nada con/)).not.toBeInTheDocument()
 

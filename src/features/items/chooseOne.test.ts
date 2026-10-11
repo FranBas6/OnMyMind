@@ -127,19 +127,19 @@ describe('elegir una: contadores y total (A3)', () => {
   const compras = [volantes, ...opciones, leche]
 
   it('las opciones pendientes cuentan como una sola cosa, y en el total la más barata', () => {
-    expect(countItems(compras)).toEqual({ pending: 2, done: 0 })
+    expect(countItems(compras)).toEqual({ pending: 2, done: 0, notes: 0 })
     expect(pendingTotals(compras).euros).toBe(19900 + 249)
   })
 
   it('sin «elegir una», suman todas', () => {
     const sumando = [{ ...volantes, chooseOne: false }, ...opciones, leche]
-    expect(countItems(sumando)).toEqual({ pending: 3, done: 0 })
+    expect(countItems(sumando)).toEqual({ pending: 3, done: 0, notes: 0 })
     expect(pendingTotals(sumando).euros).toBe(19900 + 24999 + 249)
   })
 
   it('hecha, se calla como cualquier sublista', () => {
     const hecha = [{ ...volantes, status: 'done' as const }, ...opciones, leche]
-    expect(countItems(hecha)).toEqual({ pending: 1, done: 0 })
+    expect(countItems(hecha)).toEqual({ pending: 1, done: 0, notes: 0 })
     expect(pendingTotals(hecha).euros).toBe(249)
   })
 })
@@ -151,7 +151,7 @@ describe('«Elegir esta»: la preferida (Fran, 2026-10-11)', () => {
     expect(countedOption(elegida, opciones)?.id).toBe('g923')
     expect(choicePrice(elegida, opciones)).toEqual({ paid: false, cents: 24999, currency: 'EUR' })
     expect(pendingTotals([elegida, ...opciones, leche]).euros).toBe(24999 + 249)
-    expect(countItems([elegida, ...opciones, leche])).toEqual({ pending: 2, done: 0 })
+    expect(countItems([elegida, ...opciones, leche])).toEqual({ pending: 2, done: 0, notes: 0 })
   })
 
   it('lleva «Elegida»; las demás siguen comparándose', () => {
@@ -169,7 +169,7 @@ describe('«Elegir esta»: la preferida (Fran, 2026-10-11)', () => {
     const comprada = [g29, { ...g923, status: 'bought' as const }]
     expect(countedOption(elegida, comprada)?.id).toBe('g29')
     expect(optionsMeta(elegida, comprada)).toBe(`1 opción · 199${NBSP}€`)
-    expect(countItems([elegida, ...comprada])).toEqual({ pending: 1, done: 1 })
+    expect(countItems([elegida, ...comprada])).toEqual({ pending: 1, done: 1, notes: 0 })
   })
 
   it('cerrada a mano: «Hecha · elegida…», «Elegida…» en su fila y «Pagaste» si se compró', () => {

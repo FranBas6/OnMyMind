@@ -7,7 +7,7 @@ import { ListIcon } from '@/components/ListIcon'
 import { LIFT_TOLERANCE_PX } from '@/hooks/useReorderSensors'
 import { cn } from '@/lib/utils'
 
-import { counterLabel, KIND_TEMPLATES, pendingTotal } from '../templates'
+import { counterLabel, listStyle, pendingTotal, STYLE_TEMPLATES } from '../templates'
 import type { List } from '../types'
 import { ListCardInitials, ListCardSharedNote } from '@/features/sharing/components/SharedInitials'
 
@@ -137,12 +137,12 @@ function ListCardFace({ list }: { list: List }) {
           <ListCardSharedNote list={list} />
         </p>
         <p className="mt-[3px] truncate text-[12.5px] text-subtle-foreground">
-          {KIND_TEMPLATES[list.kind].label}
+          {STYLE_TEMPLATES[listStyle(list)].label}
         </p>
       </div>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-[13px] whitespace-nowrap text-muted-foreground">
-          {counterLabel(list.kind, list.counters.pending)}
+          {counterLabel(listStyle(list), list.counters.pending)}
         </span>
         {total && (
           <span className="font-display text-[15px] font-extrabold tracking-[-0.02em] whitespace-nowrap">

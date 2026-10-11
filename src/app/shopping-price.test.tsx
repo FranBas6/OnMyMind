@@ -32,8 +32,15 @@ const inbox: List = {
   color: 'indigo',
   icon: null,
   kind: 'inbox',
+  view: 'list',
   position: 1000,
-  counters: { pending: 0, done: 0, pendingPriceCents: 0 },
+  counters: {
+    pending: 0,
+    done: 0,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
   archivedAt: null,
   isOwner: true,
 }

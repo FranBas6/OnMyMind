@@ -32,11 +32,10 @@ describe('textos de compartir (diseño 20)', () => {
     expect(personDetail(marta, true, NOW)).toBe('Tú · entraste el 3 oct')
   })
 
-  it('la lista a la que te invitan', () => {
-    expect(invitedListSummary('shopping', 7)).toBe('Una lista de compras con 7 cosas.')
-    expect(invitedListSummary('tasks', 1)).toBe('Una lista de tareas con 1 cosa.')
-    expect(invitedListSummary('events', 0)).toBe('Una lista de eventos, aún vacía.')
-    expect(invitedListSummary(null, 2)).toBe('Una lista con 2 cosas.')
+  it('la lista a la que te invitan, sin tipo (5.3)', () => {
+    expect(invitedListSummary(7)).toBe('Una lista con 7 cosas.')
+    expect(invitedListSummary(1)).toBe('Una lista con 1 cosa.')
+    expect(invitedListSummary(0)).toBe('Una lista, aún vacía.')
   })
 })
 

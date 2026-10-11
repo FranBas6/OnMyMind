@@ -22,8 +22,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'coral',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 2000,
-    counters: { pending: 0, done: 0, pendingPriceCents: 0 },
+    counters: {
+      pending: 0,
+      done: 0,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -31,17 +38,38 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
 }
 
 const inbox = list('i', 'En mente', { kind: 'inbox', color: 'indigo', position: 1000 })
-const casa = list('casa', 'Casa', { counters: { pending: 4, done: 2, pendingPriceCents: 0 } })
+const casa = list('casa', 'Casa', {
+  counters: {
+    pending: 4,
+    done: 2,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
+})
 const trabajo = list('trabajo', 'Trabajo', {
   color: 'pink',
   position: 3000,
-  counters: { pending: 6, done: 3, pendingPriceCents: 0 },
+  counters: {
+    pending: 6,
+    done: 3,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
 })
 const tech = list('tech', 'Compras tech', {
   kind: 'shopping',
+  view: 'list',
   color: 'blue',
   position: 4000,
-  counters: { pending: 3, done: 0, pendingPriceCents: 0 },
+  counters: {
+    pending: 3,
+    done: 0,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
 })
 const regalos = list('regalos', 'Regalos', {
   kind: 'shopping',

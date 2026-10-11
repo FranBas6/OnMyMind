@@ -34,8 +34,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'blue',
     icon: null,
     kind: 'tasks',
+    view: 'list',
     position: 2000,
-    counters: { pending: 0, done: 0, pendingPriceCents: 0 },
+    counters: {
+      pending: 0,
+      done: 0,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -85,7 +92,15 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
 
 const inbox = list('i', 'En mente', { kind: 'inbox', color: 'indigo', position: 1000 })
 // «Viajes» cuenta 3: el pasaporte y lo pendiente de Lisboa; lo de Roma, pausada, se calla.
-const viajes = list('viajes', 'Viajes', { counters: { pending: 3, done: 1, pendingPriceCents: 0 } })
+const viajes = list('viajes', 'Viajes', {
+  counters: {
+    pending: 3,
+    done: 1,
+    pendingPriceCents: 0,
+    notes: 0,
+    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+  },
+})
 const casa = list('casa', 'Casa', { color: 'coral', position: 3000 })
 
 // «Viajes» del diseño 12 (S1): Lisboa en curso con tres cosas, Roma pausada, Maleta vacía.

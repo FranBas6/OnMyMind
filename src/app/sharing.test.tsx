@@ -43,8 +43,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'blue',
     icon: null,
     kind: 'shopping',
+    view: 'list',
     position: 2000,
-    counters: { pending: 5, done: 0, pendingPriceCents: 0 },
+    counters: {
+      pending: 5,
+      done: 0,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -267,7 +274,7 @@ describe('unirse con el enlace (3.2, diseño 20)', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Una lista de compras con 7 cosas. Podrás añadir, completar, editar y ordenar lo de dentro.',
+        'Una lista con 7 cosas. Podrás añadir, completar, editar y ordenar lo de dentro.',
       ),
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Unirme' }))

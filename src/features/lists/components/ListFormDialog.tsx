@@ -10,10 +10,9 @@ import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
 import { useCreateList, useUpdateList } from '../hooks/useListMutations'
-import { CREATABLE_KINDS, listFormSchema, type ListFormValues } from '../schemas'
+import { listFormSchema, type ListFormValues } from '../schemas'
 import type { List } from '../types'
 import { ColorPicker } from './ColorPicker'
-import { KindPicker } from './KindPicker'
 
 interface ListFormDialogProps {
   open: boolean
@@ -85,14 +84,12 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
     defaultValues: {
       name: list?.name ?? '',
       color: list?.color ?? 'indigo',
-      kind: list && isCreatableKind(list.kind) ? list.kind : 'tasks',
     },
   })
 
   const name = useWatch({ control, name: 'name' })
   const color = useWatch({ control, name: 'color' })
   const initial = name.trim().charAt(0).toUpperCase() || '·'
-  const kindLabelId = useId()
 
   const onSubmit = handleSubmit((values: ListFormValues) => {
     if (list) {
@@ -211,31 +208,6 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
           render={({ field }) => <ColorPicker value={field.value} onChange={field.onChange} />}
         />
 
-        {/* El tipo es de cada ítem (diseño 12, T6): la lista solo dice con cuál nacen. */}
-        <div className="flex flex-col">
-          <p
-            id={kindLabelId}
-            className="px-1 pb-1 text-xs font-bold tracking-[0.06em] text-subtle-foreground uppercase"
-          >
-            Tipo por defecto
-          </p>
-          <p className="px-1 pb-2.5 text-[13px] leading-[1.4] text-subtle-foreground">
-            Con el que nacen las cosas nuevas. Cada una puede cambiar el suyo después.
-          </p>
-          <Controller
-            control={control}
-            name="kind"
-            render={({ field }) => (
-              <KindPicker labelledBy={kindLabelId} value={field.value} onChange={field.onChange} />
-            )}
-          />
-          {list && (
-            <p className="px-1 pt-3 text-[13px] leading-[1.4] text-subtle-foreground">
-              Cambiarlo no toca lo que ya hay en la lista.
-            </p>
-          )}
-        </div>
-
         {isDesktop && (
           <>
             {serverError && (
@@ -260,8 +232,4 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
       </form>
     </>
   )
-}
-
-function isCreatableKind(kind: List['kind']): kind is ListFormValues['kind'] {
-  return (CREATABLE_KINDS as readonly string[]).includes(kind)
 }

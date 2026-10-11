@@ -6,6 +6,7 @@ import { LIST_COLOR_TEXT, LIST_COLOR_TINT } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
 import { firstItemNoun } from '../copy'
+import { proposedKind } from '../kind'
 import type { Item } from '../types'
 import { SublistIcon } from './SublistIcon'
 
@@ -39,11 +40,11 @@ export function NewListEmpty({ list, isDesktop }: EmptyProps & { list: List }) {
       <Title>Aún no hay nada aquí.</Title>
       <Description>
         {isDesktop ? (
-          `Escribe ${firstItemNoun(list.kind)} arriba. También puedes mover aquí cosas desde «En mente».`
+          `Escribe ${firstItemNoun(proposedKind(list))} arriba. También puedes mover aquí cosas desde «En mente».`
         ) : (
           <>
-            Escribe {firstItemNoun(list.kind)} abajo, o pulsa <b className="text-foreground">+</b>{' '}
-            desde cualquier sitio y elige {list.name}.
+            Escribe {firstItemNoun(proposedKind(list))} abajo, o pulsa{' '}
+            <b className="text-foreground">+</b> desde cualquier sitio y elige {list.name}.
           </>
         )}
       </Description>

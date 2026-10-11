@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   checkboxState,
-  defaultItemKind,
+  firstFinalStatus,
   initialStatus,
   isActiveSublistStatus,
   isFinalStatus,
@@ -17,7 +17,7 @@ import {
 
 describe('estados por tipo', () => {
   it.each([
-    ['note', ['pending', 'done']],
+    ['note', ['pending']],
     ['task', ['pending', 'in_progress', 'done']],
     ['shopping', ['pending', 'bought', 'discarded']],
     ['event', ['upcoming', 'cancelled']],
@@ -26,19 +26,15 @@ describe('estados por tipo', () => {
     expect(STATUSES_BY_KIND[kind]).toEqual(statuses)
   })
 
-  it.each([
-    ['inbox', 'note'],
-    ['tasks', 'task'],
-    ['shopping', 'shopping'],
-    ['events', 'event'],
-    ['custom', 'task'],
-  ] as const)('una lista %s crea ítems de tipo %s (default_item_kind)', (listKind, itemKind) => {
-    expect(defaultItemKind(listKind)).toBe(itemKind)
+  it('lo nuevo nace con su tipo y su primer estado', () => {
+    expect(newItemKindAndStatus('event')).toEqual({ kind: 'event', status: 'upcoming' })
+    expect(newItemKindAndStatus('note')).toEqual({ kind: 'note', status: 'pending' })
   })
 
-  it('lo nuevo nace con el tipo por defecto de la lista y su primer estado', () => {
-    expect(newItemKindAndStatus('events')).toEqual({ kind: 'event', status: 'upcoming' })
-    expect(newItemKindAndStatus('inbox')).toEqual({ kind: 'note', status: 'pending' })
+  it('la nota no se marca hecha (5.3): el checkbox no la lleva a ninguna parte', () => {
+    expect(firstFinalStatus('note')).toBe('pending')
+    expect(nextStatusOnToggle('note', 'pending')).toBe('pending')
+    expect(firstFinalStatus('task')).toBe('done')
   })
 
   it('cada tipo nace en su primer estado', () => {
@@ -85,8 +81,7 @@ describe('tocar el checkbox', () => {
     ['task', 'pending', 'done'],
     ['task', 'in_progress', 'done'],
     ['task', 'done', 'pending'],
-    ['note', 'pending', 'done'],
-    ['note', 'done', 'pending'],
+    ['note', 'pending', 'pending'],
     ['shopping', 'pending', 'bought'],
     ['shopping', 'bought', 'pending'],
     ['shopping', 'discarded', 'pending'],

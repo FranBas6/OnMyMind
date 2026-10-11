@@ -7,6 +7,7 @@ import {
   kindChangeNotice,
   kindMark,
   parseKindPrefix,
+  proposedKind,
 } from './kind'
 import { ITEM_KINDS } from './status'
 
@@ -148,12 +149,12 @@ it('solo se eligen tarea, compra y evento', () => {
 })
 
 describe('marca del tipo y prefijos', () => {
-  it('la marca sale solo si el ítem no es del tipo por defecto de su lista', () => {
-    expect(kindMark('shopping', 'tasks')).toBe('Compra')
+  it('la marca sale solo si el ítem no es del tipo que propone su lista', () => {
+    expect(kindMark('shopping', 'task')).toBe('Compra')
     expect(kindMark('task', 'shopping')).toBe('Tarea')
     expect(kindMark('shopping', 'shopping')).toBeNull()
-    expect(kindMark('task', 'tasks')).toBeNull()
-    expect(kindMark('note', 'inbox')).toBeNull()
+    expect(kindMark('task', 'task')).toBeNull()
+    expect(kindMark('note', 'note')).toBeNull()
   })
 
   it.each([
@@ -166,5 +167,53 @@ describe('marca del tipo y prefijos', () => {
     ['Tarea normal', null],
   ] as const)('«%s» → %j', (text, expected) => {
     expect(parseKindPrefix(text)).toEqual(expected)
+  })
+})
+
+describe('el tipo que propone una lista sin tipo (5.3, ADR-012)', () => {
+  const totals = (kinds: Partial<Record<'note' | 'task' | 'shopping' | 'event', number>>) => ({
+    note: 0,
+    task: 0,
+    shopping: 0,
+    event: 0,
+    ...kinds,
+  })
+  const list = (kind: 'inbox' | 'list', kinds = totals({}), view: 'list' | 'agenda' = 'list') => ({
+    kind,
+    view,
+    counters: {
+      pending: 0,
+      done: 0,
+      notes: 0,
+      pendingPriceCents: 0,
+      kinds,
+    },
+  })
+
+  it('«En mente» propone siempre nota', () => {
+    expect(proposedKind(list('inbox', totals({ shopping: 9 })))).toBe('note')
+  })
+
+  it('una lista propone el tipo que más hay, por sus contadores', () => {
+    expect(proposedKind(list('list', totals({ shopping: 5, task: 2 })))).toBe('shopping')
+    expect(proposedKind(list('list', totals({ event: 3, task: 1 })))).toBe('event')
+  })
+
+  it('con los ítems a mano, cuentan esos (las sublistas no); a igualdad, tarea y luego compra', () => {
+    const items = [
+      { kind: 'shopping' },
+      { kind: 'event' },
+      { kind: 'sublist' },
+      { kind: 'sublist' },
+    ] as const
+    expect(proposedKind(list('list', totals({ task: 9 })), items)).toBe('shopping')
+    expect(proposedKind(list('list'), [{ kind: 'task' }, { kind: 'shopping' }])).toBe('task')
+  })
+
+  it('vacía, o con solo notas, tarea (la nota llega a la barra en la 5.4); una agenda, evento', () => {
+    expect(proposedKind(list('list'))).toBe('task')
+    expect(proposedKind(list('list'), [{ kind: 'note' }, { kind: 'note' }])).toBe('task')
+    expect(proposedKind(list('list', totals({}), 'agenda'), [])).toBe('event')
+    expect(proposedKind(list('list', totals({ task: 2 }), 'agenda'))).toBe('task')
   })
 })

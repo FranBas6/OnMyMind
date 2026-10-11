@@ -72,13 +72,21 @@ const pasaporte = item('pasaporte')
 
 describe('countItems (las reglas de list_counters)', () => {
   it('suma lo de dentro de las sublistas activas y no la sublista', () => {
-    expect(countItems([lisboa, ...dentroLisboa, pasaporte])).toEqual({ pending: 3, done: 1 })
+    expect(countItems([lisboa, ...dentroLisboa, pasaporte])).toEqual({
+      pending: 3,
+      done: 1,
+      notes: 0,
+    })
   })
 
   it('lo de dentro de una pausada o hecha se calla', () => {
-    expect(countItems([roma, ...dentroRoma, pasaporte])).toEqual({ pending: 1, done: 0 })
+    expect(countItems([roma, ...dentroRoma, pasaporte])).toEqual({ pending: 1, done: 0, notes: 0 })
     const oporto = item('oporto', { kind: 'sublist', ...hecha })
-    expect(countItems([oporto, item('x', { parentId: 'oporto' })])).toEqual({ pending: 0, done: 0 })
+    expect(countItems([oporto, item('x', { parentId: 'oporto' })])).toEqual({
+      pending: 0,
+      done: 0,
+      notes: 0,
+    })
   })
 })
 

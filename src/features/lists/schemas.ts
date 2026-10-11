@@ -8,7 +8,7 @@ import type { List, ListCounters } from './types'
 type ListRow = Pick<
   Database['public']['Tables']['lists']['Row'],
   'id' | 'name' | 'color' | 'icon' | 'kind' | 'position'
-> & { archived_at?: string | null; is_owner?: boolean }
+> & { view?: string | null; archived_at?: string | null; is_owner?: boolean }
 type CountersRow = Database['public']['Views']['list_counters']['Row']
 
 export const listColorSchema = z.enum(LIST_COLORS)
@@ -26,12 +26,10 @@ export const myListRowSchema = z.object({
   position: z.number(),
   archived_at: z.string().nullable(),
   is_owner: z.boolean(),
+  view: z.string().nullable(),
 })
 
 export const LIST_NAME_MAX_LENGTH = 80
-
-/** Tipos que se pueden crear desde el formulario; «Personalizada» se descartó (ADR-011). */
-export const CREATABLE_KINDS = ['tasks', 'shopping', 'events'] as const
 
 /**
  * Formulario de crear y editar lista (diseño 04 Listas). El mismo esquema lo usa `api.ts`, así que
@@ -47,7 +45,6 @@ export const listFormSchema = z.object({
         `Máximo ${LIST_NAME_MAX_LENGTH} caracteres. Llevas ${typeof issue.input === 'string' ? issue.input.length : LIST_NAME_MAX_LENGTH + 1}.`,
     }),
   color: listColorSchema,
-  kind: z.enum(CREATABLE_KINDS),
 })
 export type ListFormValues = z.infer<typeof listFormSchema>
 
@@ -65,7 +62,13 @@ export const fieldSchemaSchema = z.object({
 })
 export type FieldSchema = z.infer<typeof fieldSchemaSchema>
 
-const EMPTY_COUNTERS: ListCounters = { pending: 0, done: 0, pendingPriceCents: 0 }
+const EMPTY_COUNTERS: ListCounters = {
+  pending: 0,
+  done: 0,
+  notes: 0,
+  pendingPriceCents: 0,
+  kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+}
 
 /**
  * Filas de `lists` + filas de `list_counters` → listas de dominio, en el orden de las filas.
@@ -78,7 +81,14 @@ export function mergeListsWithCounters(lists: ListRow[], counters: CountersRow[]
     countersById.set(row.list_id, {
       pending: row.pending_count ?? 0,
       done: row.done_count ?? 0,
+      notes: row.notes_count ?? 0,
       pendingPriceCents: row.pending_price_cents ?? 0,
+      kinds: {
+        note: row.note_total ?? 0,
+        task: row.task_total ?? 0,
+        shopping: row.shopping_total ?? 0,
+        event: row.event_total ?? 0,
+      },
     })
   }
 
@@ -88,6 +98,7 @@ export function mergeListsWithCounters(lists: ListRow[], counters: CountersRow[]
     color: parseColor(row),
     icon: row.icon,
     kind: row.kind,
+    view: row.view === 'agenda' ? 'agenda' : 'list',
     position: row.position,
     counters: countersById.get(row.id) ?? EMPTY_COUNTERS,
     archivedAt: row.archived_at ? new Date(row.archived_at) : null,

@@ -14,8 +14,15 @@ function list(id: string, name: string, kind: List['kind'], pending: number, cen
     color: 'indigo',
     icon: null,
     kind,
+    view: kind === 'events' ? 'agenda' : 'list',
     position: 1000,
-    counters: { pending, done: 0, pendingPriceCents: cents },
+    counters: {
+      pending,
+      done: 0,
+      pendingPriceCents: cents,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
   }
@@ -65,7 +72,8 @@ describe('Inicio', () => {
 
     const grid = screen.getByRole('list', { name: 'Mis listas' })
     const casa = within(grid).getByRole('link', { name: /Casa/ })
-    expect(casa).toHaveTextContent('Tareas')
+    // Las listas ya no tienen tipo (5.3): dicen si son una lista o una agenda.
+    expect(casa).toHaveTextContent('Lista')
     expect(casa).toHaveTextContent('4 pendientes')
     const compras = within(grid).getByRole('link', { name: /Compras/ })
     expect(compras).toHaveTextContent('2 pendientes')

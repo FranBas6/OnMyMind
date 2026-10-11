@@ -11,7 +11,8 @@ import { KindOptions } from './KindOptions'
 import { KIND_ICONS } from './kindIcons'
 
 interface KindFieldProps {
-  item: Item & { kind: ChoosableKind }
+  /** Una nota también (5.3): pasa a otro tipo desde aquí, porque mover ya no la cambia. */
+  item: Item & { kind: ChoosableKind | 'note' }
   isDesktop: boolean
   onChange: (patch: ItemPatch) => void
 }
@@ -24,11 +25,13 @@ interface KindFieldProps {
  */
 export function KindField({ item, isDesktop, onChange }: KindFieldProps) {
   const [open, setOpen] = useState(false)
-  const [choice, setChoice] = useState<ChoosableKind>(item.kind)
-  const Icon = KIND_ICONS[item.kind]
+  // Una nota abre con tarea marcada: aún no es un tipo que se elija (llega con la 5.4).
+  const current: ChoosableKind = item.kind === 'note' ? 'task' : item.kind
+  const [choice, setChoice] = useState<ChoosableKind>(current)
+  const Icon = item.kind === 'note' ? null : KIND_ICONS[item.kind]
 
   const openWith = (next: boolean) => {
-    if (next) setChoice(item.kind)
+    if (next) setChoice(current)
     setOpen(next)
   }
   const confirm = () => {
@@ -50,7 +53,9 @@ export function KindField({ item, isDesktop, onChange }: KindFieldProps) {
       <span className="font-medium">Tipo</span>
       <span className="flex items-center gap-1.5 font-semibold whitespace-nowrap">
         <span className="flex items-center gap-2">
-          <Icon aria-hidden className="size-[15px] text-muted-foreground" strokeWidth={2.2} />
+          {Icon && (
+            <Icon aria-hidden className="size-[15px] text-muted-foreground" strokeWidth={2.2} />
+          )}
           {KIND_LABELS[item.kind]}
         </span>
         <ChevronRight aria-hidden className="size-4 text-subtle-foreground" strokeWidth={2} />

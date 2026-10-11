@@ -69,9 +69,12 @@ export interface ItemDetailProps {
   onClose: () => void
 }
 
-/** Lo de «En mente» no tiene tipo que cambiar, y la sublista (2a.4) no se convierte desde aquí. */
-const isChoosable = (item: Item): item is Item & { kind: ChoosableKind } =>
-  isChoosableKind(item.kind)
+/**
+ * Lo que tiene fila «Tipo»: los tipos que se eligen y la nota, que pasa a otro tipo desde aquí
+ * porque mover ya no la cambia (5.3). La sublista (2a.4) no se convierte desde aquí.
+ */
+const isChoosable = (item: Item): item is Item & { kind: ChoosableKind | 'note' } =>
+  isChoosableKind(item.kind) || item.kind === 'note'
 
 /**
  * Contenido del detalle de un ítem (pantalla 11 y diseño 06). Debajo de las notas, la foto y el

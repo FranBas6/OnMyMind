@@ -7,7 +7,7 @@ import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
 import { useItemPerson } from '@/features/sharing/hooks/useSharing'
 
 import { eventWhen } from '../events'
-import { kindMark } from '../kind'
+import { kindMark, proposedKind } from '../kind'
 import { itemPrice } from '../prices'
 import { STATUS_LABELS } from '../status'
 import type { Item, MovedItem } from '../types'
@@ -179,7 +179,9 @@ export function DoneRow({
         : item.dueAt && eventWhen(item)
       : null
   const status =
-    !paid && !when && kindMark(item.kind, actions.list.kind) ? STATUS_LABELS[item.status] : null
+    !paid && !when && kindMark(item.kind, proposedKind(actions.list))
+      ? STATUS_LABELS[item.status]
+      : null
   // Si lo completó el otro, su inicial (diseño 20, M2).
   const person = useItemPerson(item)
   return (

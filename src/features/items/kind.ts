@@ -1,9 +1,9 @@
 import { startOfDay } from 'date-fns'
 
-import type { ListKind } from '@/features/lists'
+import type { KindTotals, List } from '@/features/lists'
 
 import { translateStatus } from './move'
-import { defaultItemKind, STATUS_LABELS } from './status'
+import { STATUS_LABELS } from './status'
 import type { Item, ItemKind, ItemPatch } from './types'
 
 /**
@@ -22,7 +22,7 @@ export function isChoosableKind(kind: ItemKind): kind is ChoosableKind {
 
 /** Nombre del tipo de un ítem en la interfaz (en singular: el tipo es de cada ítem). */
 export const KIND_LABELS: Record<ItemKind, string> = {
-  note: 'Sin tipo',
+  note: 'Nota',
   task: 'Tarea',
   shopping: 'Compra',
   event: 'Evento',
@@ -135,13 +135,47 @@ export function kindChangeNotice(
   return { text: `${lost} ${status}`, losesSomething: nouns.length > 0 }
 }
 
+/** Cuántas cosas hay de cada tipo (las sublistas no cuentan), como `list_counters` (5.3). */
+export function kindTotals(items: readonly Pick<Item, 'kind'>[]): KindTotals {
+  const totals: KindTotals = { note: 0, task: 0, shopping: 0, event: 0 }
+  for (const item of items) if (item.kind !== 'sublist') totals[item.kind] += 1
+  return totals
+}
+
+/** A igualdad, el que va antes. */
+const PROPOSED_ORDER: readonly ChoosableKind[] = ['task', 'shopping', 'event']
+
+/**
+ * El tipo con el que nace lo que se añade a una lista (ADR-012): las listas no tienen tipo, así que
+ * es el que más hay en ella (una lista de la compra propone compras). Con `items` cuenta esos (lo
+ * que se ve, también lo optimista); sin ellos, lo que dice `list_counters`. «En mente» propone
+ * siempre nota. En una lista vacía, tarea, o evento si se ve como agenda (la «Agenda» de una
+ * cuenta nueva): la nota llega a la barra en la 5.4, y entonces una lista vacía propondrá Nota.
+ */
+export function proposedKind(
+  list: Pick<List, 'kind' | 'view' | 'counters'>,
+  items?: readonly Pick<Item, 'kind'>[],
+): ItemKind {
+  if (list.kind === 'inbox') return 'note'
+  const totals = items ? kindTotals(items) : list.counters.kinds
+  let best: ChoosableKind = list.view === 'agenda' ? 'event' : 'task'
+  let most = 0
+  for (const kind of PROPOSED_ORDER) {
+    if (totals[kind] > most) {
+      best = kind
+      most = totals[kind]
+    }
+  }
+  return best
+}
+
 /**
  * La marca del tipo en una fila que no tiene otra cosa que enseñar debajo del título (diseño 12,
- * T1): «Compra» en «Trabajo». Solo sale si el ítem no es del tipo por defecto de su lista: en una
+ * T1): «Compra» en «Trabajo». Solo sale si el ítem no es del tipo que propone su lista: en una
  * lista de un solo tipo, nada nuevo.
  */
-export function kindMark(kind: ItemKind, listKind: ListKind): string | null {
-  if (!isChoosableKind(kind) || kind === defaultItemKind(listKind)) return null
+export function kindMark(kind: ItemKind, proposed: ItemKind): string | null {
+  if (!isChoosableKind(kind) || kind === proposed) return null
   return KIND_LABELS[kind]
 }
 

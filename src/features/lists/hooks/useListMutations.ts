@@ -191,9 +191,7 @@ export function useUpdateList() {
     onSuccess: (_result, { list, values }) => {
       const patch = (lists: List[] | undefined) =>
         lists?.map((item) =>
-          item.id === list.id
-            ? { ...item, name: values.name.trim(), color: values.color, kind: values.kind }
-            : item,
+          item.id === list.id ? { ...item, name: values.name.trim(), color: values.color } : item,
         )
       queryClient.setQueryData<List[]>(queryKeys.lists.all, patch)
       queryClient.setQueryData<List[]>(queryKeys.lists.archived, patch)

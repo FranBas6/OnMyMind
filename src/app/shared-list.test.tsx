@@ -43,8 +43,15 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     color: 'blue',
     icon: null,
     kind: 'shopping',
+    view: 'list',
     position: 2000,
-    counters: { pending: 2, done: 1, pendingPriceCents: 0 },
+    counters: {
+      pending: 2,
+      done: 1,
+      pendingPriceCents: 0,
+      notes: 0,
+      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    },
     archivedAt: null,
     isOwner: true,
     ...overrides,
@@ -195,7 +202,8 @@ describe('una lista compartida en el día a día (3.3, diseño 20)', () => {
       },
     })
 
-    expect(await screen.findByText('2 pendientes · 1 comprada · con Marta')).toBeInTheDocument()
+    // Textos comunes (5.3): «hecha» también en una lista de compras.
+    expect(await screen.findByText('2 pendientes · 1 hecha · con Marta')).toBeInTheDocument()
     const rows = screen.getByRole('list', { name: 'Ítems' })
     const row = (title: string) =>
       within(rows).getByRole('button', { name: title }).closest('li') as HTMLElement

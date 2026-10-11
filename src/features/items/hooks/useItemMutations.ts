@@ -103,7 +103,11 @@ interface OptimisticChange {
 function countsDelta(before: readonly Item[], after: readonly Item[]): Counts {
   const was = countItems(before)
   const is = countItems(after)
-  return { pending: is.pending - was.pending, done: is.done - was.done }
+  return {
+    pending: is.pending - was.pending,
+    done: is.done - was.done,
+    notes: is.notes - was.notes,
+  }
 }
 
 /**
@@ -158,6 +162,7 @@ async function applyOptimistic(
             ...list.counters,
             pending: list.counters.pending + delta.pending,
             done: list.counters.done + delta.done,
+            notes: list.counters.notes + delta.notes,
           },
         }
       }),
@@ -196,18 +201,27 @@ function settle(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.reminders })
 }
 
-/** Cuánto suma un ítem a los contadores: un pendiente o un hecho. */
-function counted(status: ItemStatus): Counts {
-  return isFinalStatus(status) ? { pending: 0, done: 1 } : { pending: 1, done: 0 }
+/** Cuánto suma un ítem a los contadores: un pendiente, un hecho o una nota (5.3). */
+function counted({ kind, status }: Pick<Item, 'kind' | 'status'>): Counts {
+  if (isFinalStatus(status)) return { pending: 0, done: 1, notes: 0 }
+  return kind === 'note' ? { pending: 0, done: 0, notes: 1 } : { pending: 1, done: 0, notes: 0 }
 }
 
-const negate = ({ pending, done }: Counts): Counts => ({ pending: -pending, done: -done })
+const negate = ({ pending, done, notes }: Counts): Counts => ({
+  pending: -pending,
+  done: -done,
+  notes: -notes,
+})
+
+const subtract = (after: Counts, before: Counts): Counts => ({
+  pending: after.pending - before.pending,
+  done: after.done - before.done,
+  notes: after.notes - before.notes,
+})
 
 /** Diferencia en los contadores al pasar de un estado a otro (cero si los dos cuentan igual). */
-function statusDelta(from: ItemStatus, to: ItemStatus): Counts {
-  const before = counted(from)
-  const after = counted(to)
-  return { pending: after.pending - before.pending, done: after.done - before.done }
+function statusDelta(kind: Item['kind'], from: ItemStatus, to: ItemStatus): Counts {
+  return subtract(counted({ kind, status: to }), counted({ kind, status: from }))
 }
 
 /** Posición de un ítem nuevo: al final de la lista (la mayor + 1000, como las listas). */
@@ -281,9 +295,11 @@ function patchItem(item: Item, patch: CachePatch): Item {
  * pasa a contar como hecha, igual que en la vista `list_counters`.
  */
 function itemDelta(before: Item, after: Item): Counts {
-  const was = isOutOfMind(before) ? 1 : 0
-  const is = isOutOfMind(after) ? 1 : 0
-  return { pending: was - is, done: is - was }
+  const tally = (item: Item): Counts =>
+    isOutOfMind(item)
+      ? { pending: 0, done: 1, notes: 0 }
+      : counted({ kind: item.kind, status: 'pending' })
+  return subtract(tally(after), tally(before))
 }
 
 /** El ítem tal como se verá al añadirlo, antes de que conteste el servidor. */
@@ -345,7 +361,7 @@ const createItemMutation = durableMutation(itemMutationKey('create'), (queryClie
           itemFromNew(item, item.position ?? nextItemPosition(items)),
         ],
       },
-      counters: { [item.listId]: counted(item.status) },
+      counters: { [item.listId]: counted(item) },
     }),
   onError: (error, item, snapshot) => {
     rollback(
@@ -388,7 +404,7 @@ const setItemStatusMutation = durableMutation(itemMutationKey('status'), (queryC
     return applyOptimistic(queryClient, {
       items: { [item.listId]: (items) => patchIn(items, item.id, { status }) },
       mixed: (items) => patchIn(items, item.id, { status }),
-      counters: { [item.listId]: statusDelta(item.status, status) },
+      counters: { [item.listId]: statusDelta(item.kind, item.status, status) },
     })
   },
   onError: (error, _variables, snapshot) => {
@@ -484,6 +500,7 @@ const updateItemMutation = durableMutation(itemMutationKey('update'), (queryClie
                 ...list.counters,
                 pending: list.counters.pending + delta.pending,
                 done: list.counters.done + delta.done,
+                notes: list.counters.notes + delta.notes,
               },
             }
           : list,
@@ -618,9 +635,7 @@ const moveItemMutation = durableMutation(itemMutationKey('move'), (queryClient) 
       mixed: (items) => items.map(follow),
       moved: movedChanges,
       counters:
-        from.id === to.id
-          ? {}
-          : { [from.id]: negate(counted(item.status)), [to.id]: counted(patch.status) },
+        from.id === to.id ? {} : { [from.id]: negate(counted(item)), [to.id]: counted(patch) },
     })
   },
   onError: (error, { to }, snapshot) => {
@@ -668,14 +683,15 @@ export function useReorderItems() {
  */
 const deleteItemMutation = durableMutation(itemMutationKey('delete'), (queryClient) => ({
   ...OFFLINE_TOLERANT,
-  mutationFn: (item: Pick<Item, 'id' | 'listId' | 'status' | 'title'>) => deleteItem(item.id),
+  mutationFn: (item: Pick<Item, 'id' | 'listId' | 'kind' | 'status' | 'title'>) =>
+    deleteItem(item.id),
   onMutate: (item) => {
     // Borrar una sublista borra lo de dentro (`on delete cascade`).
     const gone = (entry: Item) => entry.id === item.id || entry.parentId === item.id
     return applyOptimistic(queryClient, {
       items: { [item.listId]: (items) => items.filter((entry) => !gone(entry)) },
       mixed: (items) => items.filter((entry) => !gone(entry)),
-      counters: { [item.listId]: negate(counted(item.status)) },
+      counters: { [item.listId]: negate(counted(item)) },
     })
   },
   onError: (error, item, snapshot) => {
