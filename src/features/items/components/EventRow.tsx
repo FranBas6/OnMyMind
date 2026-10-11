@@ -18,7 +18,7 @@ import type { Item } from '../types'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { ItemRowDotsMenu } from './ItemRowMenu'
 import { RowThumb } from './RowMedia'
-import { RowTitle } from './RowTitle'
+import { RowNotes, RowTitle } from './RowTitle'
 import { SwipeableRow } from './SwipeableRow'
 
 const META = 'flex items-center gap-1 text-xs font-semibold whitespace-nowrap md:text-[13px]'
@@ -149,6 +149,7 @@ export function EventRow({ item, byMonth = false }: { item: Item; byMonth?: bool
             cancelled && 'line-through',
           )}
         />
+        <RowNotes notes={item.notes} />
         {meta.length > 0 && <div className="mt-1 flex items-center gap-2.5">{meta}</div>}
       </div>
       {actions.isDesktop && <ItemRowDotsMenu item={item} />}

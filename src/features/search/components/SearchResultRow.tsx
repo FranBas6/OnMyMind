@@ -5,6 +5,7 @@ import {
   ItemControl,
   LinkMeta,
   RowPrice,
+  RowNotes,
   RowThumb,
   RowTitle,
   rowHighlight,
@@ -59,10 +60,13 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
           <RowTitle item={item} className={cn(done && 'text-subtle-foreground line-through')}>
             <Highlight text={item.title} ranges={titleRanges} />
           </RowTitle>
-          {snippet && (
+          {/* Si el término está en las notas, ese trozo resaltado; si no, su principio. */}
+          {snippet ? (
             <p className="mt-1 truncate text-[13px] leading-[1.4] text-muted-foreground md:mt-[3px]">
               <Highlight text={snippet.text} ranges={snippet.ranges} />
             </p>
+          ) : (
+            <RowNotes notes={item.notes} />
           )}
         </div>
         <p className="mt-[5px] flex min-w-0 flex-wrap items-center gap-x-2 text-xs font-semibold text-muted-foreground md:mt-0 md:text-[13px] md:whitespace-nowrap">
@@ -108,6 +112,7 @@ function SublistResultRow({ result }: { result: SearchResult }) {
         >
           <Highlight text={item.title} ranges={titleRanges} />
         </RowTitle>
+        <RowNotes notes={item.notes} />
         <p className="mt-[5px] text-xs font-semibold text-muted-foreground md:text-[13px]">
           Sublista · {sublistMeta(item, children)}
         </p>

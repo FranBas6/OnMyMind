@@ -23,7 +23,7 @@ import { itemPrice } from '../prices'
 import { PriorityChip } from './PriorityChip'
 import { hasThumb } from '../photos'
 import { LinkMeta, RowPrice, RowThumb } from './RowMedia'
-import { RowTitle } from './RowTitle'
+import { RowNotes, RowTitle } from './RowTitle'
 import { SwipeableRow } from './SwipeableRow'
 
 const META = 'text-xs font-semibold whitespace-nowrap text-muted-foreground md:text-[13px]'
@@ -156,6 +156,7 @@ export function TaskRow({ item }: { item: Item }) {
             item={item}
             className={cn((liveDone || justDone) && 'text-subtle-foreground line-through')}
           />
+          {!quiet && <RowNotes notes={item.notes} />}
           {(link ?? author) && (
             <p className="mt-0.5 hidden items-center gap-1.5 md:flex">
               {author}

@@ -8,7 +8,7 @@ import type { Item } from '../types'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { hasThumb } from '../photos'
 import { LinkMeta, RowThumb } from './RowMedia'
-import { RowTitle } from './RowTitle'
+import { RowNotes, RowTitle } from './RowTitle'
 import { StatusCheckbox } from './StatusCheckbox'
 import { SwipeableRow } from './SwipeableRow'
 
@@ -47,6 +47,7 @@ export function InboxRow({ item }: { item: Item }) {
       <div className="min-w-0 flex-1 md:contents">
         <div className="min-w-0">
           <RowTitle item={item} />
+          <RowNotes notes={item.notes} />
           {link && (
             <p className="mt-0.5 hidden text-[13px] font-semibold text-muted-foreground md:flex">
               {link}

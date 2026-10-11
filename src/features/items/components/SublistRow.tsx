@@ -7,7 +7,7 @@ import { childrenOf, sublistMeta } from '../sublists'
 import type { Item } from '../types'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { ItemRowDotsMenu } from './ItemRowMenu'
-import { RowTitle } from './RowTitle'
+import { RowNotes, RowTitle } from './RowTitle'
 import { SublistIcon } from './SublistIcon'
 import { SwipeableRow } from './SwipeableRow'
 
@@ -50,6 +50,7 @@ export function SublistRow({ item, done = false }: { item: Item; done?: boolean 
             paused && 'text-muted-foreground',
           )}
         />
+        {!done && <RowNotes notes={item.notes} />}
         <p
           className={cn(
             'mt-[5px] text-xs font-semibold md:text-[13px]',
