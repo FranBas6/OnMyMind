@@ -12,6 +12,8 @@ function compra(overrides: Partial<Item> = {}): Item {
     listId: 'l',
     kind: 'shopping',
     parentId: null,
+    chooseOne: false,
+    chosenId: null,
     title: 'Algo',
     notes: null,
     status: 'pending',

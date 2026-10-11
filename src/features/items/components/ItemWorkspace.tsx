@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Copy, Trash2 } from 'lucide-react'
+import { Check, Copy, Trash2 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -9,6 +9,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { queryKeys } from '@/lib/queryKeys'
 import { showUndoToast } from '@/lib/undoToast'
 
+import { chosenLabel, isChoosing } from '../chooseOne'
 import {
   useDeleteItem,
   useInsertItems,
@@ -165,6 +166,30 @@ export function ItemWorkspace({
     else deleteNow(item, inside)
   }
 
+  /** La sublista «para elegir una» en la que se elige este ítem, si la hay. */
+  const choosingSublist = (item: Item) => {
+    if (item.parentId === null) return undefined
+    const parent = listItems(item).find((entry) => entry.id === item.parentId)
+    return parent && isChoosing(parent) ? parent : undefined
+  }
+
+  // «Elegir esta» (diseño 24, A4) marca la preferida, y en la elegida, «Quitar elección». No
+  // cambia ningún estado ni cierra la sublista (Fran, 2026-10-11). «Deshacer» vuelve a la de antes.
+  const choose = (option: Item) => {
+    const sublist = choosingSublist(option)
+    if (!sublist) return
+    const previous = sublist.chosenId
+    const chosenId = previous === option.id ? null : option.id
+    updateItem.mutate({ item: sublist, patch: { chosenId } })
+    showUndoToast({
+      icon: Check,
+      message: chosenId ? chosenLabel(option) : 'Elección quitada',
+      onUndo: () => {
+        updateItem.mutate({ item: { ...sublist, chosenId }, patch: { chosenId: previous } })
+      },
+    })
+  }
+
   const duplicate = (item: Item) => {
     const all = listItems(item)
     const copies = duplicateSublist(item, childrenOf(all, item.id), {
@@ -212,6 +237,10 @@ export function ItemWorkspace({
     duplicate,
     rename: (item) => {
       onOpenSublist?.(item, { rename: true })
+    },
+    choose,
+    setChooseOne: (sublist, chooseOne) => {
+      updateItem.mutate({ item: sublist, patch: { chooseOne } })
     },
     swipeOpenId,
     setSwipeOpenId,

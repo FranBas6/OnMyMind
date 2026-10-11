@@ -15,6 +15,7 @@ import { kindMark } from '../kind'
 import { recurrenceLabel } from '../recurrence'
 import { useRepeatMark } from '../repeatMarks'
 import type { Item } from '../types'
+import { useOptionMark } from './choiceContext'
 import { DateChip } from './DateChip'
 import { ItemControl } from './ItemControl'
 import { rowHighlight, useItemActions } from './itemActionsContext'
@@ -23,6 +24,7 @@ import { itemPrice } from '../prices'
 import { PriorityChip } from './PriorityChip'
 import { hasThumb } from '../photos'
 import { LinkMeta, RowPrice, RowThumb } from './RowMedia'
+import { OptionAside } from './OptionAside'
 import { RowNotes, RowTitle } from './RowTitle'
 import { SwipeableRow } from './SwipeableRow'
 
@@ -76,6 +78,9 @@ export function TaskRow({ item }: { item: Item }) {
   // delante de ti; después, el borde índigo apagándose (B10).
   const repeatMark = useRepeatMark(item.id)
   const justDone = repeatMark?.phase === 'done' ? repeatMark : null
+  // Una opción de una sublista «para elegir una» (5.1, diseño 24): «Elegida», «Más barata»,
+  // «+50,99 €»… a la derecha.
+  const option = useOptionMark(item)
   const mark =
     priority === null && dueAt === null && eventDate === null
       ? kindMark(item.kind, list.kind)
@@ -205,8 +210,12 @@ export function TaskRow({ item }: { item: Item }) {
           </>
         )}
       </div>
-      <RowPrice item={item} className={cn('md:w-full', liveDone && 'text-subtle-foreground')} />
-      {actions.prices && !itemPrice(item) && <span className="hidden md:block" />}
+      {option ? (
+        <OptionAside item={item} mark={option} className="md:w-full" />
+      ) : (
+        <RowPrice item={item} className={cn('md:w-full', liveDone && 'text-subtle-foreground')} />
+      )}
+      {actions.prices && !option && !itemPrice(item) && <span className="hidden md:block" />}
       {isDesktop && <ItemRowDotsMenu item={item} />}
     </SwipeableRow>
   )

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronLeft } from 'lucide-react'
+import { Check, ChevronLeft, CircleDot } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import type { List } from '@/features/lists'
@@ -20,6 +20,11 @@ interface SublistHeaderProps {
   onRename: (title: string) => void
   /** El total de sus compras pendientes, a la derecha del nombre (diseño 16, A3). */
   total?: ReactNode
+  /**
+   * En una «para elegir una» (diseño 24, A2 y A4b), en vez del total, una línea debajo con lo que
+   * cuenta en su lista («Cuenta en Compras · 199 €») o lo que se pagó («Pagaste · 199 €»).
+   */
+  counts?: { label: string; amount: string } | null
 }
 
 /**
@@ -35,9 +40,16 @@ export function SublistHeader({
   renameKey,
   onRename,
   total,
+  counts,
 }: SublistHeaderProps) {
   const actions = useItemActions()
   const menuLabel = `Opciones de «${sublist.title}»`
+  // «Para elegir una»: el círculo con punto delante de «2 opciones · desde 199 €»; hecha, el check.
+  const SummaryIcon = sublist.chooseOne
+    ? sublist.status === 'done' && sublist.chosenId
+      ? Check
+      : CircleDot
+    : null
 
   return (
     <header className="flex flex-col gap-3">
@@ -85,12 +97,26 @@ export function SublistHeader({
                 className="text-[28px] leading-[1.1] tracking-[-0.03em] md:text-[32px]"
               />
             </h1>
-            <p className="mt-0.5 text-[13px] text-muted-foreground md:text-sm">{summary}</p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted-foreground md:text-sm">
+              {SummaryIcon && (
+                <SummaryIcon aria-hidden className="size-3.5 shrink-0" strokeWidth={2.4} />
+              )}
+              <span className="min-w-0">{summary}</span>
+            </p>
           </div>
         </div>
         {total}
         {actions.isDesktop && <ItemRowDotsMenu item={sublist} variant="header" />}
       </div>
+
+      {counts && (
+        <p className="flex items-baseline justify-between gap-3 px-1">
+          <span className="text-[15px] text-muted-foreground">{counts.label}</span>
+          <span className="font-display text-xl font-extrabold tracking-[-0.02em] whitespace-nowrap">
+            {counts.amount}
+          </span>
+        </p>
+      )}
     </header>
   )
 }

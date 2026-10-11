@@ -41,6 +41,7 @@ describe('acciones de una sublista (diseño 12, S4)', () => {
       'Marcar pendiente',
       'Pausar',
       'Hecha',
+      'Elegir una',
       'Renombrar',
       'Duplicar',
       'Mover a…',
@@ -56,10 +57,53 @@ describe('acciones de una sublista (diseño 12, S4)', () => {
       { label: 'Reanudar', status: 'in_progress' },
       { label: 'Hecha', status: 'done' },
     ])
-    expect(labels('sublist', 'done').slice(0, 2)).toEqual(['Marcar pendiente', 'Renombrar'])
+    expect(labels('sublist', 'done').slice(0, 3)).toEqual([
+      'Marcar pendiente',
+      'Elegir una',
+      'Renombrar',
+    ])
   })
 
   it('pendiente se pone en curso, como una tarea', () => {
     expect(labels('sublist', 'pending').slice(0, 3)).toEqual(['Marcar en curso', 'Pausar', 'Hecha'])
+  })
+})
+
+describe('elegir una (5.1, diseño 24)', () => {
+  const option = { note: 'Pasa a contar en el total.', chosen: false }
+
+  it('la sublista se pone «para elegir una» y se quita (A1)', () => {
+    expect(rowActions('sublist', 'pending').find((a) => a.id === 'chooseOne')).toMatchObject({
+      label: 'Elegir una',
+      hint: 'cuenta la más barata',
+    })
+    expect(
+      rowActions('sublist', 'pending', { chooseOne: true }).find((a) => a.id === 'chooseOne'),
+    ).toMatchObject({ label: 'Dejar de elegir una', hint: 'vuelve a sumar todo' })
+  })
+
+  it('una opción se elige arriba del todo, y se sigue pudiendo comprar como siempre (A4)', () => {
+    expect(labels('shopping', 'pending', { option })).toEqual([
+      'Elegir esta',
+      'Comprado',
+      'Mover a…',
+      'Borrar',
+    ])
+    expect(rowActions('shopping', 'pending', { option })[0]).toMatchObject({
+      highlight: { note: 'Pasa a contar en el total.' },
+    })
+    expect(labels('task', 'pending', { option })).toEqual([
+      'Elegir esta',
+      'Marcar en curso',
+      'Hecha',
+      'Mover a…',
+      'Borrar',
+    ])
+  })
+
+  it('en la elegida, «Quitar elección»', () => {
+    expect(labels('shopping', 'pending', { option: { ...option, chosen: true } })[0]).toBe(
+      'Quitar elección',
+    )
   })
 })

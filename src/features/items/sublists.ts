@@ -1,3 +1,4 @@
+import { chosenLabel, chosenOption, chosenSummary, isChoosing, optionsMeta } from './chooseOne'
 import { ITEM_TITLE_MAX_LENGTH } from './schemas'
 import { initialStatus, isActiveSublistStatus, isOutOfMind, STATUS_LABELS } from './status'
 import { withLinks } from './stores'
@@ -12,23 +13,25 @@ export interface Counts {
 /**
  * Lo que cuentan los ítems de una lista, con las mismas reglas que la vista `list_counters`
  * (ADR-010): la sublista en sí no cuenta (es un contenedor), lo de dentro de una sublista activa
- * cuenta como cualquier ítem, y lo de dentro de una pausada o hecha se calla. Con esto se calculan
- * los cambios optimistas de los contadores de Inicio y el sidebar.
+ * cuenta como cualquier ítem, y lo de dentro de una pausada o hecha se calla. Las opciones
+ * pendientes de una «para elegir una» (5.1) cuentan como una sola cosa: solo se va a hacer una.
+ * Con esto se calculan los cambios optimistas de los contadores de Inicio y el sidebar.
  */
 export function countItems(items: readonly Item[], now: Date = new Date()): Counts {
   const parents = new Map(
-    items.filter((item) => item.kind === 'sublist').map((item) => [item.id, item.status]),
+    items.filter((item) => item.kind === 'sublist').map((item) => [item.id, item]),
   )
   const counts: Counts = { pending: 0, done: 0 }
+  const choosing = new Set<string>()
   for (const item of items) {
     if (item.kind === 'sublist') continue
-    if (item.parentId !== null) {
-      const status = parents.get(item.parentId)
-      if (status !== undefined && !isActiveSublistStatus(status)) continue
-    }
+    const parent = item.parentId === null ? undefined : parents.get(item.parentId)
+    if (parent && !isActiveSublistStatus(parent.status)) continue
     if (isOutOfMind(item, now)) counts.done += 1
+    else if (parent && isChoosing(parent)) choosing.add(parent.id)
     else counts.pending += 1
   }
+  counts.pending += choosing.size
   return counts
 }
 
@@ -48,6 +51,16 @@ export function countChildren(children: readonly Item[], now: Date = new Date())
   return { pending: children.length - done, done }
 }
 
+/** Lo que miran la meta y el resumen de una sublista: su estado y si es «para elegir una». */
+type SublistState = Pick<Item, 'status'> & Partial<Pick<Item, 'kind' | 'chooseOne' | 'chosenId'>>
+
+const choiceOf = (sublist: SublistState) => ({
+  kind: sublist.kind ?? 'sublist',
+  status: sublist.status,
+  chooseOne: sublist.chooseOne ?? false,
+  chosenId: sublist.chosenId ?? null,
+})
+
 const plural = (count: number, one: string, other: string) =>
   `${count} ${count === 1 ? one : other}`
 
@@ -56,7 +69,13 @@ const plural = (count: number, one: string, other: string) =>
  * Pausada», «7 cosas» si ya no queda nada pendiente, «Vacía» si no tiene nada y, hecha, «Hecha · 6
  * dentro». Pendiente no se dice: es lo normal.
  */
-export function sublistMeta(sublist: Pick<Item, 'status'>, children: readonly Item[]): string {
+export function sublistMeta(sublist: SublistState, children: readonly Item[]): string {
+  // «Para elegir una» (5.1, diseño 24): «2 opciones · desde 199 €» y, hecha, «Elegida Logitech G29».
+  const chosen = chosenOption(choiceOf(sublist), children)
+  if (chosen && sublist.status === 'done') return chosenLabel(chosen)
+  const options = isChoosing(choiceOf(sublist)) ? optionsMeta(choiceOf(sublist), children) : null
+  if (options)
+    return sublist.status === 'pending' ? options : `${options} · ${STATUS_LABELS[sublist.status]}`
   const { pending } = countChildren(children)
   if (sublist.status === 'done') {
     return children.length > 0 ? `Hecha · ${children.length} dentro` : 'Hecha'
@@ -75,11 +94,17 @@ export function sublistMeta(sublist: Pick<Item, 'status'>, children: readonly It
  * curso», o «Sublista de Viajes» si aún está vacía.
  */
 export function sublistSummary(
-  sublist: Pick<Item, 'status'>,
+  sublist: SublistState,
   children: readonly Item[],
   listName: string,
 ): string {
   if (children.length === 0) return `Sublista de ${listName}`
+  // «Para elegir una» (diseño 24, A2 y A4b): «2 opciones · desde 199 €», «Hecha · elegida G29».
+  const chosen = chosenOption(choiceOf(sublist), children)
+  if (chosen && sublist.status === 'done') return chosenSummary(chosen)
+  const options = isChoosing(choiceOf(sublist)) ? optionsMeta(choiceOf(sublist), children) : null
+  if (options)
+    return sublist.status === 'pending' ? options : `${options} · ${STATUS_LABELS[sublist.status]}`
   const { pending, done } = countChildren(children)
   const parts = [plural(pending, 'pendiente', 'pendientes')]
   if (done > 0) parts.push(plural(done, 'hecha', 'hechas'))
@@ -157,7 +182,13 @@ export function duplicateSublist(
       now,
     )
   }
-  const copy = fresh(sublist, { title: copyTitle(sublist.title), position, parentId: null })
+  // «Para elegir una» se copia, sin la elección (5.1).
+  const copy = fresh(sublist, {
+    title: copyTitle(sublist.title),
+    position,
+    parentId: null,
+    chosenId: null,
+  })
   return [copy, ...children.map((child) => fresh(child, { parentId: copy.id }))]
 }
 

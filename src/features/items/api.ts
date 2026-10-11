@@ -163,6 +163,8 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
   }
   if (patch.status !== undefined) row.status = patch.status
   if (patch.kind !== undefined) row.kind = patch.kind
+  if (patch.chooseOne !== undefined) row.choose_one = patch.chooseOne
+  if (patch.chosenId !== undefined) row.chosen_id = patch.chosenId
   if (patch.url !== undefined) row.url = patch.url
   if (patch.urlTitle !== undefined) row.url_title = patch.urlTitle
   if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl
@@ -261,6 +263,9 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
       created_by: createdBy,
       kind: item.kind,
       parent_id: item.parentId,
+      // Una sublista elegida vuelve con su elegida, que llega en el mismo `insert`.
+      choose_one: item.chooseOne,
+      chosen_id: item.chosenId,
       title: item.title,
       notes: item.notes,
       status: item.status,

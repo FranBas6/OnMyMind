@@ -9,9 +9,11 @@ import { useUpdateSettings } from '@/features/profile/hooks/useProfileMutations'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useOnline } from '@/hooks/useOnline'
 import { dropNeighbors, reorder, stepNeighbors, type Neighbors } from '@/lib/reorder'
+import { formatCents } from '@/lib/money'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 
+import { choicePrice, isChoosing, openOptions, optionMarks } from '../chooseOne'
 import { addPlaceholder } from '../copy'
 import {
   AGE_FILTER_OPTIONS,
@@ -45,6 +47,7 @@ import { hasPrices, pendingTotals } from '../prices'
 import { childrenOf, sublistSummary, topLevel } from '../sublists'
 import type { Item, MovedItem } from '../types'
 import { AddItemBar, type AddItemBarHandle } from './AddItemBar'
+import { ChoiceContext, type Choice } from './choiceContext'
 import { EventsList } from './EventsList'
 import { FilterChips } from './FilterChips'
 import { InboxSortMenu } from './InboxSortMenu'
@@ -116,7 +119,7 @@ export function ListDetail({
   const online = useOnline()
   const { lingering, hold } = useLingering(LINGER_MS)
   const listOf = () => list
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [pickedFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [eventFilter, setEventFilter] = useState<EventFilter>('all')
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('all')
   const profile = useProfile()
@@ -131,6 +134,12 @@ export function ListDetail({
   const all = items.data
   // Lo de dentro de una sublista sale en su pantalla, no suelto en la lista (ADR-010).
   const shown = all && (sublist ? childrenOf(all, sublist.id) : topLevel(all))
+  // Una sublista «para elegir una» (5.1, diseño 24): sus opciones dicen cuál es la elegida y cuál la
+  // más barata. Sin filtros: se ve todo lo que se compara (A2).
+  const chooseOne = sublist?.chooseOne ?? false
+  const choice: Choice | null =
+    sublist && chooseOne ? { sublist, marks: optionMarks(sublist, shown ?? []) } : null
+  const statusFilter = chooseOne ? 'all' : pickedFilter
   // Lo que termina otra persona en directo se queda un momento, como lo tuyo (diseño 20, M8).
   const staying = useWithCompletedLive(lingering)
   const { active, outOfMind } = splitItems(shown ?? [], list.kind, { lingering: staying, sort })
@@ -183,8 +192,14 @@ export function ListDetail({
             if (neighbors) place(item.id, neighbors)
           },
         }
-  // Con los ítems ya cargados, el total sigue a lo optimista; mientras, el de la vista.
-  const total = !inbox && (
+  // Con los ítems ya cargados, el total sigue a lo optimista; mientras, el de la vista. Una sublista
+  // «para elegir una» lo dice en una línea bajo su cabecera (A2, A4b).
+  const price = sublist && chooseOne && shown ? choicePrice(sublist, shown) : null
+  const counts = price && {
+    label: price.paid ? 'Pagaste' : `Cuenta en ${list.name}`,
+    amount: formatCents(price.cents, price.currency),
+  }
+  const total = !inbox && !chooseOne && (
     <PriceTotal
       totals={
         all && shown
@@ -251,13 +266,19 @@ export function ListDetail({
     })
   }
 
-  const showFilters = all !== undefined && (inbox ? active.length > 0 : !empty)
+  const showFilters = all !== undefined && !chooseOne && (inbox ? active.length > 0 : !empty)
   const addBar = (all ?? notDownloaded) && (
     <AddItemBar
       key={sublist?.id ?? list.id}
       handle={addBarRef}
       variant={isDesktop ? 'inline' : 'docked'}
-      placeholder={sublist ? `Añadir a ${sublist.title}…` : addPlaceholder(list, empty)}
+      placeholder={
+        sublist
+          ? isChoosing(sublist)
+            ? `Añadir una opción a ${sublist.title}…`
+            : `Añadir a ${sublist.title}…`
+          : addPlaceholder(list, empty)
+      }
       autoFocus={empty && renameKey === undefined}
       onAdd={add}
       onAddMany={addMany}
@@ -270,131 +291,139 @@ export function ListDetail({
   )
 
   return (
-    <ItemWorkspace
-      items={all}
-      listOf={listOf}
-      openItemId={openItemId}
-      onOpenItem={onOpenItem}
-      onFinish={hold}
-      onOpenSublist={(item, options) => {
-        onOpenSublist(item.id, options)
-      }}
-      order={order}
-    >
-      <ListScope list={list} prices={hasPrices(shown ?? [])}>
-        <div
-          className={cn(
-            'flex flex-1 flex-col md:min-h-[calc(100dvh-4.5rem)] md:gap-[22px]',
-            inbox ? 'gap-2' : 'gap-4',
-          )}
-        >
-          {inbox ? (
-            <InboxHeader inbox={list} summary={summary} />
-          ) : sublist ? (
-            <SublistHeader
-              sublist={sublist}
-              list={list}
-              summary={summary}
-              total={total}
-              renameKey={renameKey}
-              onRename={(title) => {
-                updateItem.mutate({ item: sublist, patch: { title } })
-              }}
-            />
-          ) : (
-            <ListDetailHeader
-              list={list}
-              summary={summary}
-              total={total}
-              onNewSublist={() => {
-                // Después de que el menú se cierre y devuelva el foco a su botón.
-                window.setTimeout(() => {
-                  addBarRef.current?.startWith('sublist')
-                }, 350)
-              }}
-            />
-          )}
-
-          {showFilters && (
-            <div className="flex items-center justify-between gap-3">
-              {inbox ? (
-                <FilterChips
-                  label="Filtrar por antigüedad"
-                  options={AGE_FILTER_OPTIONS}
-                  value={ageFilter}
-                  onChange={setAgeFilter}
-                />
-              ) : events ? (
-                <FilterChips
-                  label="Filtrar eventos"
-                  options={EVENT_FILTER_OPTIONS}
-                  value={eventFilter}
-                  onChange={setEventFilter}
-                />
-              ) : (
-                <FilterChips
-                  label="Filtrar por estado"
-                  options={statusFilterOptions(list.kind)}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                />
-              )}
-              {inbox && (
-                <InboxSortMenu
-                  value={sort}
-                  onChange={(next) => {
-                    updateSettings.mutate({ inboxSort: next })
-                  }}
-                />
-              )}
-            </div>
-          )}
-
-          {isDesktop && addBar}
-
-          {notDownloaded && <NotDownloadedEmpty />}
-          {items.isError && (
-            <p role="alert" className="px-1 text-[15px] text-muted-foreground">
-              No hemos podido cargar esta lista. Prueba otra vez en un momento.
-            </p>
-          )}
-
-          {all &&
-            (inbox ? (
-              <InboxContent
-                active={active.filter((item) => matchesAge(item, ageFilter))}
-                hasPending={active.length > 0}
-                ageFilter={ageFilter}
-                outOfMind={outOfMind}
-                moved={movedQuery.data ?? []}
-                empty={empty}
-                isDesktop={isDesktop}
-              />
-            ) : events && !(sublist && empty) ? (
-              <EventsList
-                active={active}
-                outOfMind={outOfMind}
-                all={shown ?? []}
-                filter={eventFilter}
-                empty={empty}
-                isDesktop={isDesktop}
+    <ChoiceContext value={choice}>
+      <ItemWorkspace
+        items={all}
+        listOf={listOf}
+        openItemId={openItemId}
+        onOpenItem={onOpenItem}
+        onFinish={hold}
+        onOpenSublist={(item, options) => {
+          onOpenSublist(item.id, options)
+        }}
+        order={order}
+      >
+        <ListScope list={list} prices={hasPrices(shown ?? []) || (choice?.marks.size ?? 0) > 0}>
+          <div
+            className={cn(
+              'flex flex-1 flex-col md:min-h-[calc(100dvh-4.5rem)] md:gap-[22px]',
+              inbox ? 'gap-2' : 'gap-4',
+            )}
+          >
+            {inbox ? (
+              <InboxHeader inbox={list} summary={summary} />
+            ) : sublist ? (
+              <SublistHeader
+                sublist={sublist}
+                list={list}
+                summary={summary}
+                total={total}
+                counts={counts}
+                renameKey={renameKey}
+                onRename={(title) => {
+                  updateItem.mutate({ item: sublist, patch: { title } })
+                }}
               />
             ) : (
-              <ListContent
+              <ListDetailHeader
                 list={list}
-                sublist={sublist}
-                active={active}
-                outOfMind={outOfMind}
-                filter={statusFilter}
-                empty={empty}
-                isDesktop={isDesktop}
+                summary={summary}
+                total={total}
+                onNewSublist={() => {
+                  // Después de que el menú se cierre y devuelva el foco a su botón.
+                  window.setTimeout(() => {
+                    addBarRef.current?.startWith('sublist')
+                  }, 350)
+                }}
               />
-            ))}
+            )}
 
-          {!isDesktop && addBar}
-        </div>
-      </ListScope>
-    </ItemWorkspace>
+            {showFilters && (
+              <div className="flex items-center justify-between gap-3">
+                {inbox ? (
+                  <FilterChips
+                    label="Filtrar por antigüedad"
+                    options={AGE_FILTER_OPTIONS}
+                    value={ageFilter}
+                    onChange={setAgeFilter}
+                  />
+                ) : events ? (
+                  <FilterChips
+                    label="Filtrar eventos"
+                    options={EVENT_FILTER_OPTIONS}
+                    value={eventFilter}
+                    onChange={setEventFilter}
+                  />
+                ) : (
+                  <FilterChips
+                    label="Filtrar por estado"
+                    options={statusFilterOptions(list.kind)}
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                  />
+                )}
+                {inbox && (
+                  <InboxSortMenu
+                    value={sort}
+                    onChange={(next) => {
+                      updateSettings.mutate({ inboxSort: next })
+                    }}
+                  />
+                )}
+              </div>
+            )}
+
+            {isDesktop && addBar}
+
+            {notDownloaded && <NotDownloadedEmpty />}
+            {items.isError && (
+              <p role="alert" className="px-1 text-[15px] text-muted-foreground">
+                No hemos podido cargar esta lista. Prueba otra vez en un momento.
+              </p>
+            )}
+
+            {all &&
+              (inbox ? (
+                <InboxContent
+                  active={active.filter((item) => matchesAge(item, ageFilter))}
+                  hasPending={active.length > 0}
+                  ageFilter={ageFilter}
+                  outOfMind={outOfMind}
+                  moved={movedQuery.data ?? []}
+                  empty={empty}
+                  isDesktop={isDesktop}
+                />
+              ) : events && !(sublist && empty) ? (
+                <EventsList
+                  active={active}
+                  outOfMind={outOfMind}
+                  all={shown ?? []}
+                  filter={eventFilter}
+                  empty={empty}
+                  isDesktop={isDesktop}
+                />
+              ) : (
+                <ListContent
+                  list={list}
+                  sublist={sublist}
+                  active={active}
+                  outOfMind={outOfMind}
+                  filter={statusFilter}
+                  empty={empty}
+                  isDesktop={isDesktop}
+                  hint={
+                    sublist && isChoosing(sublist) && openOptions(shown ?? []).length === 1
+                      ? 'Añade otra opción para comparar.'
+                      : undefined
+                  }
+                />
+              ))}
+
+            {!isDesktop && addBar}
+          </div>
+        </ListScope>
+      </ItemWorkspace>
+    </ChoiceContext>
   )
 }
 
@@ -414,7 +443,14 @@ function ListContent({
   empty,
   isDesktop,
   sublist,
-}: ContentProps & { list: List; sublist: Item | undefined; filter: StatusFilter }) {
+  hint,
+}: ContentProps & {
+  list: List
+  sublist: Item | undefined
+  filter: StatusFilter
+  /** Una línea bajo las filas («Añade otra opción para comparar.», diseño 24, A8b). */
+  hint?: string | undefined
+}) {
   if (empty && sublist) return <SublistEmpty sublist={sublist} list={list} />
   if (empty) return <NewListEmpty list={list} isDesktop={isDesktop} />
 
@@ -429,6 +465,7 @@ function ListContent({
   return (
     <>
       {active.length > 0 ? <Rows items={active} /> : <AllDoneNote withHint={filter === 'all'} />}
+      {hint && <p className="px-1 text-[15px] text-muted-foreground">{hint}</p>}
       {filter === 'all' && outOfMind.length > 0 && (
         <OutOfMindSection items={outOfMind} defaultOpen />
       )}

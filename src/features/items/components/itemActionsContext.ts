@@ -33,6 +33,10 @@ export interface ItemActions {
   duplicate: (item: Item) => void
   /** Renombrar una sublista: se abre con el nombre listo para editar (su título es editable). */
   rename: (item: Item) => void
+  /** «Elegir esta» en una opción de una sublista «para elegir una» (5.1, diseño 24, A4). */
+  choose: (option: Item) => void
+  /** «Elegir una» y «Dejar de elegir una» en una sublista (A1). */
+  setChooseOne: (sublist: Item, chooseOne: boolean) => void
   /** La fila abierta a la izquierda al deslizar («Mover» y «Borrar»): solo una a la vez. */
   swipeOpenId: string | undefined
   setSwipeOpenId: (itemId: string | undefined) => void

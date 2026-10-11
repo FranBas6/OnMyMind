@@ -245,6 +245,10 @@ function patchItem(item: Item, patch: CachePatch): Item {
     next.completedBy = final && item.completedAt ? item.completedBy : null
   }
   if (patch.kind !== undefined) next.kind = patch.kind
+  if (patch.chooseOne !== undefined) next.chooseOne = patch.chooseOne
+  if (patch.chosenId !== undefined) next.chosenId = patch.chosenId
+  // Como `items_choice_before` (5.1): dejar de «elegir una» olvida la elegida.
+  if (!next.chooseOne) next.chosenId = null
   if (patch.url !== undefined) next.url = patch.url
   if (patch.urlTitle !== undefined) next.urlTitle = patch.urlTitle
   if (patch.imageUrl !== undefined) next.imageUrl = patch.imageUrl
@@ -290,6 +294,8 @@ export function itemFromNew(item: NewItem, position: number): Item {
     listId: item.listId,
     kind: item.kind,
     parentId: item.parentId ?? null,
+    chooseOne: false,
+    chosenId: null,
     title: item.title.trim(),
     notes: item.notes ?? null,
     status: item.status,
@@ -505,6 +511,11 @@ const updateItemMutation = durableMutation(itemMutationKey('update'), (queryClie
       }
       if (patch.status !== undefined) previous.status = before.status
       if (patch.kind !== undefined) previous.kind = before.kind
+      if (patch.chooseOne !== undefined) {
+        previous.chooseOne = before.chooseOne
+        previous.chosenId = before.chosenId
+      }
+      if (patch.chosenId !== undefined) previous.chosenId = before.chosenId
       if (patch.url !== undefined) previous.url = before.url
       if (patch.urlTitle !== undefined) previous.urlTitle = before.urlTitle
       if (patch.imageUrl !== undefined) previous.imageUrl = before.imageUrl

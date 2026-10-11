@@ -42,6 +42,8 @@ function evento(title: string, overrides: Partial<Item> = {}): Item {
     listId: 'agenda',
     kind: 'event',
     parentId: null,
+    chooseOne: false,
+    chosenId: null,
     title,
     notes: null,
     status: 'upcoming',

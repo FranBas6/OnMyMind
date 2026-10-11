@@ -5,6 +5,7 @@ import {
   Check,
   Circle,
   CircleCheck,
+  CircleDot,
   Contrast,
   Copy,
   Pause,
@@ -28,6 +29,7 @@ import { childrenOf, sublistMeta } from '../sublists'
 import { ItemControl } from './ItemControl'
 import { useItemActions } from './itemActionsContext'
 import { SublistIcon } from './SublistIcon'
+import { useRowActionsContext } from './choiceContext'
 
 const ICONS: Record<RowActionId, LucideIcon> = {
   progress: Contrast,
@@ -35,6 +37,8 @@ const ICONS: Record<RowActionId, LucideIcon> = {
   pause: Pause,
   resume: Play,
   finish: CircleCheck,
+  chooseOne: CircleDot,
+  choose: Check,
   rename: Pencil,
   duplicate: Copy,
   move: ArrowRightLeft,
@@ -50,6 +54,8 @@ function useRunAction() {
   const actions = useItemActions()
   return (item: Item, action: RowAction, anchor: HTMLElement | null) => {
     if (action.status) actions.setStatus(item, action.status)
+    else if (action.id === 'choose') actions.choose(item)
+    else if (action.id === 'chooseOne') actions.setChooseOne(item, !item.chooseOne)
     else if (action.id === 'move') actions.startMove(item, anchor)
     else if (action.id === 'rename') actions.rename(item)
     else if (action.id === 'duplicate') actions.duplicate(item)
@@ -72,6 +78,7 @@ export function ItemRowMenuSheet({
   const run = useRunAction()
   const [shown, setShown] = useState(item)
   if (item && item !== shown) setShown(item)
+  const context = useRowActionsContext(shown)
 
   return (
     <BottomSheet
@@ -108,7 +115,7 @@ export function ItemRowMenuSheet({
           </div>
           <div className="-mx-2 flex flex-col gap-0.5">
             {withSteps(
-              rowActions(shown.kind, shown.status),
+              rowActions(shown.kind, shown.status, context),
               order?.ids.includes(shown.id) ?? false,
             ).map((action) => {
               if (action === STEPS) {
@@ -125,6 +132,32 @@ export function ItemRowMenuSheet({
               }
               const Icon = iconFor(shown, action)
               const destructive = action.id === 'delete'
+              // «Elegir esta» (diseño 24, A4): resaltada, y debajo qué pasa al elegirla.
+              if (action.highlight) {
+                return (
+                  <div key={action.id} className="mb-1 flex flex-col gap-2 px-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose()
+                        run(shown, action, null)
+                      }}
+                      className="flex h-13 w-full items-center gap-3 rounded-2xl bg-brand-tint px-3.5 text-[15px] font-semibold text-foreground outline-none active:opacity-80"
+                    >
+                      <Icon aria-hidden className="size-[18px] text-primary" strokeWidth={2.4} />
+                      <span className="flex-1 text-left">{action.label}</span>
+                      {action.hint && (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {action.hint}
+                        </span>
+                      )}
+                    </button>
+                    <p className="px-1 text-[13px] text-muted-foreground">
+                      {action.highlight.note}
+                    </p>
+                  </div>
+                )
+              }
               return (
                 <button
                   key={action.id}
@@ -174,7 +207,7 @@ export function ItemRowDotsMenu({
   const { order } = useItemActions()
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
-  const actions = rowActions(item.kind, item.status)
+  const actions = rowActions(item.kind, item.status, useRowActionsContext(item))
   const sortable = order?.ids.includes(item.id) ?? false
 
   const onKeyDown = (event: KeyboardEvent) => {

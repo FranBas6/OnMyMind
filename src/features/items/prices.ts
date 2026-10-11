@@ -2,6 +2,7 @@ import { format, isSameDay, subDays } from 'date-fns'
 
 import { formatCents, priceChange, type PriceChange } from '@/lib/money'
 
+import { countedOption, isChoosing } from './chooseOne'
 import { isActiveSublistStatus, isOutOfMind } from './status'
 import type { Item } from './types'
 
@@ -20,6 +21,7 @@ export interface PriceTotals {
  * El total de una lista o de una sublista (diseño 16, A1–A3), con las reglas de `list_counters`:
  * las compras pendientes con precio, en cualquier lista (decisión 6 del plan), y nada de lo de
  * dentro de una sublista pausada o hecha. Solo suman los euros; lo demás va aparte (decisión 7).
+ * De una sublista «para elegir una» (5.1) suma solo su elegida o, sin elegida, la más barata.
  */
 export function pendingTotals(items: readonly Item[], now: Date = new Date()): PriceTotals {
   const silenced = new Set(
@@ -27,8 +29,21 @@ export function pendingTotals(items: readonly Item[], now: Date = new Date()): P
       .filter((item) => item.kind === 'sublist' && !isActiveSublistStatus(item.status))
       .map((item) => item.id),
   )
+  const choosing = items.filter((item) => item.kind === 'sublist' && isChoosing(item))
+  const options = new Set(choosing.map((item) => item.id))
+  const counted = [
+    ...items.filter((item) => item.parentId === null || !options.has(item.parentId)),
+    ...choosing.flatMap((sublist) => {
+      const counted = countedOption(
+        sublist,
+        items.filter((item) => item.parentId === sublist.id),
+        now,
+      )
+      return counted ? [counted] : []
+    }),
+  ]
   const totals: PriceTotals = { euros: 0, others: [] }
-  for (const item of items) {
+  for (const item of counted) {
     if (item.kind !== 'shopping' || item.priceCents === null || isOutOfMind(item, now)) continue
     if (item.parentId !== null && silenced.has(item.parentId)) continue
     if (item.currency === 'EUR') {

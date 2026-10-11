@@ -51,6 +51,8 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     listId: 'viajes',
     kind: 'task',
     parentId: null,
+    chooseOne: false,
+    chosenId: null,
     title,
     notes: null,
     status: 'pending',

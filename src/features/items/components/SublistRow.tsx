@@ -1,7 +1,9 @@
-import { ChevronRight, Pause } from 'lucide-react'
+import { ChevronRight, CircleDot, Pause } from 'lucide-react'
 
+import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
+import { choicePrice } from '../chooseOne'
 import { useItems } from '../hooks/useItems'
 import { childrenOf, sublistMeta } from '../sublists'
 import type { Item } from '../types'
@@ -16,14 +18,18 @@ import { SwipeableRow } from './SwipeableRow'
  * nombre en 600 y lo suyo debajo («5 pendientes · En curso»), con el punto verde si está en curso,
  * la pausa si está pausada (atenuada) y el chevron: tocarla la abre. Se desliza y tiene su menú
  * como cualquier fila. Hecha, va en «Fuera de la cabeza» sin tarjeta, tachada y con «Hecha · 6
- * dentro». Lo de dentro sale de los ítems de la lista, que ya están en caché.
+ * dentro». Lo de dentro sale de los ítems de la lista, que ya están en caché. Una «para elegir
+ * una» (5.1, diseño 24, A3 y A4c) lleva el círculo con punto delante de «2 opciones · desde 199 €»
+ * y a la derecha lo que cuenta en el total de la lista; hecha, «Elegido Logitech G29» y lo pagado.
  */
 export function SublistRow({ item, done = false }: { item: Item; done?: boolean }) {
   const actions = useItemActions()
   const { list, isDesktop } = actions
   const { data: items = [] } = useItems(item.listId)
   const paused = item.status === 'paused'
-  const meta = sublistMeta(item, childrenOf(items, item.id))
+  const children = childrenOf(items, item.id)
+  const meta = sublistMeta(item, children)
+  const price = item.chooseOne ? choicePrice(item, children) : null
 
   return (
     <SwipeableRow
@@ -53,15 +59,29 @@ export function SublistRow({ item, done = false }: { item: Item; done?: boolean 
         {!done && <RowNotes notes={item.notes} />}
         <p
           className={cn(
-            'mt-[5px] text-xs font-semibold md:text-[13px]',
+            'mt-[5px] flex items-center gap-1.5 text-xs font-semibold md:text-[13px]',
             paused ? 'text-subtle-foreground' : 'text-muted-foreground',
           )}
         >
           <span className="sr-only">Sublista: </span>
-          {meta}
+          {item.chooseOne && !done && (
+            <CircleDot aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
+          )}
+          <span className="min-w-0 truncate">{meta}</span>
         </p>
       </div>
       <span className="flex shrink-0 items-center gap-2">
+        {price && (
+          <span
+            className={cn(
+              'font-display text-base font-extrabold tracking-[-0.02em] whitespace-nowrap',
+              done && 'text-subtle-foreground',
+            )}
+          >
+            <span className="sr-only">{price.paid ? 'Pagado: ' : 'Cuenta: '}</span>
+            {formatCents(price.cents, price.currency)}
+          </span>
+        )}
         {item.status === 'in_progress' && !done && (
           <span aria-hidden className="size-2 rounded-full bg-in-progress" />
         )}

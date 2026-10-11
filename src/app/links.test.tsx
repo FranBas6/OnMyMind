@@ -42,6 +42,8 @@ function cocina(overrides: Partial<Item> = {}): Item {
     listId: 'casa',
     kind: 'task',
     parentId: null,
+    chooseOne: false,
+    chosenId: null,
     title: 'Reformar la cocina',
     notes: null,
     status: 'pending',

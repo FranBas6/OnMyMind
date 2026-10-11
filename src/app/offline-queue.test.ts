@@ -47,6 +47,8 @@ const pan: Item = {
   listId: 'casa',
   kind: 'shopping',
   parentId: null,
+  chooseOne: false,
+  chosenId: null,
   title: 'Pan',
   notes: null,
   status: 'pending',

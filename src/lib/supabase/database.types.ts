@@ -220,6 +220,8 @@ export type Database = {
       items: {
         Row: {
           all_day: boolean
+          choose_one: boolean
+          chosen_id: string | null
           completed_at: string | null
           completed_by: string | null
           created_at: string
@@ -256,6 +258,8 @@ export type Database = {
         }
         Insert: {
           all_day?: boolean
+          choose_one?: boolean
+          chosen_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
@@ -292,6 +296,8 @@ export type Database = {
         }
         Update: {
           all_day?: boolean
+          choose_one?: boolean
+          chosen_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
@@ -327,6 +333,13 @@ export type Database = {
           url_title?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'items_chosen_id_fkey'
+            columns: ['chosen_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'items_completed_by_fkey'
             columns: ['completed_by']

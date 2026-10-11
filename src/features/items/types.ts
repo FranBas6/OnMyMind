@@ -16,6 +16,16 @@ export interface Item {
   kind: ItemKind
   /** La sublista en la que está (ADR-010), de su misma lista; `null` si está suelta en la lista. */
   parentId: string | null
+  /**
+   * Una sublista «para elegir una» (5.1, diseño 24): sus opciones cuentan como una sola cosa y en
+   * el total suma la más barata. Solo en sublistas.
+   */
+  chooseOne: boolean
+  /**
+   * La opción elegida, de dentro: la preferida, la que cuenta en el total. Elegirla no la compra ni
+   * la termina (Fran, 2026-10-11).
+   */
+  chosenId: string | null
   title: string
   notes: string | null
   status: ItemStatus
@@ -135,6 +145,10 @@ export interface ItemPatch {
   status?: ItemStatus
   /** Cambiar el tipo (fila «Tipo», `changeKindPatch`): llega con su estado traducido. */
   kind?: ItemKind
+  /** «Elegir una» y «Dejar de elegir una» en una sublista (5.1); dejarlo olvida la elegida. */
+  chooseOne?: boolean
+  /** «Elegir esta» (o quitar la elección) en una sublista «para elegir una». */
+  chosenId?: string | null
   /** Se quita al pasar a un tipo que no la usa (y vuelve si el cambio falla). */
   recurrence?: string | null
   /**
