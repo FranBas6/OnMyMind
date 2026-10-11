@@ -23,3 +23,10 @@ Desde la 2.8, `photoCleanup.ts` borra del bucket las fotos que ya no usa ningún
 es `imagePath`. `usePhotoUploads` sube varias a la vez (hasta `MAX_PHOTOS`), `useImageMutation` las
 añade, mueve, cambia y quita, `PhotoStrip` es la tira de la ficha (ordenar arrastrando y su menú) y
 `PhotoViewer` el visor con varias. `copyItemPhoto` copia una al duplicar una lista.
+
+**Varios enlaces (4.6):** con dos o más, los enlaces de cualquier tipo están en `item_links`
+(`Item.links`), como las tiendas de una compra, y el primero es `url`. `hasLinks` dice si hay
+varios y `hasStores` si además es una compra. `withLinks` deja la cosa como `item_links_sync`, con
+precio solo en las compras, y `regainCheapest` devuelve el de la más barata al volver a ser compra.
+`LinksSection` es la caja «Enlaces», `LinkOptions` las opciones de una tienda o un enlace, y
+`useItemLinkMetadata` busca el título de cada uno (y el precio, si es una tienda).

@@ -28,7 +28,7 @@ import { useStoreMutation } from '../hooks/useItemMutations'
 import { useItems } from '../hooks/useItems'
 import { useLinkMetadata } from '../hooks/useLinkMetadata'
 import { useRefreshPrice } from '../hooks/useRefreshPrice'
-import { cheapestLink, hasStores, linkFromItem, newLink, storeName } from '../stores'
+import { cheapestLink, hasLinks, hasStores, linkFromItem, newLink, storeName } from '../stores'
 import { isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
 import type { Item, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus } from '../types'
 import { DueDatePicker } from './DueDatePicker'
@@ -40,6 +40,7 @@ import { ItemTitleField, NotesField } from './ItemTextFields'
 import { KindField } from './KindField'
 import { PriceAlertCard } from './PriceAlertCard'
 import { PriceBlock } from './PriceBlock'
+import { LinksSection } from './Links'
 import { StoresSection } from './Stores'
 import { SegmentedControl, type SegmentOption } from './SegmentedControl'
 
@@ -123,14 +124,15 @@ export function ItemDetail({
   )
   const refresh = useRefreshPrice(item, onUpdate, updateLink)
   const [notice, setNotice] = useState<string | null>(null)
-  const addStore = (url: string) => {
+  // Lo mismo, sin precio, con los enlaces de lo que no es compra (4.6, diseño 23, D11).
+  const addLink = (url: string) => {
     refresh.reset()
     setNotice(null)
-    if (hasStores(item)) {
+    if (hasLinks(item)) {
       mutateStores({ type: 'add', item, links: [newLink(crypto.randomUUID(), url, item.links)] })
       return
     }
-    // La segunda tienda: la de siempre pasa a la lista con ella (`item_links`).
+    // El segundo: el de siempre pasa a la lista con él (`item_links`).
     const first = linkFromItem(item, crypto.randomUUID())
     if (!first) return
     mutateStores({
@@ -139,7 +141,7 @@ export function ItemDetail({
       links: [first, newLink(crypto.randomUUID(), url, [first])],
     })
   }
-  const removeStore = (removed: ItemLink) => {
+  const removeLink = (removed: ItemLink) => {
     const rest = item.links.filter((entry) => entry.id !== removed.id)
     refresh.reset()
     mutateStores({ type: 'remove', item, linkId: removed.id })
@@ -150,10 +152,10 @@ export function ItemDetail({
         : null,
     )
     showUndoToast({
-      message: `${storeName(removed)} quitada`,
+      message: item.kind === 'shopping' ? `${storeName(removed)} quitada` : 'Enlace quitado',
       onUndo: () => {
         setNotice(null)
-        // Si quedó una sola, volvió a la compra: se vuelven a poner las dos.
+        // Si quedó uno solo, volvió a la cosa: se vuelven a poner los dos.
         mutateStores({ type: 'add', item, links: rest.length > 1 ? [removed] : [...rest, removed] })
       },
     })
@@ -246,7 +248,7 @@ export function ItemDetail({
           isDesktop={isDesktop}
           online={online}
           linkState={link.linkState}
-          onAddStore={item.kind === 'shopping' ? addStore : undefined}
+          onAddLink={addLink}
           onUpdate={onUpdate}
         />
       )}
@@ -257,15 +259,28 @@ export function ItemDetail({
           isDesktop={isDesktop}
           online={online}
           refresh={refresh.state}
-          onAdd={addStore}
+          onAdd={addLink}
           onUpdate={(linkId, patch) => {
             updateLink(item, linkId, patch)
           }}
-          onRemove={removeStore}
+          onRemove={removeLink}
           onRetry={(linkId) => {
             void refresh.refreshLink(linkId)
           }}
           onNotice={setNotice}
+        />
+      )}
+
+      {hasLinks(item) && item.kind !== 'shopping' && item.kind !== 'sublist' && (
+        <LinksSection
+          item={item}
+          isDesktop={isDesktop}
+          online={online}
+          onAdd={addLink}
+          onUpdate={(linkId, patch) => {
+            updateLink(item, linkId, patch)
+          }}
+          onRemove={removeLink}
         />
       )}
 

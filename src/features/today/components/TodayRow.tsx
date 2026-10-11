@@ -73,7 +73,7 @@ export function TodayRow({
               {overdue}
             </span>
           )}
-          {item.url && <LinkMeta url={item.url} />}
+          {item.url && <LinkMeta url={item.url} item={item} />}
           {detail && <span>{detail}</span>}
         </p>
       </div>

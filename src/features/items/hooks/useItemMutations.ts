@@ -28,7 +28,7 @@ import { repeatOnDone } from '../recurrence'
 import { buildMovePatch } from '../move'
 import { schedulePhotoCleanup } from '../photoCleanup'
 import { isFinalStatus, isOutOfMind } from '../status'
-import { patchLink, withLinks } from '../stores'
+import { patchLink, regainCheapest, withLinks } from '../stores'
 import { countItems, type Counts } from '../sublists'
 import type {
   Completion,
@@ -267,7 +267,8 @@ function patchItem(item: Item, patch: CachePatch): Item {
   if ((patch.priceSource === 'web' || patch.priceSource === 'auto') && next.priceCents !== null) {
     next.priceTracking = 'on'
   }
-  return next
+  // Una tarea con varias tiendas guardadas que vuelve a ser compra recupera su precio (4.6).
+  return regainCheapest(item, next)
 }
 
 /**
@@ -728,13 +729,13 @@ export function useInsertItems() {
   return useDurableMutation(insertItemsMutation)
 }
 
-/** Lo que se hace con las tiendas de una compra (2.2b). */
+/** Lo que se hace con las tiendas de una compra (2.2b) o los enlaces de lo demás (4.6). */
 export type StoreChange =
   | { type: 'add'; item: Item; links: ItemLink[] }
   | { type: 'update'; item: Item; linkId: string; patch: ItemLinkPatch }
   | { type: 'remove'; item: Item; linkId: string }
 
-/** Las tiendas de la compra después del cambio (lo que el servidor tendrá). */
+/** Los enlaces después del cambio (lo que el servidor tendrá). */
 function linksAfter(change: StoreChange): ItemLink[] {
   const { item } = change
   if (change.type === 'add') return [...item.links, ...change.links]
@@ -746,9 +747,10 @@ function linksAfter(change: StoreChange): ItemLink[] {
 }
 
 /**
- * Añadir, cambiar o quitar una tienda (optimista, en la misma fila que el resto de mutaciones de
- * ítems, así que nunca llega antes que el alta de la compra). En la caché, la compra queda como la
- * dejará el trigger (`withLinks`): con el enlace de la primera y el precio de la más barata.
+ * Añadir, cambiar o quitar una tienda o un enlace (optimista, en la misma fila que el resto de
+ * mutaciones de ítems, así que nunca llega antes que el alta de la cosa). En la caché, la cosa
+ * queda como la dejará el trigger (`withLinks`): con el primer enlace y, en una compra, el precio
+ * de la más barata.
  */
 const storeMutation = durableMutation(itemMutationKey('store'), (queryClient) => ({
   ...OFFLINE_TOLERANT,
@@ -770,8 +772,9 @@ const storeMutation = durableMutation(itemMutationKey('store'), (queryClient) =>
       mixed: update,
     })
   },
-  onError: (error, _change, snapshot) => {
-    rollback(queryClient, snapshot, `No se ha podido guardar la tienda. ${errorMessage(error)}`)
+  onError: (error, change, snapshot) => {
+    const what = change.item.kind === 'shopping' ? 'la tienda' : 'el enlace'
+    rollback(queryClient, snapshot, `No se ha podido guardar ${what}. ${errorMessage(error)}`)
   },
   onSettled: () => {
     settle(queryClient)

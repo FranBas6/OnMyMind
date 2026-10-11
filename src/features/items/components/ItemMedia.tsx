@@ -10,7 +10,7 @@ import type { LinkState } from '../hooks/useLinkMetadata'
 import { usePhotoSrc, usePhotoUploads } from '../hooks/usePhoto'
 import { linkDomain, linkPath } from '../links'
 import type { Item, ItemImage, ItemPatch } from '../types'
-import { hasStores, sameLink } from '../stores'
+import { hasLinks, sameLink } from '../stores'
 import { LinkInput } from './LinkInput'
 import { AddStoreButton } from './Stores'
 import { PhotoStrip } from './PhotoStrip'
@@ -22,8 +22,11 @@ interface ItemMediaProps {
   online: boolean
   /** Cómo va el título del enlace: lo busca `useLinkMetadata`, que comparte con el precio. */
   linkState: LinkState
-  /** En una compra: «+ Otra tienda» bajo su enlace (diseño 19, T1 y T2). */
-  onAddStore?: ((url: string) => void) | undefined
+  /**
+   * «+ Otra tienda» bajo el enlace de una compra (diseño 19, T1 y T2), u «+ Otro enlace» en lo
+   * demás (4.6): el segundo convierte la fila en la caja de tiendas o de enlaces.
+   */
+  onAddLink: (url: string) => void
   onUpdate: (item: Item, patch: ItemPatch) => void
 }
 
@@ -40,11 +43,11 @@ export function ItemMedia({
   isDesktop,
   online,
   linkState,
-  onAddStore,
+  onAddLink,
   onUpdate,
 }: ItemMediaProps) {
   const [editingLink, setEditingLink] = useState(false)
-  const [addingStore, setAddingStore] = useState(false)
+  const [addingLink, setAddingLink] = useState(false)
   const [viewing, setViewing] = useState<number | null>(null)
   // «Cambiar» en el visor: la foto que se sustituye al elegir otra.
   const replacing = useRef<ItemImage | null>(null)
@@ -63,9 +66,11 @@ export function ItemMedia({
   const own = item.images
   const hasOwn = own.length > 0 || upload.pending.length > 0
   const webOnly = !hasOwn && item.imageUrl !== null
-  // Con varias tiendas el enlace vive en «Dónde comprarlo» (diseño 19, T10); aquí quedan las fotos.
-  const stores = hasStores(item)
-  const hasLink = item.url !== null && !stores
+  // Con varios enlaces viven en «Dónde comprarlo» (diseño 19, T10) o en «Enlaces» (diseño 23,
+  // D11); aquí quedan las fotos.
+  const many = hasLinks(item)
+  const hasLink = item.url !== null && !many
+  const shopping = item.kind === 'shopping'
 
   const pickPhotos = (replace: ItemImage | null = null) => {
     replacing.current = replace
@@ -160,7 +165,7 @@ export function ItemMedia({
         }}
       />
 
-      {!hasOwn && !webOnly && !hasLink && !editingLink && !stores ? (
+      {!hasOwn && !webOnly && !hasLink && !editingLink && !many ? (
         <div className="grid grid-cols-2 gap-2.5">
           {photoButton}
           {linkButton}
@@ -205,25 +210,29 @@ export function ItemMedia({
           )}
           {hasLink &&
             item.url &&
-            onAddStore &&
-            (addingStore ? (
+            (addingLink ? (
               <LinkInput
                 validate={(url) =>
-                  item.url && sameLink(item.url, url) ? 'Esta tienda ya está en la lista.' : null
+                  item.url && sameLink(item.url, url)
+                    ? shopping
+                      ? 'Esta tienda ya está en la lista.'
+                      : 'Este enlace ya está.'
+                    : null
                 }
                 onSave={(url) => {
-                  setAddingStore(false)
-                  onAddStore(url)
+                  setAddingLink(false)
+                  onAddLink(url)
                 }}
                 onCancel={() => {
-                  setAddingStore(false)
+                  setAddingLink(false)
                 }}
               />
             ) : (
               <AddStoreButton
+                label={shopping ? 'Otra tienda' : 'Otro enlace'}
                 className="-mt-1 h-9 self-start rounded-lg px-1"
                 onClick={() => {
-                  setAddingStore(true)
+                  setAddingLink(true)
                 }}
               />
             ))}
@@ -236,7 +245,7 @@ export function ItemMedia({
             />
           )}
           {!hasOwn && !webOnly && photoButton}
-          {!hasLink && !editingLink && !stores && linkButton}
+          {!hasLink && !editingLink && !many && linkButton}
         </>
       )}
 

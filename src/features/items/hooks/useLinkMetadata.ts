@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 
+import { formatCents } from '@/lib/money'
+
 import { linkDomain, URL_TITLE_MAX_LENGTH } from '../links'
 import { linkMetadataQueryOptions } from '../queries'
 import { ITEM_TITLE_MAX_LENGTH } from '../schemas'
-import { hasStores } from '../stores'
+import { hasLinks } from '../stores'
 import type { LinkMetadata } from '../api'
-import type { Item, ItemPatch } from '../types'
+import type { Item, ItemLink, ItemLinkPatch, ItemPatch } from '../types'
 
 /** Cómo va el título del enlace (diseño 15). */
 export type LinkState = 'ready' | 'searching' | 'offline' | 'unavailable'
@@ -30,8 +32,8 @@ export function useLinkMetadata(
   online: boolean,
   onUpdate: (item: Item, patch: ItemPatch) => void,
 ): { linkState: LinkState; priceState: WebPriceState; siteName: string | null } {
-  // Con varias tiendas, cada una busca lo suyo (`Stores`): el enlace del ítem es el de la primera.
-  const single = !hasStores(item)
+  // Con varios enlaces, cada uno busca lo suyo (`useItemLinkMetadata`): el del ítem es el primero.
+  const single = !hasLinks(item)
   const needsTitle = single && item.url !== null && item.urlTitle === null
   // Una compra con enlace y sin precio: recién pegado, o algo con enlace que se convierte en compra.
   const needsPrice =
@@ -108,4 +110,54 @@ export function titlePatch(item: Item, data: LinkMetadata): ItemPatch {
 /** El precio de la web para una compra que no tiene (2.1): lo escrito a mano nunca se pisa. */
 export function pricePatch(price: NonNullable<LinkMetadata['price']>): ItemPatch {
   return { priceCents: price.cents, currency: price.currency, priceSource: 'web' }
+}
+
+/**
+ * Lo que trae la web de un enlace de la lista (`item_links`) recién pegado, una vez, como el enlace
+ * de la 2a.6: su título y el nombre de la web; en una tienda de una compra, además su precio, si aún
+ * no tiene (2.2b). Sin red espera y sale al volver la conexión. Fuera de las compras no hay precio,
+ * aunque la web lo dé (4.6).
+ */
+export function useItemLinkMetadata(
+  link: ItemLink,
+  current: Item,
+  onUpdate: (patch: ItemLinkPatch) => void,
+  onNotice?: (text: string) => void,
+) {
+  const needs = link.urlTitle === null
+  const metadata = useQuery({ ...linkMetadataQueryOptions(link.url), enabled: needs })
+  const applied = useRef(false)
+  useEffect(() => {
+    const data = metadata.data
+    if (!needs || !data || applied.current) return
+    applied.current = true
+    const patch: ItemLinkPatch = {
+      urlTitle: data.title?.slice(0, URL_TITLE_MAX_LENGTH) ?? '',
+      urlSite: data.siteName?.slice(0, URL_TITLE_MAX_LENGTH) ?? null,
+    }
+    if (current.kind === 'shopping' && link.priceCents === null && data.price) {
+      patch.priceCents = data.price.cents
+      patch.currency = data.price.currency
+      patch.priceSource = 'web'
+      patch.priceCheckedAt = new Date()
+      // La nueva pasa a ser la más barata (diseño 19, T4): se dice cuánto menos y que quién.
+      if (
+        current.priceCents !== null &&
+        data.price.currency === current.currency &&
+        data.price.cents < current.priceCents
+      ) {
+        const name = data.siteName ?? linkDomain(link.url)
+        const before = current.priceStore ?? current.urlSite ?? linkDomain(current.url ?? '')
+        onNotice?.(
+          `${name} es la más barata: ${formatCents(current.priceCents - data.price.cents, current.currency)} menos que ${before}.`,
+        )
+      }
+    }
+    onUpdate(patch)
+  }, [needs, metadata.data, link, current, onUpdate, onNotice])
+
+  return {
+    searching: needs && metadata.fetchStatus === 'fetching',
+    waiting: needs && metadata.fetchStatus === 'paused',
+  }
 }

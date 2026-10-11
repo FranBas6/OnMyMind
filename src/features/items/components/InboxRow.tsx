@@ -23,7 +23,7 @@ import { SwipeableRow } from './SwipeableRow'
 export function InboxRow({ item }: { item: Item }) {
   const actions = useItemActions()
   const thumb = hasThumb(item)
-  const link = item.url ? <LinkMeta url={item.url} /> : null
+  const link = item.url ? <LinkMeta url={item.url} item={item} /> : null
   return (
     <SwipeableRow
       item={item}

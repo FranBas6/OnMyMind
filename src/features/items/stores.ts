@@ -4,14 +4,21 @@ import { linkDomain } from './links'
 import type { Item, ItemLink, ItemLinkPatch } from './types'
 
 /**
- * Varias tiendas en una compra (2.2b, diseño 19). Con una sola, el enlace y el precio son los del
- * ítem, como en la 2.1. Con dos o más viven en `item_links`, y la compra se queda con el precio de
- * la más barata. Esto es lo mismo que hace el trigger `item_links_sync`, para lo optimista.
+ * Varias tiendas en una compra (2.2b, diseño 19) y varios enlaces en lo demás (4.6, diseño 23,
+ * D11–D13). Con uno, el enlace (y el precio de una compra) son los del ítem, como en la 2.1. Con
+ * dos o más viven en `item_links`, y el ítem se queda con el primero; una compra, además, con el
+ * precio de la más barata. Esto es lo mismo que hace el trigger `item_links_sync`, para lo
+ * optimista.
  */
+
+/** Si el ítem tiene dos o más enlaces (`item_links`), sea del tipo que sea. */
+export function hasLinks(item: Pick<Item, 'links'>): boolean {
+  return item.links.length >= 2
+}
 
 /** Si una compra tiene la lista «Dónde comprarlo». */
 export function hasStores(item: Pick<Item, 'kind' | 'links'>): boolean {
-  return item.kind === 'shopping' && item.links.length >= 2
+  return item.kind === 'shopping' && hasLinks(item)
 }
 
 /** El nombre de una tienda: el que da la web o, si no, su dominio. */
@@ -32,16 +39,17 @@ export function cheapestLink(links: readonly ItemLink[]): ItemLink | null {
 }
 
 /**
- * La compra con estas tiendas, con lo que haría `item_links_sync`: el enlace de la primera y el
- * precio de la más barata (salvo comprada, que se queda con lo pagado). Con una sola tienda, esa
- * vuelve al ítem y la lista se vacía.
+ * El ítem con estos enlaces, con lo que haría `item_links_sync`: el primero es el suyo y, en una
+ * compra, cuenta el precio de la más barata (salvo comprada, que se queda con lo pagado). Con uno
+ * solo, ese vuelve al ítem y la lista se vacía. Lo que no es compra no tiene precio: el que guarden
+ * sus enlaces no se toca.
  */
 export function withLinks(item: Item, links: readonly ItemLink[], now: Date = new Date()): Item {
   const sorted = [...links].sort((a, b) => a.position - b.position)
+  const priced = item.kind === 'shopping' && item.status !== 'bought'
   if (sorted.length === 1) {
     const [only] = sorted
     if (!only) return item
-    const bought = item.status === 'bought'
     return {
       ...item,
       links: [],
@@ -50,7 +58,7 @@ export function withLinks(item: Item, links: readonly ItemLink[], now: Date = ne
       urlSite: only.urlSite,
       priceLinkId: null,
       priceStore: null,
-      ...(bought ? {} : priceFrom(item, only, now)),
+      ...(priced ? priceFrom(item, only, now) : {}),
     }
   }
   if (sorted.length === 0) return { ...item, links: [] }
@@ -63,15 +71,28 @@ export function withLinks(item: Item, links: readonly ItemLink[], now: Date = ne
     urlTitle: first?.urlTitle ?? null,
     urlSite: first?.urlSite ?? null,
   }
-  if (item.status === 'bought') return next
-  const best = cheapestLink(sorted)
-  if (!best) return { ...next, priceCents: null, priceLinkId: null, priceStore: null }
+  return priced ? withCheapest(next, now) : next
+}
+
+/** La compra con el precio de su tienda más barata, o sin precio si ninguna lo da. */
+function withCheapest(item: Item, now: Date): Item {
+  const best = cheapestLink(item.links)
+  if (!best) return { ...item, priceCents: null, priceLinkId: null, priceStore: null }
   return {
-    ...next,
+    ...item,
     ...priceFrom(item, best, now),
     priceLinkId: best.id,
     priceStore: storeName(best),
   }
+}
+
+/**
+ * Lo que vuelve a ser compra con varias tiendas guardadas recupera el precio de la más barata
+ * (como el trigger `items_kind_links`): pasar una compra a tarea y volver no pierde nada (4.6).
+ */
+export function regainCheapest(before: Item, after: Item, now: Date = new Date()): Item {
+  if (after.kind !== 'shopping' || before.kind === 'shopping' || !hasLinks(after)) return after
+  return withCheapest({ ...after, previousPriceCents: null }, now)
 }
 
 /** Los campos de precio de la compra cuando pasa a ser el de una tienda (como el trigger). */
@@ -175,9 +196,10 @@ export function cheapestLabel(item: Item): string | null {
   return `En ${item.priceStore}, la más barata de ${String(priced)}${priced < all ? ' con precio' : ''}`
 }
 
-/** «en 3 tiendas» en la meta de la fila (diseño 19, T24). */
-export function storesLabel(item: Pick<Item, 'kind' | 'links'>): string | null {
-  return hasStores(item) ? `en ${String(item.links.length)} tiendas` : null
+/** «en 3 tiendas» en la meta de la fila de una compra (diseño 19, T24); «en 3 enlaces» en lo demás (diseño 23, D12). */
+export function linksLabel(item: Pick<Item, 'kind' | 'links'>): string | null {
+  if (!hasLinks(item)) return null
+  return `en ${String(item.links.length)} ${item.kind === 'shopping' ? 'tiendas' : 'enlaces'}`
 }
 
 /** Si una compra se mira sola: con varias tiendas, si alguna se mira; `stopped` si ninguna puede. */

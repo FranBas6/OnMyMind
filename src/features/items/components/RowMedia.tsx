@@ -7,7 +7,7 @@ import { usePhotoSrc } from '../hooks/usePhoto'
 import { linkDomain } from '../links'
 import { hasThumb } from '../photos'
 import { changeDescription, changeLabel, itemPrice } from '../prices'
-import { storesLabel } from '../stores'
+import { linksLabel } from '../stores'
 import type { Item } from '../types'
 
 /**
@@ -56,8 +56,9 @@ export function RowThumb({
 }
 
 /**
- * «🔗 shop.realmadrid.com» en la meta de la fila (diseño 15, L1 y L2), o, en una compra con varias
- * tiendas, el icono de tienda y «en 3 tiendas» (diseño 19, T24).
+ * «🔗 shop.realmadrid.com» en la meta de la fila (diseño 15, L1 y L2); con varios enlaces, «🔗 en 3
+ * enlaces» (diseño 23, D12), y en una compra con varias tiendas, el icono de tienda y «en 3
+ * tiendas» (diseño 19, T24).
  */
 export function LinkMeta({
   url,
@@ -68,20 +69,13 @@ export function LinkMeta({
   item?: Pick<Item, 'kind' | 'links'>
   className?: string
 }) {
-  const stores = item ? storesLabel(item) : null
-  if (stores) {
-    return (
-      <span className={cn('inline-flex min-w-0 items-center gap-1', className)}>
-        <Store aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
-        <span className="truncate">{stores}</span>
-      </span>
-    )
-  }
+  const many = item ? linksLabel(item) : null
+  const Icon = many && item?.kind === 'shopping' ? Store : Link2
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1', className)}>
-      <Link2 aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
-      <span className="sr-only">Enlace: </span>
-      <span className="truncate">{linkDomain(url)}</span>
+      <Icon aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
+      {!many && <span className="sr-only">Enlace: </span>}
+      <span className="truncate">{many ?? linkDomain(url)}</span>
     </span>
   )
 }

@@ -5,13 +5,15 @@ import {
   cheapestLabel,
   cheapestLink,
   extraOver,
+  hasLinks,
   hasStores,
   linkFromItem,
   newLink,
   sameLink,
   stoppedNote,
   storeName,
-  storesLabel,
+  linksLabel,
+  regainCheapest,
   withLinks,
 } from './stores'
 import type { Item, ItemLink } from './types'
@@ -102,7 +104,7 @@ describe('de una tienda a varias', () => {
       priceStore: 'MediaMarkt',
       url: compra.url,
     })
-    expect(storesLabel(next)).toBe('en 2 tiendas')
+    expect(linksLabel(next)).toBe('en 2 tiendas')
     expect(cheapestLabel(next)).toBe('En MediaMarkt, la más barata de 2')
   })
 
@@ -190,5 +192,68 @@ describe('ya no se puede seguir (3.8, diseño 22, T2)', () => {
     expect(alertTracking(conTiendas('stopped', null))).toBe('stopped')
     expect(alertTracking(conTiendas(null, null))).toBeNull()
     expect(alertTracking({ ...compra, priceTracking: 'on' })).toBe('on')
+  })
+})
+
+describe('varios enlaces en lo que no es compra (4.6)', () => {
+  const tarea: Item = {
+    ...compra,
+    kind: 'task',
+    title: 'Reformar la cocina',
+    url: 'https://www.pinterest.es/cocinas',
+    urlTitle: 'Ideas de cocinas pequeñas',
+    urlSite: 'Pinterest',
+    priceCents: null,
+    priceSource: null,
+    previousPriceCents: null,
+    priceCheckedAt: null,
+  }
+
+  it('el primero es el de la tarea, sin precio aunque un enlace lo traiga', () => {
+    const first = linkFromItem(tarea, 'l1')
+    if (!first) throw new Error('sin enlace')
+    const next = withLinks(tarea, [
+      first,
+      tienda('leroymerlin', 18900, { position: 2000 }),
+      tienda('cocinasmartin', null, { position: 3000 }),
+    ])
+    expect(hasLinks(next)).toBe(true)
+    expect(hasStores(next)).toBe(false)
+    expect(next).toMatchObject({
+      url: 'https://www.pinterest.es/cocinas',
+      priceCents: null,
+      priceLinkId: null,
+    })
+    expect(linksLabel(next)).toBe('en 3 enlaces')
+  })
+
+  it('al quedar uno, vuelve a la tarea sin precio', () => {
+    const next = withLinks({ ...tarea, links: [tienda('a', null)] }, [tienda('leroymerlin', 18900)])
+    expect(next).toMatchObject({
+      links: [],
+      url: 'https://www.leroymerlin.es/lg',
+      priceCents: null,
+    })
+  })
+
+  it('una compra de dos tiendas que pasa a tarea y vuelve recupera el precio de la más barata', () => {
+    const stores = [
+      tienda('pccomponentes', 26900, { urlSite: 'PcComponentes' }),
+      tienda('mediamarkt', 24900, { urlSite: 'MediaMarkt', position: 2000 }),
+    ]
+    const asTask: Item = { ...tarea, links: stores, priceLinkId: 'mediamarkt' }
+    const back = regainCheapest(asTask, { ...asTask, kind: 'shopping' }, NOW)
+    expect(back).toMatchObject({
+      priceCents: 24900,
+      previousPriceCents: null,
+      priceSource: 'web',
+      priceLinkId: 'mediamarkt',
+      priceStore: 'MediaMarkt',
+    })
+    // Seguir siendo tarea, o volver con un solo enlace, no toca nada.
+    expect(regainCheapest(asTask, { ...asTask, title: 'Monitor' })).toMatchObject({
+      priceCents: null,
+    })
+    expect(regainCheapest(tarea, { ...tarea, kind: 'shopping' }).priceCents).toBeNull()
   })
 })

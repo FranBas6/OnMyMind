@@ -114,9 +114,13 @@ describe('duplicar una lista (4.4, diseño 23, C)', () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Duplicar' }))
     expect(api.duplicateList).toHaveBeenCalledWith('maleta', 'Maleta de viaje (2)')
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(`/lists/${COPY}`)
-    })
+    // Abrir la copia carga su pantalla: con la suite entera en marcha puede pasar del segundo.
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe(`/lists/${COPY}`)
+      },
+      { timeout: 4000 },
+    )
     expect(
       (await screen.findAllByText('Copia creada · 24 cosas pendientes')).length,
     ).toBeGreaterThan(0)
