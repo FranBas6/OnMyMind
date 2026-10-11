@@ -77,6 +77,14 @@ export default defineConfig({
         theme_color: '#5A4BE6',
         background_color: '#FBFAF7',
         categories: ['productivity', 'lifestyle'],
+        // Compartir a OnMyMind desde otra app (4.7): en Android, la app instalada sale en la hoja
+        // de compartir y abre `/share`, que lo guarda en «En mente». iOS no lo tiene: allí va el
+        // Atajo «Guardar en OnMyMind», que abre la misma ruta.
+        share_target: {
+          action: '/share',
+          method: 'GET',
+          params: { title: 'title', text: 'text', url: 'url' },
+        },
         icons: [
           { src: '/logos/png/pwa-icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/logos/png/pwa-icon-512.png', sizes: '512x512', type: 'image/png' },

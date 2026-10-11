@@ -3,7 +3,7 @@
 Captura rápida (sesión 1.10): la hoja de móvil y el flotante de escritorio, «Guardar en» con los
 chips de destino (`destinations.ts`) y todas las listas, el atajo ⌘⇧Espacio y el aviso con
 «Deshacer». La abren el botón + (`src/components/Fab.tsx`), el botón del sidebar y la ruta
-`/add` (también el Atajo de iOS «Guardar en OnMyMind», con `?url=`).
+`/add`.
 
 **Pegar un enlace (2.3):** `links.ts` lo reconoce en lo escrito y decide qué se guarda;
 `UrlCapturePreview` es su tarjeta (buscando, sin datos, sin conexión). Si la página tiene precio,
@@ -15,3 +15,7 @@ del detalle (`useLinkPreview` en `features/items`), y lo guardado antes de que l
 (`PastedLinesBox` y `usePastedLines`, en `features/items`, que comparte con la barra de añadir), y
 `CaptureProvider.saveMany` crea una por línea con un solo «Deshacer». Lo puro, en
 `features/items/pastedLines.ts`.
+
+**Compartir a OnMyMind (4.7):** la ruta `/share` (el `share_target` del manifiesto en Android y el
+Atajo «Guardar en OnMyMind» del iPhone) guarda directo en «En mente» con `useShareTarget`, sin
+captura. Lo puro, qué título, enlace y notas salen de lo que manda cada app, está en `share.ts`.

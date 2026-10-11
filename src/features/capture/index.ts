@@ -1,3 +1,5 @@
 export { useCapture } from './captureContext'
 export { CaptureProvider } from './components/CaptureProvider'
 export { InboxMark } from './components/DestinationChip'
+export { useShareTarget } from './hooks/useShareTarget'
+export { sharedItem, type SharedData } from './share'

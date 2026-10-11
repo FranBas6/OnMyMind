@@ -291,7 +291,7 @@ export function itemFromNew(item: NewItem, position: number): Item {
     kind: item.kind,
     parentId: item.parentId ?? null,
     title: item.title.trim(),
-    notes: null,
+    notes: item.notes ?? null,
     status: item.status,
     priority: null,
     dueAt: item.due?.at ?? null,

@@ -68,6 +68,8 @@ export interface NewItem {
   /** Dentro de una sublista (ADR-010), de la misma lista. */
   parentId?: string | null
   title: string
+  /** Un texto compartido que no cabe en el título (4.7). */
+  notes?: string
   status: ItemStatus
   /** Sin posición (la captura rápida no tiene la lista destino en caché), va al final. */
   position?: number
@@ -110,6 +112,7 @@ export async function createItem(item: NewItem): Promise<void> {
       kind: item.kind,
       parent_id: item.parentId ?? null,
       title,
+      ...(item.notes && { notes: item.notes }),
       status: item.status,
       position: item.position ?? (await lastPosition(item.listId)) + 1000,
       ...(item.due && { due_at: item.due.at.toISOString(), all_day: item.due.allDay }),

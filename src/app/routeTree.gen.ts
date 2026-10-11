@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './../routes/_authenticat
 import { Route as AuthenticatedAddRouteImport } from './../routes/_authenticated.add'
 import { Route as AuthenticatedProfileRouteImport } from './../routes/_authenticated.profile'
 import { Route as AuthenticatedSearchRouteImport } from './../routes/_authenticated.search'
+import { Route as AuthenticatedShareRouteImport } from './../routes/_authenticated.share'
 import { Route as AuthenticatedTodayRouteImport } from './../routes/_authenticated.today'
 import { Route as AuthCallbackRouteImport } from './../routes/auth.callback'
 import { Route as ITokenRouteImport } from './../routes/i.$token'
@@ -48,6 +49,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
 const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedShareRoute = AuthenticatedShareRouteImport.update({
+  id: '/share',
+  path: '/share',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/add': typeof AuthenticatedAddRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/search': typeof AuthenticatedSearchRoute
+  '/share': typeof AuthenticatedShareRoute
   '/today': typeof AuthenticatedTodayRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/i/$token': typeof ITokenRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/add': typeof AuthenticatedAddRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/search': typeof AuthenticatedSearchRoute
+  '/share': typeof AuthenticatedShareRoute
   '/today': typeof AuthenticatedTodayRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/i/$token': typeof ITokenRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/_authenticated/add': typeof AuthenticatedAddRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
+  '/_authenticated/share': typeof AuthenticatedShareRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/i/$token': typeof ITokenRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/add'
     | '/profile'
     | '/search'
+    | '/share'
     | '/today'
     | '/auth/callback'
     | '/i/$token'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/add'
     | '/profile'
     | '/search'
+    | '/share'
     | '/today'
     | '/auth/callback'
     | '/i/$token'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/_authenticated/add'
     | '/_authenticated/profile'
     | '/_authenticated/search'
+    | '/_authenticated/share'
     | '/_authenticated/today'
     | '/auth/callback'
     | '/i/$token'
@@ -207,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSearchRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/share': {
+      id: '/_authenticated/share'
+      path: '/share'
+      fullPath: '/share'
+      preLoaderRoute: typeof AuthenticatedShareRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/today': {
       id: '/_authenticated/today'
       path: '/today'
@@ -249,6 +268,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAddRoute: typeof AuthenticatedAddRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
+  AuthenticatedShareRoute: typeof AuthenticatedShareRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedListsListIdRoute: typeof AuthenticatedListsListIdRoute
@@ -259,6 +279,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAddRoute: AuthenticatedAddRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
+  AuthenticatedShareRoute: AuthenticatedShareRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedListsListIdRoute: AuthenticatedListsListIdRoute,

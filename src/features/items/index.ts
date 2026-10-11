@@ -49,7 +49,7 @@ export { hasPrices } from './prices'
 export type { LinkMetadata, NewItemLink } from './api'
 export { useFillCapturedLink, useLinkPreview, type LinkPreviewState } from './hooks/useCapturedLink'
 export { linkDomain, linkPath, normalizeLink, URL_TITLE_MAX_LENGTH } from './links'
-export { ITEM_TITLE_MAX_LENGTH } from './schemas'
+export { ITEM_NOTES_MAX_LENGTH, ITEM_TITLE_MAX_LENGTH } from './schemas'
 export {
   eventTime,
   eventWhen,
