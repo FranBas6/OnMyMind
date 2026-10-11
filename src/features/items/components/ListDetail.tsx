@@ -13,7 +13,8 @@ import { formatCents } from '@/lib/money'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 
-import { choicePrice, isChoosing, openOptions, optionMarks } from '../chooseOne'
+import { choicePrice, isChoosing, openOptions, optionMarks, optionsMeta } from '../chooseOne'
+import { compareOptions, leadingOption } from '../compare'
 import { addPlaceholder } from '../copy'
 import {
   AGE_FILTER_OPTIONS,
@@ -48,6 +49,7 @@ import { childrenOf, sublistSummary, topLevel } from '../sublists'
 import type { Item, MovedItem } from '../types'
 import { AddItemBar, type AddItemBarHandle } from './AddItemBar'
 import { ChoiceContext, type Choice } from './choiceContext'
+import { CompareColumns, CompareSheet } from './CompareView'
 import { EventsList } from './EventsList'
 import { FilterChips } from './FilterChips'
 import { InboxSortMenu } from './InboxSortMenu'
@@ -89,6 +91,10 @@ interface ListDetailProps {
    * sublista aparece enfocado y seleccionado.
    */
   renameKey?: number
+  /** Comparar las opciones de una sublista «para elegir una» (`?comparar` de la ruta, 5.2). */
+  comparing?: boolean
+  /** Abre o cierra Comparar: la ruta lo refleja, y Atrás la cierra. */
+  onCompare?: (open: boolean) => void
 }
 
 /**
@@ -104,6 +110,8 @@ export function ListDetail({
   onOpenItem,
   onOpenSublist,
   renameKey,
+  comparing: comparingRequested = false,
+  onCompare,
 }: ListDetailProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const items = useItems(list.id)
@@ -194,6 +202,20 @@ export function ListDetail({
         }
   // Con los ítems ya cargados, el total sigue a lo optimista; mientras, el de la vista. Una sublista
   // «para elegir una» lo dice en una línea bajo su cabecera (A2, A4b).
+  // Comparar (5.2, diseño 24): con dos opciones en juego o más. En el móvil, una hoja a pantalla
+  // completa; en escritorio, columnas en vez de las filas, sin la línea de lo que cuenta ni el campo.
+  const choosing = sublist !== undefined && isChoosing(sublist)
+  const compared = choosing && shown ? compareOptions(shown) : []
+  const comparing = comparingRequested && compared.length >= 2
+  const comparingHere = comparing && isDesktop
+  const compareProps = sublist &&
+    choice && {
+      sublist,
+      options: compared,
+      marks: choice.marks,
+      leadingId: leadingOption(sublist, shown ?? []),
+      summary: optionsMeta(sublist, shown ?? []) ?? sublist.title,
+    }
   const price = sublist && chooseOne && shown ? choicePrice(sublist, shown) : null
   const counts = price && {
     label: price.paid ? 'Pagaste' : `Cuenta en ${list.name}`,
@@ -318,7 +340,16 @@ export function ListDetail({
                 list={list}
                 summary={summary}
                 total={total}
-                counts={counts}
+                counts={comparingHere ? null : counts}
+                compare={
+                  choosing
+                    ? {
+                        active: comparingHere,
+                        disabled: compared.length < 2,
+                        onToggle: () => onCompare?.(!comparing),
+                      }
+                    : undefined
+                }
                 renameKey={renameKey}
                 onRename={(title) => {
                   updateItem.mutate({ item: sublist, patch: { title } })
@@ -373,7 +404,7 @@ export function ListDetail({
               </div>
             )}
 
-            {isDesktop && addBar}
+            {isDesktop && !comparingHere && addBar}
 
             {notDownloaded && <NotDownloadedEmpty />}
             {items.isError && (
@@ -383,7 +414,9 @@ export function ListDetail({
             )}
 
             {all &&
-              (inbox ? (
+              (comparingHere && compareProps ? (
+                <CompareColumns {...compareProps} />
+              ) : inbox ? (
                 <InboxContent
                   active={active.filter((item) => matchesAge(item, ageFilter))}
                   hasPending={active.length > 0}
@@ -420,6 +453,15 @@ export function ListDetail({
               ))}
 
             {!isDesktop && addBar}
+            {!isDesktop && compareProps && compared.length >= 2 && (
+              <CompareSheet
+                {...compareProps}
+                open={comparing}
+                onOpenChange={(open) => {
+                  if (!open) onCompare?.(false)
+                }}
+              />
+            )}
           </div>
         </ListScope>
       </ItemWorkspace>

@@ -1,8 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { Check, ChevronLeft, CircleDot } from 'lucide-react'
+import { Check, ChevronLeft, CircleDot, Columns2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import type { List } from '@/features/lists'
+import { cn } from '@/lib/utils'
 
 import type { Item } from '../types'
 import { useItemActions } from './itemActionsContext'
@@ -25,6 +26,11 @@ interface SublistHeaderProps {
    * cuenta en su lista («Cuenta en Compras · 199 €») o lo que se pagó («Pagaste · 199 €»).
    */
   counts?: { label: string; amount: string } | null
+  /**
+   * El botón «Comparar» de una «para elegir una» (diseño 24, A2 y D2): encendido mientras se
+   * compara en escritorio y en gris con menos de dos opciones (A8b).
+   */
+  compare?: { active: boolean; disabled: boolean; onToggle: () => void } | undefined
 }
 
 /**
@@ -41,6 +47,7 @@ export function SublistHeader({
   onRename,
   total,
   counts,
+  compare,
 }: SublistHeaderProps) {
   const actions = useItemActions()
   const menuLabel = `Opciones de «${sublist.title}»`
@@ -106,6 +113,7 @@ export function SublistHeader({
           </div>
         </div>
         {total}
+        {compare && <CompareButton {...compare} />}
         {actions.isDesktop && <ItemRowDotsMenu item={sublist} variant="header" />}
       </div>
 
@@ -118,5 +126,43 @@ export function SublistHeader({
         </p>
       )}
     </header>
+  )
+}
+
+/**
+ * «Comparar» (diseño 24, A2, A8b y D2): una píldora de 44 px con el icono de columnas en índigo.
+ * Encendida (escritorio, comparando), en `foreground`; con menos de dos opciones, en gris.
+ */
+function CompareButton({
+  active,
+  disabled,
+  onToggle,
+}: {
+  active: boolean
+  disabled: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      disabled={disabled}
+      onClick={onToggle}
+      className={cn(
+        'flex h-11 shrink-0 items-center gap-2 rounded-full px-3.5 text-sm font-bold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        disabled
+          ? 'bg-fill text-muted-foreground'
+          : active
+            ? 'bg-foreground text-background'
+            : 'border-[1.5px] border-border bg-card hover:bg-fill',
+      )}
+    >
+      <Columns2
+        aria-hidden
+        className={cn('size-4', !disabled && !active && 'text-primary')}
+        strokeWidth={2.2}
+      />
+      Comparar
+    </button>
   )
 }

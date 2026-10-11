@@ -1,6 +1,6 @@
 import { onlineManager } from '@tanstack/react-query'
-import { createFileRoute, Navigate } from '@tanstack/react-router'
-import { useCallback } from 'react'
+import { createFileRoute, Navigate, useRouter } from '@tanstack/react-router'
+import { useCallback, useRef } from 'react'
 import { z } from 'zod'
 
 import { itemsQueryOptions, ListDetail, useItems, useOpenSublist } from '@/features/items'
@@ -9,11 +9,13 @@ import { GoneList } from '@/features/sharing'
 
 /**
  * `?item=` abre el detalle de algo de dentro, como en la lista; `?rename=` entra con el nombre de
- * la sublista listo para editar («Renombrar» desde el menú de su fila).
+ * la sublista listo para editar («Renombrar» desde el menú de su fila); `?comparar` compara sus
+ * opciones (5.2), y Atrás lo cierra.
  */
 const searchSchema = z.object({
   item: z.uuid().optional().catch(undefined),
   rename: z.number().optional().catch(undefined),
+  comparar: z.boolean().optional().catch(undefined),
 })
 
 /**
@@ -37,8 +39,12 @@ export const Route = createFileRoute('/_authenticated/lists/$listId_/$sublistId'
 
 function SublistPage() {
   const { listId, sublistId } = Route.useParams()
-  const { item, rename } = Route.useSearch()
+  const { item, rename, comparar } = Route.useSearch()
   const navigate = Route.useNavigate()
+  const router = useRouter()
+  // Comparar entra en el historial, así que Atrás lo cierra. Si se abrió aquí, la ✕ hace lo mismo
+  // que Atrás; si se llegó con `?comparar` (un enlace, recargar), se quita sin salir de la app.
+  const comparedHere = useRef(false)
   const lists = useLists()
   const items = useItems(listId)
   const openSublist = useOpenSublist(listId)
@@ -48,6 +54,23 @@ function SublistPage() {
       void navigate({ search: { item: itemId }, replace: true })
     },
     [navigate],
+  )
+
+  const compare = useCallback(
+    (open: boolean) => {
+      if (open) {
+        comparedHere.current = true
+        void navigate({ search: (prev) => ({ ...prev, comparar: true }) })
+        return
+      }
+      if (comparedHere.current) {
+        comparedHere.current = false
+        router.history.back()
+        return
+      }
+      void navigate({ search: (prev) => ({ ...prev, comparar: undefined }), replace: true })
+    },
+    [navigate, router],
   )
 
   if (lists.isError) {
@@ -84,6 +107,8 @@ function SublistPage() {
       onOpenItem={openItem}
       onOpenSublist={openSublist}
       renameKey={rename}
+      comparing={comparar ?? false}
+      onCompare={compare}
     />
   )
 }
