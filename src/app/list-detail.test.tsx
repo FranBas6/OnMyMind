@@ -33,7 +33,8 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
       done: 1,
       pendingPriceCents: 0,
       notes: 0,
-      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+      // Casa tiene tareas: propone tarea (5.4: una vacía propondría nota).
+      kinds: { note: 0, task: 3, shopping: 0, event: 0 },
     },
     archivedAt: null,
     isOwner: true,
@@ -250,7 +251,8 @@ describe('detalle de una lista de tareas', () => {
 
     expect(await screen.findByText('Aún no hay nada aquí.')).toBeInTheDocument()
     expect(screen.getByText('Lista · recién creada')).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Primera tarea…' })).toHaveFocus()
+    // «Añadir a Casa…» también vacía (diseño 25, B5).
+    expect(screen.getByRole('textbox', { name: 'Añadir a Casa…' })).toHaveFocus()
     expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()
   })
 
@@ -330,13 +332,13 @@ describe('detalle de «En mente»', () => {
     createdAt: new Date(Date.now() - 20 * 24 * HOUR),
   })
 
-  it('«En mente»: sin tipo a la izquierda, y «Añadir» captura lo escrito', async () => {
+  it('«En mente»: propone Nota a la izquierda, y «Añadir» captura lo escrito', async () => {
     const user = userEvent.setup()
     vi.mocked(itemsApi.createItem).mockResolvedValue()
     renderDetail('i', [dni])
 
     const field = await screen.findByRole('textbox', { name: '¿Qué tienes en mente?' })
-    expect(screen.queryByRole('button', { name: /^Tipo: / })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tipo: Nota. Cambiar' })).toBeInTheDocument()
     const add = screen.getByRole('button', { name: 'Añadir' })
     expect(add).toBeDisabled()
     await user.type(field, 'Llamar al fontanero')

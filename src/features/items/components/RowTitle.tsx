@@ -41,15 +41,25 @@ export function RowTitle({
 /**
  * El principio de las notas bajo el título (Fran, 2026-10-11): una línea en `muted` de 13 px,
  * cortada con «…», como el fragmento de Buscar. En las filas de una lista, de una sublista, de
- * «En mente» y de Buscar; Hoy y la Agenda siguen compactas. Sin notas no ocupa nada.
+ * «En mente» y de Buscar; Hoy y la Agenda siguen compactas. Sin notas no ocupa nada. La fila de
+ * una nota llega a dos líneas si es larga (diseño 25, B1).
  */
-export function RowNotes({ notes, className }: { notes: string | null; className?: string }) {
+export function RowNotes({
+  notes,
+  lines = 1,
+  className,
+}: {
+  notes: string | null
+  lines?: 1 | 2
+  className?: string
+}) {
   const excerpt = notesExcerpt(notes)
   if (!excerpt) return null
   return (
     <p
       className={cn(
-        'mt-1 truncate text-[13px] leading-[1.4] text-muted-foreground md:mt-[3px]',
+        'mt-1 text-[13px] leading-[1.4] text-muted-foreground md:mt-[3px]',
+        lines === 1 ? 'truncate' : 'line-clamp-2 wrap-break-word',
         className,
       )}
     >

@@ -29,7 +29,8 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
       done: 0,
       pendingPriceCents: 0,
       notes: 0,
-      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+      // Una lista con tareas propone tarea (5.4: vacía propondría nota).
+      kinds: { note: 0, task: 3, shopping: 0, event: 0 },
     },
     archivedAt: null,
     isOwner: true,
@@ -290,12 +291,16 @@ describe('mover desde «En mente»', () => {
     vi.resetAllMocks()
   })
 
-  it('«Mover a…» de la fila lo lleva a Casa y queda como movida', async () => {
+  it('«Mover a otra lista» de su ficha lo lleva a Casa y queda como movida', async () => {
     const user = userEvent.setup()
     vi.mocked(itemsApi.moveItem).mockReturnValue(new Promise(() => undefined))
     renderAt('/lists/i', { i: [pilas], casa: [grifo] })
 
-    await user.click(await screen.findByRole('button', { name: 'Mover «Comprar pilas AA» a…' }))
+    // La fila de la nota ya no lleva «Mover a…» (diseño 25, B1b): se mueve desde su ficha, su
+    // menú o deslizando.
+    await user.click(await screen.findByRole('button', { name: 'Comprar pilas AA' }))
+    const detail = await screen.findByRole('dialog', { name: /Detalle de «Comprar pilas AA»/ })
+    await user.click(within(detail).getByRole('button', { name: /Mover a otra lista/ }))
     const sheet = await screen.findByRole('dialog', { name: /Mover «Comprar pilas AA» a…/ })
     // En «En mente» no sale ella misma como destino.
     expect(within(sheet).queryByRole('button', { name: /^En mente/ })).not.toBeInTheDocument()

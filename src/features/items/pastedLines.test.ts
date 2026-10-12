@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   linesToSave,
   PASTED_LINES_MAX,
+  pastedAsOneHeading,
   pastedLines,
   pastedLinesHeading,
   pastedLinesSaved,
@@ -79,6 +80,22 @@ describe('textos', () => {
     expect(pastedLinesHeading(1)).toBe('1 cosa, una por línea')
     expect(pastedLinesSaved(6, 'Compras')).toBe('6 cosas en Compras')
     expect(pastedLinesSaved(1, 'Casa')).toBe('1 cosa en Casa')
+  })
+
+  it('al crear notas (diseño 25, B4 y B4b)', () => {
+    expect(pastedLinesHeading(7, 'note')).toBe('7 notas, una por línea')
+    expect(pastedLinesHeading(1, 'note')).toBe('1 nota, una por línea')
+    expect(pastedAsOneHeading('Bizcocho\n- 1 yogur\n\n- 3 huevos', 'note')).toBe(
+      'Una nota con 3 líneas',
+    )
+    expect(pastedAsOneHeading('a\nb', 'event')).toBe('Un evento con 2 líneas')
+  })
+})
+
+describe('pegar en una nota', () => {
+  it('bastan dos líneas sin viñetas', () => {
+    expect(pastedLines('Hola,\nmañana te llamo', { twoLines: true })?.lines).toHaveLength(2)
+    expect(pastedLines('Solo una', { twoLines: true })).toBeNull()
   })
 })
 

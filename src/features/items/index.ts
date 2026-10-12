@@ -41,7 +41,27 @@ export {
   newItemKindAndStatus,
   STATUS_LABELS,
 } from './status'
-export { proposedKind } from './kind'
+export {
+  CHOOSABLE_KINDS,
+  KIND_LABELS,
+  kindProposal,
+  proposalHint,
+  proposedKind,
+  type ChoosableKind,
+} from './kind'
+export { KIND_ICONS } from './components/kindIcons'
+export { KindOptions } from './components/KindOptions'
+export { NoteEditor } from './components/NoteTextField'
+export { withBullets } from './bullets'
+export {
+  joinNoteDraft,
+  noteBody,
+  noteDraftOf,
+  noteText,
+  splitNoteText,
+  type NoteDraft,
+  type SplitNote,
+} from './noteText'
 export type { Item, ItemKind, ItemStatus, Priority } from './types'
 export { LinkMeta, RowPrice, RowThumb } from './components/RowMedia'
 export { hasThumb } from './photos'
@@ -71,6 +91,6 @@ export { fetchCompletions } from './api'
 export { useUndoRepeat } from './hooks/useItemMutations'
 export { PriceDropsSheet } from './components/PriceDropsSheet'
 export type { Completion } from './types'
-export { PastedLinesBox } from './components/PastedLinesBox'
+export { PastedLinesBox, PastedNoteBox } from './components/PastedLinesBox'
 export { usePastedLines } from './hooks/usePastedLines'
 export { linesToSave, pastedLinesSaved, type LineToSave } from './pastedLines'

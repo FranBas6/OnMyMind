@@ -14,7 +14,7 @@ import {
   useDeleteItem,
   useFillCapturedLink,
   useSublists,
-  proposedKind,
+  type ChoosableKind,
   type Destination,
   type LineToSave,
   type NewItemLink,
@@ -94,13 +94,15 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
   const destinations = destinationsOf(all, sublists)
   const origin = destinations.find((destination) => destination.id === state.originId)
 
-  // Dentro de una sublista, lo capturado nace con el tipo por defecto de su lista. Con un enlace
-  // cuya página aún no había llegado, se completa cuando llegue.
+  // Lo capturado nace con el tipo de la pastilla (5.4): el que propone la lista, si no se cambió.
+  // Con un enlace cuya página aún no había llegado, se completa cuando llegue.
   const save = (
     title: string,
     destination: Destination,
     link: NewItemLink | undefined,
     written: WrittenDate | null,
+    kind: ChoosableKind,
+    notes: string | null,
   ) => {
     const { list, sublist } = destination
     const item = createItem(
@@ -109,7 +111,8 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
         listId: list.id,
         parentId: sublist?.id ?? null,
         title,
-        ...newItemKindAndStatus(proposedKind(list)),
+        ...(notes && { notes }),
+        ...newItemKindAndStatus(kind),
         ...(link && { link }),
       },
       written,
@@ -128,9 +131,9 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
   // Pegar varias líneas (4.3, diseño 23, B3): una cosa por línea, en orden (la cola de ítems las
   // envía de una en una, también sin red), y un solo aviso, «6 cosas en Compras», cuyo «Deshacer»
   // las borra todas.
-  const saveMany = (lines: LineToSave[], destination: Destination) => {
+  const saveMany = (lines: LineToSave[], destination: Destination, kind: ChoosableKind) => {
     const { list, sublist } = destination
-    const base = newItemKindAndStatus(proposedKind(list))
+    const base = newItemKindAndStatus(kind)
     const items = lines.map((line) =>
       createItem(
         {

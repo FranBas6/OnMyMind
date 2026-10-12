@@ -24,7 +24,16 @@ interface UseSwipeOptions {
   onDragStart?: () => void
   /** Mientras la fila está levantada para ordenarla (2.9), solo cuenta el arrastre vertical. */
   disabled?: boolean
+  /**
+   * Sin tramos a la derecha, la fila asoma igual un poco y vuelve sola: una nota enseña «Las notas
+   * no tienen estado» (diseño 25, B11).
+   */
+  peekRight?: boolean
 }
+
+/** Lo que asoma una fila sin acciones a la derecha: va más despacio que el dedo y no pasa de aquí. */
+const PEEK_RATIO = 0.6
+const PEEK_MAX_PX = 220
 
 interface Gesture {
   pointerId: number
@@ -50,6 +59,7 @@ export function useSwipe({
   onStage,
   onDragStart,
   disabled = false,
+  peekRight = false,
 }: UseSwipeOptions) {
   const [drag, setDrag] = useState<number | null>(null)
   const gesture = useRef<Gesture | null>(null)
@@ -100,7 +110,11 @@ export function useSwipe({
       onDragStart?.()
     }
 
-    last.current = resist(current.base + dx, limits)
+    const wanted = current.base + dx
+    last.current =
+      peekRight && rightStages === 0 && wanted > 0
+        ? Math.min(wanted * PEEK_RATIO, PEEK_MAX_PX)
+        : resist(wanted, limits)
     setDrag(last.current)
   }
 

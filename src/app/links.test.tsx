@@ -322,9 +322,11 @@ describe('varios enlaces en lo que no es compra (diseño 23, D11–D13)', () => 
     const sheet = await detail()
     const change = async (to: 'Tarea' | 'Compra') => {
       await user.click(within(sheet).getByRole('button', { name: /^Tipo/ }))
-      const kinds = await screen.findByRole('radiogroup', { name: 'Tipo del ítem' })
+      const kinds = await screen.findByRole('radiogroup', { name: 'Tipo' })
       await user.click(within(kinds).getByRole('radio', { name: new RegExp(to) }))
-      await user.click(screen.getByRole('button', { name: `Cambiar a ${to}` }))
+      await user.click(
+        within(screen.getByRole('dialog', { name: 'Tipo' })).getByRole('button', { name: 'Listo' }),
+      )
     }
 
     await change('Tarea')

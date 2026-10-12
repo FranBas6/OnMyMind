@@ -4,10 +4,14 @@ import {
   changeKindPatch,
   isChoosableKind,
   kindChangeLoss,
+  kindChangedMessage,
   kindChangeNotice,
   kindMark,
+  kindProposal,
   parseKindPrefix,
+  proposalHint,
   proposedKind,
+  revertKindChange,
 } from './kind'
 import { ITEM_KINDS } from './status'
 
@@ -82,6 +86,28 @@ describe('changeKindPatch', () => {
   })
 })
 
+describe('deshacer el cambio de tipo (diseño 25, B6b)', () => {
+  it('vuelven el tipo, el estado y lo que se quitó', () => {
+    const before = {
+      ...tarea,
+      kind: 'task' as const,
+      allDay: true,
+      priceSource: null,
+    }
+    const patch = changeKindPatch(before, 'note')
+    expect(revertKindChange(before, patch)).toEqual({
+      kind: 'task',
+      status: 'in_progress',
+      priority: 'high',
+      dueAt: tarea.dueAt,
+      allDay: true,
+    })
+    expect(kindChangedMessage('task')).toBe('Ahora es una tarea')
+    expect(kindChangedMessage('event')).toBe('Ahora es un evento')
+    expect(kindChangedMessage('note')).toBe('Ahora es una nota')
+  })
+})
+
 describe('lo que se pierde', () => {
   it('solo cuenta lo que el ítem tiene', () => {
     expect(kindChangeLoss(sinNada, 'shopping')).toEqual({
@@ -99,53 +125,88 @@ describe('lo que se pierde', () => {
   })
 })
 
-describe('aviso antes de cambiar (diseño 12, T5)', () => {
+describe('aviso antes de cambiar (diseño 25, B6 y B6c; antes, 12, T5)', () => {
+  const now = new Date(2026, 9, 12, 9)
+  const as = <T extends object>(kind: 'task' | 'shopping' | 'event' | 'note', item: T) => ({
+    ...item,
+    kind,
+    title: 'Arreglar el grifo',
+    notes: null,
+  })
+
   it.each([
     [
-      { ...sinNada, priority: 'medium' as const },
+      as('task', { ...sinNada, priority: 'medium' as const }),
       'shopping',
-      'Al pasar a Compra se quita la prioridad. Pendiente sigue siendo Pendiente.',
+      'Se quita la prioridad Media. Pendiente sigue siendo Pendiente.',
       true,
     ],
     [
-      tarea,
+      as('task', tarea),
       'shopping',
-      'Al pasar a Compra se quitan la prioridad y la fecha. En curso pasa a Pendiente.',
+      'Se quitan la prioridad Alta y la fecha (3 oct). En curso pasa a Pendiente.',
       true,
     ],
-    [sinNada, 'event', 'Al pasar a Evento no se pierde nada. Pendiente pasa a Próximo.', false],
+    [as('task', sinNada), 'event', 'No se pierde nada. Pendiente pasa a Próximo.', false],
     [
-      { ...sinNada, status: 'bought' as const },
+      as('shopping', { ...sinNada, status: 'bought' as const }),
       'task',
-      'Al pasar a Tarea no se pierde nada. Comprado pasa a Hecha.',
+      'No se pierde nada. Comprado pasa a Hecha.',
       false,
     ],
     [
-      { ...sinNada, priceCents: 9900 },
+      as('shopping', { ...sinNada, priceCents: 9900 }),
       'event',
-      'Al pasar a Evento se quita el precio. Pendiente pasa a Próximo.',
+      'Se quita el precio. Pendiente pasa a Próximo.',
       true,
     ],
   ] as const)('%j a %s: «%s»', (item, to, text, losesSomething) => {
-    expect(kindChangeNotice(item, to)).toEqual({ text, losesSomething })
+    expect(kindChangeNotice(item, to, { now })).toMatchObject({ text, losesSomething })
   })
 
   it('con tres cosas, en lista', () => {
-    const todo = {
+    const todo = as('event', {
       status: 'upcoming' as const,
       priority: 'high' as const,
-      dueAt: new Date(),
+      dueAt: now,
       recurrence: 'weekly',
       priceCents: null,
-    }
-    expect(kindChangeNotice(todo, 'shopping').text).toBe(
-      'Al pasar a Compra se quitan la prioridad, la fecha y la repetición. Próximo pasa a Pendiente.',
+    })
+    expect(kindChangeNotice(todo, 'shopping', { now }).text).toBe(
+      'Se quitan la prioridad Alta, la fecha (hoy) y la repetición. Próximo pasa a Pendiente.',
+    )
+  })
+
+  it('de nota a tarea, la primera línea es el título y no se pierde nada (B6)', () => {
+    const nota = { ...sinNada, kind: 'note' as const, title: 'Vuelo a Lisboa', notes: 'K7Q2MX' }
+    expect(kindChangeNotice(nota, 'task')).toEqual({
+      lead: '«Vuelo a Lisboa» será el título y el resto, sus notas.',
+      lost: null,
+      rest: 'No se pierde nada: gana casilla y contará como pendiente.',
+      text: '«Vuelo a Lisboa» será el título y el resto, sus notas. No se pierde nada: gana casilla y contará como pendiente.',
+      losesSomething: false,
+    })
+    expect(kindChangeNotice({ ...nota, notes: null }, 'event').text).toBe(
+      '«Vuelo a Lisboa» será el título. No se pierde nada: gana día y hora y contará como próximo.',
+    )
+  })
+
+  it('de tarea a nota, lo que se pierde va aparte, con el aviso (B6c)', () => {
+    const grifo = { ...as('task', tarea), status: 'pending' as const, dueAt: now }
+    expect(kindChangeNotice(grifo, 'note', { now, reminder: true })).toMatchObject({
+      lead: 'El título será la primera línea y sus notas, el resto.',
+      lost: 'Se quitan la prioridad Alta, la fecha (hoy) y el aviso.',
+      rest: 'Dejará de contar como pendiente.',
+      losesSomething: true,
+    })
+    expect(kindChangeNotice({ ...grifo, status: 'done' }, 'note', { now }).rest).toBe(
+      'Las notas no tienen estado: sale de «Fuera de la cabeza».',
     )
   })
 })
 
-it('solo se eligen tarea, compra y evento', () => {
-  expect(ITEM_KINDS.filter(isChoosableKind)).toEqual(['task', 'shopping', 'event'])
+it('se eligen nota, tarea, compra y evento (la nota, desde la 5.4)', () => {
+  expect(ITEM_KINDS.filter(isChoosableKind)).toEqual(['note', 'task', 'shopping', 'event'])
 })
 
 describe('marca del tipo y prefijos', () => {
@@ -155,9 +216,11 @@ describe('marca del tipo y prefijos', () => {
     expect(kindMark('shopping', 'shopping')).toBeNull()
     expect(kindMark('task', 'task')).toBeNull()
     expect(kindMark('note', 'note')).toBeNull()
+    expect(kindMark('note', 'task')).toBeNull()
   })
 
   it.each([
+    ['[ ] Llamar al fontanero', { kind: 'task', title: 'Llamar al fontanero' }],
     ['> Cable HDMI', { kind: 'shopping', title: 'Cable HDMI' }],
     ['@ Dentista', { kind: 'event', title: 'Dentista' }],
     ['  @ Dentista', { kind: 'event', title: 'Dentista' }],
@@ -210,10 +273,25 @@ describe('el tipo que propone una lista sin tipo (5.3, ADR-012)', () => {
     expect(proposedKind(list('list'), [{ kind: 'task' }, { kind: 'shopping' }])).toBe('task')
   })
 
-  it('vacía, o con solo notas, tarea (la nota llega a la barra en la 5.4); una agenda, evento', () => {
-    expect(proposedKind(list('list'))).toBe('task')
-    expect(proposedKind(list('list'), [{ kind: 'note' }, { kind: 'note' }])).toBe('task')
+  it('vacía, o con solo notas, Nota (5.4, diseño 25, B5); una agenda, evento', () => {
+    expect(proposedKind(list('list'))).toBe('note')
+    expect(proposedKind(list('list'), [{ kind: 'note' }, { kind: 'note' }])).toBe('note')
     expect(proposedKind(list('list', totals({}), 'agenda'), [])).toBe('event')
     expect(proposedKind(list('list', totals({ task: 2 }), 'agenda'))).toBe('task')
+  })
+
+  it('las notas no compiten: tres notas y dos tareas proponen tarea (D1)', () => {
+    expect(proposedKind(list('list', totals({ note: 3, task: 2, shopping: 1 })))).toBe('task')
+  })
+
+  it('el porqué, al pie del selector (B5c, D3)', () => {
+    expect(proposalHint(kindProposal(list('list', totals({ shopping: 5, note: 1 }))))).toBe(
+      'Esta lista propone Compra porque es lo que más tiene.',
+    )
+    expect(proposalHint(kindProposal(list('list')))).toBe('Una lista vacía propone Nota.')
+    expect(proposalHint(kindProposal(list('list', totals({}), 'agenda')))).toBe(
+      'Una agenda vacía propone Evento.',
+    )
+    expect(proposalHint(kindProposal(list('inbox')))).toBe('En «En mente» todo empieza como nota.')
   })
 })

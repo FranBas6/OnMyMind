@@ -134,7 +134,7 @@ function renderTrabajo(items: Item[] = [informe, reunion, soporte, cable, demo],
         done: 1,
         pendingPriceCents: 0,
         notes: 0,
-        kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+        kinds: { note: 0, task: 3, shopping: 1, event: 1 },
       },
     },
   ]
@@ -218,12 +218,17 @@ describe('lista con tipos mezclados (diseño 12)', () => {
     // Sin texto, «Añadir» está en gris.
     expect(screen.getByRole('button', { name: 'Añadir' })).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'Tipo: Tarea. Cambiar' }))
-    const picker = await screen.findByRole('radiogroup', { name: 'Añadir a Trabajo' })
+    const picker = await screen.findByRole('radiogroup', { name: 'Tipo' })
     expect(within(picker).getByRole('radio', { name: /Tarea/ })).toHaveAttribute(
       'aria-checked',
       'true',
     )
-    expect(within(picker).getByText('Por defecto')).toBeInTheDocument()
+    // Por qué propone tarea (diseño 25, B5c).
+    expect(
+      screen.getByText(
+        'Esta lista propone Tarea porque es lo que más tiene. Lo que elijas vale solo para lo que escribas ahora.',
+      ),
+    ).toBeInTheDocument()
     await user.click(within(picker).getByRole('radio', { name: /Compra/ }))
 
     expect(await screen.findByRole('button', { name: 'Tipo: Compra. Cambiar' })).toBeVisible()
@@ -272,16 +277,19 @@ describe('lista con tipos mezclados (diseño 12)', () => {
 
     const sheet = await screen.findByRole('dialog', { name: /Detalle de «Enviar informe/ })
     await user.click(within(sheet).getByRole('button', { name: /^Tipo/ }))
-    const kinds = await screen.findByRole('radiogroup', { name: 'Tipo del ítem' })
-    expect(screen.getByRole('button', { name: 'Elige un tipo' })).toBeDisabled()
+    // La hoja «Tipo» (diseño 25, B6): lo que se pierde, en negrita, y «Listo» cambia.
+    const kinds = await screen.findByRole('radiogroup', { name: 'Tipo' })
 
     await user.click(within(kinds).getByRole('radio', { name: /Compra/ }))
     expect(
       screen.getByText(
-        'Al pasar a Compra se quita la prioridad. Pendiente sigue siendo Pendiente.',
+        (_, node) =>
+          node?.textContent === 'Se quita la prioridad Alta. Pendiente sigue siendo Pendiente.',
       ),
     ).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Cambiar a Compra' }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Tipo' })).getByRole('button', { name: 'Listo' }),
+    )
 
     expect(itemsApi.updateItem).toHaveBeenCalledWith(ID.informe, {
       kind: 'shopping',

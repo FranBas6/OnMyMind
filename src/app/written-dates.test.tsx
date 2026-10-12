@@ -30,7 +30,8 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
       done: 0,
       pendingPriceCents: 0,
       notes: 0,
-      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+      // Una lista con tareas propone tarea (5.4: vacía propondría nota).
+      kinds: { note: 0, task: 3, shopping: 0, event: 0 },
     },
     archivedAt: null,
     isOwner: true,
@@ -195,6 +196,9 @@ describe('fechas escritas (3.5, diseño 21)', () => {
     const user = userEvent.setup()
     renderAt('/lists/casa')
     const field = await screen.findByRole('textbox', { name: /Añadir|tarea/ })
+    // Casa está vacía y propone nota (5.4): se pasa a tarea con el botón de la izquierda.
+    await user.click(screen.getByRole('button', { name: /^Tipo: .*\. Cambiar$/ }))
+    await user.click(await screen.findByRole('radio', { name: /Tarea/ }))
     await user.type(field, 'Sacar la basura cada martes y viernes')
     expect(
       screen.getByRole('button', { name: /^Martes y viernes · desde .*\. Quitar la fecha$/ }),

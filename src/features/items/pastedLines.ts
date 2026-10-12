@@ -56,9 +56,11 @@ function cleanLine(raw: string): PastedLine & { marked: boolean } {
 /**
  * Las cosas de un texto pegado, o `null` si no se ofrece (diseño 23, B7): hace falta que sean tres
  * líneas o más, o dos si alguna lleva viñeta. Una sola línea, aunque acabe en salto, se pega como
- * siempre. Se quitan las vacías y las repetidas seguidas; se corta en 50.
+ * siempre. Se quitan las vacías y las repetidas seguidas; se corta en 50. Con `twoLines`, bastan
+ * dos líneas: al crear una nota, que se pega entera (diseño 25, B4), cualquier texto de varias
+ * líneas se ofrece.
  */
-export function pastedLines(text: string): PastedList | null {
+export function pastedLines(text: string, { twoLines = false } = {}): PastedList | null {
   const cleaned = text
     .split(/\r\n|\r|\n/)
     .map(cleanLine)
@@ -69,7 +71,8 @@ export function pastedLines(text: string): PastedList | null {
     if (previous?.title.toLowerCase() === line.title.toLowerCase()) continue
     lines.push(line)
   }
-  const offered = lines.length >= 3 || (lines.length === 2 && lines.some((line) => line.marked))
+  const offered =
+    lines.length >= 3 || (lines.length === 2 && (twoLines || lines.some((line) => line.marked)))
   if (!offered) return null
   return {
     lines: lines.slice(0, PASTED_LINES_MAX).map(({ title, done }) => ({ title, done })),
@@ -77,9 +80,24 @@ export function pastedLines(text: string): PastedList | null {
   }
 }
 
-/** «7 cosas, una por línea». */
-export function pastedLinesHeading(count: number): string {
-  return count === 1 ? '1 cosa, una por línea' : `${String(count)} cosas, una por línea`
+/** «7 cosas, una por línea»; si se crean notas, «7 notas, una por línea» (diseño 25, B4b). */
+export function pastedLinesHeading(count: number, kind: ItemKind | null = null): string {
+  const [one, many] = kind === 'note' ? ['nota', 'notas'] : ['cosa', 'cosas']
+  return `${String(count)} ${count === 1 ? one : many}, una por línea`
+}
+
+/** «Una nota con 7 líneas» (diseño 25, B4): lo pegado entero, en una sola cosa. */
+export function pastedAsOneHeading(text: string, kind: ItemKind | null): string {
+  const count = text.split(/\r\n|\r|\n/).filter((line) => line.trim() !== '').length
+  const noun = kind && kind !== 'note' ? ONE_OF_KIND[kind] : 'Una nota'
+  return `${noun} con ${String(count)} ${count === 1 ? 'línea' : 'líneas'}`
+}
+
+const ONE_OF_KIND: Record<Exclude<ItemKind, 'note'>, string> = {
+  task: 'Una tarea',
+  shopping: 'Una compra',
+  event: 'Un evento',
+  sublist: 'Una sublista',
 }
 
 /** El aviso tras guardar (B3, B6): «6 cosas en Compras». */

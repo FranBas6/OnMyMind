@@ -71,11 +71,11 @@ function Name({ destination, selected }: { destination: Destination; selected: b
   )
 }
 
-/** Lo que va bajo el nombre en la hoja (A3): «En mente» explica que no tiene tipo; las pausadas. */
+/** Lo que va bajo el nombre en la hoja (A3): lo de «En mente» nace nota (5.4); las pausadas. */
 function note(destination: Destination): string | null {
   if (destination.sublist?.status === 'paused') return 'Pausada'
   if (destination.list.kind === 'inbox' && !destination.sublist) {
-    return 'Sin tipo hasta que lo ordenes'
+    return 'Lo de aquí nace nota'
   }
   return null
 }

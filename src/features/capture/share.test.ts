@@ -39,20 +39,23 @@ describe('lo que se guarda al compartir (4.7)', () => {
     expect(sharedItem({ url: GRAFICA, text: 'Para el PC nuevo' })?.title).toBe('Para el PC nuevo')
   })
 
-  it('un texto sin enlace es una nota; con varias líneas, el texto entero va en las notas', () => {
+  it('un texto sin enlace es una nota: la primera línea de título y el resto en las notas (5.4)', () => {
     expect(sharedItem({ text: '  Llamar al fontanero  ' })).toEqual({
       title: 'Llamar al fontanero',
       link: null,
       notes: null,
     })
-    const receta = 'Bizcocho de yogur\n3 huevos\n1 yogur'
+    const receta = 'Bizcocho de yogur\n- 3 huevos\n- 1 yogur'
     expect(sharedItem({ text: receta })).toEqual({
       title: 'Bizcocho de yogur',
       link: null,
-      notes: receta,
+      notes: '• 3 huevos\n• 1 yogur',
     })
     const largo = 'a'.repeat(400)
-    expect(sharedItem({ text: largo })).toMatchObject({ title: 'a'.repeat(300), notes: largo })
+    expect(sharedItem({ text: largo })).toMatchObject({
+      title: 'a'.repeat(300),
+      notes: 'a'.repeat(100),
+    })
   })
 
   it('sin nada, no se guarda nada', () => {

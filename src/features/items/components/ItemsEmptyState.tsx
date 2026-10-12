@@ -5,8 +5,7 @@ import { shortcutKey, thisDevice } from '@/lib/device'
 import { LIST_COLOR_TEXT, LIST_COLOR_TINT } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
-import { firstItemNoun } from '../copy'
-import { proposedKind } from '../kind'
+import { KIND_LABELS, proposedKind } from '../kind'
 import type { Item } from '../types'
 import { SublistIcon } from './SublistIcon'
 
@@ -17,9 +16,12 @@ interface EmptyProps {
 
 /**
  * Lista sin nada (diseño 05, E7 y D4): el patrón de la pantalla 15 sin «Importar» ni «Editar
- * campos», con la nube punteada en el color de la lista.
+ * campos», con la nube punteada en el color de la lista. El texto dice con qué empieza lo que se
+ * escriba y cómo cambiarlo (diseño 25, B5): «Escribe abajo. Empieza como nota; cambia el tipo con
+ * el icono de la izquierda.».
  */
 export function NewListEmpty({ list, isDesktop }: EmptyProps & { list: List }) {
+  const kind = KIND_LABELS[proposedKind(list)].toLowerCase()
   return (
     <Centered>
       <Tile className={LIST_COLOR_TINT[list.color]}>
@@ -39,14 +41,9 @@ export function NewListEmpty({ list, isDesktop }: EmptyProps & { list: List }) {
       </Tile>
       <Title>Aún no hay nada aquí.</Title>
       <Description>
-        {isDesktop ? (
-          `Escribe ${firstItemNoun(proposedKind(list))} arriba. También puedes mover aquí cosas desde «En mente».`
-        ) : (
-          <>
-            Escribe {firstItemNoun(proposedKind(list))} abajo, o pulsa{' '}
-            <b className="text-foreground">+</b> desde cualquier sitio y elige {list.name}.
-          </>
-        )}
+        {isDesktop
+          ? `Escribe arriba. Empieza como ${kind}; cambia el tipo con el botón de la izquierda.`
+          : `Escribe abajo. Empieza como ${kind}; cambia el tipo con el icono de la izquierda.`}
       </Description>
     </Centered>
   )

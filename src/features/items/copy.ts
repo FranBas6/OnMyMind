@@ -4,31 +4,15 @@ import { counterLabel, listStyle, STYLE_TEMPLATES, waitingCount, type List } fro
 import { formatCaptureAge } from '@/lib/date'
 
 import { isFinalStatus, STATUS_LABELS } from './status'
-import type { Item, ItemKind } from './types'
+import type { Item } from './types'
 
 /**
- * Cómo se llama lo primero que se añade, por el tipo que propone la lista (`proposedKind`), para el
- * texto del vacío («Escribe la primera tarea…»).
+ * Texto del campo de añadir: «¿Qué tienes en mente?» en «En mente» y, en las demás, «Añadir a
+ * Ideas…», también vacía (diseño 25, B5).
  */
-const FIRST_ITEM: Record<ItemKind, { noun: string; placeholder: string }> = {
-  note: { noun: 'la primera nota', placeholder: 'Primera nota…' },
-  task: { noun: 'la primera tarea', placeholder: 'Primera tarea…' },
-  shopping: { noun: 'el primer producto', placeholder: 'Primer producto…' },
-  event: { noun: 'el primer evento', placeholder: 'Primer evento…' },
-  sublist: { noun: 'lo primero', placeholder: 'Primer elemento…' },
-}
-
-export function firstItemNoun(kind: ItemKind): string {
-  return FIRST_ITEM[kind].noun
-}
-
-/**
- * Texto del campo de añadir: «¿Qué tienes en mente?», «Primera tarea…» (con el tipo que propone la
- * lista) o «Añadir a Casa…».
- */
-export function addPlaceholder(list: List, empty: boolean, proposed: ItemKind): string {
+export function addPlaceholder(list: List): string {
   if (list.kind === 'inbox') return '¿Qué tienes en mente?'
-  return empty ? FIRST_ITEM[proposed].placeholder : `Añadir a ${list.name}…`
+  return `Añadir a ${list.name}…`
 }
 
 /** «hoy», «ayer» o «el 14 sep»: un día pasado, para frases como «hecha hoy». */

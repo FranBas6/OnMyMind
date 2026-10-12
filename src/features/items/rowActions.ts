@@ -12,6 +12,8 @@ export type RowActionId =
   | 'rename'
   | 'duplicate'
   | 'move'
+  | 'toTask'
+  | 'copyText'
   | 'delete'
 
 export interface RowAction {
@@ -69,6 +71,7 @@ export function rowActions(
   context: RowActionsContext = {},
 ): RowAction[] {
   if (kind === 'sublist') return sublistActions(status, context.chooseOne ?? false)
+  if (kind === 'note') return noteActions(context)
 
   const actions: RowAction[] = []
   // Una opción se elige arriba del todo (A4). Elegir solo la marca: comprarla o hacerla va con
@@ -94,6 +97,26 @@ export function rowActions(
     actions.push({ id: 'finish', label: FINISH_LABEL[kind], shortcut: 'H', status: final })
   }
   actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })
+  actions.push({ id: 'delete', label: 'Borrar', shortcut: '⌫' })
+  return actions
+}
+
+/**
+ * La nota no tiene estado (diseño 25, B11b): «Pasar a tarea», que le da casilla, «Mover a…»,
+ * «Copiar el texto» y «Borrar». En una sublista «para elegir una», «Elegir esta» va arriba.
+ */
+function noteActions({ option }: RowActionsContext): RowAction[] {
+  const actions: RowAction[] = []
+  if (option) {
+    actions.push(
+      option.chosen
+        ? { id: 'choose', label: 'Quitar elección', shortcut: 'L' }
+        : { id: 'choose', label: 'Elegir esta', shortcut: 'L', highlight: { note: option.note } },
+    )
+  }
+  actions.push({ id: 'toTask', label: 'Pasar a tarea', shortcut: 'T', hint: 'tendrá casilla' })
+  actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })
+  actions.push({ id: 'copyText', label: 'Copiar el texto', shortcut: 'C' })
   actions.push({ id: 'delete', label: 'Borrar', shortcut: '⌫' })
   return actions
 }

@@ -1,9 +1,9 @@
 # items
 
 Ítems dentro de una lista. Desde 2a.1 el tipo es de cada ítem (`Item.kind`: `note`, `task`,
-`shopping`, `event`, `sublist`) y la lista solo da el tipo por defecto; mover conserva el tipo salvo
-al entrar o salir de «En mente» (`move.ts`) y se cambia desde el detalle (`kind.ts`,
-`changeKindPatch`). Estados por tipo de ítem (`status.ts`), campos flexibles (`fields.ts`, de momento
+`shopping`, `event`, `sublist`); desde la 5.3 (ADR-012) las listas no tienen tipo y proponen el que
+más tienen (`kindProposal`), mover nunca lo cambia (`move.ts`) y se cambia desde el detalle
+(`kind.ts`, `changeKindPatch`). Estados por tipo de ítem (`status.ts`), campos flexibles (`fields.ts`, de momento
 la prioridad de las tareas), consulta y mutaciones optimistas (`api.ts`, `hooks/`) y el detalle de
 lista (`components/ListDetail.tsx`) con sus filas (`ItemRow` por el tipo del ítem, `ItemControl`
 con su círculo, cuadrado o calendario), filtros, «Fuera de la cabeza» y el campo de añadir con su
@@ -30,3 +30,12 @@ varios y `hasStores` si además es una compra. `withLinks` deja la cosa como `it
 precio solo en las compras, y `regainCheapest` devuelve el de la más barata al volver a ser compra.
 `LinksSection` es la caja «Enlaces», `LinkOptions` las opciones de una tienda o un enlace, y
 `useItemLinkMetadata` busca el título de cada uno (y el precio, si es una tienda).
+
+**La nota (5.4, diseño 25):** `NoteRow` es su fila (la hoja de `ItemControl` en el sitio de la
+casilla y el principio del resto en dos líneas) y la ficha, `NoteTextField`: un solo texto con dos
+campos que se comportan como uno (`NoteEditor`, que también usa la captura). Se guarda partido con
+`noteText.ts` (`splitNoteText`: la primera línea al título y el resto a las notas; `noteBody` no
+repite el título en lo compartido antes de la 5.4), y `bullets.ts` hace las viñetas. «Pasar a
+tarea» y «Copiar el texto» son acciones de fila de la nota (`rowActions`), y `changeKind` en
+`ItemWorkspace` cambia el tipo con «Ahora es una tarea · Deshacer» (`revertKindChange`). Pegar
+varias líneas al crear una nota las deja en una (`PastedNoteBox`, `usePastedLines` con `single`).

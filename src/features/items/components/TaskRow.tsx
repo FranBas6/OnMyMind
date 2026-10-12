@@ -1,10 +1,11 @@
 import { ChevronRight, Repeat } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 // Por sus rutas y no por el índice: `reminders` usa piezas de `items`.
 import { ReminderBell } from '@/features/reminders/components/ReminderBell'
 import { useItemReminder } from '@/features/reminders/hooks/useReminders'
 import { showsBell } from '@/features/reminders/reminders'
-import { formatDueDate } from '@/lib/date'
+import { formatCaptureAge, formatDueDate } from '@/lib/date'
 import { cn } from '@/lib/utils'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
 import { LiveDoneNote } from '@/features/sharing/components/LiveDoneNote'
@@ -81,10 +82,21 @@ export function TaskRow({ item }: { item: Item }) {
   // Una opción de una sublista «para elegir una» (5.1, diseño 24): «Elegida», «Más barata»,
   // «+50,99 €»… a la derecha.
   const option = useOptionMark(item)
+  // En «En mente» todo propone nota: la casilla ya dice que es una tarea (diseño 25, B1b).
+  const inbox = list.kind === 'inbox'
   const mark =
-    priority === null && dueAt === null && eventDate === null
+    priority === null && dueAt === null && eventDate === null && !inbox
       ? kindMark(item.kind, proposedKind(list))
       : null
+  // En «En mente», cuándo se capturó (diseño 25, B1b: «ayer»): a la derecha en el móvil y en la
+  // columna de la fecha en escritorio, si no tiene otra.
+  const age = inbox ? (
+    <>
+      <span className="sr-only">Capturada </span>
+      {formatCaptureAge(item.createdAt)}
+    </>
+  ) : null
+  const ageClass = 'text-xs whitespace-nowrap text-subtle-foreground md:text-[13px]'
   const first = quiet ? null : priority ? (
     <PriorityChip priority={priority} />
   ) : mark ? (
@@ -182,7 +194,7 @@ export function TaskRow({ item }: { item: Item }) {
             )}
             {first ?? <span className="hidden md:block" />}
             {link && <span className="flex min-w-0 md:hidden">{link}</span>}
-            {second ?? <span className="hidden md:block" />}
+            {second ?? <AgeColumn age={age} className={ageClass} />}
             {repeat && (
               <span className="flex items-center gap-2 md:hidden">
                 <span aria-hidden className={META}>
@@ -206,10 +218,13 @@ export function TaskRow({ item }: { item: Item }) {
           // Sin nada debajo del título, sus dos columnas siguen ahí: lo de la derecha no se mueve.
           <>
             <span className="hidden md:block" />
-            <span className="hidden md:block" />
+            <AgeColumn age={age} className={ageClass} />
           </>
         )}
       </div>
+      {age && !second && !option && !itemPrice(item) && (
+        <span className={cn(ageClass, 'self-center md:hidden')}>{age}</span>
+      )}
       {option ? (
         <OptionAside item={item} mark={option} className="md:w-full" />
       ) : (
@@ -219,4 +234,10 @@ export function TaskRow({ item }: { item: Item }) {
       {isDesktop && <ItemRowDotsMenu item={item} />}
     </SwipeableRow>
   )
+}
+
+/** La antigüedad de una captura en la columna de la fecha de escritorio; sin ella, el hueco. */
+function AgeColumn({ age, className }: { age: ReactNode; className: string }) {
+  if (!age) return <span className="hidden md:block" />
+  return <span className={cn(className, 'hidden md:block md:text-right')}>{age}</span>
 }

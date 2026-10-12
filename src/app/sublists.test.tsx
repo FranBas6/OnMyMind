@@ -41,7 +41,8 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
       done: 0,
       pendingPriceCents: 0,
       notes: 0,
-      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+      // Una lista con tareas propone tarea (5.4: vacía propondría nota).
+      kinds: { note: 0, task: 3, shopping: 0, event: 0 },
     },
     archivedAt: null,
     isOwner: true,
@@ -98,7 +99,7 @@ const viajes = list('viajes', 'Viajes', {
     done: 1,
     pendingPriceCents: 0,
     notes: 0,
-    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    kinds: { note: 0, task: 3, shopping: 0, event: 0 },
   },
 })
 const casa = list('casa', 'Casa', { color: 'coral', position: 3000 })
@@ -261,7 +262,7 @@ describe('sublistas en pantalla (diseño 12)', () => {
     const { router } = renderAt('/lists/viajes')
 
     await user.click(await screen.findByRole('button', { name: 'Tipo: Tarea. Cambiar' }))
-    const picker = await screen.findByRole('radiogroup', { name: 'Añadir a Viajes' })
+    const picker = await screen.findByRole('radiogroup', { name: 'Tipo' })
     await user.click(within(picker).getByRole('radio', { name: /Sublista/ }))
     await user.type(screen.getByRole('textbox', { name: 'Añadir a Viajes…' }), 'Oporto{Enter}')
 
@@ -273,7 +274,7 @@ describe('sublistas en pantalla (diseño 12)', () => {
     )
     // Dentro de una sublista no hay otra: el selector no la ofrece.
     await user.click(screen.getByRole('button', { name: 'Tipo: Tarea. Cambiar' }))
-    const inside = await screen.findByRole('radiogroup', { name: 'Añadir a Oporto' })
+    const inside = await screen.findByRole('radiogroup', { name: 'Tipo' })
     expect(within(inside).queryByRole('radio', { name: /Sublista/ })).not.toBeInTheDocument()
   })
 

@@ -24,8 +24,13 @@ describe('rowActions', () => {
   })
 
   it('en otros tipos no hay «en curso»', () => {
-    // La nota no se marca hecha (5.3).
-    expect(labels('note', 'pending')).toEqual(['Mover a…', 'Borrar'])
+    // La nota no se marca hecha (5.3): pasa a tarea, se mueve, se copia o se borra (diseño 25, B11b).
+    expect(labels('note', 'pending')).toEqual([
+      'Pasar a tarea',
+      'Mover a…',
+      'Copiar el texto',
+      'Borrar',
+    ])
     expect(labels('shopping', 'discarded')).toEqual(['Marcar pendiente', 'Mover a…', 'Borrar'])
     expect(labels('event', 'upcoming')).toEqual(['Cancelado', 'Mover a…', 'Borrar'])
   })

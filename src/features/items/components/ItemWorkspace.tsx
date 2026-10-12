@@ -1,15 +1,22 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { Check, Copy, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useListActions, type List } from '@/features/lists'
+// Por sus rutas y no por el índice: `reminders` y `sharing` usan piezas de `items`.
+import { useSetReminder } from '@/features/reminders/hooks/useReminders'
+import type { Reminder } from '@/features/reminders/reminders'
+import { copyText } from '@/features/sharing/share'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { queryKeys } from '@/lib/queryKeys'
 import { showUndoToast } from '@/lib/undoToast'
 
 import { chosenLabel, isChoosing } from '../chooseOne'
+import { changeKindPatch, kindChangedMessage, revertKindChange } from '../kind'
+import { noteText } from '../noteText'
 import {
   useDeleteItem,
   useInsertItems,
@@ -28,7 +35,7 @@ import {
   duplicateSublist,
   positionAfter,
 } from '../sublists'
-import type { Item, ItemStatus } from '../types'
+import type { Item, ItemKind, ItemStatus } from '../types'
 import {
   ItemActionsContext,
   ItemWorkspaceContext,
@@ -89,6 +96,7 @@ export function ItemWorkspace({
   const moveItem = useMoveItem()
   const deleteItem = useDeleteItem()
   const insertItems = useInsertItems()
+  const setReminder = useSetReminder()
   const queryClient = useQueryClient()
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [shownDelete, setShownDelete] = useState<PendingDelete | null>(null)
@@ -159,6 +167,21 @@ export function ItemWorkspace({
     })
   }
 
+  // Una nota que se cierra sin texto se borra sola (diseño 25, B2e), y se puede deshacer. Si
+  // entretanto se movió o cambió de tipo, ya no es «cerrar»: se deja como está.
+  const discardEmpty = (item: Item) => {
+    const current = listItems(item).find((entry) => entry.id === item.id)
+    if (current?.kind !== 'note') return
+    deleteItem.mutate(item)
+    showUndoToast({
+      icon: Trash2,
+      message: 'Nota vacía borrada',
+      onUndo: () => {
+        insertItems.mutate({ items: [item], reason: 'restore' })
+      },
+    })
+  }
+
   // Una sublista con cosas dentro pide confirmación con el recuento (diseño 12, S5).
   const remove = (item: Item) => {
     const inside = item.kind === 'sublist' ? childrenOf(listItems(item), item.id) : []
@@ -187,6 +210,34 @@ export function ItemWorkspace({
       onUndo: () => {
         updateItem.mutate({ item: { ...sublist, chosenId }, patch: { chosenId: previous } })
       },
+    })
+  }
+
+  // Cambiar el tipo (diseño 25, B6b): «Ahora es una tarea · Deshacer». La base borra el aviso al
+  // pasar a algo que no lo tiene; «Deshacer» lo vuelve a poner.
+  const changeKind = (item: Item, kind: ItemKind) => {
+    if (kind === item.kind) return
+    const patch = changeKindPatch(item, kind)
+    const reminder = queryClient
+      .getQueryData<Reminder[]>(queryKeys.reminders)
+      ?.find((entry) => entry.itemId === item.id)
+    updateItem.mutate({ item, patch })
+    showUndoToast({
+      icon: Check,
+      message: kindChangedMessage(kind),
+      onUndo: () => {
+        updateItem.mutate({ item: { ...item, ...patch }, patch: revertKindChange(item, patch) })
+        if (reminder && kind !== 'task' && kind !== 'event') {
+          setReminder.mutate({ item, next: { ...reminder, sentAt: null } })
+        }
+      },
+    })
+  }
+
+  const copyItemText = (item: Item) => {
+    void copyText(noteText(item)).then((copied) => {
+      if (copied) showUndoToast({ icon: Copy, message: 'Texto copiado' })
+      else toast.error('No se ha podido copiar el texto.')
     })
   }
 
@@ -244,6 +295,8 @@ export function ItemWorkspace({
     setChooseOne: (sublist, chooseOne) => {
       updateItem.mutate({ item: sublist, patch: { chooseOne } })
     },
+    changeKind,
+    copyText: copyItemText,
     swipeOpenId,
     setSwipeOpenId,
     order,
@@ -271,7 +324,10 @@ export function ItemWorkspace({
             updateItem.mutate({ item, patch })
           }}
           onMove={actions.startMove}
+          onChangeKind={changeKind}
+          onCopyText={copyItemText}
           onDelete={remove}
+          onDiscardEmpty={discardEmpty}
           onClose={() => {
             onOpenItem(undefined)
           }}

@@ -30,7 +30,8 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
       done: 0,
       pendingPriceCents: 0,
       notes: 0,
-      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+      // Una lista con tareas propone tarea (5.4: vacía propondría nota).
+      kinds: { note: 0, task: 3, shopping: 0, event: 0 },
     },
     archivedAt: null,
     isOwner: true,
@@ -93,6 +94,12 @@ async function openCapture(user: ReturnType<typeof userEvent.setup>) {
   const dialog = await captureDialog()
   await user.click(within(dialog).getByRole('textbox', { name: '¿Qué tienes en mente?' }))
   return dialog
+}
+
+/** Cambia el tipo de la barra de añadir a tarea (diseño 25, B5c). */
+async function chooseTask(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /^Tipo: .*\. Cambiar$/ }))
+  await user.click(await screen.findByRole('radio', { name: /Tarea/ }))
 }
 
 describe('pegar varias líneas (4.3, diseño 23, B)', () => {
@@ -160,10 +167,40 @@ describe('pegar varias líneas (4.3, diseño 23, B)', () => {
     })
   })
 
+  it('en una nota se pega todo en una, y «Una cosa por línea» la parte (diseño 25, B4)', async () => {
+    const user = userEvent.setup()
+    vi.mocked(itemsApi.createItem).mockResolvedValue()
+    renderAt('/')
+    const dialog = await openCapture(user)
+    await user.paste('Bizcocho de yogur\n- 1 yogur\n- 3 huevos')
+
+    const note = within(dialog).getByRole('region', { name: 'Lo pegado, en una sola cosa' })
+    expect(within(note).getByText('Una nota con 3 líneas')).toBeInTheDocument()
+    await user.click(within(note).getByRole('button', { name: 'Una cosa por línea' }))
+    expect(within(pastedBox(dialog)).getByText('3 notas, una por línea')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Añadir 3' })).toBeInTheDocument()
+    await user.click(within(pastedBox(dialog)).getByRole('button', { name: 'Como una sola' }))
+
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => {
+      expect(created()).toHaveLength(1)
+    })
+    expect(created()[0]).toMatchObject({
+      kind: 'note',
+      title: 'Bizcocho de yogur',
+      notes: '• 1 yogur\n• 3 huevos',
+      listId: 'i',
+    })
+  })
+
   it('«Como una sola» vuelve al campo con el texto tal cual', async () => {
     const user = userEvent.setup()
     renderAt('/')
     const dialog = await openCapture(user)
+    // Lo que no es una nota se ofrece una por línea, como en 23.
+    await user.click(within(dialog).getByRole('button', { name: 'Tipo: Nota. Cambiar' }))
+    await user.click(within(dialog).getByRole('radio', { name: /Tarea/ }))
+    await user.click(within(dialog).getByRole('textbox', { name: '¿Qué tienes en mente?' }))
     await user.paste('Leche\nPan\nHuevos')
 
     await user.click(within(pastedBox(dialog)).getByRole('button', { name: 'Como una sola' }))
@@ -177,7 +214,10 @@ describe('pegar varias líneas (4.3, diseño 23, B)', () => {
     const dialog = await openCapture(user)
     await user.paste('Comprar pilas AA\n')
     expect(within(dialog).queryByRole('region', { name: /Lo pegado/ })).not.toBeInTheDocument()
-    expect(within(dialog).getByRole('textbox')).toHaveValue('Comprar pilas AA\n')
+    // En una nota, el salto pasa al resto (diseño 25, B3).
+    expect(within(dialog).getByRole('textbox', { name: '¿Qué tienes en mente?' })).toHaveValue(
+      'Comprar pilas AA',
+    )
 
     await user.paste('\nLeche\nPan\nHuevos')
     expect(within(dialog).queryByRole('region', { name: /Lo pegado/ })).not.toBeInTheDocument()
@@ -187,7 +227,9 @@ describe('pegar varias líneas (4.3, diseño 23, B)', () => {
     const user = userEvent.setup()
     renderAt('/lists/casa')
     await screen.findByRole('heading', { level: 1, name: 'Casa' })
-    const field = screen.getByRole('textbox', { name: 'Primera tarea…' })
+    const field = screen.getByRole('textbox', { name: 'Añadir a Casa…' })
+    // Casa está vacía y propone nota (5.4): se pasa a tarea con el botón de la izquierda.
+    await chooseTask(user)
     await user.click(field)
     await user.paste('Llamar al fontanero mañana 10h\nBajar el reciclaje\nPagar la comunidad\n')
 
@@ -221,7 +263,8 @@ describe('pegar varias líneas (4.3, diseño 23, B)', () => {
     const user = userEvent.setup()
     renderAt('/lists/casa')
     await screen.findByRole('heading', { level: 1, name: 'Casa' })
-    await user.click(screen.getByRole('textbox', { name: 'Primera tarea…' }))
+    await chooseTask(user)
+    await user.click(screen.getByRole('textbox', { name: 'Añadir a Casa…' }))
     await user.paste('Llamar al fontanero mañana 10h\nBajar el reciclaje\nPagar la comunidad')
 
     await user.click(screen.getByRole('button', { name: 'Mañana · 10:00. Quitar la fecha' }))
@@ -242,6 +285,8 @@ describe('pegar varias líneas (4.3, diseño 23, B)', () => {
     renderAt('/')
     const dialog = await openCapture(user)
     await user.paste('Pilas\nBombillas\nCinta americana')
+    // En una nota se pega entero: se parte con «Una cosa por línea» (diseño 25, B4b).
+    await user.click(within(dialog).getByRole('button', { name: 'Una cosa por línea' }))
     await user.click(within(dialog).getByRole('button', { name: 'Añadir 3' }))
     expect((await screen.findAllByText('3 cosas en En mente')).length).toBeGreaterThan(0)
     expect(itemsApi.createItem).not.toHaveBeenCalled()

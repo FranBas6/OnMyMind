@@ -79,6 +79,7 @@ function useRowSwipe(item: Item, disabled = false) {
     hasLeft: true,
     open,
     disabled,
+    peekRight: item.kind === 'note',
     onOpenChange: setOpen,
     onStage: (stage) => {
       const action = right[stage - 1]
@@ -368,6 +369,16 @@ function SwipeRowView({
         >
           <ToneIcon icon={TONE[shown.tone].icon} className={cn(!reached && 'opacity-60')} />
           <span className={cn(!reached && 'opacity-60')}>{shown.label}</span>
+        </div>
+      )}
+      {offset > 0 && !shown && item.kind === 'note' && (
+        // Una nota no se marca (diseño 25, B11): asoma esto y la fila vuelve.
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 flex items-center bg-fill pl-[18px] text-[12.5px] leading-[1.3] font-semibold text-subtle-foreground"
+          style={{ paddingRight: `calc(100% - ${String(Math.max(offset - 18, 0))}px)` }}
+        >
+          Las notas no tienen estado
         </div>
       )}
       {offset < 0 && (

@@ -1,19 +1,32 @@
-import { ChevronLeft, WifiOff, X } from 'lucide-react'
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { ChevronDown, ChevronLeft, WifiOff, X } from 'lucide-react'
+import { Popover } from 'radix-ui'
+import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 
 import {
   destinationShortName,
   FieldMarks,
+  ITEM_NOTES_MAX_LENGTH,
   ITEM_TITLE_MAX_LENGTH,
+  joinNoteDraft,
+  KIND_ICONS,
+  KIND_LABELS,
+  KindOptions,
+  kindProposal,
   linesToSave,
   markedFieldClass,
+  NoteEditor,
+  noteDraftOf,
   PastedLinesBox,
+  PastedNoteBox,
+  proposalHint,
   readsWrittenDates,
+  splitNoteText,
   usePastedLines,
   useLinkPreview,
   useWrittenDate,
+  withBullets,
   WrittenDatePill,
-  proposedKind,
+  type ChoosableKind,
   type Destination,
   type LineToSave,
   type NewItemLink,
@@ -35,7 +48,8 @@ const FIELD_TYPE = 'font-display leading-[1.3] font-bold tracking-[-0.02em]'
 const LONG_TEXT = 48
 /**
  * El campo admite enlaces largos (los de las tiendas llevan de todo detrás); lo que no es un
- * enlace se corta en el límite del título, como antes con `maxLength`.
+ * enlace se corta en el límite del título, como antes con `maxLength`; una nota, en el de su
+ * primera línea y el resto.
  */
 const FIELD_MAX_LENGTH = 4000
 /** Escribiendo un enlace a mano, se mira la página cuando se deja de teclear; pegado, al momento. */
@@ -52,16 +66,19 @@ interface CaptureFormProps {
   defaultListId: string | null
   /**
    * Con un enlace (2.3), también lo que se sabe de su página; con una fecha escrita (3.5), lo que
-   * se entendió de ella.
+   * se entendió de ella. `kind`, el tipo con el que se guarda (5.4); `notes`, lo que sigue a la
+   * primera línea.
    */
   onSave: (
     title: string,
     destination: Destination,
     link: NewItemLink | undefined,
     written: WrittenDate | null,
+    kind: ChoosableKind,
+    notes: string | null,
   ) => void
   /** Pegar varias líneas (4.3): una cosa por cada una, en orden. */
-  onSaveMany: (lines: LineToSave[], destination: Destination) => void
+  onSaveMany: (lines: LineToSave[], destination: Destination, kind: ChoosableKind) => void
   onClose: () => void
 }
 
@@ -80,6 +97,13 @@ interface CaptureFormProps {
  * **Varias líneas (4.3, diseño 23, B1–B3, B7 y E3):** pegar una lista con el campo vacío la enseña
  * en su caja, una cosa por línea, en lugar del campo; «Guardar» pasa a «Añadir 7». «Como una sola»
  * vuelve al campo con el texto tal cual. Con algo ya escrito, se pega como siempre.
+ *
+ * **El tipo (5.4, diseño 25, B3, B4 y D4):** abajo a la izquierda, la pastilla «Nota ▾» con el que
+ * propone la lista elegida («En mente», nota), que se cambia con un toque. Una nota se escribe
+ * como en su ficha (`NoteEditor`): la primera línea en grande, el resto debajo con viñetas, e Intro
+ * hace otra línea; se guarda con «Guardar» o ⌘↩. Lo demás guarda con Intro en el móvil, como
+ * siempre. Pegar varias líneas en una nota la deja entera («Una nota con 7 líneas»), con «Una cosa
+ * por línea» para partirla.
  */
 export function CaptureForm({
   variant,
@@ -98,6 +122,9 @@ export function CaptureForm({
   // Elegido a mano: la propuesta de un producto ya no lo cambia.
   const [touched, setTouched] = useState(false)
   const [picking, setPicking] = useState(false)
+  // El tipo elegido con la pastilla; sin él, el que propone la lista elegida.
+  const [chosenKind, setChosenKind] = useState<ChoosableKind | null>(null)
+  const [pickingKind, setPickingKind] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
   const lines = usePastedLines()
   const online = useOnline()
@@ -121,39 +148,51 @@ export function CaptureForm({
   // Un producto va a la lista de compras más usada, si no se ha elegido otra cosa (K1).
   const product = link !== null && Boolean(preview.metadata?.price)
   const proposed =
-    product && !touched && chosen && proposedKind(chosen.list) !== 'shopping'
+    product && !touched && chosen && kindProposal(chosen.list).kind !== 'shopping'
       ? shoppingDestination(destinations)
       : undefined
   const target = proposed ?? chosen
-  const asShopping = product && target !== undefined && proposedKind(target.list) === 'shopping'
+  const proposal = target ? kindProposal(target.list) : null
+  const kind = chosenKind ?? proposal?.kind ?? null
+  // Una nota se escribe en su editor. Con un enlace, la captura sigue en «modo enlace» (2.3): se
+  // guarda con su página, también si es una nota.
+  const noteMode = kind === 'note' && !link
+  const asShopping = product && !noteMode && target !== undefined && kind === 'shopping'
   const chips = destinationChips(destinations, {
     chosenId: target?.id,
     originId: origin?.id,
     defaultId: defaultListId,
     proposedId: proposed?.id,
   })
-  const kind = target ? proposedKind(target.list) : null
   // Fechas escritas (3.5, diseño 21): solo si se guarda una tarea o un evento, y sin enlace. Con
-  // «En mente» o una lista de compras elegida no hay marca ni pastilla (A6).
+  // una nota o una compra no hay marca ni pastilla (A6).
   const dateKind = !link && kind && readsWrittenDates(kind) ? kind : null
   const dated = useWrittenDate(text, dateKind)
   const marks = dated.understood && !dated.undone ? dated.understood.parsed.ranges : null
   const [scrollTop, setScrollTop] = useState(0)
-  const title = link ? captureTitle(link, preview.metadata) : dated.toSave.title
+  // Lo escrito se guarda partido: la primera línea de título y el resto en las notas (5.4).
+  const note = link ? null : splitNoteText(noteMode ? withBullets(text) : dated.toSave.title)
+  const title = link ? captureTitle(link, preview.metadata) : (note?.title ?? '')
 
   const save = () => {
-    if (lines.pasted) {
-      if (lines.count > 0 && target && kind) {
-        onSaveMany(linesToSave(lines.pasted.rows, kind), target)
-      }
+    if (!target || !kind) return
+    if (lines.pasted?.single) {
+      const pastedNote = splitNoteText(withBullets(lines.pasted.text))
+      if (pastedNote) onSave(pastedNote.title, target, undefined, null, kind, pastedNote.notes)
       return
     }
-    if (!title || !target || !kind) return
+    if (lines.pasted) {
+      if (lines.count > 0) onSaveMany(linesToSave(lines.pasted.rows, kind), target, kind)
+      return
+    }
+    if (!title) return
     onSave(
       title,
       target,
       link ? capturedLink(link, preview, kind) : undefined,
       dated.toSave.written,
+      kind,
+      note?.notes ?? null,
     )
   }
 
@@ -169,7 +208,10 @@ export function CaptureForm({
 
   const changeText = (next: string) => {
     const nextLink = captureLink(next)
-    setText(nextLink ? next : next.slice(0, ITEM_TITLE_MAX_LENGTH))
+    // Una nota: su primera línea y el resto. Se calcula aquí: al cargar el módulo, lo de
+    // `@/features/items` aún puede no estar (las importaciones de la app dan la vuelta).
+    const max = noteMode ? ITEM_TITLE_MAX_LENGTH + 1 + ITEM_NOTES_MAX_LENGTH : ITEM_TITLE_MAX_LENGTH
+    setText(nextLink ? next : next.slice(0, max))
     clearTimeout(timer.current)
     const url = nextLink?.url ?? null
     if (pasting.current || url === null) setLookupUrl(url)
@@ -187,23 +229,86 @@ export function CaptureForm({
       save()
     }
   }
+  // En una nota, Intro hace otra línea también en el móvil: guarda ⌘↩ (o «Guardar»).
+  const onNoteKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+    if (event.metaKey || event.ctrlKey) {
+      event.preventDefault()
+      save()
+    }
+  }
+  const onNotePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    // Varias líneas en una nota vacía: entera, con «Una cosa por línea» (diseño 25, B4).
+    if (text.trim() === '' && lines.offer(event.clipboardData.getData('text'), true)) {
+      event.preventDefault()
+      return
+    }
+    pasting.current = true
+  }
 
   const waiting = link !== null && preview.state === 'searching'
-  const saveKeys = `${shortcutKey()}↩ para guardar`
+  const saveKeys = noteMode
+    ? `↩ otra línea · ${shortcutKey()}↩ guardar`
+    : `${shortcutKey()}↩ para guardar`
   const hint = !online ? (
     <span className="flex items-center gap-1.5">
       <WifiOff aria-hidden className="size-3.5" strokeWidth={2.2} />
       Sin conexión · se guarda igual
     </span>
-  ) : dialog ? (
-    waiting ? (
+  ) : waiting ? (
+    dialog ? (
       `Puedes guardar ya · ${saveKeys}`
     ) : (
-      saveKeys
+      'Puedes guardar ya'
     )
-  ) : waiting ? (
-    'Puedes guardar ya'
-  ) : null
+  ) : lines.pasted ? null : dialog ? (
+    saveKeys
+  ) : noteMode ? (
+    'Intro, otra línea'
+  ) : (
+    'Intro guarda'
+  )
+
+  const chooseKind = (next: ChoosableKind) => {
+    setChosenKind(next)
+    setPickingKind(false)
+  }
+  // El tipo, con la pastilla de abajo a la izquierda (diseño 25, B3 y D4).
+  const kindPill = kind && (
+    <KindPill
+      kind={kind}
+      changed={chosenKind !== null && chosenKind !== proposal?.kind}
+      open={pickingKind}
+      onClick={() => {
+        field.current?.blur()
+        setPickingKind((open) => !open)
+      }}
+    />
+  )
+
+  // Móvil: la pastilla cambia la captura por «Tipo», en la misma hoja, como «Guardar en».
+  if (!dialog && pickingKind && kind && proposal) {
+    return (
+      <div className="flex flex-col gap-1.5 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+        <div className="flex h-11 items-center justify-between px-1">
+          <p className="font-display text-xl font-extrabold tracking-[-0.02em]">Tipo</p>
+          <button
+            type="button"
+            onClick={() => {
+              setPickingKind(false)
+            }}
+            className="h-9 rounded-lg px-1 text-[15px] font-bold text-primary outline-none hover:text-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            Listo
+          </button>
+        </div>
+        <KindOptions<ChoosableKind> label="Tipo" value={kind} onChange={chooseKind} />
+        <p className="mt-1.5 rounded-[14px] bg-fill px-3.5 py-3 text-sm leading-[1.45]">
+          {proposalHint(proposal)} Lo que elijas vale solo para lo que escribas ahora.
+        </p>
+      </div>
+    )
+  }
 
   // Móvil: «···» cambia la captura por «Guardar en» en la misma hoja (diseño 12, A3). El texto
   // escrito se queda: el formulario vuelve con él al elegir o con «Listo».
@@ -228,8 +333,9 @@ export function CaptureForm({
     save()
   }
 
-  const saveLabel = lines.pasted ? `Añadir ${String(lines.count)}` : 'Guardar'
-  const canSave = lines.pasted ? lines.count > 0 : Boolean(title)
+  const saveLabel =
+    lines.pasted && !lines.pasted.single ? `Añadir ${String(lines.count)}` : 'Guardar'
+  const canSave = lines.pasted ? lines.pasted.single || lines.count > 0 : Boolean(title)
 
   return (
     <div className="flex flex-col gap-3.5 md:gap-4" onKeyDown={onListKeyDown}>
@@ -240,8 +346,6 @@ export function CaptureForm({
             Captura rápida{origin ? ` · desde ${destinationShortName(origin)}` : ''}
           </span>
           <span className="flex items-center gap-2">
-            {/* La pista va aquí y no junto a «Guardar»: allí le quitaba sitio al cuarto chip. */}
-            {hint && <span className="mr-1.5 text-xs text-subtle-foreground">{hint}</span>}
             <kbd className="rounded-[5px] bg-fill px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground">
               Esc
             </kbd>
@@ -264,7 +368,15 @@ export function CaptureForm({
         )
       )}
 
-      {lines.pasted ? (
+      {lines.pasted?.single ? (
+        <PastedNoteBox
+          text={lines.pasted.text}
+          kind={kind}
+          onSplit={() => {
+            lines.setSingle(false)
+          }}
+        />
+      ) : lines.pasted ? (
         <PastedLinesBox
           rows={lines.pasted.rows}
           overflow={lines.pasted.overflow}
@@ -272,12 +384,37 @@ export function CaptureForm({
           onToggleRemoved={lines.toggleRemoved}
           onToggleDate={lines.toggleDate}
           onSingle={() => {
+            // En una nota, vuelve a la nota con todo; si no, el texto pasa al campo tal cual.
+            if (kind === 'note') {
+              lines.setSingle(true)
+              return
+            }
             const pastedText = lines.pasted?.text ?? ''
             lines.clear()
             changeText(pastedText)
             requestAnimationFrame(() => field.current?.focus())
           }}
         />
+      ) : noteMode ? (
+        <div className="max-h-[42dvh] overflow-y-auto overscroll-contain md:max-h-[50dvh]">
+          <NoteEditor
+            value={noteDraftOf(text)}
+            onChange={(next) => {
+              changeText(joinNoteDraft(next))
+            }}
+            onPaste={onNotePaste}
+            onKeyDown={onNoteKeyDown}
+            placeholder="¿Qué tienes en mente?"
+            label="¿Qué tienes en mente?"
+            autoFocus
+            titleClassName={cn(
+              FIELD_TYPE,
+              'placeholder:text-placeholder',
+              text.length > LONG_TEXT ? 'text-[22px]' : 'text-[26px]',
+            )}
+            bodyClassName="mt-1 text-base leading-normal"
+          />
+        </div>
       ) : (
         <>
           <div className="relative">
@@ -353,12 +490,7 @@ export function CaptureForm({
         </>
       )}
 
-      <div
-        className={cn(
-          'flex items-center gap-2',
-          dialog && 'justify-between gap-4 border-t border-border-soft pt-4',
-        )}
-      >
+      <div className={cn('flex items-center gap-2', dialog && 'border-t border-border-soft pt-4')}>
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <span className="shrink-0 text-xs font-semibold text-subtle-foreground">Guardar en</span>
           <div
@@ -396,16 +528,81 @@ export function CaptureForm({
             />
           )}
         </div>
-        {dialog && <SaveButton label={saveLabel} disabled={!canSave} onClick={save} compact />}
       </div>
 
-      {!dialog && (
-        <div className="flex items-center justify-between gap-3 pb-3.5">
-          <span className="text-[13px] text-subtle-foreground">{hint}</span>
-          <SaveButton label={saveLabel} disabled={!canSave} onClick={save} />
-        </div>
-      )}
+      <div className={cn('flex items-center justify-between gap-3', !dialog && 'pb-3.5')}>
+        {dialog && kind && proposal ? (
+          <Popover.Root open={pickingKind} onOpenChange={setPickingKind}>
+            <Popover.Trigger asChild>{kindPill}</Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                align="start"
+                side="top"
+                sideOffset={6}
+                aria-label="Tipo"
+                className="z-50 flex w-[300px] flex-col gap-0.5 rounded-2xl border border-border bg-popover p-1.5 text-popover-foreground shadow-popover outline-none"
+              >
+                <KindOptions<ChoosableKind>
+                  label="Tipo"
+                  value={kind}
+                  compact
+                  onChange={chooseKind}
+                />
+                <p className="px-2.5 pt-2 pb-1.5 text-xs leading-normal text-subtle-foreground">
+                  {proposalHint(proposal)}
+                </p>
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        ) : (
+          kindPill
+        )}
+        <span
+          className={cn(
+            'min-w-0 flex-1 text-right leading-[1.3] text-subtle-foreground',
+            dialog ? 'text-[13px]' : 'text-[12.5px]',
+          )}
+        >
+          {hint}
+        </span>
+        <SaveButton label={saveLabel} disabled={!canSave} onClick={save} compact={dialog} />
+      </div>
     </div>
+  )
+}
+
+/** La pastilla del tipo (diseño 25, B3): 40 px, `fill`, su icono, «Nota» y la flechita. */
+function KindPill({
+  kind,
+  changed,
+  open,
+  ...props
+}: {
+  kind: ChoosableKind
+  changed: boolean
+  open: boolean
+  onClick?: () => void
+}) {
+  const Icon = KIND_ICONS[kind]
+  return (
+    <button
+      type="button"
+      aria-label={`Tipo: ${KIND_LABELS[kind]}. Cambiar`}
+      aria-expanded={open}
+      // Que tocarla no cierre el teclado antes de tiempo.
+      onMouseDown={(event) => {
+        event.preventDefault()
+      }}
+      className={cn(
+        'flex h-10 shrink-0 items-center gap-2 rounded-full px-3 text-[13.5px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        changed ? 'bg-brand-tint text-primary-strong' : 'bg-fill text-foreground hover:bg-border',
+      )}
+      {...props}
+    >
+      <Icon aria-hidden className="size-4" strokeWidth={2.2} />
+      {KIND_LABELS[kind]}
+      <ChevronDown aria-hidden className="size-3.5 opacity-70" strokeWidth={2.4} />
+    </button>
   )
 }
 

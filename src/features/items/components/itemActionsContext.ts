@@ -2,7 +2,7 @@ import { createContext, use } from 'react'
 
 import type { List } from '@/features/lists'
 
-import type { Item, ItemStatus } from '../types'
+import type { Item, ItemKind, ItemStatus } from '../types'
 
 /**
  * Lo que se puede hacer con un ítem desde su fila, su menú o su detalle. Lo da `ItemWorkspace` a
@@ -37,6 +37,13 @@ export interface ItemActions {
   choose: (option: Item) => void
   /** «Elegir una» y «Dejar de elegir una» en una sublista (A1). */
   setChooseOne: (sublist: Item, chooseOne: boolean) => void
+  /**
+   * Cambiar el tipo (`changeKindPatch`) con «Ahora es una tarea · Deshacer»: «Pasar a tarea» del
+   * menú de una nota y «Tipo» de la ficha (diseño 25, B6 y B11b).
+   */
+  changeKind: (item: Item, kind: ItemKind) => void
+  /** «Copiar el texto» de una nota: el texto entero, al portapapeles (B11b). */
+  copyText: (item: Item) => void
   /** La fila abierta a la izquierda al deslizar («Mover» y «Borrar»): solo una a la vez. */
   swipeOpenId: string | undefined
   setSwipeOpenId: (itemId: string | undefined) => void

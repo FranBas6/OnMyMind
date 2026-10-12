@@ -147,7 +147,15 @@ describe('captura rápida', () => {
       'true',
     )
 
-    await user.type(field, 'Llamar al fontanero el lunes{Enter}')
+    // En «En mente» se escribe una nota (diseño 25, B3): Intro hace otra línea y guarda «Guardar».
+    expect(within(dialog).getByRole('button', { name: 'Tipo: Nota. Cambiar' })).toBeInTheDocument()
+    expect(within(dialog).getByText('Intro, otra línea')).toBeInTheDocument()
+    await user.type(field, 'Código del portal de Marta{Enter}4821 · el timbre no va')
+    expect(screen.getByRole('dialog', { name: 'Captura rápida' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('textbox', { name: 'El resto de la nota' })).toHaveValue(
+      '4821 · el timbre no va',
+    )
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
 
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'Captura rápida' })).not.toBeInTheDocument()
@@ -155,7 +163,9 @@ describe('captura rápida', () => {
     expect(itemsApi.createItem).toHaveBeenCalledWith(
       expect.objectContaining({
         listId: 'i',
-        title: 'Llamar al fontanero el lunes',
+        kind: 'note',
+        title: 'Código del portal de Marta',
+        notes: '4821 · el timbre no va',
         status: 'pending',
       }),
     )
@@ -163,6 +173,34 @@ describe('captura rápida', () => {
     await user.click(screen.getByRole('button', { name: 'Deshacer' }))
     await waitFor(() => {
       expect(itemsApi.deleteItem).toHaveBeenCalled()
+    })
+  })
+
+  it('la pastilla cambia el tipo: una tarea guarda con Intro (diseño 25, B3c)', async () => {
+    const user = userEvent.setup()
+    vi.mocked(itemsApi.createItem).mockResolvedValue()
+    renderAt('/')
+
+    await user.click(await screen.findByRole('button', { name: 'Captura rápida' }))
+    const dialog = await captureDialog()
+    await user.click(within(dialog).getByRole('button', { name: 'Tipo: Nota. Cambiar' }))
+    // En el móvil, «Tipo» sale en la misma hoja, con lo que propone la lista.
+    expect(
+      within(dialog).getByText(
+        'En «En mente» todo empieza como nota. Lo que elijas vale solo para lo que escribas ahora.',
+      ),
+    ).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('radio', { name: /Tarea/ }))
+
+    expect(within(dialog).getByText('Intro guarda')).toBeInTheDocument()
+    await user.type(
+      within(dialog).getByRole('textbox', { name: '¿Qué tienes en mente?' }),
+      'Llamar al fontanero{Enter}',
+    )
+    await waitFor(() => {
+      expect(itemsApi.createItem).toHaveBeenCalledWith(
+        expect.objectContaining({ listId: 'i', kind: 'task', title: 'Llamar al fontanero' }),
+      )
     })
   })
 
@@ -179,7 +217,10 @@ describe('captura rápida', () => {
     // La elegida pasa a ser el primer chip.
     expect(destinations(dialog)[0]).toHaveTextContent('Regalos')
     expect(destinations(dialog)[0]).toHaveAttribute('aria-checked', 'true')
-    await user.type(within(dialog).getByRole('textbox'), 'Pañuelo para mamá')
+    await user.type(
+      within(dialog).getByRole('textbox', { name: '¿Qué tienes en mente?' }),
+      'Pañuelo para mamá',
+    )
     await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
 
     expect(itemsApi.createItem).toHaveBeenCalledWith(
@@ -206,7 +247,8 @@ describe('captura rápida', () => {
     expect(destinations(dialog)[0]).toHaveTextContent('Casa')
     expect(destinations(dialog)[0]).toHaveAttribute('aria-checked', 'true')
     expect(destinations(dialog)[1]).toHaveTextContent('En mente')
-    expect(within(dialog).getByText('⌘↩ para guardar')).toBeInTheDocument()
+    // Casa está vacía: propone nota, que hace otra línea con ↩ (diseño 25, D4).
+    expect(within(dialog).getByText('↩ otra línea · ⌘↩ guardar')).toBeInTheDocument()
   })
 
   it('en escritorio la abre el botón del sidebar, y ⌘↩ guarda', async () => {
@@ -216,7 +258,9 @@ describe('captura rápida', () => {
     renderAt('/')
 
     await user.click(await screen.findByRole('button', { name: /¿Qué tienes en mente\?/ }))
-    const field = within(await captureDialog()).getByRole('textbox')
+    const field = within(await captureDialog()).getByRole('textbox', {
+      name: '¿Qué tienes en mente?',
+    })
     await user.type(field, 'Renovar el DNI{Meta>}{Enter}{/Meta}')
 
     await waitFor(() => {
@@ -230,7 +274,9 @@ describe('captura rápida', () => {
     const { router } = renderAt('/add?text=renovar%20DNI')
 
     const dialog = await captureDialog()
-    expect(within(dialog).getByRole('textbox')).toHaveValue('renovar DNI')
+    expect(within(dialog).getByRole('textbox', { name: '¿Qué tienes en mente?' })).toHaveValue(
+      'renovar DNI',
+    )
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/')
     })
@@ -244,7 +290,11 @@ describe('captura rápida', () => {
     await user.click(await screen.findByRole('button', { name: 'Captura rápida' }))
     const dialog = await captureDialog()
     expect(within(dialog).getByText('Sin conexión · se guarda igual')).toBeInTheDocument()
-    await user.type(within(dialog).getByRole('textbox'), 'Pilas AA{Enter}')
+    await user.type(
+      within(dialog).getByRole('textbox', { name: '¿Qué tienes en mente?' }),
+      'Pilas AA',
+    )
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
 
     // (Los avisos de sonner viven en un almacén global: puede quedar el de otro test.)
     expect((await screen.findAllByText('Guardado en En mente')).length).toBeGreaterThan(0)

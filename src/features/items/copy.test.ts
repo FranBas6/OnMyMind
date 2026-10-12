@@ -68,9 +68,8 @@ describe('destinationSummary', () => {
 
 describe('addPlaceholder', () => {
   it('«En mente», la primera cosa del tipo que propone la lista, o «Añadir a…»', () => {
-    expect(addPlaceholder(list('inbox', 'En mente'), true, 'note')).toBe('¿Qué tienes en mente?')
-    expect(addPlaceholder(list('list', 'Casa'), true, 'task')).toBe('Primera tarea…')
-    expect(addPlaceholder(list('list', 'Compras'), true, 'shopping')).toBe('Primer producto…')
-    expect(addPlaceholder(list('list', 'Casa'), false, 'task')).toBe('Añadir a Casa…')
+    expect(addPlaceholder(list('inbox', 'En mente'))).toBe('¿Qué tienes en mente?')
+    // También vacía (diseño 25, B5).
+    expect(addPlaceholder(list('list', 'Ideas'))).toBe('Añadir a Ideas…')
   })
 })

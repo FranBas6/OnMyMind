@@ -1,4 +1,4 @@
-import { Calendar } from 'lucide-react'
+import { Calendar, FileText } from 'lucide-react'
 
 import type { ListColor } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -24,8 +24,23 @@ interface ItemControlProps {
  * deslizando). Es la misma forma en cualquier lista, también en Buscar.
  */
 export function ItemControl({ item, onToggle, large = false, tone, className }: ItemControlProps) {
-  // La nota no tiene casilla (5.3, ADR-012): no se marca hecha. Su fila la diseña la 5.4.
-  if (item.kind === 'note') return null
+  // La nota no tiene casilla (5.3, ADR-012): en su sitio, la hoja, que no es un control (diseño
+  // 25, B1). La usan Buscar y el menú de fila; su propia fila la pinta igual (`NoteRow`).
+  if (item.kind === 'note') {
+    return (
+      <span
+        role="img"
+        aria-label="Nota"
+        className={cn(
+          'grid shrink-0 place-items-center text-muted-foreground',
+          large ? 'size-7 md:size-[26px]' : 'size-6',
+          className,
+        )}
+      >
+        <FileText aria-hidden className={large ? 'size-[22px]' : 'size-5'} strokeWidth={2} />
+      </span>
+    )
+  }
   if (item.kind === 'sublist') {
     return (
       <SublistIcon

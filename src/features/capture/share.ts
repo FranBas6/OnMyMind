@@ -1,8 +1,9 @@
 import {
-  ITEM_NOTES_MAX_LENGTH,
   ITEM_TITLE_MAX_LENGTH,
   linkDomain,
   normalizeLink,
+  splitNoteText,
+  withBullets,
   type NewItemLink,
 } from '@/features/items'
 
@@ -28,8 +29,8 @@ export interface SharedItem {
  * https://…» en `text`; el Atajo, solo `url`.
  *   · Con un enlace, el título es lo que acompaña al enlace, o el título que mandó la app, o el
  *     dominio, que pasa a ser el de la página cuando llegue (como la captura de la 2.3).
- *   · Sin enlace, es una nota: la primera línea de título y, si hay más (o no cabe), el texto
- *     entero en las notas.
+ *   · Sin enlace, es una nota, partida como las que se escriben (5.4, `splitNoteText`): la primera
+ *     línea de título y el resto en las notas, con sus viñetas.
  * `null` si no llegó nada.
  */
 export function sharedItem({ title, text, url }: SharedData): SharedItem | null {
@@ -51,19 +52,8 @@ export function sharedItem({ title, text, url }: SharedData): SharedItem | null 
     }
   }
 
-  const body = sentText || sentTitle
-  if (!body) return null
-  const lines = body
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-  const first = clean(lines[0])
-  const fits = lines.length === 1 && first.length <= ITEM_TITLE_MAX_LENGTH
-  return {
-    title: first.slice(0, ITEM_TITLE_MAX_LENGTH),
-    link: null,
-    notes: fits ? null : body.slice(0, ITEM_NOTES_MAX_LENGTH),
-  }
+  const note = splitNoteText(withBullets(sentText || sentTitle))
+  return note && { ...note, link: null }
 }
 
 function clean(text: string | undefined): string {

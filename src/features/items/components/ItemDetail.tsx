@@ -3,11 +3,13 @@ import {
   Calendar,
   ChevronDown,
   ChevronRight,
+  Circle,
+  Copy,
   Trash2,
   WifiOff,
   X,
 } from 'lucide-react'
-import { Popover } from 'radix-ui'
+import { DropdownMenu, Popover } from 'radix-ui'
 import { useCallback, useState } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
@@ -28,9 +30,10 @@ import { useStoreMutation } from '../hooks/useItemMutations'
 import { useItems } from '../hooks/useItems'
 import { useLinkMetadata } from '../hooks/useLinkMetadata'
 import { useRefreshPrice } from '../hooks/useRefreshPrice'
+import { hasThumb } from '../photos'
 import { cheapestLink, hasLinks, hasStores, linkFromItem, newLink, storeName } from '../stores'
 import { isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
-import type { Item, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus } from '../types'
+import type { Item, ItemKind, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus } from '../types'
 import { DueDatePicker } from './DueDatePicker'
 import { EventWhenField } from './EventWhenField'
 import { RepeatField } from './RepeatField'
@@ -38,6 +41,7 @@ import { ItemControl } from './ItemControl'
 import { ItemMedia } from './ItemMedia'
 import { ItemTitleField, NotesField } from './ItemTextFields'
 import { KindField } from './KindField'
+import { NoteTextField } from './NoteTextField'
 import { PriceAlertCard } from './PriceAlertCard'
 import { PriceBlock } from './PriceBlock'
 import { LinksSection } from './Links'
@@ -65,16 +69,19 @@ export interface ItemDetailProps {
   onUpdate: (item: Item, patch: ItemPatch) => void
   /** Abre «Mover a…»; en escritorio, junto al botón que se ha pulsado. */
   onMove: (item: Item, anchor: HTMLElement) => void
+  /** Cambia el tipo, con «Ahora es una tarea · Deshacer» (diseño 25, B6). */
+  onChangeKind: (item: Item, kind: ItemKind) => void
+  /** «Copiar el texto» de una nota (B11b). */
+  onCopyText: (item: Item) => void
   onDelete: (item: Item) => void
+  /** Una nota que se cierra con todo el texto borrado y sin fotos ni enlaces (B2e). */
+  onDiscardEmpty: (item: Item) => void
   onClose: () => void
 }
 
-/**
- * Lo que tiene fila «Tipo»: los tipos que se eligen y la nota, que pasa a otro tipo desde aquí
- * porque mover ya no la cambia (5.3). La sublista (2a.4) no se convierte desde aquí.
- */
-const isChoosable = (item: Item): item is Item & { kind: ChoosableKind | 'note' } =>
-  isChoosableKind(item.kind) || item.kind === 'note'
+/** Lo que tiene fila «Tipo»: los tipos que se eligen; la sublista (2a.4) no se convierte. */
+const isChoosable = (item: Item): item is Item & { kind: ChoosableKind } =>
+  isChoosableKind(item.kind)
 
 /**
  * Contenido del detalle de un ítem (pantalla 11 y diseño 06). Debajo de las notas, la foto y el
@@ -91,7 +98,10 @@ export function ItemDetail({
   onToggle,
   onUpdate,
   onMove,
+  onChangeKind,
+  onCopyText,
   onDelete,
+  onDiscardEmpty,
   onClose,
 }: ItemDetailProps) {
   const done = isFinalStatus(item.status)
@@ -180,26 +190,143 @@ export function ItemDetail({
     </span>
   )
 
+  const desktopHeader = (
+    <div className="flex items-center justify-between gap-3">
+      {origin}
+      <span className="flex shrink-0 items-center gap-2">
+        <kbd className="rounded-[5px] bg-fill px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground">
+          Esc
+        </kbd>
+        <button
+          type="button"
+          aria-label="Cerrar"
+          onClick={onClose}
+          className="grid size-8 place-items-center rounded-[9px] bg-fill text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <X aria-hidden className="size-4" strokeWidth={2.2} />
+        </button>
+      </span>
+    </div>
+  )
+
+  const media = item.kind !== 'sublist' && (
+    <ItemMedia
+      key={`media-${item.id}`}
+      item={item}
+      isDesktop={isDesktop}
+      online={online}
+      linkState={link.linkState}
+      onAddLink={addLink}
+      onUpdate={onUpdate}
+    />
+  )
+  const links = hasLinks(item) && item.kind !== 'shopping' && item.kind !== 'sublist' && (
+    <LinksSection
+      item={item}
+      isDesktop={isDesktop}
+      online={online}
+      onAdd={addLink}
+      onUpdate={(linkId, patch) => {
+        updateLink(item, linkId, patch)
+      }}
+      onRemove={removeLink}
+    />
+  )
+  const kindField = isChoosable(item) && (
+    <KindField
+      key={`kind-${item.id}`}
+      item={item}
+      isDesktop={isDesktop}
+      onChange={(kind) => {
+        onChangeKind(item, kind)
+      }}
+    />
+  )
+  const footer = (
+    <div className="mt-auto flex h-11 shrink-0 items-center justify-between text-sm font-semibold">
+      <button
+        type="button"
+        onClick={(event) => {
+          onMove(item, event.currentTarget)
+        }}
+        className="-ml-1 flex h-11 items-center gap-2 rounded-xl px-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      >
+        <ArrowRightLeft aria-hidden className="size-4" strokeWidth={2.2} />
+        Mover a otra lista
+        {isDesktop && <ChevronDown aria-hidden className="size-3.5 opacity-60" />}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onDelete(item)
+        }}
+        className="-mr-1 flex h-11 items-center gap-1.5 rounded-xl px-1 text-destructive outline-none hover:opacity-80 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      >
+        <Trash2 aria-hidden className="size-4" strokeWidth={2.2} />
+        Borrar
+      </button>
+    </div>
+  )
+
+  // La ficha de una nota (diseño 25, B2 y D1): un solo texto, sin título aparte ni estado. Arriba,
+  // de dónde es y, en el móvil, su ··· y «Listo»; debajo, fotos, enlaces, «Tipo» y mover o borrar.
+  if (item.kind === 'note') {
+    // Vacía y sin fotos ni enlaces, al cerrarla se borra sola (B2e); con algo, se queda como estaba.
+    const hasMedia = hasThumb(item) || item.url !== null || hasLinks(item)
+    return (
+      <div className="flex min-h-full flex-col gap-4">
+        {isDesktop ? (
+          desktopHeader
+        ) : (
+          <div className="-mt-1.5 flex h-9 items-center justify-between gap-3">
+            {origin}
+            <span className="-mr-1 flex shrink-0 items-center gap-1">
+              <NoteMenu
+                item={item}
+                onToTask={() => {
+                  onChangeKind(item, 'task')
+                }}
+                onMove={(anchor) => {
+                  onMove(item, anchor)
+                }}
+                onCopyText={() => {
+                  onCopyText(item)
+                }}
+                onDelete={() => {
+                  onDelete(item)
+                }}
+              />
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-9 rounded-lg px-1 text-[15px] font-bold text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                Listo
+              </button>
+            </span>
+          </div>
+        )}
+        <NoteTextField
+          key={item.id}
+          item={item}
+          onSave={(note) => {
+            onUpdate(item, note)
+          }}
+          onEmptyClose={() => {
+            if (!hasMedia) onDiscardEmpty(item)
+          }}
+        />
+        {media}
+        {links}
+        {kindField}
+        {footer}
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-full flex-col gap-4">
-      {isDesktop && (
-        <div className="flex items-center justify-between gap-3">
-          {origin}
-          <span className="flex shrink-0 items-center gap-2">
-            <kbd className="rounded-[5px] bg-fill px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground">
-              Esc
-            </kbd>
-            <button
-              type="button"
-              aria-label="Cerrar"
-              onClick={onClose}
-              className="grid size-8 place-items-center rounded-[9px] bg-fill text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              <X aria-hidden className="size-4" strokeWidth={2.2} />
-            </button>
-          </span>
-        </div>
-      )}
+      {isDesktop && desktopHeader}
 
       <div className="flex items-start gap-3.5 md:gap-3">
         <ItemControl
@@ -244,17 +371,7 @@ export function ItemDetail({
         }}
       />
 
-      {item.kind !== 'sublist' && (
-        <ItemMedia
-          key={`media-${item.id}`}
-          item={item}
-          isDesktop={isDesktop}
-          online={online}
-          linkState={link.linkState}
-          onAddLink={addLink}
-          onUpdate={onUpdate}
-        />
-      )}
+      {media}
 
       {hasStores(item) && (
         <StoresSection
@@ -274,18 +391,7 @@ export function ItemDetail({
         />
       )}
 
-      {hasLinks(item) && item.kind !== 'shopping' && item.kind !== 'sublist' && (
-        <LinksSection
-          item={item}
-          isDesktop={isDesktop}
-          online={online}
-          onAdd={addLink}
-          onUpdate={(linkId, patch) => {
-            updateLink(item, linkId, patch)
-          }}
-          onRemove={removeLink}
-        />
-      )}
+      {links}
 
       {/* Debajo de la foto y del enlace, de donde sale (Fran, 2026-10-01; el diseño 16 lo ponía
           bajo el título). */}
@@ -306,16 +412,7 @@ export function ItemDetail({
       {/* Bajo el bloque de precio, en las compras que se miran solas (diseño 22, A1). */}
       {item.kind === 'shopping' && <PriceAlertCard item={item} isDesktop={isDesktop} />}
 
-      {isChoosable(item) && (
-        <KindField
-          key={`kind-${item.id}`}
-          item={item}
-          isDesktop={isDesktop}
-          onChange={(patch) => {
-            onUpdate(item, patch)
-          }}
-        />
-      )}
+      {kindField}
 
       {item.kind === 'task' && (
         <>
@@ -375,30 +472,79 @@ export function ItemDetail({
         )}
       </Field>
 
-      <div className="mt-auto flex h-11 shrink-0 items-center justify-between text-sm font-semibold">
-        <button
-          type="button"
-          onClick={(event) => {
-            onMove(item, event.currentTarget)
-          }}
-          className="-ml-1 flex h-11 items-center gap-2 rounded-xl px-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
-          <ArrowRightLeft aria-hidden className="size-4" strokeWidth={2.2} />
-          Mover a otra lista
-          {isDesktop && <ChevronDown aria-hidden className="size-3.5 opacity-60" />}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            onDelete(item)
-          }}
-          className="-mr-1 flex h-11 items-center gap-1.5 rounded-xl px-1 text-destructive outline-none hover:opacity-80 focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
-          <Trash2 aria-hidden className="size-4" strokeWidth={2.2} />
-          Borrar
-        </button>
-      </div>
+      {footer}
     </div>
+  )
+}
+
+/**
+ * El ··· de la ficha de una nota en el móvil (diseño 25, B2): lo mismo que el menú de su fila
+ * (B11b), «Pasar a tarea», «Mover a…», «Copiar el texto» y «Borrar», en un menú sobre la ficha.
+ */
+function NoteMenu({
+  item,
+  onToTask,
+  onMove,
+  onCopyText,
+  onDelete,
+}: {
+  item: Item
+  onToTask: () => void
+  onMove: (anchor: HTMLElement) => void
+  onCopyText: () => void
+  onDelete: () => void
+}) {
+  const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null)
+  const entry =
+    'flex h-12 cursor-pointer items-center gap-3 rounded-xl px-3.5 text-[15px] font-medium outline-none select-none data-highlighted:bg-fill'
+  return (
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger asChild>
+        <button
+          ref={setTrigger}
+          type="button"
+          aria-label={`Opciones de «${item.title}»`}
+          className="flex size-10 items-center justify-center gap-[3px] rounded-xl outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[state=open]:bg-fill"
+        >
+          {[0, 1, 2].map((dot) => (
+            <span key={dot} className="size-1 rounded-full bg-muted-foreground" />
+          ))}
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={6}
+          className="z-[60] w-[240px] rounded-2xl border border-border-soft bg-popover p-1.5 text-popover-foreground shadow-popover outline-none"
+        >
+          <DropdownMenu.Item onSelect={onToTask} className={entry}>
+            <Circle aria-hidden className="size-[18px]" strokeWidth={2} />
+            <span className="flex-1">Pasar a tarea</span>
+            <span className="text-xs font-normal text-subtle-foreground">tendrá casilla</span>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => {
+              if (trigger) onMove(trigger)
+            }}
+            className={entry}
+          >
+            <ArrowRightLeft aria-hidden className="size-[18px]" strokeWidth={2} />
+            Mover a…
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onSelect={onCopyText} className={entry}>
+            <Copy aria-hidden className="size-[18px]" strokeWidth={2} />
+            Copiar el texto
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={onDelete}
+            className={cn(entry, 'mt-1 rounded-none border-t border-border-soft text-destructive')}
+          >
+            <Trash2 aria-hidden className="size-[18px]" strokeWidth={2} />
+            Borrar
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   )
 }
 

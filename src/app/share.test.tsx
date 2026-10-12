@@ -160,10 +160,12 @@ describe('compartir a OnMyMind (4.7)', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/lists/i')
     })
+    // Partida como las notas que se escriben (5.4): la primera línea y el resto.
     expect(itemsApi.createItem).toHaveBeenCalledWith(
       expect.objectContaining({
+        kind: 'note',
         title: 'Bizcocho de yogur',
-        notes: 'Bizcocho de yogur\n3 huevos\n1 yogur',
+        notes: '3 huevos\n1 yogur',
       }),
     )
     expect(itemsApi.fetchLinkMetadata).not.toHaveBeenCalled()

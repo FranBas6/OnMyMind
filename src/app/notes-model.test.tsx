@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -134,7 +134,8 @@ describe('la nota sin estado y las listas sin tipo (5.3, ADR-012)', () => {
     renderAt('/lists/roma', [inbox, viaje], { roma: [] })
 
     expect(await screen.findByText('Nada todavía')).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Primer evento…' })).toBeInTheDocument()
+    // Una agenda vacía propone evento; una lista vacía, nota (5.4).
+    expect(screen.getByRole('button', { name: 'Tipo: Evento. Cambiar' })).toBeInTheDocument()
   })
 
   it('una lista sin tipo propone el tipo que más tiene', async () => {
@@ -162,8 +163,81 @@ describe('la nota sin estado y las listas sin tipo (5.3, ADR-012)', () => {
 
     const sheet = await screen.findByRole('dialog', { name: /Detalle de «Leche»/ })
     await user.click(within(sheet).getByRole('button', { name: /^Tipo/ }))
-    await user.click(await screen.findByRole('button', { name: 'Cambiar a Tarea' }))
+    // La hoja «Tipo» (diseño 25, B6): se elige y «Listo» cambia.
+    const kinds = await screen.findByRole('radiogroup', { name: 'Tipo' })
+    await user.click(within(kinds).getByRole('radio', { name: /Tarea/ }))
+    expect(
+      screen.getByText(/«Leche» será el título\. No se pierde nada: gana casilla/),
+    ).toBeInTheDocument()
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Tipo' })).getByRole('button', { name: 'Listo' }),
+    )
 
-    expect(itemsApi.updateItem).toHaveBeenCalledWith(leche.id, { kind: 'task', status: 'pending' })
+    await waitFor(() => {
+      expect(itemsApi.updateItem).toHaveBeenCalledWith(leche.id, {
+        kind: 'task',
+        status: 'pending',
+      })
+    })
+    expect(await screen.findByText('Ahora es una tarea')).toBeInTheDocument()
+  })
+
+  it('la ficha de una nota es un solo texto: la primera línea es el título (diseño 25, B2)', async () => {
+    const casa = list('casa', 'Casa', { kind: 'list' })
+    const vuelo = item('00000000-0000-4000-8000-0000000000a3', 'Vuelo a Lisboa', {
+      listId: 'casa',
+      kind: 'note',
+      notes: 'K7Q2MX',
+    })
+    vi.mocked(itemsApi.updateItem).mockResolvedValue()
+    const user = userEvent.setup()
+    renderAt(`/lists/casa?item=${vuelo.id}`, [inbox, casa], { casa: [vuelo] })
+
+    const sheet = await screen.findByRole('dialog', { name: /Detalle de «Vuelo a Lisboa»/ })
+    const first = within(sheet).getByRole('textbox', { name: 'Texto de la nota' })
+    const rest = within(sheet).getByRole('textbox', { name: 'El resto de la nota' })
+    expect(first).toHaveValue('Vuelo a Lisboa')
+    expect(rest).toHaveValue('K7Q2MX')
+    expect(within(sheet).queryByText('Estado')).not.toBeInTheDocument()
+
+    await user.click(rest)
+    // Intro en una viñeta sigue con otra.
+    await user.keyboard('{End}{Enter}- T4, puerta B{Enter}Maleta')
+    expect(rest).toHaveValue('K7Q2MX\n• T4, puerta B\n• Maleta')
+    await user.click(first)
+    await user.keyboard('{End}{Enter}')
+    expect(first).toHaveValue('Vuelo a Lisboa')
+    expect(rest).toHaveValue('\nK7Q2MX\n• T4, puerta B\n• Maleta')
+    await user.keyboard('{Backspace}')
+    expect(rest).toHaveValue('K7Q2MX\n• T4, puerta B\n• Maleta')
+    await user.click(within(sheet).getByRole('button', { name: 'Listo' }))
+
+    await waitFor(() => {
+      expect(itemsApi.updateItem).toHaveBeenCalledWith(vuelo.id, {
+        title: 'Vuelo a Lisboa',
+        notes: 'K7Q2MX\n• T4, puerta B\n• Maleta',
+      })
+    })
+  })
+
+  it('una nota que se cierra sin texto se borra sola, con «Deshacer» (diseño 25, B2e)', async () => {
+    const casa = list('casa', 'Casa', { kind: 'list' })
+    const borrador = item('00000000-0000-4000-8000-0000000000a4', 'Borrador', {
+      listId: 'casa',
+      kind: 'note',
+    })
+    vi.mocked(itemsApi.deleteItem).mockResolvedValue()
+    const user = userEvent.setup()
+    renderAt(`/lists/casa?item=${borrador.id}`, [inbox, casa], { casa: [borrador] })
+
+    const sheet = await screen.findByRole('dialog', { name: /Detalle de «Borrador»/ })
+    await user.clear(within(sheet).getByRole('textbox', { name: 'Texto de la nota' }))
+    await user.click(within(sheet).getByRole('button', { name: 'Listo' }))
+
+    await waitFor(() => {
+      expect(itemsApi.deleteItem).toHaveBeenCalledWith(borrador.id)
+    })
+    expect(await screen.findByText('Nota vacía borrada')).toBeInTheDocument()
+    expect(itemsApi.updateItem).not.toHaveBeenCalled()
   })
 })

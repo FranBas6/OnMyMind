@@ -28,7 +28,8 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
       done: 0,
       pendingPriceCents: 0,
       notes: 0,
-      kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+      // Una lista con tareas propone tarea (5.4: vacía propondría nota).
+      kinds: { note: 0, task: 3, shopping: 0, event: 0 },
     },
     archivedAt: null,
     isOwner: true,
@@ -43,7 +44,7 @@ const casa = list('casa', 'Casa', {
     done: 2,
     pendingPriceCents: 0,
     notes: 0,
-    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    kinds: { note: 0, task: 3, shopping: 0, event: 0 },
   },
 })
 const trabajo = list('trabajo', 'Trabajo', {
@@ -54,7 +55,7 @@ const trabajo = list('trabajo', 'Trabajo', {
     done: 3,
     pendingPriceCents: 0,
     notes: 0,
-    kinds: { note: 0, task: 0, shopping: 0, event: 0 },
+    kinds: { note: 0, task: 3, shopping: 0, event: 0 },
   },
 })
 const compras = list('compras', 'Compras', {

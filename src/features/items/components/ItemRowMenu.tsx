@@ -25,6 +25,8 @@ import { rowActions, type RowAction, type RowActionId } from '../rowActions'
 import { STATUS_LABELS } from '../status'
 import type { Item } from '../types'
 import { useItems } from '../hooks/useItems'
+import { noteBody } from '../noteText'
+import { notesExcerpt } from '../notes'
 import { childrenOf, sublistMeta } from '../sublists'
 import { ItemControl } from './ItemControl'
 import { useItemActions } from './itemActionsContext'
@@ -42,6 +44,8 @@ const ICONS: Record<RowActionId, LucideIcon> = {
   rename: Pencil,
   duplicate: Copy,
   move: ArrowRightLeft,
+  toTask: Circle,
+  copyText: Copy,
   delete: Trash2,
 }
 
@@ -59,6 +63,8 @@ function useRunAction() {
     else if (action.id === 'move') actions.startMove(item, anchor)
     else if (action.id === 'rename') actions.rename(item)
     else if (action.id === 'duplicate') actions.duplicate(item)
+    else if (action.id === 'toTask') actions.changeKind(item, 'task')
+    else if (action.id === 'copyText') actions.copyText(item)
     else actions.remove(item)
   }
 }
@@ -107,6 +113,11 @@ export function ItemRowMenuSheet({
               <p className="mt-0.5 text-[13px] text-subtle-foreground">
                 {shown.kind === 'sublist' ? (
                   <SublistMenuSummary item={shown} listName={list.name} />
+                ) : shown.kind === 'note' ? (
+                  // «Nota · Localizador K7Q2MX» (diseño 25, B11b): la nota no tiene estado.
+                  <span className="block truncate">
+                    {['Nota', notesExcerpt(noteBody(shown))].filter(Boolean).join(' · ')}
+                  </span>
                 ) : (
                   `${list.name} · ${STATUS_LABELS[shown.status].toLowerCase()}`
                 )}

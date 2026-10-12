@@ -40,7 +40,7 @@ import {
 } from '../hooks/useItemMutations'
 import { useLingering } from '../hooks/useLingering'
 import { itemsQueryOptions, movedFromInboxQueryOptions } from '../queries'
-import { isChoosableKind, proposedKind, type AddableKind } from '../kind'
+import { kindProposal, type AddableKind } from '../kind'
 import type { WrittenDate } from '../writtenDate'
 import { pastedLinesSaved, type LineToSave } from '../pastedLines'
 import { firstFinalStatus, initialStatus } from '../status'
@@ -237,8 +237,14 @@ export function ListDetail({
   const notDownloaded = items.isPending && (items.fetchStatus === 'paused' || !online)
 
   // El tipo que más hay (ADR-012): en una sublista, el de lo de dentro; vacía, el de su lista.
-  const defaultKind = proposedKind(list, sublist && shown && shown.length > 0 ? shown : all)
-  const add = (title: string, chosen: AddableKind | undefined, written: WrittenDate | null) => {
+  const proposal = kindProposal(list, sublist && shown && shown.length > 0 ? shown : all)
+  const defaultKind = proposal.kind
+  const add = (
+    title: string,
+    chosen: AddableKind | undefined,
+    written: WrittenDate | null,
+    notes?: string | null,
+  ) => {
     const kind = chosen ?? defaultKind
     // Una lista aún sin descargar empieza vacía en caché, para que lo añadido se vea; al volver
     // la red se descarga entera. La posición la pone el servidor (no sabemos cuál es la última).
@@ -250,6 +256,7 @@ export function ListDetail({
         listId: list.id,
         parentId: sublist?.id ?? null,
         title,
+        ...(notes && { notes }),
         kind,
         status: initialStatus(kind),
         position: all ? nextItemPosition(all) : undefined,
@@ -301,16 +308,12 @@ export function ListDetail({
           ? isChoosing(sublist)
             ? `Añadir una opción a ${sublist.title}…`
             : `Añadir a ${sublist.title}…`
-          : addPlaceholder(list, empty, defaultKind)
+          : addPlaceholder(list)
       }
       autoFocus={empty && renameKey === undefined}
       onAdd={add}
       onAddMany={addMany}
-      kinds={
-        isChoosableKind(defaultKind)
-          ? { defaultKind, listName: sublist?.title ?? list.name, sublists: !sublist }
-          : undefined
-      }
+      kinds={{ proposal, listName: sublist?.title ?? list.name, sublists: !sublist && !inbox }}
     />
   )
 

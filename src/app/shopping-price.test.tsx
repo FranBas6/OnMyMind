@@ -358,12 +358,16 @@ describe('el precio de las compras (diseño 16)', () => {
     const sheet = await detail()
 
     await user.click(within(sheet).getByRole('button', { name: /^Tipo/ }))
-    const kinds = await screen.findByRole('radiogroup', { name: 'Tipo del ítem' })
+    const kinds = await screen.findByRole('radiogroup', { name: 'Tipo' })
     await user.click(within(kinds).getByRole('radio', { name: /Tarea/ }))
     expect(
-      screen.getByText('Al pasar a Tarea se quita el precio. Pendiente sigue siendo Pendiente.'),
+      screen.getByText(
+        (_, node) => node?.textContent === 'Se quita el precio. Pendiente sigue siendo Pendiente.',
+      ),
     ).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Cambiar a Tarea' }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Tipo' })).getByRole('button', { name: 'Listo' }),
+    )
     expect(itemsApi.updateItem).toHaveBeenCalledWith(ID.pilas, {
       kind: 'task',
       status: 'pending',
