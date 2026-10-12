@@ -19,6 +19,8 @@ interface CreateKeySheetProps {
   unlock: DeviceUnlock
   /** Otra en lugar de la de antes, tras el código por email (C5c). */
   reset: boolean
+  /** Viene de «Proteger» sin clave aún (C6b): «Para proteger «Wifi de casa» hace falta una clave.» */
+  forTitle?: string | undefined
   onCreated: (created: CreatedKey) => void
 }
 
@@ -33,6 +35,7 @@ export function CreateKeySheet({
   isDesktop,
   unlock,
   reset,
+  forTitle,
   onCreated,
 }: CreateKeySheetProps) {
   return (
@@ -40,11 +43,23 @@ export function CreateKeySheet({
       open={open}
       onOpenChange={onOpenChange}
       isDesktop={isDesktop}
-      title={reset ? 'Crea tu clave nueva' : 'Crea tu clave privada'}
+      title={
+        reset
+          ? 'Crea tu clave nueva'
+          : forTitle !== undefined
+            ? 'Antes, crea tu clave privada'
+            : 'Crea tu clave privada'
+      }
       headerAction={<HeaderCancel />}
       closeHint
     >
-      <CreateKeyForm isDesktop={isDesktop} unlock={unlock} reset={reset} onCreated={onCreated} />
+      <CreateKeyForm
+        isDesktop={isDesktop}
+        unlock={unlock}
+        reset={reset}
+        forTitle={forTitle}
+        onCreated={onCreated}
+      />
     </ResponsiveSheet>
   )
 }
@@ -53,8 +68,9 @@ function CreateKeyForm({
   isDesktop,
   unlock,
   reset,
+  forTitle,
   onCreated,
-}: Pick<CreateKeySheetProps, 'isDesktop' | 'unlock' | 'reset' | 'onCreated'>) {
+}: Pick<CreateKeySheetProps, 'isDesktop' | 'unlock' | 'reset' | 'forTitle' | 'onCreated'>) {
   const formId = useId()
   const online = useOnline()
   const [key, setKey] = useState('')
@@ -95,6 +111,7 @@ function CreateKeyForm({
       className="flex flex-col gap-3"
     >
       <Lead>
+        {forTitle !== undefined && `Para proteger «${forTitle}» hace falta una clave. `}
         Es una sola clave para lo privado: la del wifi, el código de la alarma o del candado. Para
         las contraseñas del banco o del correo, mejor {passwordsApp(unlock)}.
       </Lead>

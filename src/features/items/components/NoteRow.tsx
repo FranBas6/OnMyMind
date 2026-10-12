@@ -1,3 +1,4 @@
+import { LOST_NOTE, useIsLostNote } from '@/features/private'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
 import { useLiveRow } from '@/features/sharing/hooks/useLiveRow'
 import { formatCaptureAge } from '@/lib/date'
@@ -19,13 +20,16 @@ import { SwipeableRow } from './SwipeableRow'
  * debajo el principio del resto, en una línea o dos si es larga, con las viñetas juntas con «•».
  * En «En mente», la antigüedad de la captura («hace 2 h», «ayer») a la derecha del título. Con
  * foto, su miniatura; con enlace, su dominio. Tocarla abre la ficha; mantenerla pulsada, el menú;
- * deslizarla a la izquierda, «Mover» y «Borrar» (B11).
+ * deslizarla a la izquierda, «Mover» y «Borrar» (B11). Protegida (5.7, diseño 26, C7), el
+ * candado en lugar de la hoja y solo la primera línea.
  */
 export function NoteRow({ item }: { item: Item }) {
   const actions = useItemActions()
   const inbox = actions.list.kind === 'inbox'
   const { person, arrived } = useLiveRow(item)
   const link = item.url ? <LinkMeta url={item.url} item={item} /> : null
+  // Protegida (C7): solo la primera línea. De la clave anterior, lo dice (C5d).
+  const lost = useIsLostNote(item.sealed)
   return (
     <SwipeableRow
       item={item}
@@ -54,7 +58,11 @@ export function NoteRow({ item }: { item: Item }) {
             </span>
           )}
         </div>
-        <RowNotes notes={noteBody(item)} lines={2} className="text-[13.5px]" />
+        <RowNotes
+          notes={lost ? LOST_NOTE : item.sealed ? '' : noteBody(item)}
+          lines={2}
+          className="text-[13.5px]"
+        />
         {link && (
           <p className="mt-1 flex min-w-0 text-xs font-semibold text-muted-foreground md:text-[13px]">
             {link}

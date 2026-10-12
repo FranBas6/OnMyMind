@@ -1,7 +1,13 @@
 import { createContext, use } from 'react'
 
+import { useOptionalPrivate } from '@/features/private'
+import { personName } from '@/features/sharing/copy'
+// Por su ruta y no por el índice: `sharing` usa piezas de `items`.
+import { useListSharing } from '@/features/sharing/hooks/useSharing'
+
 import { chooseNote, isChoosing, type OptionMark } from '../chooseOne'
-import type { RowActionsContext } from '../rowActions'
+import { protectionBlock } from '../protection'
+import type { Protection, RowActionsContext } from '../rowActions'
 import { isOutOfMind } from '../status'
 import type { Item } from '../types'
 
@@ -24,15 +30,39 @@ export function useOptionMark(item: Pick<Item, 'id'>): OptionMark | null {
 
 /**
  * Lo que cambia en el menú de una fila (A1, A4): en la sublista, «Elegir una» o «Dejar de elegir
- * una»; en una opción aún en juego, «Elegir esta» arriba del todo. Sin ítem (la hoja cerrada), nada.
+ * una»; en una opción aún en juego, «Elegir esta» arriba del todo. En una nota, si está protegida o
+ * se puede proteger (5.7, diseño 26). Sin ítem (la hoja cerrada), nada.
  */
 export function useRowActionsContext(item: Item | undefined): RowActionsContext {
   const choice = use(ChoiceContext)
+  const protection = useProtection(item)
   if (!item) return {}
   if (item.kind === 'sublist') return { chooseOne: item.chooseOne }
   const sublist = choice?.sublist
   if (sublist?.id !== item.parentId || !isChoosing(sublist) || isOutOfMind(item)) {
-    return {}
+    return protection ? { protection } : {}
   }
-  return { option: { note: chooseNote(item), chosen: sublist.chosenId === item.id } }
+  return {
+    option: { note: chooseNote(item), chosen: sublist.chosenId === item.id },
+    ...(protection && { protection }),
+  }
+}
+
+/**
+ * Si una nota está protegida, o si se puede proteger y qué falta (C6, C6d, C9). Fuera de la clave
+ * privada (piezas sueltas en tests), nada: sin «Proteger».
+ */
+function useProtection(item: Item | undefined): Protection | undefined {
+  const privacy = useOptionalPrivate()
+  const { others } = useListSharing(item?.listId)
+  if (item?.kind !== 'note' || !privacy) return undefined
+  if (item.sealed) return { protected: true }
+  return {
+    protected: false,
+    needsKey: privacy.status === 'ready' && privacy.vault === null,
+    blocked: protectionBlock(
+      item,
+      others.map((person) => personName(person.displayName)),
+    ),
+  }
 }

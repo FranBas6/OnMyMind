@@ -14,6 +14,7 @@ function item(title: string, overrides: Partial<Item> = {}): Item {
     parentId: null,
     chooseOne: false,
     chosenId: null,
+    sealed: null,
     title,
     notes: null,
     status: 'pending',
@@ -183,5 +184,17 @@ describe('el CSV de una lista', () => {
       'Camiseta;;Compra;Comprado;;;;;;https://shop.realmadrid.com/camiseta;100,50;EUR;Tienda del Madrid;20/09/2026 18:05;01/10/2026 09:30',
     )
     expect(lines[4]).toBe('')
+  })
+
+  it('de una nota protegida, solo la primera línea (5.7)', () => {
+    const csv = listCsv([
+      item('Wifi de casa', {
+        kind: 'note',
+        sealed: { sealed: 'dGV4dG8tY2lmcmFkbw==', iv: 'aXYtZGUtMTItYnl0', keyId: 'caja' },
+      }),
+    ])
+    const [, row] = csv.slice(1).split('\r\n')
+    expect(row).toBe('Wifi de casa;;Nota protegida;Pendiente;;;;;;;;;;20/09/2026 18:05;')
+    expect(csv).not.toContain('dGV4dG8')
   })
 })

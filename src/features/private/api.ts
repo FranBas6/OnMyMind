@@ -183,3 +183,18 @@ export async function verifyResetCode({ email, token }: { email: string; token: 
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
   if (error) throw error
 }
+
+/**
+ * Cuántas notas protegidas hay con esta clave de la caja (5.7): las que se pierden si se crea otra
+ * porque se olvidó («el texto de tus 4 notas protegidas», C5b). Solo tuyas: una protegida no está
+ * en una lista compartida.
+ */
+export async function countProtectedNotes(keyId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('items')
+    .select('id', { count: 'exact', head: true })
+    .eq('protected', true)
+    .eq('sealed_key_id', keyId)
+  if (error) throw error
+  return count ?? 0
+}

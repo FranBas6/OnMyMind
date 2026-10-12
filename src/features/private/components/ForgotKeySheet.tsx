@@ -1,12 +1,13 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { ResponsiveSheet } from '@/components/ResponsiveSheet'
 import { FormError } from '@/features/auth'
 import { useOnline } from '@/hooks/useOnline'
 import { isNetworkError } from '@/lib/errors'
+import { queryKeys } from '@/lib/queryKeys'
 
-import { sendResetCode, type VaultDeviceKey } from '../api'
-import { NEEDS_CONNECTION, SOMETHING_FAILED, tryDeviceLabel } from '../copy'
+import { countProtectedNotes, sendResetCode, type VaultDeviceKey } from '../api'
+import { NEEDS_CONNECTION, protectedNotesLabel, SOMETHING_FAILED, tryDeviceLabel } from '../copy'
 import type { DeviceUnlock } from '../passkey'
 import { DeviceIcon } from './DeviceIcon'
 import { DesktopActions, InfoBox, Lead, MainAction, TextAction } from './SheetParts'
@@ -16,6 +17,8 @@ interface ForgotKeySheetProps {
   onOpenChange: (open: boolean) => void
   isDesktop: boolean
   email: string
+  /** La clave de la caja de ahora: cuántas notas protegidas se perderían. */
+  keyId: string | null
   unlock: DeviceUnlock
   /** Si este aparato tiene su llave: «Antes, prueba a desbloquear con Face ID». */
   onTryDevice: (() => void) | undefined
@@ -49,12 +52,18 @@ function ForgotKeyBody({
   onOpenChange,
   isDesktop,
   email,
+  keyId,
   unlock,
   onTryDevice,
   otherDevice,
   onCodeSent,
 }: ForgotKeySheetProps) {
   const online = useOnline()
+  const count = useQuery({
+    queryKey: queryKeys.protectedCount(keyId ?? ''),
+    queryFn: () => countProtectedNotes(keyId ?? ''),
+    enabled: keyId !== null,
+  }).data
   const send = useMutation({
     mutationFn: () => sendResetCode(email),
     networkMode: 'always',
@@ -85,10 +94,19 @@ function ForgotKeyBody({
 
   return (
     <div className="flex flex-col gap-3">
-      <Lead>
-        Sin la clave de ahora, lo que hayas protegido con ella no se puede abrir y{' '}
-        <b className="font-bold text-foreground">se perderá</b>.
-      </Lead>
+      {count ? (
+        <Lead>
+          Sin la clave de ahora, el texto de tus{' '}
+          <b className="font-bold text-foreground">{protectedNotesLabel(count)}</b> no se puede
+          abrir y <b className="font-bold text-foreground">se perderá</b>. Sus primeras líneas se
+          quedan, para que sepas cuáles eran.
+        </Lead>
+      ) : (
+        <Lead>
+          Sin la clave de ahora, lo que hayas protegido con ella no se puede abrir y{' '}
+          <b className="font-bold text-foreground">se perderá</b>.
+        </Lead>
+      )}
       {onTryDevice ? (
         <InfoBox>
           Antes, prueba a desbloquear con {unlock.noun}. Si funciona, puedes cambiar la clave sin

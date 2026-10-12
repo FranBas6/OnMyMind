@@ -10,7 +10,8 @@ import type { List } from '@/features/lists/types'
 /**
  * Exportar mis datos (sesión 2.8, diseño 18, P7 y P8): lo puro. El JSON es la copia de todo, con
  * las filas tal como están en la base (para guardarlo, llevártelo o importarlo en la fase 3); el
- * CSV es una lista como tabla para Numbers o Excel.
+ * CSV es una lista como tabla para Numbers o Excel. Las notas protegidas (5.7) van cifradas en el
+ * JSON, como en la base, y en el CSV solo con su primera línea.
  */
 
 /** La versión de la forma del JSON: si cambia, un importador sabrá qué tiene delante. */
@@ -151,13 +152,14 @@ export function listCsv(items: readonly Item[]): string {
     const cells = [
       item.title,
       sublist ?? '',
-      KIND_LABELS[item.kind],
+      // Protegida (5.7): su texto no sale, solo la primera línea.
+      item.sealed ? 'Nota protegida' : KIND_LABELS[item.kind],
       STATUS_LABELS[item.status],
       item.priority ? PRIORITY_LABELS[item.priority] : '',
       dateCell(item.dueAt),
       timed && item.dueAt ? format(item.dueAt, 'HH:mm') : '',
       recurrenceLabel(item.recurrence) ?? '',
-      item.notes ?? '',
+      item.sealed ? '' : (item.notes ?? ''),
       item.url ?? '',
       priceCell(item.priceCents),
       item.priceCents === null ? '' : item.currency,

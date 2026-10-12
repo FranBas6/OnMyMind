@@ -44,6 +44,13 @@ export interface ItemActions {
   changeKind: (item: Item, kind: ItemKind) => void
   /** «Copiar el texto» de una nota: el texto entero, al portapapeles (B11b). */
   copyText: (item: Item) => void
+  /**
+   * «Proteger» una nota (5.7, diseño 26, C6–C6c): crea la clave si no hay, confirma, desbloquea y
+   * cifra su texto, con «“Wifi de casa” protegida · Deshacer».
+   */
+  protect: (item: Item) => void
+  /** «Quitar la protección»: desbloquea y la deja como una nota de siempre. */
+  unprotect: (item: Item) => void
   /** La fila abierta a la izquierda al deslizar («Mover» y «Borrar»): solo una a la vez. */
   swipeOpenId: string | undefined
   setSwipeOpenId: (itemId: string | undefined) => void

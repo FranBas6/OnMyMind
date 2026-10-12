@@ -14,6 +14,8 @@ export type RowActionId =
   | 'move'
   | 'toTask'
   | 'copyText'
+  | 'protect'
+  | 'unprotect'
   | 'delete'
 
 export interface RowAction {
@@ -29,7 +31,16 @@ export interface RowAction {
   separated?: boolean
   /** Resaltada en la hoja de móvil, con una línea debajo que explica qué pasa («Elegir esta», A4). */
   highlight?: { note: string }
+  /** Se ve en gris, sin poderse usar, con su porqué debajo («Proteger» en una compartida, C9). */
+  disabled?: { note: string }
 }
+
+/**
+ * Lo de proteger una nota (5.7, diseño 26): protegida, o si se puede y qué falta. `needsKey`: aún no
+ * hay clave privada («crea tu clave»); `blocked`: por qué no se puede (compartida, con fotos).
+ */
+export type Protection =
+  { protected: true } | { protected: false; needsKey: boolean; blocked: string | null }
 
 /** Lo que cambia el menú en una sublista «para elegir una» y en sus opciones (5.1, diseño 24). */
 export interface RowActionsContext {
@@ -40,6 +51,8 @@ export interface RowActionsContext {
    * (entonces se quita la elección).
    */
   option?: { note: string; chosen: boolean }
+  /** En una nota: si está protegida o si se puede proteger (5.7). */
+  protection?: Protection
 }
 
 const FINISH_LABEL: Record<ItemKind, string> = {
@@ -103,9 +116,18 @@ export function rowActions(
 
 /**
  * La nota no tiene estado (diseño 25, B11b): «Pasar a tarea», que le da casilla, «Mover a…»,
- * «Copiar el texto» y «Borrar». En una sublista «para elegir una», «Elegir esta» va arriba.
+ * «Copiar el texto» y «Borrar». En una sublista «para elegir una», «Elegir esta» va arriba. Antes
+ * de todo, «Proteger» (diseño 26, C6), en gris con su porqué si no se puede. Protegida, solo
+ * «Quitar la protección», «Mover a…» y «Borrar»: su texto se copia desde la ficha desbloqueada.
  */
-function noteActions({ option }: RowActionsContext): RowAction[] {
+function noteActions({ option, protection }: RowActionsContext): RowAction[] {
+  if (protection?.protected) {
+    return [
+      { id: 'unprotect', label: 'Quitar la protección', shortcut: 'P' },
+      { id: 'move', label: 'Mover a…', shortcut: 'M' },
+      { id: 'delete', label: 'Borrar', shortcut: '⌫' },
+    ]
+  }
   const actions: RowAction[] = []
   if (option) {
     actions.push(
@@ -113,6 +135,15 @@ function noteActions({ option }: RowActionsContext): RowAction[] {
         ? { id: 'choose', label: 'Quitar elección', shortcut: 'L' }
         : { id: 'choose', label: 'Elegir esta', shortcut: 'L', highlight: { note: option.note } },
     )
+  }
+  if (protection) {
+    actions.push({
+      id: 'protect',
+      label: 'Proteger',
+      shortcut: 'P',
+      ...(protection.needsKey && !protection.blocked && { hint: 'crea tu clave' }),
+      ...(protection.blocked !== null && { disabled: { note: protection.blocked } }),
+    })
   }
   actions.push({ id: 'toTask', label: 'Pasar a tarea', shortcut: 'T', hint: 'tendrá casilla' })
   actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })

@@ -217,6 +217,10 @@ interface NoteTextFieldProps {
   onSave: (note: SplitNote) => void
   /** Se cierra con todo el texto borrado (diseño 25, B2e). */
   onEmptyClose: () => void
+  /** Con el cursor ya dentro (la nota protegida, al pasar de leer a editar). */
+  autoFocus?: boolean
+  /** Al salir del texto, tras guardarlo. */
+  onBlur?: () => void
 }
 
 /**
@@ -226,7 +230,13 @@ interface NoteTextFieldProps {
  * guardado, así que un cambio que llega del servidor se ve sin más. Sin nada escrito no se guarda,
  * y si se cierra así lo dice `onEmptyClose`.
  */
-export function NoteTextField({ item, onSave, onEmptyClose }: NoteTextFieldProps) {
+export function NoteTextField({
+  item,
+  onSave,
+  onEmptyClose,
+  autoFocus = false,
+  onBlur,
+}: NoteTextFieldProps) {
   const [draft, setDraft] = useState<NoteDraft | null>(null)
   const value: NoteDraft = draft ?? { title: item.title, body: noteBody(item) }
   const timer = useRef<number | undefined>(undefined)
@@ -264,6 +274,7 @@ export function NoteTextField({ item, onSave, onEmptyClose }: NoteTextFieldProps
     const last = pending.current
     if (!last) {
       setDraft(null)
+      onBlur?.()
       return
     }
     // Vacío se queda a la vista, sin guardar, hasta cerrar (B2e) o volver a escribir.
@@ -271,6 +282,7 @@ export function NoteTextField({ item, onSave, onEmptyClose }: NoteTextFieldProps
     pending.current = null
     send(latest.current, last)
     setDraft(null)
+    onBlur?.()
   }
 
   return (
@@ -278,6 +290,7 @@ export function NoteTextField({ item, onSave, onEmptyClose }: NoteTextFieldProps
       value={value}
       onChange={change}
       onBlur={commit}
+      autoFocus={autoFocus}
       placeholder="Escribe…"
       label="Texto de la nota"
       titleClassName="font-display text-2xl leading-[1.25] font-extrabold tracking-[-0.02em]"

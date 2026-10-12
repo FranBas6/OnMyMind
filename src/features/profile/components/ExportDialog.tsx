@@ -195,9 +195,10 @@ export function ExportDialog({ open, onOpenChange, isDesktop }: ExportDialogProp
           isDesktop && '-mt-1',
         )}
       >
+        {/* Lo de las notas protegidas (5.7): su texto no sale en claro. */}
         {format === 'json'
-          ? 'Las fotos van como enlaces. Se descarga un archivo y lo guardas donde quieras.'
-          : 'Las sublistas salen como filas con su nombre en la columna «Sublista».'}
+          ? 'Las fotos van como enlaces y el texto de las notas protegidas, cifrado. Se descarga un archivo y lo guardas donde quieras.'
+          : 'Las sublistas salen como filas con su nombre en la columna «Sublista». De las notas protegidas, solo la primera línea.'}
       </p>
     </ResponsiveSheet>
   )

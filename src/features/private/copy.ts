@@ -42,3 +42,17 @@ export function deviceActionLabel(unlock: DeviceUnlock): string {
 export function tryDeviceLabel(unlock: DeviceUnlock): string {
   return `Probar con ${unlock.noun}`
 }
+
+/** «4 notas protegidas», «1 nota protegida» (C5b). */
+export function protectedNotesLabel(count: number): string {
+  return count === 1 ? '1 nota protegida' : `${count} notas protegidas`
+}
+
+/** «Clave nueva creada · 4 notas sin texto» (C5d). */
+export function newKeyMessage(lost: number): string {
+  if (lost === 0) return 'Clave nueva creada'
+  return `Clave nueva creada · ${lost === 1 ? '1 nota sin texto' : `${lost} notas sin texto`}`
+}
+
+/** La línea de una nota protegida de la clave anterior (C5d). */
+export const LOST_NOTE = 'Sin texto · era de la clave anterior'

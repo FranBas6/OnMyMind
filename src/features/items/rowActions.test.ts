@@ -113,3 +113,29 @@ describe('elegir una (5.1, diseño 24)', () => {
     )
   })
 })
+
+describe('proteger una nota en su menú (5.7, diseño 26)', () => {
+  const ids = (actions: ReturnType<typeof rowActions>) => actions.map((action) => action.id)
+
+  it('«Proteger» va primero; sin clave, «crea tu clave»; si no se puede, en gris con su porqué', () => {
+    const ready = rowActions('note', 'pending', {
+      protection: { protected: false, needsKey: true, blocked: null },
+    })
+    expect(ids(ready)).toEqual(['protect', 'toTask', 'move', 'copyText', 'delete'])
+    expect(ready[0]?.hint).toBe('crea tu clave')
+
+    const blocked = rowActions('note', 'pending', {
+      protection: { protected: false, needsKey: false, blocked: 'En una lista compartida…' },
+    })
+    expect(blocked[0]?.disabled).toEqual({ note: 'En una lista compartida…' })
+    expect(blocked[0]?.hint).toBeUndefined()
+  })
+
+  it('protegida: «Quitar la protección», «Mover a…» y «Borrar»', () => {
+    expect(ids(rowActions('note', 'pending', { protection: { protected: true } }))).toEqual([
+      'unprotect',
+      'move',
+      'delete',
+    ])
+  })
+})

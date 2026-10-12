@@ -5,6 +5,8 @@ import { useState, type KeyboardEvent, type ReactNode } from 'react'
 import { BottomSheet } from '@/components/BottomSheet'
 import { ListIcon } from '@/components/ListIcon'
 import { listCounterLabel, useLists, type List } from '@/features/lists'
+// Por su ruta y no por el índice: `sharing` usa piezas de `items`.
+import { useSharedPeople } from '@/features/sharing/hooks/useSharing'
 import { cn } from '@/lib/utils'
 
 import { destinationSummary } from '../copy'
@@ -59,10 +61,15 @@ export function MoveToList({
 }: MoveToListProps) {
   const lists = useLists()
   const sublists = useSublists()
+  const shared = useSharedPeople().data
   const all = lists.data
     ? [...(lists.data.inbox ? [lists.data.inbox] : []), ...lists.data.lists]
     : []
-  const props = { from, destinations: moveDestinations(target?.item, from, all, sublists) }
+  // Una nota protegida no va a una lista compartida (5.7): los demás no tienen tu clave.
+  const reachable = target?.item.sealed
+    ? all.filter((list) => (shared?.get(list.id)?.length ?? 0) <= 1)
+    : all
+  const props = { from, destinations: moveDestinations(target?.item, from, reachable, sublists) }
   const handlers = { onMove, onMoveToNewList, onClose }
 
   if (isDesktop) {

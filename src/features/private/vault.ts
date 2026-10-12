@@ -171,3 +171,33 @@ export async function unwrapWithPrf(
 ): Promise<CryptoKey | null> {
   return unwrapWith(wrap, await prfKey(output))
 }
+
+/**
+ * Un texto cifrado con la clave de la caja (5.7): el de una nota protegida. AES-GCM con un vector
+ * nuevo cada vez, así que cifrar lo mismo dos veces no da lo mismo.
+ */
+export interface SealedText {
+  sealed: string
+  iv: string
+}
+
+/** Cifra un texto con la clave de la caja. */
+export async function sealText(key: CryptoKey, text: string): Promise<SealedText> {
+  const iv = randomBytes(IV_BYTES)
+  const sealed = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(text))
+  return { sealed: toBase64(new Uint8Array(sealed)), iv: toBase64(iv) }
+}
+
+/** Descifra un texto con la clave de la caja; con otra clave, o cambiado, `null`. */
+export async function openText(key: CryptoKey, { sealed, iv }: SealedText): Promise<string | null> {
+  try {
+    const text = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: fromBase64(iv) },
+      key,
+      fromBase64(sealed),
+    )
+    return new TextDecoder().decode(text)
+  } catch {
+    return null
+  }
+}

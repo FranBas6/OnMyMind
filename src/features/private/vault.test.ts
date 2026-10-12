@@ -5,7 +5,9 @@ import {
   generateVaultKey,
   keyCheck,
   matchesCheck,
+  openText,
   randomBytes,
+  sealText,
   toBase64,
   unwrapWithPassword,
   unwrapWithPrf,
@@ -79,5 +81,25 @@ describe('la clave privada (vault.ts)', () => {
     const check = await keyCheck(await generateVaultKey())
     expect(fromBase64(check)).toHaveLength(32)
     expect(await matchesCheck(await generateVaultKey(), check)).toBe(false)
+  })
+
+  it('el texto de una nota protegida: se abre con su clave, no con otra ni cambiado', async () => {
+    const key = await generateVaultKey()
+    const text = 'Red: MiFibra-7A2F\nClave: tq8M-29xk-Lp4r · ñ'
+    const sealed = await sealText(key, text)
+
+    expect(fromBase64(sealed.iv)).toHaveLength(12)
+    expect(sealed.sealed).not.toContain('tq8M')
+    expect(await openText(key, sealed)).toBe(text)
+    // Lo mismo otra vez no da lo mismo: otro vector.
+    expect((await sealText(key, text)).sealed).not.toBe(sealed.sealed)
+
+    expect(await openText(await generateVaultKey(), sealed)).toBeNull()
+    const bytes = fromBase64(sealed.sealed)
+    bytes[0] = (bytes[0] ?? 0) ^ 1
+    expect(await openText(key, { ...sealed, sealed: toBase64(bytes) })).toBeNull()
+    // Vacío también se cifra: la etiqueta de AES-GCM, 16 bytes, que en base64 son 24 (el mínimo
+    // de la base).
+    expect((await sealText(key, '')).sealed).toHaveLength(24)
   })
 })

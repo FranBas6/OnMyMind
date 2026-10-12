@@ -38,6 +38,7 @@ const grifo: Item = {
   parentId: null,
   chooseOne: false,
   chosenId: null,
+  sealed: null,
   title: 'Arreglar el grifo',
   notes: null,
   status: 'pending',

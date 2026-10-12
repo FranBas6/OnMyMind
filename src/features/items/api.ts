@@ -152,6 +152,12 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
   const row: ItemUpdate = {}
   if (patch.title !== undefined) row.title = itemTitleSchema.parse(patch.title)
   if (patch.notes !== undefined) row.notes = patch.notes?.trim() ? patch.notes.trim() : null
+  if (patch.sealed !== undefined) {
+    row.protected = patch.sealed !== null
+    row.sealed_notes = patch.sealed?.sealed ?? null
+    row.sealed_iv = patch.sealed?.iv ?? null
+    row.sealed_key_id = patch.sealed?.keyId ?? null
+  }
   if (patch.priority !== undefined) row.fields = fieldsFor(patch.priority)
   if (patch.allDay !== undefined) {
     // Un evento: el día con su hora, o de todo el día.
@@ -268,6 +274,11 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
       chosen_id: item.chosenId,
       title: item.title,
       notes: item.notes,
+      // Una protegida vuelve con lo cifrado tal cual (5.7).
+      protected: item.sealed !== null,
+      sealed_notes: item.sealed?.sealed ?? null,
+      sealed_iv: item.sealed?.iv ?? null,
+      sealed_key_id: item.sealed?.keyId ?? null,
       status: item.status,
       fields: fieldsFor(item.priority),
       position: item.position,

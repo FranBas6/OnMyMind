@@ -18,6 +18,7 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
     parentId: 'volantes',
     chooseOne: false,
     chosenId: null,
+    sealed: null,
     title: id,
     notes: null,
     status: 'pending',

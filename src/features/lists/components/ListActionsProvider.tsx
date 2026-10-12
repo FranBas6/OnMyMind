@@ -2,6 +2,8 @@ import { useLocation, useNavigate } from '@tanstack/react-router'
 import { Archive } from 'lucide-react'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 
+// Por su ruta y no por el índice: `items` usa piezas de `lists`.
+import { ProtectedNotesGate } from '@/features/items/components/ProtectedNotesGate'
 import { ListPeopleSheet } from '@/features/sharing/components/ListPeopleSheet'
 import { showUndoToast } from '@/lib/undoToast'
 
@@ -109,6 +111,7 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
             setPeople((current) => current && { ...current, open })
           }}
           onLeft={left}
+          inviteGate={ProtectedNotesGate}
         />
       )}
       {toDuplicate && (

@@ -68,6 +68,14 @@ export const queryKeys = {
    * desbloquea sin red. Lo desbloqueado nunca va en una consulta (`meta.private`, `persister.ts`).
    */
   privateVault: ['private-vault'] as const,
+  /**
+   * El texto descifrado de una nota protegida (5.7): solo en memoria (`meta.private`) y se borra al
+   * bloquear. Va con el `iv`, que cambia cada vez que se cifra.
+   */
+  openedNote: (itemId: string, iv: string) => ['opened-note', itemId, iv] as const,
+  openedNotes: ['opened-note'] as const,
+  /** Cuántas notas protegidas hay con una clave de la caja («He olvidado la clave», C5b). */
+  protectedCount: (keyId: string) => ['private-vault', 'protected', keyId] as const,
   /** Tus avisos (2.6): pocos, todos de una vez. Fuera de `['items']`, que son listas de ítems. */
   reminders: ['reminders'] as const,
   /** Si este dispositivo recibe avisos (`PushState`), que solo sabe el navegador. */

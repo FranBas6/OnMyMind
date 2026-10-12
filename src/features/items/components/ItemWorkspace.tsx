@@ -1,11 +1,18 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { onlineManager, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Check, Copy, Trash2 } from 'lucide-react'
+import { Check, Copy, Lock, LockOpen, Trash2, WifiOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useListActions, type List } from '@/features/lists'
+import {
+  NEEDS_CONNECTION,
+  openNote,
+  rememberOpenedNote,
+  sealNote,
+  useOptionalPrivate,
+} from '@/features/private'
 // Por sus rutas y no por el índice: `reminders` y `sharing` usan piezas de `items`.
 import { useSetReminder } from '@/features/reminders/hooks/useReminders'
 import type { Reminder } from '@/features/reminders/reminders'
@@ -16,7 +23,7 @@ import { showUndoToast } from '@/lib/undoToast'
 
 import { chosenLabel, isChoosing } from '../chooseOne'
 import { changeKindPatch, kindChangedMessage, revertKindChange } from '../kind'
-import { noteText } from '../noteText'
+import { noteBody, noteText } from '../noteText'
 import {
   useDeleteItem,
   useInsertItems,
@@ -98,6 +105,7 @@ export function ItemWorkspace({
   const insertItems = useInsertItems()
   const setReminder = useSetReminder()
   const queryClient = useQueryClient()
+  const privacy = useOptionalPrivate()
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [shownDelete, setShownDelete] = useState<PendingDelete | null>(null)
   if (pendingDelete && pendingDelete !== shownDelete) setShownDelete(pendingDelete)
@@ -241,6 +249,62 @@ export function ItemWorkspace({
     })
   }
 
+  // Proteger y quitar la protección mueven el texto en claro: con conexión, para que no se quede
+  // esperando en la cola guardada del aparato (5.7, ADR-013).
+  const needsConnection = () => {
+    if (onlineManager.isOnline()) return false
+    showUndoToast({ icon: WifiOff, message: NEEDS_CONNECTION })
+    return true
+  }
+
+  // «Proteger» (diseño 26, C6–C7): el texto se cifra aquí y en la base queda solo lo cifrado. La
+  // primera línea se sigue viendo. «Deshacer» la deja como estaba.
+  const protect = (item: Item) => {
+    if (!privacy || item.kind !== 'note' || item.sealed || needsConnection()) return
+    void (async () => {
+      if (!(await privacy.protectNote(item.title))) return
+      const current = listItems(item).find((entry) => entry.id === item.id) ?? item
+      if (current.kind !== 'note' || current.sealed) return
+      const text = noteBody(current)
+      const sealed = await sealNote(text)
+      rememberOpenedNote(queryClient, current.id, sealed, text)
+      const plain: Item = { ...current, notes: null }
+      updateItem.mutate({ item: plain, patch: { notes: null, sealed } })
+      showUndoToast({
+        icon: Lock,
+        message: `“${current.title}” protegida`,
+        onUndo: () => {
+          updateItem.mutate({ item: { ...plain, sealed }, patch: { sealed: null, notes: text } })
+        },
+      })
+    })()
+  }
+
+  // «Quitar la protección»: desbloquea, descifra y la deja como una nota de siempre. Una de la
+  // clave anterior se queda sin texto (no hay con qué abrirla) y no se deshace.
+  const unprotect = (item: Item) => {
+    const sealed = item.sealed
+    if (!privacy || !sealed || needsConnection()) return
+    void (async () => {
+      const lost = privacy.vault !== null && privacy.vault.keyId !== sealed.keyId
+      if (!lost && !(await privacy.requestUnlock())) return
+      const text = lost ? null : await openNote(sealed)
+      updateItem.mutate({ item, patch: { sealed: null, notes: text } })
+      showUndoToast({
+        icon: LockOpen,
+        message: `“${item.title}” sin proteger`,
+        ...(text !== null && {
+          onUndo: () => {
+            updateItem.mutate({
+              item: { ...item, sealed: null, notes: text },
+              patch: { notes: null, sealed },
+            })
+          },
+        }),
+      })
+    })()
+  }
+
   const duplicate = (item: Item) => {
     const all = listItems(item)
     const copies = duplicateSublist(item, childrenOf(all, item.id), {
@@ -297,6 +361,8 @@ export function ItemWorkspace({
     },
     changeKind,
     copyText: copyItemText,
+    protect,
+    unprotect,
     swipeOpenId,
     setSwipeOpenId,
     order,
@@ -326,6 +392,8 @@ export function ItemWorkspace({
           onMove={actions.startMove}
           onChangeKind={changeKind}
           onCopyText={copyItemText}
+          onProtect={protect}
+          onUnprotect={unprotect}
           onDelete={remove}
           onDiscardEmpty={discardEmpty}
           onClose={() => {

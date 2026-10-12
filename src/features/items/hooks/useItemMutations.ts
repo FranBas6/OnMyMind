@@ -243,6 +243,7 @@ function patchItem(item: Item, patch: CachePatch): Item {
   const next: Item = { ...item }
   if (patch.title !== undefined) next.title = patch.title.trim()
   if (patch.notes !== undefined) next.notes = patch.notes?.trim() ? patch.notes.trim() : null
+  if (patch.sealed !== undefined) next.sealed = patch.sealed
   if (patch.priority !== undefined) next.priority = patch.priority
   if (patch.allDay !== undefined) {
     if (patch.dueAt !== undefined) next.dueAt = patch.dueAt
@@ -312,6 +313,7 @@ export function itemFromNew(item: NewItem, position: number): Item {
     parentId: item.parentId ?? null,
     chooseOne: false,
     chosenId: null,
+    sealed: null,
     title: item.title.trim(),
     notes: item.notes ?? null,
     status: item.status,
@@ -521,6 +523,7 @@ const updateItemMutation = durableMutation(itemMutationKey('update'), (queryClie
       const previous: CachePatch = {}
       if (patch.title !== undefined) previous.title = before.title
       if (patch.notes !== undefined) previous.notes = before.notes
+      if (patch.sealed !== undefined) previous.sealed = before.sealed
       if (patch.priority !== undefined) previous.priority = before.priority
       if (patch.dueAt !== undefined || patch.allDay !== undefined) {
         previous.dueAt = before.dueAt

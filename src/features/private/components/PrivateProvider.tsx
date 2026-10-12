@@ -8,7 +8,7 @@ import { queryKeys } from '@/lib/queryKeys'
 import { showUndoToast } from '@/lib/undoToast'
 
 import { removeVaultDeviceKey, type PrivateVaultState } from '../api'
-import { NEEDS_CONNECTION, SOMETHING_FAILED, unsupportedNote } from '../copy'
+import { NEEDS_CONNECTION, newKeyMessage, SOMETHING_FAILED, unsupportedNote } from '../copy'
 import {
   clearDeviceKey,
   markPrfUnsupported,
@@ -17,20 +17,29 @@ import {
   saveDeviceKey,
 } from '../deviceKey'
 import { privateVaultQueryOptions } from '../queries'
-import { addDeviceKey, openWithDevice, type CreatedKey } from '../operations'
+import { addDeviceKey, openWithDevice, openWithKey, type CreatedKey } from '../operations'
 import { canUsePasskeys, currentDeviceUnlock, PasskeyFailure } from '../passkey'
 import { PrivateContext, type PrivateContextValue } from '../privateContext'
-import { getUnlocked, lock, unlock as keepUnlocked, useUnlocked, withoutAutoLock } from '../unlock'
+import {
+  getUnlocked,
+  lock,
+  subscribeUnlocked,
+  unlock as keepUnlocked,
+  useUnlocked,
+  withoutAutoLock,
+} from '../unlock'
 import { ChangeKeySheet } from './ChangeKeySheet'
 import { CreateKeySheet } from './CreateKeySheet'
 import { ForgotKeySheet } from './ForgotKeySheet'
 import { OfferDeviceKeySheet } from './OfferDeviceKeySheet'
+import { ProtectNoteSheet } from './ProtectNoteSheet'
 import { ResetCodeSheet } from './ResetCodeSheet'
 import { UnlockSheet } from './UnlockSheet'
 
 /** La hoja abierta: una cada vez, y unas llevan a otras («He olvidado la clave» → código → nueva). */
 type Sheet =
-  | { kind: 'create'; reset: boolean }
+  | { kind: 'create'; reset: boolean; forTitle?: string }
+  | { kind: 'protect'; title: string }
   | { kind: 'unlock'; deviceFailed: boolean }
   | { kind: 'change'; openedKey: CryptoKey | null }
   | { kind: 'forgot' }
@@ -80,6 +89,15 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
     [userId],
   )
 
+  // Al bloquear, se olvida el texto descifrado de las notas protegidas (5.7).
+  useEffect(
+    () =>
+      subscribeUnlocked(() => {
+        if (!getUnlocked()) queryClient.removeQueries({ queryKey: queryKeys.openedNotes })
+      }),
+    [queryClient],
+  )
+
   const vault = vaultQuery.data?.vault ?? null
   const keys = vaultQuery.data?.keys ?? []
   const marker = userId ? readDeviceKey(userId) : null
@@ -119,16 +137,39 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const requestUnlock = () => {
-    if (getUnlocked()) return Promise.resolve(true)
-    if (!vault) return Promise.resolve(false)
+  /** Espera a lo que se haga en una hoja: `true` si sale bien, `false` si se cierra. */
+  const waitFor = (next: Sheet | null) => {
     settle(false)
     const promise = new Promise<boolean>((resolve) => {
       pending.current = resolve
     })
-    if (deviceKey && deviceSupported) void tryDevice('unlock')
-    else setSheet({ kind: 'unlock', deviceFailed: false })
+    if (next) setSheet(next)
     return promise
+  }
+
+  const requestUnlock = ({ withKey = false } = {}) => {
+    if (getUnlocked()) return Promise.resolve(true)
+    if (!vault) return Promise.resolve(false)
+    const useDevice = !withKey && deviceKey !== null && deviceSupported === true
+    const promise = waitFor(useDevice ? null : { kind: 'unlock', deviceFailed: false })
+    if (useDevice) void tryDevice('unlock')
+    return promise
+  }
+
+  // «Proteger» (C6–C6c): sin clave, antes se crea; después se confirma y se desbloquea.
+  const protectNote = async (title: string) => {
+    if (!vault && !(await waitFor({ kind: 'create', reset: false, forTitle: title }))) return false
+    if (!(await waitFor({ kind: 'protect', title }))) return false
+    return requestUnlock()
+  }
+
+  // Con la clave escrita en la ficha bloqueada, en escritorio (D4).
+  const openWithPassword = async (password: string) => {
+    if (!vault) return false
+    const key = await openWithKey(vault, password)
+    if (!key) return false
+    keepUnlocked(key, vault.keyId)
+    return true
   }
 
   const enroll = useMutation({
@@ -193,7 +234,10 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
     })()
   }
 
-  const created = ({ vault: next, key }: CreatedKey, reset: boolean) => {
+  const created = ({ vault: next, key }: CreatedKey, reset: boolean, forTitle?: string) => {
+    // Las notas protegidas con la de antes se quedan sin texto (C5d).
+    const lost =
+      reset && vault ? queryClient.getQueryData<number>(queryKeys.protectedCount(vault.keyId)) : 0
     if (reset) {
       clearDeviceKey()
       deviceChanged()
@@ -201,17 +245,21 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
     queryClient.setQueryData<PrivateVaultState>(queryKeys.privateVault, { vault: next, keys: [] })
     keepUnlocked(key, next.keyId)
     void refresh()
-    if (deviceSupported) {
+    // Otra clave: lo dice siempre, con lo que se quedó sin texto (C5d).
+    if (reset) notify(newKeyMessage(lost ?? 0))
+    // Para proteger una nota (C6b), se sigue con ella; Face ID se ofrece en Perfil.
+    if (deviceSupported && forTitle === undefined) {
       setSheet({ kind: 'offer', justCreated: true })
     } else {
       setSheet(null)
-      notify(reset ? 'Clave nueva creada' : 'Clave creada')
+      if (!reset) notify('Clave creada')
+      settle(true)
     }
   }
 
   const close = (open: boolean) => {
     if (open) return
-    if (sheet?.kind === 'unlock') settle(false)
+    settle(false)
     setSheet(null)
   }
 
@@ -224,6 +272,8 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
     unlock,
     unlocked: unlocked !== null,
     requestUnlock,
+    openWithPassword,
+    protectNote,
     lock,
     create: () => {
       setSheet({ kind: 'create', reset: false })
@@ -246,8 +296,20 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
         isDesktop={isDesktop}
         unlock={unlock}
         reset={sheet?.kind === 'create' && sheet.reset}
+        forTitle={sheet?.kind === 'create' ? sheet.forTitle : undefined}
         onCreated={(result) => {
-          created(result, sheet?.kind === 'create' && sheet.reset)
+          if (sheet?.kind === 'create') created(result, sheet.reset, sheet.forTitle)
+        }}
+      />
+      <ProtectNoteSheet
+        open={sheet?.kind === 'protect'}
+        onOpenChange={close}
+        isDesktop={isDesktop}
+        title={sheet?.kind === 'protect' ? sheet.title : ''}
+        unlock={unlock}
+        onConfirm={() => {
+          setSheet(null)
+          settle(true)
         }}
       />
       {vault && (
@@ -299,6 +361,7 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
           onOpenChange={close}
           isDesktop={isDesktop}
           email={user.email}
+          keyId={vault?.keyId ?? null}
           unlock={unlock}
           onTryDevice={
             deviceKey && deviceSupported

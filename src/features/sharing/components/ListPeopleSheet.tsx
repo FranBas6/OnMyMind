@@ -1,5 +1,5 @@
 import { Check, Clock, Copy, Link as LinkIcon, LogOut, Share, WifiOff } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ComponentType, type ReactNode } from 'react'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { InlineConfirm } from '@/components/InlineConfirm'
@@ -44,6 +44,7 @@ export function ListPeopleSheet({
   onOpenChange,
   confirmLeave = false,
   onLeft,
+  inviteGate: InviteGate,
 }: {
   list: List
   open: boolean
@@ -52,6 +53,11 @@ export function ListPeopleSheet({
   confirmLeave?: boolean
   /** Tras salir: la lista ya no es tuya, quien la enseñaba tiene que irse de ella. */
   onLeft?: (list: List) => void
+  /**
+   * Lo que puede impedir invitar: una lista con notas protegidas no se comparte (5.7, diseño 26,
+   * C9b). Enseña su porqué o, si no hay nada, el enlace (`children`).
+   */
+  inviteGate?: ComponentType<{ list: List; children: ReactNode }>
 }) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const people = useListPeople(list.id, open)
@@ -82,7 +88,13 @@ export function ListPeopleSheet({
         <PeopleCard list={list} people={people.data} meId={me.id} />
       </section>
       {list.isOwner ? (
-        <InviteSection list={list} />
+        InviteGate ? (
+          <InviteGate list={list}>
+            <InviteSection list={list} />
+          </InviteGate>
+        ) : (
+          <InviteSection list={list} />
+        )
       ) : (
         <LeaveSection
           list={list}

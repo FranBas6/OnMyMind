@@ -17,3 +17,15 @@ protegidas (5.7) y las listas ocultas (5.8).
 - `components/`: `PrivateProvider` (en el layout privado, con `usePrivate().requestUnlock()` para
   lo que necesite desbloquear) y sus hojas: crear, desbloquear, cambiar, «He olvidado la clave»,
   el código y la oferta de Face ID; `PrivateSection` es Perfil › «Privado».
+
+**Notas protegidas (5.7):**
+
+- `vault.ts` también cifra y descifra un texto (`sealText`, `openText`: AES-GCM con un vector
+  nuevo cada vez).
+- `notes.ts`: `sealNote` y `openNote` con lo desbloqueado, `useOpenedNote` (bloqueada, de la clave
+  anterior o abierta con su texto, en una consulta en memoria que no se guarda y se borra al
+  bloquear) y `useIsLostNote`.
+- `clipboard.ts`: «Copiar» borra el portapapeles a los 30 s (en Safari, en el siguiente gesto).
+- `PrivateProvider.protectNote(title)`: crea la clave si no hay (C6b), confirma
+  (`ProtectNoteSheet`, C6c) y desbloquea; `openWithPassword` es la clave escrita en la ficha de
+  escritorio (D4). `LockedNoteCard` y `UnlockedBand` son la ficha bloqueada y la franja.

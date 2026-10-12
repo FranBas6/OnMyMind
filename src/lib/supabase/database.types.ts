@@ -248,7 +248,11 @@ export type Database = {
           price_link_id: string | null
           price_source: Database['public']['Enums']['price_source'] | null
           price_store: string | null
+          protected: boolean
           recurrence: string | null
+          sealed_iv: string | null
+          sealed_key_id: string | null
+          sealed_notes: string | null
           status: string
           title: string
           updated_at: string
@@ -286,7 +290,11 @@ export type Database = {
           price_link_id?: string | null
           price_source?: Database['public']['Enums']['price_source'] | null
           price_store?: string | null
+          protected?: boolean
           recurrence?: string | null
+          sealed_iv?: string | null
+          sealed_key_id?: string | null
+          sealed_notes?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -324,7 +332,11 @@ export type Database = {
           price_link_id?: string | null
           price_source?: Database['public']['Enums']['price_source'] | null
           price_store?: string | null
+          protected?: boolean
           recurrence?: string | null
+          sealed_iv?: string | null
+          sealed_key_id?: string | null
+          sealed_notes?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -953,6 +965,7 @@ export type Database = {
         Returns: string[]
       }
       link_store_name: { Args: { p_site: string; p_url: string }; Returns: string }
+      list_has_protected: { Args: { p_list_id: string }; Returns: boolean }
       list_invite_preview: {
         Args: { p_token: string }
         Returns: {
@@ -966,6 +979,7 @@ export type Database = {
           status: string
         }[]
       }
+      list_is_shared: { Args: { p_list_id: string }; Returns: boolean }
       list_people: {
         Args: { p_list_id: string }
         Returns: {

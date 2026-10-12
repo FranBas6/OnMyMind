@@ -39,3 +39,13 @@ repite el título en lo compartido antes de la 5.4), y `bullets.ts` hace las vi�
 tarea» y «Copiar el texto» son acciones de fila de la nota (`rowActions`), y `changeKind` en
 `ItemWorkspace` cambia el tipo con «Ahora es una tarea · Deshacer» (`revertKindChange`). Pegar
 varias líneas al crear una nota las deja en una (`PastedNoteBox`, `usePastedLines` con `single`).
+
+**Notas protegidas (5.7, diseño 26):** `Item.sealed` es el texto cifrado de una protegida (con
+`notes` vacío). `ProtectedNote` es su ficha (bloqueada con `LockedNoteCard` o desbloqueada, con la
+franja, el texto que se cifra otra vez al guardarlo, «Copiar» y el botón de copiar de cada
+línea, que copia solo el valor de «Contraseña: 123456», `lineValue.ts`), `ProtectedKindRow` su «Tipo», y
+`protect` / `unprotect` de `ItemWorkspace` la protegen y le quitan la protección (con conexión).
+`protection.ts` dice por qué no se puede (compartida, con fotos o enlaces); `useRowActionsContext`
+lo pone en el menú («Proteger» en gris con su porqué). `ProtectedNotesGate` va en la hoja de
+compartir: una lista con protegidas no se comparte hasta moverlas. «Mover a…» no ofrece listas
+compartidas para una protegida.

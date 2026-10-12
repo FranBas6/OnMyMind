@@ -22,10 +22,18 @@ export interface PrivateState {
 
 export interface PrivateActions {
   /**
-   * Desbloquea: con la llave de este aparato si la hay; si falla o no la hay, con la clave. Da
-   * `true` si queda desbloqueado y `false` si se cancela.
+   * Desbloquea: con la llave de este aparato si la hay; si falla o no la hay, con la clave
+   * (`withKey`: directamente con la clave, «Usar la clave»). Da `true` si queda desbloqueado y
+   * `false` si se cancela.
    */
-  requestUnlock: () => Promise<boolean>
+  requestUnlock: (options?: { withKey?: boolean }) => Promise<boolean>
+  /** Con la clave escrita en la ficha bloqueada de escritorio (D4): `false` si no es esa. */
+  openWithPassword: (password: string) => Promise<boolean>
+  /**
+   * «Proteger» una nota (5.7, C6–C6c): crea la clave si aún no hay, confirma y desbloquea. `true`
+   * si se puede cifrar ya; `false` si se cancela.
+   */
+  protectNote: (title: string) => Promise<boolean>
   lock: () => void
   /** «Crea tu clave privada». */
   create: () => void
@@ -40,6 +48,19 @@ export interface PrivateActions {
 export type PrivateContextValue = PrivateState & PrivateActions
 
 export const PrivateContext = createContext<PrivateContextValue | null>(null)
+
+/**
+ * Cuál es la clave de la caja de ahora, o `null` si no se sabe (sin clave, cargando o fuera de
+ * `PrivateProvider`): para saber si una nota protegida es de la clave anterior.
+ */
+export function usePrivateKeyId(): string | null {
+  return useContext(PrivateContext)?.vault?.keyId ?? null
+}
+
+/** Como `usePrivate`, o `null` fuera de `PrivateProvider` (piezas que también se usan sueltas). */
+export function useOptionalPrivate(): PrivateContextValue | null {
+  return useContext(PrivateContext)
+}
 
 /** La clave privada, desde cualquier pantalla de dentro (`PrivateProvider`, en el layout privado). */
 export function usePrivate(): PrivateContextValue {

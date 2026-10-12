@@ -41,6 +41,7 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
     parentId: null,
     chooseOne: false,
     chosenId: null,
+    sealed: null,
     title: 'Reformar la cocina',
     notes: null,
     status: 'pending',

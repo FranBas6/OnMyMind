@@ -71,7 +71,8 @@ select throws_ok(
   '42501', null, 'ni la crea por ella');
 update public.private_vaults set wrapped_key = :check;
 reset role;
-select results_eq('select wrapped_key from public.private_vaults',
+-- Solo la de Ana: en la base local puede haber otras cajas de verdad.
+select results_eq(format('select wrapped_key from public.private_vaults where user_id = %L', :ana),
   format('values (%L::text)', :wrap), 'ni la cambia');
 
 -- ─── Cambiar la clave privada ────────────────────────────────────────────────────────────────
@@ -122,7 +123,8 @@ select throws_ok(
   '42501', null, 'un código de hace media hora no vale');
 
 reset role;
-create temp table antes on commit drop as select key_id from public.private_vaults;
+create temp table antes on commit drop as
+  select key_id from public.private_vaults where user_id = :ana;
 grant select on antes to authenticated;
 select pg_temp.claims(:ana::uuid, 2);
 set local role authenticated;

@@ -27,6 +27,7 @@ const compra: Item = {
   parentId: null,
   chooseOne: false,
   chosenId: null,
+  sealed: null,
   title: 'Monitor LG 27"',
   notes: null,
   status: 'pending',

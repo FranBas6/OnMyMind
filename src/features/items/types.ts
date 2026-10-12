@@ -1,8 +1,11 @@
+import type { SealedNotes } from '@/features/private/notes'
+
 import type { ItemKind, ItemStatus } from './status'
 import type { Priority } from './fields'
 
 export type { ItemKind, ItemStatus } from './status'
 export type { Priority, TaskFields } from './fields'
+export type { SealedNotes } from '@/features/private/notes'
 
 /**
  * Un ítem de cualquier lista. Los campos promocionados de la tabla (`due_at`, `recurrence`…) van
@@ -28,6 +31,11 @@ export interface Item {
   chosenId: string | null
   title: string
   notes: string | null
+  /**
+   * Una nota protegida (5.7, diseño 26): su texto va cifrado aquí y `notes` está vacío. La primera
+   * línea (`title`) se sigue viendo. `null` en todo lo demás.
+   */
+  sealed: SealedNotes | null
   status: ItemStatus
   /** Solo en tareas. */
   priority: Priority | null
@@ -135,6 +143,11 @@ export interface MovedItem {
 export interface ItemPatch {
   title?: string
   notes?: string | null
+  /**
+   * Proteger una nota (lo cifrado, con `notes: null`), cambiar su texto (cifrado otra vez) o quitar
+   * la protección (`null`, con su texto en `notes`). Nunca va texto en claro de una protegida.
+   */
+  sealed?: SealedNotes | null
   priority?: Priority | null
   dueAt?: Date | null
   /**

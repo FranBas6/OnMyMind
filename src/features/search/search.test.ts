@@ -46,6 +46,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     parentId: null,
     chooseOne: false,
     chosenId: null,
+    sealed: null,
     title,
     notes: null,
     status: 'pending',
@@ -316,5 +317,19 @@ describe('sublistas en Buscar (diseño 12, A2)', () => {
   it('la ruta va delante; un evento próximo dice su día y su hora', () => {
     expect(resultMeta(vuelo, now, 'Viajes › Lisboa')).toBe('Viajes › Lisboa · Lun 12 oct · 07:45')
     expect(resultMeta(tranvia, now, 'Viajes › Lisboa')).toBe('Viajes › Lisboa · Pendiente')
+  })
+})
+
+describe('las notas protegidas en Buscar (5.7)', () => {
+  it('salen por su primera línea, nunca por su texto', () => {
+    const wifi = item('wifi', 'Wifi de casa', {
+      kind: 'note',
+      sealed: { sealed: 'dGV4dG8tY2lmcmFkbw==', iv: 'aXYtZGUtMTItYnl0', keyId: 'caja' },
+    })
+    expect(found(searchItems([wifi], lists, 'wifi', { filter: 'all', now }))).toEqual([
+      ['casa', ['wifi']],
+    ])
+    expect(searchItems([wifi], lists, 'tq8M', { filter: 'all', now }).count).toBe(0)
+    expect(searchItems([wifi], lists, 'dGV4', { filter: 'all', now }).count).toBe(0)
   })
 })

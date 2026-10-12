@@ -16,7 +16,7 @@ const priceSourceSchema = z.enum(['manual', 'web', 'auto']).nullable()
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, kind, parent_id, choose_one, chosen_id, title, notes, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at, price_link_id, price_store, price_followed, price_failures, created_by, completed_by, links:item_links!item_links_item_id_fkey(id, url, url_title, url_site, price_cents, currency, price_source, price_checked_at, price_followed, price_failures, position), images:item_images(id, path, position)'
+  'id, list_id, kind, parent_id, choose_one, chosen_id, title, notes, protected, sealed_notes, sealed_iv, sealed_key_id, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at, price_link_id, price_store, price_followed, price_failures, created_by, completed_by, links:item_links!item_links_item_id_fkey(id, url, url_title, url_site, price_cents, currency, price_source, price_checked_at, price_followed, price_failures, position), images:item_images(id, path, position)'
 
 /** Límite de las notas: el `check` de `items.notes`. */
 export const ITEM_NOTES_MAX_LENGTH = 5000
@@ -30,6 +30,10 @@ export interface ItemRow {
   chosen_id: string | null
   title: string
   notes: string | null
+  protected: boolean
+  sealed_notes: string | null
+  sealed_iv: string | null
+  sealed_key_id: string | null
   status: string
   fields: unknown
   position: number
@@ -112,6 +116,7 @@ export function mapItemRow(row: ItemRow): Item {
     chosenId: row.chosen_id,
     title: row.title,
     notes: row.notes,
+    sealed: sealedNotes(row),
     status: itemStatusSchema.parse(row.status),
     priority: parseTaskFields(row.fields).priority ?? null,
     dueAt: toDate(row.due_at),
@@ -140,6 +145,12 @@ export function mapItemRow(row: ItemRow): Item {
     createdBy: row.created_by,
     completedBy: row.completed_by,
   }
+}
+
+/** Lo cifrado de una nota protegida (5.7), o `null`. */
+function sealedNotes(row: ItemRow): Item['sealed'] {
+  if (!row.protected || !row.sealed_notes || !row.sealed_iv || !row.sealed_key_id) return null
+  return { sealed: row.sealed_notes, iv: row.sealed_iv, keyId: row.sealed_key_id }
 }
 
 /** `fields` de una fila a partir de la prioridad (el único campo flexible en fase 1). */

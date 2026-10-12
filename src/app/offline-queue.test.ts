@@ -56,6 +56,7 @@ const pan: Item = {
   parentId: null,
   chooseOne: false,
   chosenId: null,
+  sealed: null,
   title: 'Pan',
   notes: null,
   status: 'pending',

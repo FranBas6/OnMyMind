@@ -1,4 +1,4 @@
-import { Calendar, FileText } from 'lucide-react'
+import { Calendar, FileText, Lock } from 'lucide-react'
 
 import type { ListColor } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -9,7 +9,7 @@ import { StatusCheckbox } from './StatusCheckbox'
 import { SublistIcon } from './SublistIcon'
 
 interface ItemControlProps {
-  item: Pick<Item, 'kind' | 'status' | 'title'>
+  item: Pick<Item, 'kind' | 'status' | 'title'> & Partial<Pick<Item, 'sealed'>>
   onToggle: () => void
   /** El del detalle: 28 px en móvil y 26 en escritorio. */
   large?: boolean
@@ -26,18 +26,20 @@ interface ItemControlProps {
 export function ItemControl({ item, onToggle, large = false, tone, className }: ItemControlProps) {
   // La nota no tiene casilla (5.3, ADR-012): en su sitio, la hoja, que no es un control (diseño
   // 25, B1). La usan Buscar y el menú de fila; su propia fila la pinta igual (`NoteRow`).
+  // Protegida (5.7, diseño 26, C7): el candado ocupa el sitio de la hoja.
   if (item.kind === 'note') {
+    const Icon = item.sealed ? Lock : FileText
     return (
       <span
         role="img"
-        aria-label="Nota"
+        aria-label={item.sealed ? 'Nota protegida' : 'Nota'}
         className={cn(
           'grid shrink-0 place-items-center text-muted-foreground',
           large ? 'size-7 md:size-[26px]' : 'size-6',
           className,
         )}
       >
-        <FileText aria-hidden className={large ? 'size-[22px]' : 'size-5'} strokeWidth={2} />
+        <Icon aria-hidden className={large ? 'size-[22px]' : 'size-5'} strokeWidth={2} />
       </span>
     )
   }

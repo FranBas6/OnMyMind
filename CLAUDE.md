@@ -99,7 +99,7 @@ src/
     reminders/      recordatorios y push
     sharing/        compartir listas: invitar con un enlace, unirse, quién está
     prices/         histórico de precios y gráficas
-    private/        la clave privada: la caja cifrada, desbloquear con la clave o la llave del aparato
+    private/        la clave privada: la caja cifrada, desbloquear con la clave o la llave del aparato, y el texto de las notas protegidas
   components/
     ui/           Componentes generados por shadcn (no editar salvo ajustes de estilo)
     layout/       AppShell, BottomNav, Sidebar

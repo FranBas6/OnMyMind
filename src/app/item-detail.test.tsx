@@ -53,6 +53,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     parentId: null,
     chooseOne: false,
     chosenId: null,
+    sealed: null,
     title,
     notes: null,
     status: 'pending',

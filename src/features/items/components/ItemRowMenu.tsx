@@ -8,6 +8,8 @@ import {
   CircleDot,
   Contrast,
   Copy,
+  Lock,
+  LockOpen,
   Pause,
   Pencil,
   Play,
@@ -15,7 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { Fragment, useRef, useState, type KeyboardEvent } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import { canStep } from '@/lib/reorder'
@@ -46,6 +48,8 @@ const ICONS: Record<RowActionId, LucideIcon> = {
   move: ArrowRightLeft,
   toTask: Circle,
   copyText: Copy,
+  protect: Lock,
+  unprotect: LockOpen,
   delete: Trash2,
 }
 
@@ -65,6 +69,8 @@ function useRunAction() {
     else if (action.id === 'duplicate') actions.duplicate(item)
     else if (action.id === 'toTask') actions.changeKind(item, 'task')
     else if (action.id === 'copyText') actions.copyText(item)
+    else if (action.id === 'protect') actions.protect(item)
+    else if (action.id === 'unprotect') actions.unprotect(item)
     else actions.remove(item)
   }
 }
@@ -85,6 +91,7 @@ export function ItemRowMenuSheet({
   const [shown, setShown] = useState(item)
   if (item && item !== shown) setShown(item)
   const context = useRowActionsContext(shown)
+  const actions = shown ? rowActions(shown.kind, shown.status, context) : []
 
   return (
     <BottomSheet
@@ -116,7 +123,9 @@ export function ItemRowMenuSheet({
                 ) : shown.kind === 'note' ? (
                   // «Nota · Localizador K7Q2MX» (diseño 25, B11b): la nota no tiene estado.
                   <span className="block truncate">
-                    {['Nota', notesExcerpt(noteBody(shown))].filter(Boolean).join(' · ')}
+                    {shown.sealed
+                      ? 'Nota protegida'
+                      : ['Nota', notesExcerpt(noteBody(shown))].filter(Boolean).join(' · ')}
                   </span>
                 ) : (
                   `${list.name} · ${STATUS_LABELS[shown.status].toLowerCase()}`
@@ -125,10 +134,7 @@ export function ItemRowMenuSheet({
             </div>
           </div>
           <div className="-mx-2 flex flex-col gap-0.5">
-            {withSteps(
-              rowActions(shown.kind, shown.status, context),
-              order?.ids.includes(shown.id) ?? false,
-            ).map((action) => {
+            {withSteps(actions, order?.ids.includes(shown.id) ?? false).map((action) => {
               if (action === STEPS) {
                 return (
                   <StepButtons
@@ -143,6 +149,8 @@ export function ItemRowMenuSheet({
               }
               const Icon = iconFor(shown, action)
               const destructive = action.id === 'delete'
+              // Lo que no se puede, en gris, con su porqué antes de «Borrar» (diseño 26, C6d y C9).
+              const blocked = destructive ? blockedNote(actions) : undefined
               // «Elegir esta» (diseño 24, A4): resaltada, y debajo qué pasa al elegirla.
               if (action.highlight) {
                 return (
@@ -169,16 +177,17 @@ export function ItemRowMenuSheet({
                   </div>
                 )
               }
-              return (
+              const button = (
                 <button
                   key={action.id}
                   type="button"
+                  disabled={action.disabled !== undefined}
                   onClick={() => {
                     onClose()
                     run(shown, action, null)
                   }}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-xl px-3.5 text-[15px] font-medium outline-none active:bg-fill',
+                    'flex w-full items-center gap-3 rounded-xl px-3.5 text-[15px] font-medium outline-none active:bg-fill disabled:text-subtle-foreground disabled:active:bg-transparent',
                     destructive || action.separated
                       ? 'mt-1 h-14 rounded-none border-t border-border-soft pt-1'
                       : 'h-13',
@@ -193,6 +202,15 @@ export function ItemRowMenuSheet({
                     </span>
                   )}
                 </button>
+              )
+              if (!blocked) return button
+              return (
+                <Fragment key={action.id}>
+                  <p className="px-3.5 pt-2 pb-1 text-[13px] leading-[1.45] text-muted-foreground">
+                    {blocked}
+                  </p>
+                  {button}
+                </Fragment>
               )
             })}
           </div>
@@ -228,7 +246,7 @@ export function ItemRowDotsMenu({
       return
     }
     const key = event.key === 'Backspace' || event.key === 'Delete' ? '⌫' : event.key.toUpperCase()
-    const action = actions.find((entry) => entry.shortcut === key)
+    const action = actions.find((entry) => entry.shortcut === key && !entry.disabled)
     if (!action) return
     event.preventDefault()
     setOpen(false)
@@ -299,14 +317,15 @@ export function ItemRowDotsMenu({
             }
             const Icon = iconFor(item, action)
             const destructive = action.id === 'delete'
-            return (
+            const entry = (
               <DropdownMenu.Item
                 key={action.id}
+                disabled={action.disabled !== undefined}
                 onSelect={() => {
                   run(item, action, trigger.current)
                 }}
                 className={cn(
-                  'flex h-11 cursor-pointer items-center gap-3 rounded-xl px-3.5 text-sm font-medium outline-none select-none data-highlighted:bg-fill',
+                  'flex h-11 cursor-pointer items-center gap-3 rounded-xl px-3.5 text-sm font-medium outline-none select-none data-disabled:cursor-default data-disabled:text-subtle-foreground data-highlighted:bg-fill',
                   (destructive || action.separated) &&
                     'mt-1 rounded-none border-t border-border-soft pt-1',
                   destructive && 'text-destructive',
@@ -314,10 +333,24 @@ export function ItemRowDotsMenu({
               >
                 <Icon aria-hidden className="size-4" strokeWidth={2} />
                 <span className="flex-1">{action.label}</span>
-                <kbd aria-hidden className="font-sans text-[11px] text-subtle-foreground">
-                  {action.shortcut}
-                </kbd>
+                {action.hint ? (
+                  <span className="text-[11px] text-subtle-foreground">{action.hint}</span>
+                ) : (
+                  <kbd aria-hidden className="font-sans text-[11px] text-subtle-foreground">
+                    {action.shortcut}
+                  </kbd>
+                )}
               </DropdownMenu.Item>
+            )
+            // Su porqué, debajo de lo que no se puede (diseño 26, C6d y C9).
+            if (!action.disabled) return entry
+            return (
+              <Fragment key={action.id}>
+                {entry}
+                <p className="px-3.5 pb-1.5 text-xs leading-[1.4] text-muted-foreground">
+                  {action.disabled.note}
+                </p>
+              </Fragment>
             )
           })}
         </DropdownMenu.Content>
@@ -377,4 +410,9 @@ function StepButtons({
 function SublistMenuSummary({ item, listName }: { item: Item; listName: string }) {
   const { data: items = [] } = useItems(item.listId)
   return <>{`Sublista de ${listName} · ${sublistMeta(item, childrenOf(items, item.id))}`}</>
+}
+
+/** Por qué no se puede algo del menú («Proteger» en una lista compartida, C9), si lo hay. */
+function blockedNote(actions: readonly RowAction[]): string | undefined {
+  return actions.find((action) => action.disabled)?.disabled?.note
 }
