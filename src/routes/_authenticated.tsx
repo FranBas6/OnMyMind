@@ -7,6 +7,7 @@ import { useSession } from '@/features/auth'
 import { CaptureProvider } from '@/features/capture'
 import { cleanupPhotosDaily } from '@/features/items'
 import { ListActionsProvider } from '@/features/lists'
+import { PrivateProvider } from '@/features/private'
 import { ThemeSync } from '@/features/profile'
 import { useLiveLists } from '@/features/sharing'
 
@@ -50,15 +51,18 @@ function AuthenticatedLayout() {
 
   return (
     <ListActionsProvider>
-      {/* El tema viaja con la cuenta: se aplica al llegar el perfil (08 B.14). */}
-      <ThemeSync />
-      {/* En Safari del iPhone, la primera vez: cómo instalarla (diseño 10). */}
-      <InstallHint />
-      <CaptureProvider>
-        <AppShell>
-          <Outlet />
-        </AppShell>
-      </CaptureProvider>
+      {/* La clave privada (5.6): desbloquear y sus hojas, desde cualquier pantalla. */}
+      <PrivateProvider>
+        {/* El tema viaja con la cuenta: se aplica al llegar el perfil (08 B.14). */}
+        <ThemeSync />
+        {/* En Safari del iPhone, la primera vez: cómo instalarla (diseño 10). */}
+        <InstallHint />
+        <CaptureProvider>
+          <AppShell>
+            <Outlet />
+          </AppShell>
+        </CaptureProvider>
+      </PrivateProvider>
     </ListActionsProvider>
   )
 }

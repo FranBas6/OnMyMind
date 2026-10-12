@@ -1,4 +1,4 @@
-import { onlineManager, type Mutation, type QueryClient } from '@tanstack/react-query'
+import { onlineManager, type Mutation, type Query, type QueryClient } from '@tanstack/react-query'
 import {
   persistQueryClient,
   type PersistedClient,
@@ -71,8 +71,17 @@ export function isReplayable(queryClient: QueryClient, mutation: Mutation): bool
 }
 
 /**
+ * Si una consulta se guarda con la caché: las terminadas con éxito, menos las que llevan
+ * `meta: { private: true }`, que es lo desbloqueado (5.6, ADR-013): eso vive solo en memoria.
+ */
+export function isPersistable(query: Query): boolean {
+  return query.state.status === 'success' && query.meta?.private !== true
+}
+
+/**
  * Restaura la caché guardada (antes de pintar, para que los loaders del router la encuentren) y
- * se suscribe para guardar los cambios. Se guardan las consultas terminadas con éxito y la cola de
+ * se suscribe para guardar los cambios. Se guardan las consultas terminadas con éxito (sin lo
+ * desbloqueado, `isPersistable`) y la cola de
  * cambios sin enviar (2.10, ADR-005). Con red, la cola sale ya, antes que cualquier consulta: la
  * respuesta tiene que traer esos cambios. Sin red, sale sola cuando vuelva (`onlineManager`).
  */
@@ -83,6 +92,7 @@ export async function restoreQueryCache(queryClient: QueryClient): Promise<void>
     maxAge: PERSIST_MAX_AGE_MS,
     buster: CACHE_BUSTER,
     dehydrateOptions: {
+      shouldDehydrateQuery: isPersistable,
       shouldDehydrateMutation: (mutation) => isReplayable(queryClient, mutation),
     },
   })

@@ -1,0 +1,12 @@
+# Cabeceras de Cloudflare Pages (5.6, ADR-013). La Content Security Policy deja que la página solo
+# ejecute los scripts de la app (ni en línea ni de fuera) y solo hable con ella y con Supabase: si
+# algo se colara en la página, no podría llevarse lo desbloqueado a otro sitio. Los estilos en
+# línea se permiten porque los ponen los componentes (Radix, vaul, sonner); las fuentes, también
+# en `data:`, porque Vite incrusta las pequeñas; las imágenes, de cualquier https, por las de las
+# tiendas. Con un dominio propio de Supabase, cambiar connect-src.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), payment=(), usb=()

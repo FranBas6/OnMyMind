@@ -8,7 +8,18 @@ export { useChangePassword, useSignOut } from './hooks/useAuthMutations'
 export { useSession, type SessionState } from './hooks/useSession'
 export { safeRedirect } from './redirect'
 export { useAccountDeletedNotice } from './hooks/useAccountDeletedNotice'
-export { loadPendingCode } from './emailCode'
+export {
+  CODE_LENGTH,
+  codeErrorKind,
+  EXPIRED_CODE_MESSAGE,
+  loadPendingCode,
+  RESEND_AFTER_SECONDS,
+  resendCountdownLabel,
+  secondsUntil,
+  TOO_MANY_ATTEMPTS_MESSAGE,
+  WRONG_CODE_MESSAGE,
+} from './emailCode'
+export { CodeSlots } from './components/CodeSlots'
 export { SigningInScreen } from './components/SigningInScreen'
 export {
   authSearchSchema,

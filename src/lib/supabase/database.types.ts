@@ -651,6 +651,84 @@ export type Database = {
           },
         ]
       }
+      private_vault_keys: {
+        Row: {
+          created_at: string
+          credential_id: string
+          device: string
+          id: string
+          key_id: string
+          method: string
+          prf_salt: string
+          user_id: string
+          wrap_iv: string
+          wrapped_key: string
+        }
+        Insert: {
+          created_at?: string
+          credential_id: string
+          device: string
+          id?: string
+          key_id: string
+          method: string
+          prf_salt: string
+          user_id?: string
+          wrap_iv: string
+          wrapped_key: string
+        }
+        Update: {
+          created_at?: string
+          credential_id?: string
+          device?: string
+          id?: string
+          key_id?: string
+          method?: string
+          prf_salt?: string
+          user_id?: string
+          wrap_iv?: string
+          wrapped_key?: string
+        }
+        Relationships: []
+      }
+      private_vaults: {
+        Row: {
+          created_at: string
+          kdf: string
+          kdf_iterations: number
+          kdf_salt: string
+          key_check: string
+          key_id: string
+          updated_at: string
+          user_id: string
+          wrap_iv: string
+          wrapped_key: string
+        }
+        Insert: {
+          created_at?: string
+          kdf?: string
+          kdf_iterations: number
+          kdf_salt: string
+          key_check: string
+          key_id?: string
+          updated_at?: string
+          user_id?: string
+          wrap_iv: string
+          wrapped_key: string
+        }
+        Update: {
+          created_at?: string
+          kdf?: string
+          kdf_iterations?: number
+          kdf_salt?: string
+          key_check?: string
+          key_id?: string
+          updated_at?: string
+          user_id?: string
+          wrap_iv?: string
+          wrapped_key?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -864,6 +942,7 @@ export type Database = {
       }
       delete_own_account: { Args: Record<PropertyKey, never>; Returns: undefined }
       duplicate_list: { Args: { p_list_id: string; p_name: string }; Returns: Json }
+      has_recent_email_code: { Args: Record<PropertyKey, never>; Returns: boolean }
       invoke_refresh_prices: { Args: Record<PropertyKey, never>; Returns: number }
       invoke_send_reminders: { Args: Record<PropertyKey, never>; Returns: number }
       is_active_sublist_status: { Args: { p_status: string }; Returns: boolean }
@@ -963,6 +1042,16 @@ export type Database = {
           p_offset: number
           p_recurrence: string
           p_tz: string
+        }
+        Returns: string
+      }
+      reset_private_vault: {
+        Args: {
+          p_kdf_iterations: number
+          p_kdf_salt: string
+          p_key_check: string
+          p_wrap_iv: string
+          p_wrapped_key: string
         }
         Returns: string
       }

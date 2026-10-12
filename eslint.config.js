@@ -21,6 +21,11 @@ export default defineConfig([
     extends: [js.configs.recommended],
     languageOptions: { globals: globals.node },
   },
+  // Lo que se sirve tal cual al navegador (el tema antes de pintar, 5.6).
+  {
+    files: ['public/**/*.js'],
+    languageOptions: { globals: globals.browser },
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

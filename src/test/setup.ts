@@ -3,6 +3,7 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 
+import type * as PrivateApi from '@/features/private/api'
 import type * as SharingApi from '@/features/sharing/api'
 import { configureDateLocale } from '@/lib/date'
 
@@ -31,6 +32,13 @@ vi.mock('@/features/sharing/api', async (importOriginal) => ({
   fetchSharedPeople: () => Promise.resolve(new Map()),
   fetchDeparture: () => Promise.resolve(null),
   subscribeToLiveChanges: () => () => undefined,
+}))
+
+// La clave privada (5.6) se pide en todo el layout privado: por defecto, sin clave y sin red. Un
+// test que la necesite hace su propio `vi.mock` de este módulo.
+vi.mock('@/features/private/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PrivateApi>()),
+  fetchPrivateVault: () => Promise.resolve({ vault: null, keys: [] }),
 }))
 
 // La limpieza de fotos (2.8) va a la red un rato después de borrar o cambiar una foto: en los
