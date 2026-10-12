@@ -41,9 +41,13 @@ export const STYLE_TEMPLATES: Record<ListStyle, StyleTemplate> = {
   },
 }
 
-/** Si una lista es «En mente», una lista o una agenda. */
+/**
+ * Si una lista es «En mente», una lista o una agenda. Sin `view` (una lista guardada en caché por
+ * una versión anterior a la 5.3), una lista: así nunca hay un estilo sin textos.
+ */
 export function listStyle(list: Pick<List, 'kind' | 'view'>): ListStyle {
-  return list.kind === 'inbox' ? 'inbox' : list.view
+  if (list.kind === 'inbox') return 'inbox'
+  return list.view === 'agenda' ? 'agenda' : 'list'
 }
 
 /** «4 pendientes», «1 próximo», «3 cosas sin ordenar»; la inbox vacía, «Nada sin ordenar» (05). */

@@ -18,7 +18,9 @@ export const PERSIST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
  * o la forma de sus variables): lo anterior se descarta en vez de leerse mal, y con ello lo que
  * quedara sin enviar. No es la versión de la app, para no perder lo guardado en cada despliegue.
  */
-export const CACHE_BUSTER = 'datos-1'
+// `datos-2` (5.6): las listas ganaron `view` y contadores por tipo (5.3) y los ítems `chooseOne` y
+// `chosenId` (5.1); con lo guardado antes, la app nueva se rompía al pintar Inicio.
+export const CACHE_BUSTER = 'datos-2'
 
 const KEY = 'onmymind-query-cache'
 /** Guardar a lo sumo una vez por segundo: la caché cambia a menudo (optimistas, refrescos). */

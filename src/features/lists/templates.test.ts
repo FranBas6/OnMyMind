@@ -6,6 +6,8 @@ import {
   counterLabel,
   deleteMessage,
   doneLabel,
+  listCounterLabel,
+  listStyle,
   menuSummary,
   pendingTotal,
   waitingCount,
@@ -193,5 +195,14 @@ describe('textos del menú, archivadas y borrado', () => {
       ),
     ).toBe('Se borrará «Uno» y su ítem. No hay vuelta atrás.')
     expect(deleteMessage(list({ name: 'Vacía' }))).toBe('Se borrará «Vacía». No hay vuelta atrás.')
+  })
+})
+
+describe('una lista guardada en caché antes de la 5.3', () => {
+  it('sin `view`, cuenta como una lista y no rompe Inicio', () => {
+    // La forma de antes: sin la vista (ni notas ni totales por tipo en los contadores).
+    const old = { ...list({ name: 'Compras' }), view: undefined } as unknown as List
+    expect(listStyle(old)).toBe('list')
+    expect(listCounterLabel(old)).toBe('Lista recién creada')
   })
 })
