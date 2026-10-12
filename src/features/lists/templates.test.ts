@@ -110,8 +110,22 @@ describe('textos del menú, archivadas y borrado', () => {
     },
   })
 
-  it('cabecera del menú: lista o agenda, pendientes y total de ítems (5.3, sin tipo)', () => {
-    expect(menuSummary(trabajo)).toBe('Lista · 6 pendientes · 12 ítems')
+  it('cabecera del menú: los contadores comunes y el total de ítems (5.5, sin tipo)', () => {
+    expect(menuSummary(trabajo)).toBe('6 pendientes · 12 ítems')
+    expect(
+      menuSummary(
+        list({
+          counters: {
+            pending: 4,
+            done: 0,
+            pendingPriceCents: 0,
+            notes: 2,
+            kinds: { note: 2, task: 4, shopping: 0, event: 0 },
+          },
+        }),
+      ),
+    ).toBe('4 pendientes · 2 notas · 6 ítems')
+    expect(menuSummary(list({}))).toBe('Lista recién creada')
   })
 
   it('«En mente» cuenta también sus notas, que siguen sin ordenar (5.3)', () => {
@@ -127,7 +141,7 @@ describe('textos del menú, archivadas y borrado', () => {
       },
     })
     expect(waitingCount(inbox)).toBe(3)
-    expect(menuSummary(inbox)).toBe('En mente · 3 cosas sin ordenar · 3 ítems')
+    expect(menuSummary(inbox)).toBe('3 cosas sin ordenar · 3 ítems')
   })
 
   it('archivada: con pendientes, o lo hecho si ya no queda nada, y la fecha', () => {
@@ -143,7 +157,7 @@ describe('textos del menú, archivadas y borrado', () => {
       },
       archivedAt: new Date(2026, 8, 12),
     })
-    expect(archivedSummary(compras)).toBe('Lista · 2 pendientes · archivada el 12 sep')
+    expect(archivedSummary(compras)).toBe('2 pendientes · archivada el 12 sep')
     const hechas = list({
       counters: {
         pending: 0,
@@ -154,7 +168,7 @@ describe('textos del menú, archivadas y borrado', () => {
       },
       archivedAt: new Date(2026, 5, 3),
     })
-    expect(archivedSummary(hechas)).toBe('Lista · 31 hechas · archivada el 3 jun')
+    expect(archivedSummary(hechas)).toBe('31 hechas · archivada el 3 jun')
   })
 
   it('contador de archivadas en singular y plural', () => {

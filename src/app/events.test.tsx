@@ -141,17 +141,21 @@ describe('eventos (2.4, diseño 17)', () => {
   it('la lista va por días, con «Sin fecha» arriba, lo lejano por meses y lo pasado abajo', async () => {
     renderList(todos)
 
-    expect(await screen.findByText('3 próximos · 1 pasado')).toBeInTheDocument()
+    // Lo que queda por llegar, también lo que aún no tiene día (como el contador de su tarjeta).
+    expect(await screen.findByText('5 próximos')).toBeInTheDocument()
     const labels = screen
       .getAllByRole('heading', { level: 2 })
       .map((heading) => heading.textContent)
     expect(labels.slice(0, 5)).toEqual([
-      'Sin fecha',
+      'Sin fecha · 1 pendiente',
       'Hoy · Martes 22',
       'Mañana · Miércoles 23',
       'Viernes 25',
       'Noviembre',
     ])
+    // «Sin fecha» empieza plegado (diseño 25, B10b).
+    expect(within(group('Sin fecha')).queryByText('Poner día')).not.toBeInTheDocument()
+    fireEvent.click(within(group('Sin fecha')).getByRole('button', { name: /Sin fecha/ }))
     expect(within(group('Sin fecha')).getByText('Poner día')).toBeInTheDocument()
     expect(within(group('Mañana · Miércoles 23')).getByText('Cada año')).toBeInTheDocument()
     expect(within(group('Viernes 25')).getByText('21:00')).toBeInTheDocument()

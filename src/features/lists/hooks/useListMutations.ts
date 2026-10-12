@@ -16,9 +16,10 @@ import {
   unarchiveList,
   updateList,
   updateListPositions,
+  updateListView,
 } from '../api'
 import type { ListFormValues } from '../schemas'
-import type { List } from '../types'
+import type { List, ListView } from '../types'
 
 /** Foto de las dos cachés de listas, para poder volver atrás si el servidor falla. */
 interface ListsSnapshot {
@@ -153,8 +154,36 @@ export function useReorderLists() {
   return useDurableMutation(reorderListsMutation)
 }
 
+const VIEW_KEY = ['lists', 'view'] as const
+
+/**
+ * «Lista · Agenda» (5.5, diseño 25, B10 y D5): la lista recuerda cómo se ve. Al momento y también
+ * sin red, como el orden: espera y se envía al volver.
+ */
+const listViewMutation = durableMutation(VIEW_KEY, (queryClient) => ({
+  ...WAITS_FOR_NETWORK,
+  scope: { id: 'lists-view' },
+  mutationFn: ({ listId, view }: { listId: string; view: ListView }) =>
+    updateListView(listId, view),
+  onMutate: ({ listId, view }) =>
+    applyOptimistic(queryClient, {
+      active: (lists) => lists.map((list) => (list.id === listId ? { ...list, view } : list)),
+    }),
+  onError: (error, _change, snapshot) => {
+    rollback(queryClient, snapshot, `No se ha podido guardar la vista. ${errorMessage(error)}`)
+  },
+  onSettled: () => {
+    if (queryClient.isMutating({ mutationKey: VIEW_KEY }) > 1) return
+    return refetchLists(queryClient)
+  },
+}))
+
+export function useUpdateListView() {
+  return useDurableMutation(listViewMutation)
+}
+
 /** Las mutaciones de listas que se registran en el QueryClient (2.10). */
-export const listMutations = [reorderListsMutation]
+export const listMutations = [reorderListsMutation, listViewMutation]
 
 /** Posición para una lista nueva: la mayor de todas (también archivadas) + 1000. */
 export function nextListPosition(queryClient: QueryClient): number {

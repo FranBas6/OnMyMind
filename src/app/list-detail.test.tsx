@@ -250,7 +250,7 @@ describe('detalle de una lista de tareas', () => {
     renderDetail('casa', [])
 
     expect(await screen.findByText('Aún no hay nada aquí.')).toBeInTheDocument()
-    expect(screen.getByText('Lista · recién creada')).toBeInTheDocument()
+    expect(screen.getByText('Lista recién creada')).toBeInTheDocument()
     // «Añadir a Casa…» también vacía (diseño 25, B5).
     expect(screen.getByRole('textbox', { name: 'Añadir a Casa…' })).toHaveFocus()
     expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()

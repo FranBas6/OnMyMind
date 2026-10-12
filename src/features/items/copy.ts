@@ -1,6 +1,6 @@
 import { differenceInCalendarDays, format, isSameYear } from 'date-fns'
 
-import { counterLabel, listStyle, STYLE_TEMPLATES, waitingCount, type List } from '@/features/lists'
+import { listCounterLabel, waitingCount, type List } from '@/features/lists'
 import { formatCaptureAge } from '@/lib/date'
 
 import { isFinalStatus, STATUS_LABELS } from './status'
@@ -45,12 +45,11 @@ export function itemMoment(
   return `creada ${dayPhrase(item.createdAt, now)}`
 }
 
-/** Subtítulo de un destino en la hoja: «Lista · 4 pendientes», «Sin ordenar · 5 cosas». */
+/** Subtítulo de un destino en la hoja: «4 pendientes · 2 notas», «Sin ordenar · 5 cosas» (5.5). */
 export function destinationSummary(list: List): string {
   if (list.kind === 'inbox') {
     const count = waitingCount(list)
     return `Sin ordenar · ${count} ${count === 1 ? 'cosa' : 'cosas'}`
   }
-  const style = listStyle(list)
-  return `${STYLE_TEMPLATES[style].label} · ${counterLabel(style, list.counters.pending)}`
+  return listCounterLabel(list)
 }

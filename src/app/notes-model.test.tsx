@@ -133,7 +133,7 @@ describe('la nota sin estado y las listas sin tipo (5.3, ADR-012)', () => {
     const viaje = list('roma', 'Viaje a Roma', { kind: 'list', view: 'agenda' })
     renderAt('/lists/roma', [inbox, viaje], { roma: [] })
 
-    expect(await screen.findByText('Nada todavía')).toBeInTheDocument()
+    expect(await screen.findByText('Lista recién creada')).toBeInTheDocument()
     // Una agenda vacía propone evento; una lista vacía, nota (5.4).
     expect(screen.getByRole('button', { name: 'Tipo: Evento. Cambiar' })).toBeInTheDocument()
   })

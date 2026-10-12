@@ -59,7 +59,7 @@ describe('Inicio', () => {
     setDesktop(false)
   })
 
-  it('«En mente» fijada arriba y el resto en la rejilla, con tipo, contador y total', async () => {
+  it('«En mente» fijada arriba y el resto en la rejilla, con contador y total', async () => {
     renderHome([
       list('i', 'En mente', 'inbox', 1),
       list('a', 'Casa', 'tasks', 4),
@@ -72,8 +72,8 @@ describe('Inicio', () => {
 
     const grid = screen.getByRole('list', { name: 'Mis listas' })
     const casa = within(grid).getByRole('link', { name: /Casa/ })
-    // Las listas ya no tienen tipo (5.3): dicen si son una lista o una agenda.
-    expect(casa).toHaveTextContent('Lista')
+    // Las listas no tienen tipo (5.3): su tarjeta dice lo que hay (diseño 25, B9).
+    expect(casa).not.toHaveTextContent('Lista')
     expect(casa).toHaveTextContent('4 pendientes')
     const compras = within(grid).getByRole('link', { name: /Compras/ })
     expect(compras).toHaveTextContent('2 pendientes')

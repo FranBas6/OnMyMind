@@ -3,9 +3,12 @@ import { subDays } from 'date-fns'
 import {
   counterLabel,
   doneLabel,
-  STYLE_TEMPLATES,
+  NEW_LIST_LABEL,
+  notesLabel,
+  tallyLabel,
   type ListKind,
   type ListStyle,
+  type Tally,
 } from '@/features/lists'
 import type { InboxSort } from '@/features/profile/schemas'
 
@@ -118,29 +121,53 @@ export function splitItems(items: readonly Item[], kind: ListKind, options: Spli
 }
 
 /**
- * Subtítulo del detalle: «4 pendientes · 2 hechas» y, si la lista no tiene nada, «Lista · recién
- * creada» (diseño 05). La inbox usa su contador («5 cosas sin ordenar»), que cuenta también las
- * notas: `pending` ya las lleva (`waitingCount`).
+ * Subtítulo del detalle mientras se cargan los ítems, con los contadores de la lista: «4 pendientes
+ * · 3 notas · 2 hechas» y, sin nada, «Lista recién creada» (diseño 25, B5). La inbox usa su
+ * contador («5 cosas sin ordenar»), que cuenta también las notas.
  */
-export function detailSummary(style: ListStyle, pending: number, done: number): string {
-  if (style === 'inbox') return counterLabel('inbox', pending)
-  if (pending === 0 && done === 0) return `${STYLE_TEMPLATES[style].label} · recién creada`
-  return `${counterLabel(style, pending)} · ${doneLabel(style, done)}`
+export function detailSummary(style: ListStyle, tally: Tally): string {
+  return tallyLabel(style, tally, { withDone: true })
 }
 
 /**
- * Subtítulo de una lista con sus ítems ya cargados. Cuenta como la vista `list_counters`
- * (`countItems`): lo de dentro de las sublistas activas suma y la sublista en sí no. Con sublistas
- * abiertas, en vez de lo hecho dice cuántas hay: «9 pendientes · 3 sublistas» (diseño 12, S1). En
- * «En mente», las notas también están sin ordenar (5.3).
+ * Subtítulo de una lista con sus ítems ya cargados (5.5, diseño 25). Cuenta como la vista
+ * `list_counters` (`countItems`): lo de dentro de las sublistas activas suma y la sublista en sí
+ * no. Lo pendiente y las notas y, detrás, lo hecho: «4 pendientes · 3 notas · 2 hechas». Con
+ * sublistas abiertas, en vez de lo hecho dice cuántas hay: «9 pendientes · 3 sublistas» (diseño 12,
+ * S1). En «En mente», las notas también están sin ordenar (5.3).
  */
 export function listSummary(style: ListStyle, items: readonly Item[]): string {
-  const { pending, done, notes } = countItems(items)
-  if (style === 'inbox') return detailSummary(style, pending + notes, done)
-  if (items.length === 0) return detailSummary(style, pending, done)
+  const counts = countItems(items)
+  if (style === 'inbox' || items.length === 0) return detailSummary(style, counts)
   const sublists = openSublistsLabel(items)
-  if (sublists) return `${counterLabel(style, pending)} · ${sublists}`
-  return `${counterLabel(style, pending)} · ${doneLabel(style, done)}`
+  if (!sublists) return tallyLabel(style, counts, { withDone: true, empty: counterLabel(style, 0) })
+  return [tallyLabel(style, { ...counts, done: 0 }, { empty: '' }), sublists]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/**
+ * Subtítulo de una lista con eventos (diseño 25, B10 y D5), en sus dos vistas: los eventos que
+ * quedan (también los que aún no tienen día, como cuenta su tarjeta), lo demás pendiente y las
+ * notas, «3 próximos · 1 pendiente · 1 nota», y sus sublistas abiertas. Si no queda nada de eso, lo
+ * pasado («2 pasados»); sin nada, «Lista recién creada».
+ */
+export function agendaSummary(items: readonly Item[], now: Date = new Date()): string {
+  if (items.length === 0) return NEW_LIST_LABEL
+  const all = countItems(items, now)
+  const others = countItems(
+    items.filter((item) => item.kind !== 'event'),
+    now,
+  )
+  const upcoming = all.pending - others.pending
+  const parts: string[] = []
+  if (upcoming > 0) parts.push(counterLabel('agenda', upcoming))
+  if (others.pending > 0) parts.push(counterLabel('list', others.pending))
+  if (all.notes > 0) parts.push(notesLabel(all.notes))
+  const sublists = openSublistsLabel(items)
+  if (sublists) parts.push(sublists)
+  if (parts.length === 0) parts.push(doneLabel('agenda', all.done))
+  return parts.join(' · ')
 }
 
 /**
@@ -181,17 +208,4 @@ export function filterEvents(
     case 'cancelled':
       return events.filter((item) => item.status === 'cancelled')
   }
-}
-
-/**
- * Cabecera de una lista de eventos (E1): «4 próximos · 1 pasado». Lo sin fecha y lo cancelado no
- * cuentan; sin nada, «Nada todavía» (E6).
- */
-export function eventsSummary(items: readonly Item[], now: Date = new Date()): string {
-  if (items.length === 0) return 'Nada todavía'
-  const upcoming = filterEvents(items, 'upcoming', now).length
-  const past = items.filter(
-    (item) => item.kind === 'event' && item.status !== 'cancelled' && isPastEvent(item, now),
-  ).length
-  return `${counterLabel('agenda', upcoming)} · ${doneLabel('agenda', past)}`
 }

@@ -9,7 +9,7 @@ import {
   myListRowSchema,
   type ListFormValues,
 } from './schemas'
-import type { List, RecentCapture } from './types'
+import type { List, ListView, RecentCapture } from './types'
 
 const MY_LIST_COLUMNS = 'id, name, color, icon, kind, view, position, archived_at, is_owner'
 
@@ -93,6 +93,12 @@ export async function createList(values: ListFormValues, position: number): Prom
 export async function updateList(listId: string, values: ListFormValues): Promise<void> {
   const { name, color } = listFormSchema.parse(values)
   const { error } = await supabase.from('lists').update({ name, color }).eq('id', listId)
+  if (error) throw error
+}
+
+/** Cómo se ve la lista: en filas o por días (5.5, «Lista · Agenda»). Solo quien la creó. */
+export async function updateListView(listId: string, view: ListView): Promise<void> {
+  const { error } = await supabase.from('lists').update({ view }).eq('id', listId)
   if (error) throw error
 }
 

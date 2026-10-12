@@ -7,7 +7,7 @@ import { ListIcon } from '@/components/ListIcon'
 import { LIFT_TOLERANCE_PX } from '@/hooks/useReorderSensors'
 import { cn } from '@/lib/utils'
 
-import { counterLabel, listStyle, pendingTotal, STYLE_TEMPLATES } from '../templates'
+import { listCounterLabel, pendingTotal } from '../templates'
 import type { List } from '../types'
 import { ListCardInitials, ListCardSharedNote } from '@/features/sharing/components/SharedInitials'
 
@@ -15,8 +15,10 @@ import { ListCardMenu } from './ListCardMenu'
 import { useListDrag } from './listDragContext'
 
 /**
- * Tarjeta de lista (diseño 03 Inicio y 04 Listas): icono, nombre, tipo en gris terciario y, abajo,
- * el contador y el total de compras. El menú ··· (Editar, Archivar, Borrar) va arriba a la derecha.
+ * Tarjeta de lista (diseño 03 Inicio y 04 Listas; diseño 25, B9 y D6): icono, nombre y, debajo, el
+ * contador común («4 pendientes · 2 notas»), sin el tipo, que las listas ya no tienen. El total de
+ * las compras va en su línea en el móvil y tras el contador en escritorio («5 pendientes · 49,80
+ * €»). El menú ··· (Editar, Archivar, Borrar) va arriba a la derecha.
  * El botón es hermano del enlace, no hijo: un botón dentro de un enlace no es HTML válido.
  *
  * Desde la 2.9 se ordena arrastrando (diseño 14, I1 y D6): con el dedo, mantenerla pulsada 0,4 s
@@ -136,19 +138,14 @@ function ListCardFace({ list }: { list: List }) {
           {list.name}
           <ListCardSharedNote list={list} />
         </p>
-        <p className="mt-[3px] truncate text-[12.5px] text-subtle-foreground">
-          {STYLE_TEMPLATES[listStyle(list)].label}
+        <p className="mt-[3px] text-[13px] leading-[1.35] text-muted-foreground">
+          {listCounterLabel(list)}
+          {total && (
+            <span className="mt-0.5 block font-display text-[15px] font-extrabold tracking-[-0.02em] whitespace-nowrap text-foreground md:mt-0 md:inline md:font-sans md:text-[13px] md:font-normal md:tracking-normal md:text-muted-foreground md:before:content-['_·_']">
+              {total}
+            </span>
+          )}
         </p>
-      </div>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[13px] whitespace-nowrap text-muted-foreground">
-          {counterLabel(listStyle(list), list.counters.pending)}
-        </span>
-        {total && (
-          <span className="font-display text-[15px] font-extrabold tracking-[-0.02em] whitespace-nowrap">
-            {total}
-          </span>
-        )}
       </div>
     </>
   )

@@ -167,7 +167,9 @@ describe('lista con tipos mezclados (diseño 12)', () => {
     renderTrabajo()
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Trabajo' })).toBeInTheDocument()
-    expect(screen.getByText('4 pendientes · 1 hecha')).toBeInTheDocument()
+    // Con un evento, los contadores de la agenda y «Lista · Agenda» (diseño 25, B10).
+    expect(screen.getByText('1 próximo · 3 pendientes')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Lista' })).toBeChecked()
     const [first, second, third] = activeRows()
     if (!first || !second || !third) throw new Error('faltan filas')
 

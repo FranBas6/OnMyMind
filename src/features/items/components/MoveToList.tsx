@@ -4,7 +4,7 @@ import { useState, type KeyboardEvent, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
 import { ListIcon } from '@/components/ListIcon'
-import { listStyle, STYLE_TEMPLATES, useLists, type List } from '@/features/lists'
+import { listCounterLabel, useLists, type List } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import { destinationSummary } from '../copy'
@@ -199,7 +199,7 @@ function MobileSheet({ item, from, destinations, onMove, onMoveToNewList, onClos
             Ahora en {destinationName(where)}
           </p>
         )}
-        {from.kind === 'tasks' && item.kind === 'task' && (item.priority ?? item.dueAt) && (
+        {item.kind === 'task' && (item.priority ?? item.dueAt) && (
           <div className="mt-1.5 flex items-center gap-2">
             {item.priority && <PriorityChip priority={item.priority} />}
             {item.dueAt && <DateChip date={item.dueAt} />}
@@ -276,9 +276,7 @@ function optionNote(option: MoveOption, compact: boolean): string | null {
     return compact ? 'Sublista' : null
   }
   if (!compact) return destinationSummary(destination.list)
-  return destination.list.kind === 'inbox'
-    ? 'Sin ordenar'
-    : STYLE_TEMPLATES[listStyle(destination.list)].label
+  return destination.list.kind === 'inbox' ? 'Sin ordenar' : listCounterLabel(destination.list)
 }
 
 function MobileOption({

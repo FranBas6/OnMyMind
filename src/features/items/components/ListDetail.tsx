@@ -2,7 +2,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check } from 'lucide-react'
 import { useRef, useState } from 'react'
 
-import { InboxHeader, ListDetailHeader, listStyle, waitingCount, type List } from '@/features/lists'
+import {
+  InboxHeader,
+  ListDetailHeader,
+  useUpdateListView,
+  type List,
+  type ListStyle,
+  type ListView,
+} from '@/features/lists'
 import { useProfile } from '@/features/profile/hooks/useProfile'
 import { useWithCompletedLive } from '@/features/sharing/liveRows'
 import { useUpdateSettings } from '@/features/profile/hooks/useProfileMutations'
@@ -20,7 +27,7 @@ import {
   AGE_FILTER_OPTIONS,
   byPosition,
   EVENT_FILTER_OPTIONS,
-  eventsSummary,
+  agendaSummary,
   detailSummary,
   listSummary,
   matchesAge,
@@ -136,11 +143,27 @@ export function ListDetail({
   // El orden de «En mente» se recuerda en la cuenta (diseño 14, E2).
   const sort = profile.data?.settings.inboxSort ?? 'newest'
   const inbox = list.kind === 'inbox'
+  // «Lista · Agenda» (5.5, diseño 25, B10 y D5): la lista recuerda cómo se ve. En una compartida
+  // contigo no se guarda (la lista es de quien la creó): vale mientras estás en ella.
+  const updateView = useUpdateListView()
+  const [pickedView, setPickedView] = useState<{ listId: string; view: ListView } | null>(null)
+  const view = pickedView?.listId === list.id ? pickedView.view : list.view
+  const changeView = (next: ListView) => {
+    setPickedView({ listId: list.id, view: next })
+    if (list.isOwner) updateView.mutate({ listId: list.id, view: next })
+  }
   // Una lista que se ve como agenda se agrupa por días y tiene sus filtros (diseño 17); también
   // sus sublistas. Desde la 5.3 lo dice su vista, no su tipo.
-  const events = list.view === 'agenda'
+  const events = !inbox && view === 'agenda'
+  const style: ListStyle = inbox ? 'inbox' : view
 
   const all = items.data
+  // Con eventos, el cambio de vista y los contadores de la agenda (diseño 25, B10).
+  const hasEvents = all ? all.some((item) => item.kind === 'event') : list.counters.kinds.event > 0
+  const viewSwitch =
+    !inbox && !sublist && (hasEvents || list.view === 'agenda')
+      ? { value: view, onChange: changeView }
+      : undefined
   // Lo de dentro de una sublista sale en su pantalla, no suelto en la lista (ADR-010).
   const shown = all && (sublist ? childrenOf(all, sublist.id) : topLevel(all))
   // Una sublista «para elegir una» (5.1, diseño 24): sus opciones dicen cuál es la elegida y cuál la
@@ -154,12 +177,12 @@ export function ListDetail({
   const { active, outOfMind } = splitItems(shown ?? [], list.kind, { lingering: staying, sort })
   // El resumen no espera a la animación: cuenta lo que ya está hecho aunque aún se vea arriba.
   const summary = !all
-    ? detailSummary(listStyle(list), waitingCount(list), list.counters.done)
+    ? detailSummary(style, list.counters)
     : sublist
       ? sublistSummary(sublist, shown ?? [], list.name)
-      : events
-        ? eventsSummary(all)
-        : listSummary(listStyle(list), all)
+      : !inbox && hasEvents
+        ? agendaSummary(all)
+        : listSummary(style, all)
   const empty = shown?.length === 0
 
   // Ordenar a mano (2.9, diseño 14): lo que se ve de lo pendiente, salvo en las listas de eventos,
@@ -365,6 +388,7 @@ export function ListDetail({
                 list={list}
                 summary={summary}
                 total={total}
+                view={viewSwitch}
                 onNewSublist={() => {
                   // Después de que el menú se cierre y devuelva el foco a su botón.
                   window.setTimeout(() => {
@@ -393,7 +417,7 @@ export function ListDetail({
                 ) : (
                   <FilterChips
                     label="Filtrar por estado"
-                    options={statusFilterOptions(listStyle(list))}
+                    options={statusFilterOptions(style)}
                     value={statusFilter}
                     onChange={setStatusFilter}
                   />

@@ -108,8 +108,14 @@ describe('acciones sobre listas', () => {
 
     await user.type(within(dialog).getByLabelText('Nombre de la lista'), 'Trabajo')
     await user.click(within(dialog).getByRole('radio', { name: 'Verde azulado' }))
-    // «Personalizada» ya no se ofrece (ADR-011, descartada).
+    // «Personalizada» ya no se ofrece (ADR-011, descartada), ni ningún tipo: dentro cabe de todo
+    // (diseño 25, D7).
     expect(within(dialog).queryByRole('radio', { name: /Personalizada/ })).not.toBeInTheDocument()
+    expect(
+      within(dialog).getByText(
+        'Dentro cabe de todo: notas, tareas, compras y eventos. Al añadir, la lista te propone lo que más tenga.',
+      ),
+    ).toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Crear' }))
 
     await waitFor(() => {
@@ -184,9 +190,7 @@ describe('acciones sobre listas', () => {
     await user.click(toggle)
 
     const section = screen.getByRole('region', { name: 'Listas archivadas' })
-    expect(
-      within(section).getByText('Lista · 4 pendientes · archivada el 12 sep'),
-    ).toBeInTheDocument()
+    expect(within(section).getByText('4 pendientes · archivada el 12 sep')).toBeInTheDocument()
     await user.click(within(section).getByRole('button', { name: 'Desarchivar' }))
     expect(api.unarchiveList).toHaveBeenCalledWith('viejas')
   })

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  agendaSummary,
   detailSummary,
-  eventsSummary,
   filterEvents,
+  listSummary,
   matchesAge,
   splitItems,
   statusFilterOptions,
@@ -139,17 +140,31 @@ describe('filtros', () => {
   })
 })
 
-describe('detailSummary', () => {
+describe('detailSummary (contadores comunes, diseño 25)', () => {
   it.each([
-    ['list', 4, 2, '4 pendientes · 2 hechas'],
-    ['list', 0, 6, '0 pendientes · 6 hechas'],
-    ['list', 1, 1, '1 pendiente · 1 hecha'],
-    ['list', 0, 0, 'Lista · recién creada'],
-    ['agenda', 2, 1, '2 próximos · 1 pasado'],
-    ['inbox', 5, 2, '5 cosas sin ordenar'],
-    ['inbox', 0, 2, 'Nada sin ordenar'],
-  ] as const)('%s con %i y %i → «%s»', (kind, pending, done, expected) => {
-    expect(detailSummary(kind, pending, done)).toBe(expected)
+    ['list', 4, 0, 2, '4 pendientes · 2 hechas'],
+    ['list', 4, 3, 2, '4 pendientes · 3 notas · 2 hechas'],
+    ['list', 0, 6, 0, '6 notas'],
+    ['list', 0, 0, 6, '6 hechas'],
+    ['list', 1, 1, 1, '1 pendiente · 1 nota · 1 hecha'],
+    ['list', 0, 0, 0, 'Lista recién creada'],
+    ['agenda', 3, 1, 0, '3 próximos · 1 nota'],
+    ['inbox', 3, 2, 2, '5 cosas sin ordenar'],
+    ['inbox', 0, 0, 2, 'Nada sin ordenar'],
+  ] as const)('%s con %i, %i notas y %i → «%s»', (style, pending, notes, done, expected) => {
+    expect(detailSummary(style, { pending, notes, done })).toBe(expected)
+  })
+})
+
+describe('listSummary', () => {
+  it('cuenta lo pendiente, las notas y lo hecho, y sin nada dice «Lista recién creada»', () => {
+    const items = [
+      item('Vuelo a Lisboa', { kind: 'note' }),
+      item('Reservar el hotel'),
+      item('Cambiar euros', { status: 'done', completedAt: now }),
+    ]
+    expect(listSummary('list', items)).toBe('1 pendiente · 1 nota · 1 hecha')
+    expect(listSummary('list', [])).toBe('Lista recién creada')
   })
 })
 
@@ -187,8 +202,19 @@ describe('lista de eventos (diseño 17)', () => {
     expect(titles(filterEvents(items, 'cancelled', now))).toEqual(['Reunión de la comunidad'])
   })
 
-  it('la cabecera cuenta próximos y pasados; lo sin fecha y lo cancelado no', () => {
-    expect(eventsSummary(items, now)).toBe('2 próximos · 1 pasado')
-    expect(eventsSummary([], now)).toBe('Nada todavía')
+  it('la cabecera cuenta los eventos que quedan, lo demás pendiente y las notas (diseño 25, B10)', () => {
+    expect(agendaSummary(items, now)).toBe('4 próximos')
+    expect(
+      agendaSummary(
+        [
+          ...items,
+          item('Pedir cita para la ITV', { dueAt: new Date(2026, 8, 25) }),
+          item('Qué preguntar al dentista', { kind: 'note' }),
+        ],
+        now,
+      ),
+    ).toBe('4 próximos · 1 pendiente · 1 nota')
+    expect(agendaSummary(items.slice(4), now)).toBe('2 pasados')
+    expect(agendaSummary([], now)).toBe('Lista recién creada')
   })
 })

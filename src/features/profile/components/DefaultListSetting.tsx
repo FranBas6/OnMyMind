@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react'
 import { BottomSheet } from '@/components/BottomSheet'
 import { ListIcon } from '@/components/ListIcon'
 import { InboxMark } from '@/features/capture'
-import { listStyle, STYLE_TEMPLATES, useArchivedLists, useLists, type List } from '@/features/lists'
+import { listCounterLabel, useArchivedLists, useLists, type List } from '@/features/lists'
 import { shortcutKey } from '@/lib/device'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -218,9 +218,7 @@ function Picker({
                   </span>
                   {!withSearch && (
                     <span className="block text-xs text-subtle-foreground">
-                      {list.kind === 'inbox'
-                        ? 'Siempre disponible'
-                        : STYLE_TEMPLATES[listStyle(list)].label}
+                      {list.kind === 'inbox' ? 'Siempre disponible' : listCounterLabel(list)}
                     </span>
                   )}
                 </span>

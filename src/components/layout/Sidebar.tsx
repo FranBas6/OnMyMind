@@ -208,7 +208,8 @@ function SidebarListRow({ list, lifted = false }: { list: List; lifted?: boolean
       />
       <span className="truncate">{list.name}</span>
       <SidebarSharedIcon list={list} />
-      <Count value={list.counters.pending} />
+      {/* Solo lo pendiente; una lista con solo notas, sin número (diseño 25, D6). */}
+      {list.counters.pending > 0 && <Count value={list.counters.pending} />}
     </>
   )
   if (!lifted) return content

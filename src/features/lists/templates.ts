@@ -86,27 +86,64 @@ export function itemsLabel(count: number): string {
   return `${count} ${count === 1 ? 'ítem' : 'ítems'}`
 }
 
-/** Contador de una lista: lo pendiente o, si no queda nada, lo hecho («31 hechas»). */
-function statusLabel(list: List): string {
-  const style = listStyle(list)
-  const waiting = waitingCount(list)
-  if (waiting > 0 || list.counters.done === 0) return counterLabel(style, waiting)
-  return doneLabel(style, list.counters.done)
+/** «3 notas», «1 nota». */
+export function notesLabel(count: number): string {
+  return `${count} ${count === 1 ? 'nota' : 'notas'}`
 }
 
-/** Cabecera del menú ···: «Lista · 6 pendientes · 12 ítems» (diseño 04 Listas, L3). */
+/** Lo que dice una lista sin nada (diseño 25, B5). */
+export const NEW_LIST_LABEL = 'Lista recién creada'
+
+/** Lo que se cuenta de una lista: lo pendiente, las notas y lo que ya está fuera de la cabeza. */
+export interface Tally {
+  pending: number
+  notes: number
+  done: number
+}
+
+interface TallyOptions {
+  /** Lo hecho también cuando hay algo pendiente o alguna nota (la cabecera de la lista). */
+  withDone?: boolean
+  /** Lo que se dice sin nada; por defecto, «Lista recién creada». */
+  empty?: string
+}
+
+/**
+ * Los contadores comunes de una lista (5.5, diseño 25, B9, B10 y D6): «4 pendientes · 3 notas»,
+ * «6 notas», «3 próximos · 1 nota» en una agenda y, si no queda nada más, «2 hechas». Lo que está a
+ * cero no se dice. En «En mente», «5 cosas sin ordenar», que cuenta también las notas.
+ */
+export function tallyLabel(
+  style: ListStyle,
+  tally: Tally,
+  { withDone = false, empty = NEW_LIST_LABEL }: TallyOptions = {},
+): string {
+  if (style === 'inbox') return counterLabel('inbox', tally.pending + tally.notes)
+  const parts: string[] = []
+  if (tally.pending > 0) parts.push(counterLabel(style, tally.pending))
+  if (tally.notes > 0) parts.push(notesLabel(tally.notes))
+  if (tally.done > 0 && (withDone || parts.length === 0)) parts.push(doneLabel(style, tally.done))
+  return parts.length > 0 ? parts.join(' · ') : empty
+}
+
+/** El contador de una lista con lo que dice la vista `list_counters`: tarjetas, Buscar, «Mover a…». */
+export function listCounterLabel(list: List, options?: TallyOptions): string {
+  return tallyLabel(listStyle(list), list.counters, options)
+}
+
+/** Cabecera del menú ···: «6 pendientes · 2 notas · 12 ítems» (diseño 04 Listas, L3; 5.5). */
 export function menuSummary(list: List): string {
-  const style = listStyle(list)
-  return [
-    STYLE_TEMPLATES[style].label,
-    counterLabel(style, waitingCount(list)),
-    itemsLabel(itemCount(list)),
-  ].join(' · ')
+  const count = itemCount(list)
+  const counter = listCounterLabel(list)
+  return count === 0 ? counter : `${counter} · ${itemsLabel(count)}`
 }
 
-/** Fila de una archivada: «Lista · 2 pendientes · archivada el 12 sep» (L12). */
+/** Lo que dice una archivada sin nada dentro. */
+const EMPTY_ARCHIVED = 'Vacía'
+
+/** Fila de una archivada: «2 pendientes · 1 nota · archivada el 12 sep» (L12; 5.5, sin el tipo). */
 export function archivedSummary(list: List): string {
-  const parts = [STYLE_TEMPLATES[listStyle(list)].label, statusLabel(list)]
+  const parts = [listCounterLabel(list, { empty: EMPTY_ARCHIVED })]
   if (list.archivedAt) parts.push(`archivada el ${format(list.archivedAt, 'd MMM')}`)
   return parts.join(' · ')
 }
@@ -128,7 +165,7 @@ export function deleteMessage(list: List): string {
 export function archivedSheetSummary(list: List): string {
   const parts: string[] = []
   if (list.archivedAt) parts.push(`Archivada el ${format(list.archivedAt, 'd MMM')}`)
-  parts.push(statusLabel(list))
+  parts.push(listCounterLabel(list, { empty: EMPTY_ARCHIVED }))
   const total = pendingTotal(list)
   if (total) parts.push(total)
   return parts.join(' · ')

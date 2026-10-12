@@ -223,7 +223,7 @@ describe('Buscar', () => {
 
     const lists = await screen.findByRole('region', { name: 'Listas' })
     const link = within(lists).getByRole('link', { name: /Casa/ })
-    expect(link).toHaveTextContent('Lista · 1 pendiente')
+    expect(link).toHaveTextContent('1 pendiente')
     // Solo coincide la lista: no hay «No hay nada con…».
     expect(screen.queryByText(/No hay nada con/)).not.toBeInTheDocument()
 

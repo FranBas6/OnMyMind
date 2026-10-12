@@ -97,8 +97,8 @@ export function sublistMeta(sublist: SublistState, children: readonly Item[]): s
 }
 
 /**
- * El subtítulo de la pantalla de una sublista (diseño 12, S2 y S3): «5 pendientes · 2 hechas · En
- * curso», o «Sublista de Viajes» si aún está vacía.
+ * El subtítulo de la pantalla de una sublista (diseño 12, S2 y S3): «5 pendientes · 1 nota · 2
+ * hechas · En curso», o «Sublista de Viajes» si aún está vacía.
  */
 export function sublistSummary(
   sublist: SublistState,
@@ -112,8 +112,11 @@ export function sublistSummary(
   const options = isChoosing(choiceOf(sublist)) ? optionsMeta(choiceOf(sublist), children) : null
   if (options)
     return sublist.status === 'pending' ? options : `${options} · ${STATUS_LABELS[sublist.status]}`
-  const { pending, done } = countChildren(children)
-  const parts = [plural(pending, 'pendiente', 'pendientes')]
+  // Los contadores comunes (5.5): lo que está a cero no se dice.
+  const { pending, done, notes } = countChildren(children)
+  const parts: string[] = []
+  if (pending > 0) parts.push(plural(pending, 'pendiente', 'pendientes'))
+  if (notes > 0) parts.push(plural(notes, 'nota', 'notas'))
   if (done > 0) parts.push(plural(done, 'hecha', 'hechas'))
   if (sublist.status !== 'pending') parts.push(STATUS_LABELS[sublist.status])
   return parts.join(' · ')

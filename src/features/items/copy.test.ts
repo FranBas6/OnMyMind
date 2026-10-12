@@ -59,9 +59,10 @@ describe('itemMoment', () => {
 })
 
 describe('destinationSummary', () => {
-  it('lista o agenda y su contador; la inbox, lo que tiene sin ordenar, notas incluidas (5.3)', () => {
-    expect(destinationSummary(list('tasks', 'Casa', 4))).toBe('Lista · 4 pendientes')
-    expect(destinationSummary(list('events', 'Agenda', 2))).toBe('Agenda · 2 próximos')
+  it('los contadores comunes; la inbox, lo que tiene sin ordenar, notas incluidas (5.5)', () => {
+    expect(destinationSummary(list('tasks', 'Casa', 4))).toBe('4 pendientes')
+    expect(destinationSummary(list('tasks', 'Viajes', 3, 2))).toBe('3 pendientes · 2 notas')
+    expect(destinationSummary(list('events', 'Agenda', 2))).toBe('2 próximos')
     expect(destinationSummary(list('inbox', 'En mente', 3, 2))).toBe('Sin ordenar · 5 cosas')
   })
 })

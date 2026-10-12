@@ -4,14 +4,7 @@ import type { ReactNode } from 'react'
 
 import { ListIcon } from '@/components/ListIcon'
 import { InboxMark } from '@/features/capture'
-import {
-  counterLabel,
-  DimmedIcon,
-  listStyle,
-  STYLE_TEMPLATES,
-  waitingCount,
-  type List,
-} from '@/features/lists'
+import { DimmedIcon, listCounterLabel, type List } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import type { ListMatch } from '../search'
@@ -72,9 +65,7 @@ export function SearchListsSection({ matches, activeId, onOpenArchived }: Search
 }
 
 function ListRowContent({ list, name }: { list: List; name: ReactNode }) {
-  const style = listStyle(list)
-  const kind = STYLE_TEMPLATES[style].label
-  const counter = counterLabel(style, waitingCount(list))
+  const counter = listCounterLabel(list)
   return (
     <>
       {list.kind === 'inbox' ? (
@@ -89,7 +80,7 @@ function ListRowContent({ list, name }: { list: List; name: ReactNode }) {
       ) : (
         <ListIcon name={list.name} color={list.color} size="xs" />
       )}
-      {/* En móvil el tipo y el contador van debajo: a la derecha no dejaban sitio al nombre. */}
+      {/* En móvil el contador va debajo: a la derecha no dejaba sitio al nombre. */}
       <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-3">
         <span className="flex min-w-0 items-center gap-2 md:flex-1">
           <span className="truncate text-[15px] font-semibold">{name}</span>
@@ -100,9 +91,7 @@ function ListRowContent({ list, name }: { list: List; name: ReactNode }) {
             </span>
           )}
         </span>
-        <span className="text-xs text-subtle-foreground md:shrink-0">
-          {list.kind === 'inbox' ? counter : `${kind} · ${counter}`}
-        </span>
+        <span className="text-xs text-subtle-foreground md:shrink-0">{counter}</span>
       </span>
     </>
   )

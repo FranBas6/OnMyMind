@@ -216,7 +216,8 @@ describe('sublistas en pantalla (diseño 12)', () => {
     renderAt('/lists/viajes')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Viajes' })).toBeInTheDocument()
-    expect(screen.getByText('3 pendientes · 3 sublistas')).toBeInTheDocument()
+    // Con un evento, los contadores de la agenda (diseño 25, B10).
+    expect(screen.getByText('1 próximo · 2 pendientes · 3 sublistas')).toBeInTheDocument()
     expect(rows()).toHaveLength(4)
     expect(rowOf('Lisboa')).toHaveTextContent('2 pendientes · En curso')
     expect(rowOf('Roma')).toHaveTextContent('1 pendiente · Pausada')

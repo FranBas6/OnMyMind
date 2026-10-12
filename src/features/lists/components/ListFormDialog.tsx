@@ -14,6 +14,10 @@ import { listFormSchema, type ListFormValues } from '../schemas'
 import type { List } from '../types'
 import { ColorPicker } from './ColorPicker'
 
+/** Lo que explica que una lista no tiene tipo (diseño 25, B8 y D7). */
+const ANYTHING_FITS =
+  'Dentro cabe de todo: notas, tareas, compras y eventos. Al añadir, la lista te propone lo que más tenga.'
+
 interface ListFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -24,9 +28,10 @@ interface ListFormDialogProps {
 }
 
 /**
- * Crear y editar lista (diseño 04 Listas): pantalla completa en móvil, con la acción en la
- * cabecera; diálogo de 560 px en escritorio, con los botones abajo. Espera al servidor
- * («Creando…») y enseña su error sin cerrarse.
+ * Crear y editar lista (diseño 04 Listas; diseño 25, B8 y D7): pantalla completa en móvil, con la
+ * acción en la cabecera; diálogo de 460 px en escritorio, con «Esc» y la ✕ arriba y los botones
+ * abajo. Una lista no tiene tipo: nombre y color, y al crearla una línea dice que dentro cabe de
+ * todo. Espera al servidor («Creando…») y enseña su error sin cerrarse.
  */
 export function ListFormDialog({ open, onOpenChange, list, onCreated }: ListFormDialogProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -40,7 +45,7 @@ export function ListFormDialog({ open, onOpenChange, list, onCreated }: ListForm
           className={cn(
             'fixed z-50 flex flex-col bg-background text-foreground outline-none',
             isDesktop
-              ? 'top-1/2 left-1/2 max-h-[calc(100dvh-4rem)] w-[560px] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 gap-[18px] overflow-y-auto rounded-[28px] border border-border p-7 shadow-dialog'
+              ? 'top-1/2 left-1/2 max-h-[calc(100dvh-4rem)] w-[460px] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 gap-[18px] overflow-y-auto rounded-[28px] border border-border p-7 shadow-dialog'
               : 'inset-0 overflow-y-auto pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]',
           )}
         >
@@ -124,12 +129,17 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
       {isDesktop ? (
         <div className="flex items-center justify-between">
           <Dialog.Title className="text-[22px] tracking-[-0.02em]">{title}</Dialog.Title>
-          <Dialog.Close
-            aria-label="Cerrar"
-            className="grid size-9 place-items-center rounded-[10px] bg-fill text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            <X aria-hidden className="size-5" />
-          </Dialog.Close>
+          <span className="flex items-center gap-2">
+            <kbd className="rounded-[5px] bg-fill px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground">
+              Esc
+            </kbd>
+            <Dialog.Close
+              aria-label="Cerrar"
+              className="grid size-7 place-items-center rounded-lg text-muted-foreground outline-none hover:bg-fill hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              <X aria-hidden className="size-[18px]" strokeWidth={2.2} />
+            </Dialog.Close>
+          </span>
         </div>
       ) : (
         <div className="flex h-11 items-center justify-between px-5">
@@ -202,11 +212,25 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
           )}
         </div>
 
-        <Controller
-          control={control}
-          name="color"
-          render={({ field }) => <ColorPicker value={field.value} onChange={field.onChange} />}
-        />
+        <div className="flex flex-col gap-2">
+          <p
+            aria-hidden
+            className="px-1 font-sans text-xs font-bold tracking-[0.06em] text-muted-foreground uppercase"
+          >
+            Color
+          </p>
+          <Controller
+            control={control}
+            name="color"
+            render={({ field }) => <ColorPicker value={field.value} onChange={field.onChange} />}
+          />
+        </div>
+
+        {!editing && (
+          <p className="-mt-1 px-1 text-[13px] leading-normal text-muted-foreground">
+            {ANYTHING_FITS}
+          </p>
+        )}
 
         {isDesktop && (
           <>
@@ -216,7 +240,7 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
               </p>
             )}
             <div className="mt-1 flex justify-end gap-2.5">
-              <Dialog.Close className="h-12 rounded-[14px] bg-fill px-5 font-display text-[15px] font-bold text-foreground outline-none hover:bg-border focus-visible:ring-[3px] focus-visible:ring-ring/50">
+              <Dialog.Close className="h-12 rounded-[14px] px-5 font-display text-[15px] font-bold text-muted-foreground outline-none hover:bg-fill hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
                 Cancelar
               </Dialog.Close>
               <button
