@@ -156,9 +156,16 @@ function InlineUnlock({ withDevice }: { withDevice: boolean }) {
 
 /**
  * La franja índigo de una nota desbloqueada (C8b, D6): cuánto le queda y «Bloquear». Lo
- * desbloqueado vale para todas a la vez.
+ * desbloqueado vale para todas a la vez. `label`, otro texto con los minutos: el de las listas
+ * ocultas (diseño 27, D4).
  */
-export function UnlockedBand({ className }: { className?: string }) {
+export function UnlockedBand({
+  className,
+  label = (minutes) => `Desbloqueada · se bloquea sola en ${minutes} min`,
+}: {
+  className?: string
+  label?: (minutes: number) => string
+}) {
   const privacy = usePrivate()
   const unlocked = useUnlocked()
   const now = useNow(15_000)
@@ -171,7 +178,7 @@ export function UnlockedBand({ className }: { className?: string }) {
       )}
     >
       <LockOpen aria-hidden className="size-3.5 shrink-0" strokeWidth={2.4} />
-      <span className="flex-1">Desbloqueada · se bloquea sola en {minutes} min</span>
+      <span className="flex-1">{label(minutes)}</span>
       <button
         type="button"
         onClick={privacy.lock}

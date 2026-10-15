@@ -43,6 +43,7 @@ const inbox: List = {
   },
   archivedAt: null,
   isOwner: true,
+  hidden: false,
 }
 
 function item(id: string, title: string, overrides: Partial<Item> = {}): Item {

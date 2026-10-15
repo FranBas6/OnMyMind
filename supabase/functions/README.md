@@ -14,7 +14,9 @@ Las edge functions de Supabase (Deno), una carpeta por función:
   (`verify_jwt = false`), porque no la llama un usuario. Push con `@negrel/webpush` (JSR,
   WebCrypto). Los textos y qué se envía viven en `messages.ts`, puro y probado con Vitest.
   Necesita el secreto `VAPID_PRIVATE_KEY`, y para encenderla, la dirección en Vault:
-  `select vault.create_secret('<url de la función>', 'send_reminders_url');`.
+  `select vault.create_secret('<url de la función>', 'send_reminders_url');`. Desde la 5.8, el aviso
+  de algo de una lista que quien lo recibe ha ocultado (`concealed`) sale sin título: «Tienes un
+  aviso en una lista oculta».
 - **`calendar-feed`** (3.7): los eventos de una persona como calendario suscrito (iCalendar), para
   el Calendario del iPhone o del Mac: `…/functions/v1/calendar-feed/<enlace>.ics`. Sin la puerta de
   JWT (`verify_jwt = false`): el Calendario no sabe iniciar sesión, así que el enlace secreto de
@@ -25,7 +27,8 @@ Las edge functions de Supabase (Deno), una carpeta por función:
   pidió «Avisarme si baja». La llama `pg_cron` como a `send-reminders`, con la misma cabecera
   secreta, y su dirección va en Vault: `select vault.create_secret('<url de la función>',
 'refresh_prices_url');`. Necesita `VAPID_PRIVATE_KEY`, como `send-reminders`. Lo puro, en
-  `prices.ts`. En local, `REFRESH_PRICES_LOCAL_STORES=true` en el `--env-file` deja llegar a una
+  `prices.ts`. Desde la 5.8, a quien tiene la lista oculta (`concealed_for`) la bajada le llega
+  aparte y sin título: «Ha bajado un precio en una lista oculta». En local, `REFRESH_PRICES_LOCAL_STORES=true` en el `--env-file` deja llegar a una
   tienda falsa en el Mac; nunca en la nube.
 - **`_shared/`** (3.8): lo que comparten. `metadata.ts` y `page.ts` (leer una página y su precio),
   `push.ts` (el mensaje y VAPID, puro) y `webpush.ts` (el envío).

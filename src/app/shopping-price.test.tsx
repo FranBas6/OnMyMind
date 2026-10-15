@@ -43,6 +43,7 @@ const inbox: List = {
   },
   archivedAt: null,
   isOwner: true,
+  hidden: false,
 }
 const compras: List = { ...inbox, id: 'compras', name: 'Compras', color: 'blue', kind: 'shopping' }
 const trabajo: List = { ...inbox, id: 'trabajo', name: 'Trabajo', color: 'pink', kind: 'tasks' }

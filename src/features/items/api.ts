@@ -45,7 +45,8 @@ export async function fetchItems(listId: string): Promise<Item[]> {
 
 /**
  * Las sublistas no hechas de todas tus listas (RLS deja solo las tuyas): los destinos de la captura
- * y de «Mover a…» en listas que aún no se han abierto. Son pocas filas.
+ * y de «Mover a…» en listas que aún no se han abierto. Son pocas filas. Sin las de tus listas
+ * ocultas (5.8), que no son destino de nada.
  */
 export async function fetchSublists(): Promise<Item[]> {
   const { data, error } = await supabase
@@ -53,6 +54,7 @@ export async function fetchSublists(): Promise<Item[]> {
     .select(ITEM_COLUMNS)
     .eq('kind', 'sublist')
     .neq('status', 'done')
+    .eq('in_hidden_list', false)
     .order('position')
 
   if (error) throw error
@@ -333,7 +335,8 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
 /**
  * Lo que salió de una inbox y sigue en otra lista, con el nombre de esa lista: la sección «Fuera
  * de la cabeza» de «En mente» lo enseña como «movida a Casa · lunes». El embed necesita el nombre
- * de la clave (`items_list_id_fkey`) porque `items` tiene dos claves hacia `lists`.
+ * de la clave (`items_list_id_fkey`) porque `items` tiene dos claves hacia `lists`. Lo movido a una
+ * lista oculta no sale (5.8): diría su nombre.
  */
 export async function fetchMovedFromInbox(inboxId: string): Promise<MovedItem[]> {
   const { data, error } = await supabase
@@ -341,6 +344,7 @@ export async function fetchMovedFromInbox(inboxId: string): Promise<MovedItem[]>
     .select('id, title, left_inbox_at, list:lists!items_list_id_fkey(name)')
     .eq('left_inbox_id', inboxId)
     .neq('list_id', inboxId)
+    .eq('in_hidden_list', false)
     .order('left_inbox_at', { ascending: false })
     .limit(MOVED_LIMIT)
 
@@ -458,7 +462,8 @@ export async function deleteLink(linkId: string): Promise<void> {
 
 /**
  * Las veces hechas de tareas que se repiten entre dos momentos (3.6, `item_completions`), con la
- * tarea como está ahora y de listas sin archivar. RLS deja solo las de listas que ves.
+ * tarea como está ahora y de listas sin archivar. RLS deja solo las de listas que ves. Sin las de
+ * tus listas ocultas (5.8), como Hoy.
  */
 export async function fetchCompletions(start: Date, end: Date): Promise<Completion[]> {
   const { data, error } = await supabase
@@ -469,6 +474,7 @@ export async function fetchCompletions(start: Date, end: Date): Promise<Completi
     .gte('done_at', start.toISOString())
     .lt('done_at', end.toISOString())
     .is('item.list.archived_at', null)
+    .eq('item.in_hidden_list', false)
     .order('done_at', { ascending: false })
   if (error) throw error
   return data.map((row) => ({

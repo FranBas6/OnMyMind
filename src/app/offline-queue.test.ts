@@ -46,6 +46,7 @@ const casa: List = {
   },
   archivedAt: null,
   isOwner: true,
+  hidden: false,
 }
 const agenda: List = { ...casa, id: 'agenda', name: 'Agenda', kind: 'tasks', position: 3000 }
 

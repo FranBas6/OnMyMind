@@ -26,6 +26,8 @@ export interface PriceDrop {
   beforeCheckedAt: Date | null
   /** Quién lo pidió y lo tiene encendido. */
   recipients: string[]
+  /** De esos, quienes tienen la lista oculta (5.8): a ellos les llega sin título. */
+  concealedFor: string[]
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -56,6 +58,7 @@ export function toPriceDrop(row: unknown): PriceDrop | null {
     currency,
     before_checked_at,
     recipients,
+    concealed_for,
   } = row
   if (
     typeof item_id !== 'string' ||
@@ -78,6 +81,9 @@ export function toPriceDrop(row: unknown): PriceDrop | null {
     currency,
     beforeCheckedAt: typeof before_checked_at === 'string' ? new Date(before_checked_at) : null,
     recipients: recipients.filter((id): id is string => typeof id === 'string'),
+    concealedFor: Array.isArray(concealed_for)
+      ? concealed_for.filter((id): id is string => typeof id === 'string')
+      : [],
   }
 }
 
@@ -158,9 +164,26 @@ export function dropsMessage(drops: readonly PriceDrop[]): PushMessage {
 }
 
 /**
+ * Lo de una lista oculta (diseño 27, D6): nada que la delate, ni la compra ni el precio. Abre la
+ * primera, que pide desbloquear. Una sola por persona, aunque sean varias.
+ */
+export function concealedDropsMessage(drops: readonly PriceDrop[]): PushMessage {
+  const [first] = drops
+  return {
+    title:
+      drops.length === 1
+        ? 'Ha bajado un precio en una lista oculta'
+        : `Han bajado ${String(drops.length)} precios en listas ocultas`,
+    ...(first && { url: `/lists/${first.listId}?item=${first.itemId}` }),
+    tag: 'price-concealed',
+  }
+}
+
+/**
  * Qué se envía a quién. Si una compra con varias tiendas bajó dos veces la misma mañana (dos tiendas
  * mejoraron), cuenta una vez: la última, la más baja, y desde el precio de antes de la primera.
- * Cada persona recibe un aviso: el de su compra o, si son varias, uno con todas.
+ * Cada persona recibe un aviso: el de su compra o, si son varias, uno con todas. Lo de sus listas
+ * ocultas va en otro, sin título (5.8).
  */
 export function planDrops(
   drops: readonly PriceDrop[],
@@ -180,8 +203,21 @@ export function planDrops(
   for (const drop of byItem.values()) {
     for (const userId of drop.recipients) byUser.set(userId, [...(byUser.get(userId) ?? []), drop])
   }
-  return [...byUser].map(([userId, mine]) => ({
-    userId,
-    message: mine.length === 1 && mine[0] ? dropMessage(mine[0], now) : dropsMessage(mine),
-  }))
+  return [...byUser].flatMap(([userId, mine]) => {
+    // Lo de sus listas ocultas, aparte y sin título (5.8).
+    const concealed = mine.filter((drop) => drop.concealedFor.includes(userId))
+    const shown = mine.filter((drop) => !drop.concealedFor.includes(userId))
+    return [
+      ...(shown.length > 0
+        ? [
+            {
+              userId,
+              message:
+                shown.length === 1 && shown[0] ? dropMessage(shown[0], now) : dropsMessage(shown),
+            },
+          ]
+        : []),
+      ...(concealed.length > 0 ? [{ userId, message: concealedDropsMessage(concealed) }] : []),
+    ]
+  })
 }

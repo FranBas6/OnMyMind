@@ -1,22 +1,36 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { Archive } from 'lucide-react'
+import { Archive, Eye, EyeOff } from 'lucide-react'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 
 // Por su ruta y no por el índice: `items` usa piezas de `lists`.
 import { ProtectedNotesGate } from '@/features/items/components/ProtectedNotesGate'
+import { usePrivate } from '@/features/private'
+// Por su ruta: `profile` usa piezas de `lists`.
+import { useProfile } from '@/features/profile/hooks/useProfile'
 import { ListPeopleSheet } from '@/features/sharing/components/ListPeopleSheet'
+import { useListSharing } from '@/features/sharing/hooks/useSharing'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { showUndoToast } from '@/lib/undoToast'
 
-import { useArchiveList, useDeleteList, useUnarchiveList } from '../hooks/useListMutations'
+import { HIDDEN_TOAST, shownToast } from '../hidden'
+import { useForgetHiddenOnLock } from '../hooks/useHiddenLists'
+import {
+  useArchiveList,
+  useDeleteList,
+  useHideList,
+  useShowList,
+  useUnarchiveList,
+} from '../hooks/useListMutations'
 import type { List } from '../types'
 import { DeleteListDialog } from './DeleteListDialog'
 import { DuplicateListDialog } from './DuplicateListDialog'
+import { HideListSheet } from './HideListSheet'
 import { ListActionsContext, type ListActions } from './listActionsContext'
 import { ListFormDialog } from './ListFormDialog'
 
 /**
- * Acciones sobre listas para toda la zona privada: crear, editar, archivar, desarchivar, duplicar
- * y borrar.
+ * Acciones sobre listas para toda la zona privada: crear, editar, archivar, desarchivar, duplicar,
+ * ocultar, mostrar y borrar. Va dentro de `PrivateProvider`: ocultar sin clave la crea antes.
  * El formulario y la confirmación se montan una sola vez aquí; cualquier botón («+ Nueva lista»
  * del sidebar, la cabecera, la tarjeta punteada, el menú ···) los abre con `useListActions`.
  */
@@ -33,11 +47,21 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
   )
   // Como la de quién está: montada al cerrarse, para que baje con su animación.
   const [toDuplicate, setToDuplicate] = useState<{ list: List; open: boolean } | null>(null)
+  // Como las otras hojas: montada al cerrarse.
+  const [toHide, setToHide] = useState<{ list: List; open: boolean } | null>(null)
   const navigate = useNavigate()
   const pathname = useLocation({ select: (location) => location.pathname })
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+  const privacy = usePrivate()
+  const profile = useProfile()
   const archiveList = useArchiveList()
   const unarchiveList = useUnarchiveList()
   const deleteList = useDeleteList()
+  const hideList = useHideList()
+  const showList = useShowList()
+  // Al bloquear, lo de las ocultas se olvida (5.8).
+  useForgetHiddenOnLock()
+  const { ensureKey } = privacy
 
   const unarchive = useCallback(
     (list: List) => {
@@ -63,6 +87,16 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
     [archiveList, unarchive],
   )
 
+  const show = useCallback(
+    (list: List) => {
+      showList.mutate(list)
+      // De vuelta en Inicio, donde vuelve a estar (D5c).
+      void navigate({ to: '/' })
+      showUndoToast({ icon: Eye, message: shownToast(list.name) })
+    },
+    [showList, navigate],
+  )
+
   const actions = useMemo<ListActions>(
     () => ({
       openCreate: (options) => {
@@ -80,9 +114,32 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
       duplicate: (list) => {
         setToDuplicate({ list, open: true })
       },
+      hide: (list) => {
+        void ensureKey().then((ready) => {
+          if (ready) setToHide({ list, open: true })
+        })
+      },
+      show,
     }),
-    [archive, unarchive],
+    [archive, unarchive, ensureKey, show],
   )
+
+  // Ocultar (D1d): fuera de su pantalla si estabas en ella, y el aviso sin su nombre.
+  const hide = (list: List) => {
+    setToHide((current) => current && { ...current, open: false })
+    hideList.mutate(list, {
+      onSuccess: () => {
+        showUndoToast({
+          icon: EyeOff,
+          message: HIDDEN_TOAST,
+          onUndo: () => {
+            showList.mutate({ ...list, hidden: true })
+          },
+        })
+      },
+    })
+    if (pathname.startsWith(`/lists/${list.id}`)) void navigate({ to: '/' })
+  }
 
   // Al salir de una lista compartida (M5): si estabas en ella, a Inicio; y el aviso.
   const left = (list: List) => {
@@ -114,6 +171,21 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
           inviteGate={ProtectedNotesGate}
         />
       )}
+      {toHide && (
+        <HideSheet
+          key={toHide.list.id}
+          list={toHide.list}
+          open={toHide.open}
+          isDesktop={isDesktop}
+          isDefault={profile.data?.settings.defaultListId === toHide.list.id}
+          onOpenChange={(open) => {
+            setToHide((current) => current && { ...current, open })
+          }}
+          onConfirm={() => {
+            hide(toHide.list)
+          }}
+        />
+      )}
       {toDuplicate && (
         <DuplicateListDialog
           key={toDuplicate.list.id}
@@ -136,4 +208,10 @@ export function ListActionsProvider({ children }: { children: ReactNode }) {
       />
     </ListActionsContext>
   )
+}
+
+/** La hoja de ocultar con quién está compartida (D7b). */
+function HideSheet(props: Omit<Parameters<typeof HideListSheet>[0], 'others'>) {
+  const { others } = useListSharing(props.list.id)
+  return <HideListSheet {...props} others={others} />
 }

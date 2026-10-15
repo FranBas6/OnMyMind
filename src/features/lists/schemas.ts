@@ -8,7 +8,7 @@ import type { List, ListCounters } from './types'
 type ListRow = Pick<
   Database['public']['Tables']['lists']['Row'],
   'id' | 'name' | 'color' | 'icon' | 'kind' | 'position'
-> & { view?: string | null; archived_at?: string | null; is_owner?: boolean }
+> & { view?: string | null; archived_at?: string | null; is_owner?: boolean; hidden?: boolean }
 type CountersRow = Database['public']['Views']['list_counters']['Row']
 
 export const listColorSchema = z.enum(LIST_COLORS)
@@ -27,6 +27,7 @@ export const myListRowSchema = z.object({
   archived_at: z.string().nullable(),
   is_owner: z.boolean(),
   view: z.string().nullable(),
+  hidden: z.boolean(),
 })
 
 export const LIST_NAME_MAX_LENGTH = 80
@@ -104,6 +105,8 @@ export function mergeListsWithCounters(lists: ListRow[], counters: CountersRow[]
     archivedAt: row.archived_at ? new Date(row.archived_at) : null,
     // Lo que no viene de `my_lists` (crear una lista) es tuyo.
     isOwner: row.is_owner ?? true,
+    // Una lista recién creada no está oculta.
+    hidden: row.hidden ?? false,
   }))
 }
 

@@ -9,6 +9,7 @@ import { isNetworkError } from '@/lib/errors'
 import { KEY_HINT, KEY_MISMATCH, NEEDS_CONNECTION, passwordsApp, SOMETHING_FAILED } from '../copy'
 import { createKey, type CreatedKey } from '../operations'
 import type { DeviceUnlock } from '../passkey'
+import type { PrivatePurpose } from '../privateContext'
 import { KEY_MIN_LENGTH } from '../vault'
 import { DesktopActions, HeaderCancel, InfoBox, Lead, MainAction } from './SheetParts'
 
@@ -19,8 +20,11 @@ interface CreateKeySheetProps {
   unlock: DeviceUnlock
   /** Otra en lugar de la de antes, tras el código por email (C5c). */
   reset: boolean
-  /** Viene de «Proteger» sin clave aún (C6b): «Para proteger «Wifi de casa» hace falta una clave.» */
-  forTitle?: string | undefined
+  /**
+   * Para qué, si viene de algo que la necesita: «Proteger» sin clave aún (C6b, «Para proteger
+   * «Wifi de casa» hace falta una clave.») o las listas ocultas (diseño 27, D3c).
+   */
+  purpose?: PrivatePurpose | undefined
   onCreated: (created: CreatedKey) => void
 }
 
@@ -35,7 +39,7 @@ export function CreateKeySheet({
   isDesktop,
   unlock,
   reset,
-  forTitle,
+  purpose,
   onCreated,
 }: CreateKeySheetProps) {
   return (
@@ -46,7 +50,7 @@ export function CreateKeySheet({
       title={
         reset
           ? 'Crea tu clave nueva'
-          : forTitle !== undefined
+          : purpose !== undefined
             ? 'Antes, crea tu clave privada'
             : 'Crea tu clave privada'
       }
@@ -57,7 +61,7 @@ export function CreateKeySheet({
         isDesktop={isDesktop}
         unlock={unlock}
         reset={reset}
-        forTitle={forTitle}
+        purpose={purpose}
         onCreated={onCreated}
       />
     </ResponsiveSheet>
@@ -68,9 +72,9 @@ function CreateKeyForm({
   isDesktop,
   unlock,
   reset,
-  forTitle,
+  purpose,
   onCreated,
-}: Pick<CreateKeySheetProps, 'isDesktop' | 'unlock' | 'reset' | 'forTitle' | 'onCreated'>) {
+}: Pick<CreateKeySheetProps, 'isDesktop' | 'unlock' | 'reset' | 'purpose' | 'onCreated'>) {
   const formId = useId()
   const online = useOnline()
   const [key, setKey] = useState('')
@@ -110,11 +114,18 @@ function CreateKeyForm({
       }}
       className="flex flex-col gap-3"
     >
-      <Lead>
-        {forTitle !== undefined && `Para proteger «${forTitle}» hace falta una clave. `}
-        Es una sola clave para lo privado: la del wifi, el código de la alarma o del candado. Para
-        las contraseñas del banco o del correo, mejor {passwordsApp(unlock)}.
-      </Lead>
+      {purpose?.kind === 'hidden' ? (
+        <Lead>
+          Las listas ocultas se abren con la misma clave que tus notas protegidas, o con{' '}
+          {unlock.noun}. Se crea una vez.
+        </Lead>
+      ) : (
+        <Lead>
+          {purpose?.kind === 'note' && `Para proteger «${purpose.title}» hace falta una clave. `}
+          Es una sola clave para lo privado: la del wifi, el código de la alarma o del candado. Para
+          las contraseñas del banco o del correo, mejor {passwordsApp(unlock)}.
+        </Lead>
+      )}
       <PasswordField
         label="Clave privada"
         placeholder="Clave privada"
@@ -140,11 +151,18 @@ function CreateKeyForm({
           setMismatch(false)
         }}
       />
-      <InfoBox>
-        Si la olvidas, podrás crear otra, pero{' '}
-        <b className="font-bold">lo que protegiste con esta se pierde</b>. No la guardamos, así que
-        no podemos recuperarla.
-      </InfoBox>
+      {purpose?.kind === 'hidden' ? (
+        <InfoBox>
+          Si la olvidas, podrás crear otra. Tus listas ocultas no se pierden: vuelven a verse con la
+          clave nueva. Lo que se pierde son las notas protegidas.
+        </InfoBox>
+      ) : (
+        <InfoBox>
+          Si la olvidas, podrás crear otra, pero{' '}
+          <b className="font-bold">lo que protegiste con esta se pierde</b>. No la guardamos, así
+          que no podemos recuperarla.
+        </InfoBox>
+      )}
       {error && <FormError message={error} />}
       {isDesktop ? (
         <DesktopActions>

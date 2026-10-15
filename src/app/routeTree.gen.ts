@@ -20,6 +20,7 @@ import { Route as AuthenticatedTodayRouteImport } from './../routes/_authenticat
 import { Route as AuthCallbackRouteImport } from './../routes/auth.callback'
 import { Route as ITokenRouteImport } from './../routes/i.$token'
 import { Route as AuthenticatedListsListIdRouteImport } from './../routes/_authenticated.lists.$listId'
+import { Route as AuthenticatedProfileHiddenRouteImport } from './../routes/_authenticated.profile_.hidden'
 import { Route as AuthenticatedListsListIdSublistIdRouteImport } from './../routes/_authenticated.lists.$listId_.$sublistId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -77,6 +78,12 @@ const AuthenticatedListsListIdRoute =
     path: '/lists/$listId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedProfileHiddenRoute =
+  AuthenticatedProfileHiddenRouteImport.update({
+    id: '/profile_/hidden',
+    path: '/profile/hidden',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedListsListIdSublistIdRoute =
   AuthenticatedListsListIdSublistIdRouteImport.update({
     id: '/lists/$listId_/$sublistId',
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/i/$token': typeof ITokenRoute
   '/lists/$listId': typeof AuthenticatedListsListIdRoute
+  '/profile/hidden': typeof AuthenticatedProfileHiddenRoute
   '/lists/$listId/$sublistId': typeof AuthenticatedListsListIdSublistIdRoute
 }
 export interface FileRoutesByTo {
@@ -108,6 +116,7 @@ export interface FileRoutesByTo {
   '/i/$token': typeof ITokenRoute
   '/': typeof AuthenticatedIndexRoute
   '/lists/$listId': typeof AuthenticatedListsListIdRoute
+  '/profile/hidden': typeof AuthenticatedProfileHiddenRoute
   '/lists/$listId/$sublistId': typeof AuthenticatedListsListIdSublistIdRoute
 }
 export interface FileRoutesById {
@@ -123,6 +132,7 @@ export interface FileRoutesById {
   '/i/$token': typeof ITokenRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/lists/$listId': typeof AuthenticatedListsListIdRoute
+  '/_authenticated/profile_/hidden': typeof AuthenticatedProfileHiddenRoute
   '/_authenticated/lists/$listId_/$sublistId': typeof AuthenticatedListsListIdSublistIdRoute
 }
 export interface FileRouteTypes {
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/i/$token'
     | '/lists/$listId'
+    | '/profile/hidden'
     | '/lists/$listId/$sublistId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/i/$token'
     | '/'
     | '/lists/$listId'
+    | '/profile/hidden'
     | '/lists/$listId/$sublistId'
   id:
     | '__root__'
@@ -165,6 +177,7 @@ export interface FileRouteTypes {
     | '/i/$token'
     | '/_authenticated/'
     | '/_authenticated/lists/$listId'
+    | '/_authenticated/profile_/hidden'
     | '/_authenticated/lists/$listId_/$sublistId'
   fileRoutesById: FileRoutesById
 }
@@ -254,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedListsListIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/profile_/hidden': {
+      id: '/_authenticated/profile_/hidden'
+      path: '/profile/hidden'
+      fullPath: '/profile/hidden'
+      preLoaderRoute: typeof AuthenticatedProfileHiddenRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/lists/$listId_/$sublistId': {
       id: '/_authenticated/lists/$listId_/$sublistId'
       path: '/lists/$listId/$sublistId'
@@ -272,6 +292,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedListsListIdRoute: typeof AuthenticatedListsListIdRoute
+  AuthenticatedProfileHiddenRoute: typeof AuthenticatedProfileHiddenRoute
   AuthenticatedListsListIdSublistIdRoute: typeof AuthenticatedListsListIdSublistIdRoute
 }
 
@@ -283,6 +304,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedListsListIdRoute: AuthenticatedListsListIdRoute,
+  AuthenticatedProfileHiddenRoute: AuthenticatedProfileHiddenRoute,
   AuthenticatedListsListIdSublistIdRoute:
     AuthenticatedListsListIdSublistIdRoute,
 }

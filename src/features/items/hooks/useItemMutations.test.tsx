@@ -37,6 +37,7 @@ const casa: List = {
   },
   archivedAt: null,
   isOwner: true,
+  hidden: false,
 }
 
 const grifo: Item = {

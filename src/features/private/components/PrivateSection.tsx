@@ -1,11 +1,13 @@
+import { useNavigate } from '@tanstack/react-router'
 import { ChevronRight, Key, Lock } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Switch } from '@/components/Switch'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 
-import { AUTO_LOCK_NOTE, deviceKeyLabel, ONE_KEY_NOTE, unsupportedNote } from '../copy'
+import { autoLockNote, deviceKeyLabel } from '../copy'
 import { usePrivate } from '../privateContext'
 import { DeviceIcon } from './DeviceIcon'
 
@@ -16,18 +18,44 @@ const BUTTON_ROW = cn(
 )
 
 /**
- * «Privado» de Perfil (diseño 26, C1, C1b, C4, D1 y D2), entre Captura y Avisos: «Clave privada»
- * (Crear o Creada) y, creada, la llave de este aparato con su interruptor, «Cambiar la clave» y
- * «He olvidado la clave». Donde el aparato no la permite, «Solo con la clave en este ordenador» y
- * por qué. Tocar «Creada» desbloquea, y «Desbloqueada», bloquea.
+ * «Privado» de Perfil (diseño 26, C1, C1b, C4, D1 y D2; diseño 27, D2, D2b y E1), entre Captura y
+ * Avisos. Arriba, «Listas ocultas», siempre igual: sin número y aunque no haya ninguna ni clave
+ * (si solo saliera al ocultar algo, ya diría que hay algo). Después, «Clave privada» (Crear o
+ * Creada) y, creada, la llave de este aparato con su interruptor, «Cambiar la clave» y «He
+ * olvidado la clave». Donde el aparato no la permite, «Solo con la clave en este ordenador». Tocar
+ * «Creada» desbloquea, y «Desbloqueada», bloquea.
  */
 export function PrivateSection() {
   const privacy = usePrivate()
+  const navigate = useNavigate()
+  const isDesktop = useMediaQuery('(min-width: 768px)')
   const { vault, unlock, deviceSupported, deviceKey, unlocked } = privacy
+  const ready = privacy.status === 'ready'
 
-  if (privacy.status !== 'ready') {
+  // Pide Face ID (o la clave; sin clave, crearla) y entra (D3–D3c).
+  const hiddenRow = (
+    <button
+      type="button"
+      disabled={!ready}
+      onClick={() => {
+        void privacy.openHidden().then((ok) => {
+          if (ok) void navigate({ to: '/profile/hidden' })
+        })
+      }}
+      className={BUTTON_ROW}
+    >
+      <Label icon={<Lock aria-hidden className="size-4 text-muted-foreground" strokeWidth={2} />}>
+        Listas ocultas
+      </Label>
+      <ChevronRight aria-hidden className="size-4 text-subtle-foreground" strokeWidth={2} />
+    </button>
+  )
+  const note = <Note>{autoLockNote(isDesktop)}</Note>
+
+  if (!ready) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-border-soft bg-card">
+      <div className="divide-y divide-border-soft overflow-hidden rounded-2xl border border-border-soft bg-card">
+        {hiddenRow}
         <div className={cn(ROW, 'text-muted-foreground')}>
           <Label icon={<Key aria-hidden className="size-4" strokeWidth={2} />}>Clave privada</Label>
           <span>{privacy.status === 'error' ? 'Sin conexión' : '…'}</span>
@@ -39,7 +67,8 @@ export function PrivateSection() {
   if (!vault) {
     return (
       <div className="flex flex-col gap-2">
-        <div className="overflow-hidden rounded-2xl border border-border-soft bg-card">
+        <div className="divide-y divide-border-soft overflow-hidden rounded-2xl border border-border-soft bg-card">
+          {hiddenRow}
           <button type="button" onClick={privacy.create} className={BUTTON_ROW}>
             <Label
               icon={<Key aria-hidden className="size-4 text-muted-foreground" strokeWidth={2} />}
@@ -51,7 +80,7 @@ export function PrivateSection() {
             </Value>
           </button>
         </div>
-        <Note>{ONE_KEY_NOTE}</Note>
+        {note}
       </div>
     )
   }
@@ -88,6 +117,7 @@ export function PrivateSection() {
   return (
     <div className="flex flex-col gap-2">
       <div className="divide-y divide-border-soft overflow-hidden rounded-2xl border border-border-soft bg-card">
+        {hiddenRow}
         <button
           type="button"
           onClick={() => {
@@ -126,7 +156,7 @@ export function PrivateSection() {
           He olvidado la clave
         </button>
       </div>
-      <Note>{deviceSupported === false ? unsupportedNote(unlock) : AUTO_LOCK_NOTE}</Note>
+      {note}
     </div>
   )
 }

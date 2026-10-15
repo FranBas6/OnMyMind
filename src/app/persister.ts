@@ -1,4 +1,10 @@
-import { onlineManager, type Mutation, type Query, type QueryClient } from '@tanstack/react-query'
+import {
+  onlineManager,
+  type Mutation,
+  type Query,
+  type QueryClient,
+  type QueryKey,
+} from '@tanstack/react-query'
 import {
   persistQueryClient,
   type PersistedClient,
@@ -22,8 +28,8 @@ export const PERSIST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
  */
 // `datos-2` (5.6): las listas ganaron `view` y contadores por tipo (5.3) y los ítems `chooseOne` y
 // `chosenId` (5.1); con lo guardado antes, la app nueva se rompía al pintar Inicio. `datos-3` (5.7):
-// los ítems ganan `sealed` (notas protegidas).
-export const CACHE_BUSTER = 'datos-3'
+// los ítems ganan `sealed` (notas protegidas). `datos-4` (5.8): las listas ganan `hidden`.
+export const CACHE_BUSTER = 'datos-4'
 
 const KEY = 'onmymind-query-cache'
 /** Guardar a lo sumo una vez por segundo: la caché cambia a menudo (optimistas, refrescos). */
@@ -77,16 +83,30 @@ export function isReplayable(queryClient: QueryClient, mutation: Mutation): bool
 
 /**
  * Si una consulta se guarda con la caché: las terminadas con éxito, menos las que llevan
- * `meta: { private: true }`, que es lo desbloqueado (5.6, ADR-013): eso vive solo en memoria.
+ * `meta: { private: true }`, que es lo desbloqueado (5.6, ADR-013): eso vive solo en memoria. Lo de
+ * dentro de una lista oculta (5.8, `hiddenIds`) tampoco: se ve desbloqueado y no queda en el aparato.
  */
-export function isPersistable(query: Query): boolean {
+export function isPersistable(query: Query, hiddenIds: ReadonlySet<string> = new Set()): boolean {
+  const [scope, detail] = query.queryKey
+  const listId = itemsListOf(query.queryKey)
   return (
     query.state.status === 'success' &&
     query.meta?.private !== true &&
     // El texto descifrado de una nota protegida (5.7), también si se dejó con `setQueryData`, que
     // no lleva `meta`.
-    query.queryKey[0] !== queryKeys.openedNotes[0]
+    scope !== queryKeys.openedNotes[0] &&
+    // Las ocultas, también si se dejaron con `setQueryData`.
+    !(scope === queryKeys.lists.hidden[0] && detail === queryKeys.lists.hidden[1]) &&
+    (listId === undefined || !hiddenIds.has(listId))
   )
+}
+
+/** La lista de una consulta de ítems (`['items', { listId }]`), si es de una. */
+function itemsListOf(key: QueryKey): string | undefined {
+  const [scope, detail] = key
+  if (scope !== 'items' || typeof detail !== 'object' || detail === null) return undefined
+  const { listId } = detail as { listId?: unknown }
+  return typeof listId === 'string' ? listId : undefined
 }
 
 /**
@@ -103,7 +123,11 @@ export async function restoreQueryCache(queryClient: QueryClient): Promise<void>
     maxAge: PERSIST_MAX_AGE_MS,
     buster: CACHE_BUSTER,
     dehydrateOptions: {
-      shouldDehydrateQuery: isPersistable,
+      shouldDehydrateQuery: (query) =>
+        isPersistable(
+          query,
+          new Set(queryClient.getQueryData<string[]>(queryKeys.lists.hiddenIds) ?? []),
+        ),
       shouldDehydrateMutation: (mutation) => isReplayable(queryClient, mutation),
     },
   })

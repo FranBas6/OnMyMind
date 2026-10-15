@@ -5,6 +5,7 @@ import { markAccountDeleted } from '@/features/auth/accountDeleted'
 import { signOut } from '@/features/auth/api'
 import { fetchItems } from '@/features/items/api'
 import type { List } from '@/features/lists/types'
+import { getUnlocked } from '@/features/private'
 import { downloadFile } from '@/lib/download'
 import { queryKeys } from '@/lib/queryKeys'
 
@@ -16,7 +17,8 @@ export type ExportChoice = { kind: 'json' } | { kind: 'csv'; list: List }
 
 /**
  * Exportar mis datos (diseño 18, P7 y P8): se prepara en el navegador y se descarga. Solo con red
- * (`networkMode: 'online'`), aunque la fila ya lo impide sin conexión.
+ * (`networkMode: 'online'`), aunque la fila ya lo impide sin conexión. Las listas ocultas, solo
+ * desbloqueado (5.8).
  */
 export function useExportData() {
   const user = useCurrentUser()
@@ -24,7 +26,7 @@ export function useExportData() {
     networkMode: 'online',
     mutationFn: async (choice: ExportChoice) => {
       if (choice.kind === 'json') {
-        const data = await fetchExport(user.id)
+        const data = await fetchExport(user.id, { withHidden: getUnlocked() !== null })
         downloadFile(exportFileName(), JSON.stringify(data, null, 2), 'application/json')
         return
       }

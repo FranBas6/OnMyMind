@@ -11,7 +11,7 @@ import {
 } from './schemas'
 import type { List, ListView, RecentCapture } from './types'
 
-const MY_LIST_COLUMNS = 'id, name, color, icon, kind, view, position, archived_at, is_owner'
+const MY_LIST_COLUMNS = 'id, name, color, icon, kind, view, position, archived_at, is_owner, hidden'
 
 /** Lo que se pide de `list_counters` (5.3: también las notas y cuántas hay de cada tipo). */
 const COUNTER_COLUMNS =
@@ -21,10 +21,16 @@ const COUNTER_COLUMNS =
  * Listas no archivadas, tuyas y compartidas contigo, en tu orden y con sus contadores. Dos
  * consultas en paralelo (`my_lists` y `list_counters`) fusionadas en cliente. No se filtra por
  * usuario: RLS ya lo hace. `my_lists` (3.2) pone tu orden también en las compartidas contigo.
+ * Sin las que has ocultado (5.8): esas no se descargan hasta desbloquear (`fetchHiddenLists`).
  */
 export async function fetchLists(): Promise<List[]> {
   const [lists, counters] = await Promise.all([
-    supabase.from('my_lists').select(MY_LIST_COLUMNS).is('archived_at', null).order('position'),
+    supabase
+      .from('my_lists')
+      .select(MY_LIST_COLUMNS)
+      .is('archived_at', null)
+      .eq('hidden', false)
+      .order('position'),
     supabase.from('list_counters').select(COUNTER_COLUMNS),
   ])
 
@@ -57,6 +63,7 @@ export async function fetchArchivedLists(): Promise<List[]> {
       .from('my_lists')
       .select(MY_LIST_COLUMNS)
       .not('archived_at', 'is', null)
+      .eq('hidden', false)
       .order('archived_at', { ascending: false }),
     supabase.from('list_counters').select(COUNTER_COLUMNS),
   ])
@@ -64,6 +71,44 @@ export async function fetchArchivedLists(): Promise<List[]> {
   if (lists.error) throw lists.error
   if (counters.error) throw counters.error
   return mergeListsWithCounters(z.array(myListRowSchema).parse(lists.data), counters.data)
+}
+
+/**
+ * Tus listas ocultas (5.8, diseño 27), archivadas incluidas, en tu orden y con sus contadores. Solo
+ * se piden desbloqueado (`useHiddenLists`).
+ */
+export async function fetchHiddenLists(): Promise<List[]> {
+  const [lists, counters] = await Promise.all([
+    supabase.from('my_lists').select(MY_LIST_COLUMNS).eq('hidden', true).order('position'),
+    supabase.from('list_counters').select(COUNTER_COLUMNS),
+  ])
+
+  if (lists.error) throw lists.error
+  if (counters.error) throw counters.error
+  return mergeListsWithCounters(z.array(myListRowSchema).parse(lists.data), counters.data)
+}
+
+/** Cuáles has ocultado: solo los ids, sin nada de dentro (RLS deja solo las tuyas). */
+export async function fetchHiddenListIds(): Promise<string[]> {
+  const { data, error } = await supabase.from('hidden_lists').select('list_id')
+  if (error) throw error
+  return data.map((row) => row.list_id)
+}
+
+/**
+ * «Ocultar» (5.8): solo para ti. Si era tu lista por defecto de la captura, la base la deja en
+ * «En mente» (`hidden_lists_after_insert`).
+ */
+export async function hideList(listId: string): Promise<void> {
+  const { error } = await supabase.from('hidden_lists').insert({ list_id: listId })
+  // Ya estaba oculta (otro aparato): da igual.
+  if (error && error.code !== '23505') throw error
+}
+
+/** «Mostrar»: vuelve a Inicio y al sidebar, en su sitio de antes. */
+export async function showList(listId: string): Promise<void> {
+  const { error } = await supabase.from('hidden_lists').delete().eq('list_id', listId)
+  if (error) throw error
 }
 
 /**

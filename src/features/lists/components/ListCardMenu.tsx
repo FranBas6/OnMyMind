@@ -1,4 +1,14 @@
-import { Archive, CopyPlus, LogOut, Pencil, Trash, Users, type LucideIcon } from 'lucide-react'
+import {
+  Archive,
+  CopyPlus,
+  Eye,
+  EyeOff,
+  LogOut,
+  Pencil,
+  Trash,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { ContextMenu, DropdownMenu } from 'radix-ui'
 import { useState, type ReactNode } from 'react'
 
@@ -46,6 +56,8 @@ export function ListCardMenu({
 }: ListCardMenuProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const { items, shared, owner } = useMenuEntries(list, open, isDesktop, onNewSublist)
+  // Con «solo en Perfil» o «vuelve a Mis listas» a la derecha, el menú es más ancho (E4).
+  const wide = items.some((item) => item.hint)
   const ownerName = personName(owner?.displayName)
   const memberNote = shared
     ? `Cambiar el nombre, el color o invitar a alguien es cosa de ${owner ? ownerName : 'quien creó la lista'}${owner ? ', que creó la lista' : ''}.`
@@ -63,7 +75,10 @@ export function ListCardMenu({
           <DropdownMenu.Content
             align="end"
             sideOffset={4}
-            className="z-50 w-[200px] rounded-2xl border border-border-soft bg-card p-1.5 text-foreground shadow-popover outline-none"
+            className={cn(
+              'z-50 rounded-2xl border border-border-soft bg-card p-1.5 text-foreground shadow-popover outline-none',
+              wide ? 'w-[248px]' : 'w-[200px]',
+            )}
           >
             {items.map((item) => (
               <DropdownMenu.Item
@@ -76,7 +91,8 @@ export function ListCardMenu({
                   className={cn('size-[18px]', item.iconClassName)}
                   strokeWidth={2}
                 />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {item.hint && <Hint>{item.hint}</Hint>}
               </DropdownMenu.Item>
             ))}
           </DropdownMenu.Content>
@@ -103,6 +119,7 @@ export function ListCardMenu({
               {list.name}
             </p>
             <p className="text-[13px] text-muted-foreground">
+              {list.hidden && 'Oculta · '}
               {shared
                 ? owner
                   ? `De ${ownerName} · compartida contigo`
@@ -129,6 +146,7 @@ export function ListCardMenu({
               />
               <span className="flex-1 text-left">{item.label}</span>
               {item.trailing}
+              {item.hint && <Hint>{item.hint}</Hint>}
             </button>
           ))}
         </div>
@@ -221,6 +239,7 @@ function ownerEntries(list: List, actions: ListActions, isDesktop: boolean): Men
             },
           },
           duplicateEntry(list, actions, isDesktop),
+          hideEntry(list, actions),
         ]),
     {
       label: 'Archivar',
@@ -251,6 +270,31 @@ function duplicateEntry(list: List, actions: ListActions, isDesktop: boolean): M
   }
 }
 
+/**
+ * «Ocultar», con «solo en Perfil» a la derecha, o en una oculta «Mostrar», con «vuelve a Mis
+ * listas» (diseño 27, D1, D5b y E4). Después de «Duplicar»; ocultar es de cada uno, así que también
+ * en una compartida contigo.
+ */
+function hideEntry(list: List, actions: ListActions): MenuEntry {
+  return list.hidden
+    ? {
+        label: 'Mostrar',
+        icon: Eye,
+        hint: 'vuelve a Mis listas',
+        onSelect: () => {
+          actions.show(list)
+        },
+      }
+    : {
+        label: 'Ocultar',
+        icon: EyeOff,
+        hint: 'solo en Perfil',
+        onSelect: () => {
+          actions.hide(list)
+        },
+      }
+}
+
 function memberEntries(
   list: List,
   actions: ListActions,
@@ -267,6 +311,7 @@ function memberEntries(
       },
     },
     duplicateEntry(list, actions, isDesktop),
+    hideEntry(list, actions),
     {
       label: 'Salir de la lista',
       icon: LogOut,
@@ -285,6 +330,8 @@ interface MenuEntry {
   iconClassName?: string
   /** A la derecha, en la hoja de móvil: las iniciales de «Quién está» (M3). */
   trailing?: ReactNode
+  /** A la derecha, en gris: «solo en Perfil», «vuelve a Mis listas» (diseño 27). */
+  hint?: string
   destructive?: boolean
   /** «Nueva sublista»: en índigo y con un filete debajo que la separa del resto (S7). */
   accent?: boolean
@@ -300,6 +347,12 @@ function rowClass(item: MenuEntry, height: string) {
       : item.accent
         ? [height, 'mb-1 rounded-b-none border-b border-border-soft text-primary-strong']
         : [height, 'text-foreground [&_svg]:text-muted-foreground'],
+  )
+}
+
+function Hint({ children }: { children: string }) {
+  return (
+    <span className="shrink-0 text-[12.5px] font-normal text-muted-foreground">{children}</span>
   )
 }
 

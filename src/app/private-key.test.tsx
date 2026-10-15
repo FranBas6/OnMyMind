@@ -52,6 +52,7 @@ const inbox: List = {
   },
   archivedAt: null,
   isOwner: true,
+  hidden: false,
 }
 
 /** Una caja de verdad, con pocas vueltas para que el test no espere. */
@@ -120,9 +121,11 @@ describe('la clave privada (5.6, diseño 26)', { timeout: 30_000 }, () => {
     const user = userEvent.setup()
     renderProfile(null)
 
+    // Sin clave, la fila de las listas ocultas está igual (diseño 27, D2b).
     expect(
-      await screen.findByText('Una sola clave para tus notas protegidas y tus listas ocultas.'),
+      await screen.findByText('Lo privado se bloquea solo a los 5 minutos y al salir de la app.'),
     ).toBeInTheDocument()
+    expect(within(privado()).getByRole('button', { name: 'Listas ocultas' })).toBeInTheDocument()
     await user.click(within(privado()).getByRole('button', { name: /Clave privada\s*Crear/ }))
     const dialog = await sheet('Crea tu clave privada')
     expect(

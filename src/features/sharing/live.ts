@@ -29,6 +29,8 @@ export const liveChangeSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('people'), list_id: z.string(), ...author }),
   /** Te quitan, o se borra o se archiva una lista que no es tuya (3.3, M9 y M10). */
   z.object({ kind: z.literal('departure'), list_id: z.string(), ...author, reason: z.string() }),
+  /** La ocultas o la muestras desde otro aparato (5.8): solo te llega a ti. */
+  z.object({ kind: z.literal('hidden'), list_id: z.string(), ...author }),
 ])
 export type LiveChange = z.infer<typeof liveChangeSchema>
 
@@ -58,6 +60,10 @@ export function staleAfter(change: LiveChange): QueryKey[] {
         queryKeys.sharing.shared,
         ['items'],
       ]
+    case 'hidden':
+      // Sale de Inicio (o vuelve), y lo de dentro, de Hoy y Buscar; la captura puede haber vuelto
+      // a «En mente».
+      return [queryKeys.lists.all, ['items'], queryKeys.profile()]
   }
 }
 

@@ -38,6 +38,7 @@ function reminder(overrides: Partial<DueReminder> = {}): DueReminder {
     nowLocal: NOW_LOCAL,
     done: false,
     hidden: false,
+    concealed: false,
     ...overrides,
   }
 }
@@ -64,6 +65,21 @@ describe('qué se envía de un aviso vencido', () => {
   it('lo terminado o callado no sale', () => {
     expect(planReminder(reminder({ done: true }), NOW)).toEqual({ send: false, reason: 'done' })
     expect(planReminder(reminder({ hidden: true }), NOW)).toEqual({ send: false, reason: 'hidden' })
+  })
+
+  it('de una lista oculta, sin título ni lista, y abre el ítem (diseño 27, D6)', () => {
+    expect(planReminder(reminder({ concealed: true }), NOW)).toEqual({
+      send: true,
+      message: {
+        title: 'Tienes un aviso en una lista oculta',
+        url: '/lists/agenda?item=i1',
+        tag: 'reminder:i1',
+      },
+    })
+    expect(planReminder(reminder({ concealed: true, done: true }), NOW)).toEqual({
+      send: false,
+      reason: 'done',
+    })
   })
 
   it('hasta 15 minutos tarde se envía, con lo que falta de verdad; más tarde, no', () => {
@@ -217,8 +233,10 @@ describe('las filas de la base', () => {
       now_local: NOW_LOCAL,
       done: false,
       hidden: false,
+      concealed: false,
     }
     expect(toDueReminder(row)).toEqual(reminder())
+    expect(toDueReminder({ ...row, concealed: true })).toMatchObject({ concealed: true })
     expect(toDueReminder({ ...row, occurs_at: null, occurs_local: null })).toMatchObject({
       occursAt: null,
       occursLocal: null,

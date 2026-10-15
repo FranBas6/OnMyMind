@@ -99,14 +99,27 @@ async function allRows(
  * Todo lo tuyo, para el JSON de «Exportar mis datos» (diseño 18, P7): el perfil con sus ajustes,
  * las listas (también las archivadas), los ítems (con las sublistas y lo de dentro), sus fotos, las tiendas,
  * el histórico de precios y los avisos. RLS ya deja solo lo tuyo. Las suscripciones a avisos no:
- * son de cada navegador. Las fotos, como URLs firmadas de una semana.
+ * son de cada navegador. Las fotos, como URLs firmadas de una semana. Tus listas ocultas (5.8),
+ * solo con `withHidden` (desbloqueado): si no, ni se descargan.
  */
-export async function fetchExport(userId: string): Promise<ReturnType<typeof exportDocument>> {
-  const [profile, lists, items, itemLinks, itemImages, itemPrices, reminders, itemCompletions] =
+export async function fetchExport(
+  userId: string,
+  { withHidden = false }: { withHidden?: boolean } = {},
+): Promise<ReturnType<typeof exportDocument>> {
+  const hiddenIds = withHidden ? [] : await fetchHiddenIds()
+  const [profile, lists, items, allLinks, allImages, allPrices, allReminders, allCompletions] =
     await Promise.all([
       allRows((from, to) => supabase.from('profiles').select('*').eq('id', userId).range(from, to)),
-      allRows((from, to) => supabase.from('lists').select('*').order('id').range(from, to)),
-      allRows((from, to) => supabase.from('items').select('*').order('id').range(from, to)),
+      allRows((from, to) => {
+        const query = supabase.from('lists').select('*')
+        return (hiddenIds.length > 0 ? query.not('id', 'in', `(${hiddenIds.join(',')})`) : query)
+          .order('id')
+          .range(from, to)
+      }),
+      allRows((from, to) => {
+        const query = supabase.from('items').select('*')
+        return (withHidden ? query : query.eq('in_hidden_list', false)).order('id').range(from, to)
+      }),
       allRows((from, to) => supabase.from('item_links').select('*').order('id').range(from, to)),
       // Todas las fotos de cada cosa (4.5), no solo la primera.
       allRows((from, to) => supabase.from('item_images').select('*').order('id').range(from, to)),
@@ -117,6 +130,14 @@ export async function fetchExport(userId: string): Promise<ReturnType<typeof exp
         supabase.from('item_completions').select('*').order('id').range(from, to),
       ),
     ])
+  // Lo de cada ítem, solo de los que salen.
+  const kept = new Set(items.map((item) => item.id))
+  const ofKept = (rows: Record<string, unknown>[]) => rows.filter((row) => kept.has(row.item_id))
+  const itemLinks = ofKept(allLinks)
+  const itemImages = ofKept(allImages)
+  const itemPrices = ofKept(allPrices)
+  const reminders = ofKept(allReminders)
+  const itemCompletions = ofKept(allCompletions)
   const paths = [
     ...new Set(
       [...items.map((item) => item.image_path), ...itemImages.map((image) => image.path)].filter(
@@ -147,6 +168,13 @@ export async function fetchExport(userId: string): Promise<ReturnType<typeof exp
     },
     photoUrls,
   )
+}
+
+/** Cuáles has ocultado (solo los ids). */
+async function fetchHiddenIds(): Promise<string[]> {
+  const { data, error } = await supabase.from('hidden_lists').select('list_id')
+  if (error) throw error
+  return data.map((row) => row.list_id)
 }
 
 export interface AccountCounts {

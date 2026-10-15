@@ -59,7 +59,10 @@ export async function fetchDays(start: Date, end: Date): Promise<TodayItem[]> {
   return rows(pending, done, events)
 }
 
-/** Los ítems con su lista (para filtrar las archivadas) y su sublista, si están en una. */
+/**
+ * Los ítems con su lista (para filtrar las archivadas) y su sublista, si están en una. Sin lo de
+ * tus listas ocultas (5.8): ni se descarga.
+ */
 function items() {
   return supabase
     .from('items')
@@ -67,6 +70,7 @@ function items() {
       `${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id), parent:parent_id(status, title)`,
     )
     .is('list.archived_at', null)
+    .eq('in_hidden_list', false)
 }
 
 function dated(kind: 'task' | 'event') {

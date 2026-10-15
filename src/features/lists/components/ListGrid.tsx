@@ -13,7 +13,16 @@ import { NewListCard } from './NewListEntries'
  * reparte con `minmax(0, 1fr)`, así que un nombre largo no ensancha su columna. Las tarjetas se
  * ordenan arrastrando (2.9, diseño 14, I1 y D6); «En mente» va fijada encima, fuera de la rejilla.
  */
-export function ListGrid({ lists }: { lists: List[] }) {
+export function ListGrid({
+  lists,
+  label = 'Mis listas',
+  canCreate = true,
+}: {
+  lists: List[]
+  label?: string
+  /** La tarjeta punteada de crear una lista, en el móvil; en «Listas ocultas», no. */
+  canCreate?: boolean
+}) {
   const [menuListId, setMenuListId] = useState<string | null>(null)
   return (
     <div className="@container">
@@ -26,10 +35,7 @@ export function ListGrid({ lists }: { lists: List[] }) {
           setMenuListId(list.id)
         }}
       >
-        <ul
-          aria-label="Mis listas"
-          className="grid grid-cols-2 gap-3 md:gap-4 @min-[820px]:grid-cols-3"
-        >
+        <ul aria-label={label} className="grid grid-cols-2 gap-3 md:gap-4 @min-[820px]:grid-cols-3">
           {lists.map((list) => (
             <ListCard
               key={list.id}
@@ -41,9 +47,11 @@ export function ListGrid({ lists }: { lists: List[] }) {
             />
           ))}
           {/* En móvil, crear una lista desde el final de la rejilla (diseño 04 Listas). */}
-          <li className="flex min-w-0 md:hidden">
-            <NewListCard />
-          </li>
+          {canCreate && (
+            <li className="flex min-w-0 md:hidden">
+              <NewListCard />
+            </li>
+          )}
         </ul>
       </ListsDnd>
     </div>

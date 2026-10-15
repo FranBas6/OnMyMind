@@ -36,6 +36,7 @@ const inbox: List = {
   },
   archivedAt: null,
   isOwner: true,
+  hidden: false,
 }
 const casa: List = { ...inbox, id: 'casa', name: 'Casa', color: 'coral', kind: 'tasks' }
 

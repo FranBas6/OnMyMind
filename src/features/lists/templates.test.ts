@@ -32,6 +32,7 @@ function list(overrides: Partial<List>): List {
     },
     archivedAt: null,
     isOwner: true,
+    hidden: false,
     ...overrides,
   }
 }

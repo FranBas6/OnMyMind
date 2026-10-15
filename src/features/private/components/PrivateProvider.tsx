@@ -19,7 +19,7 @@ import {
 import { privateVaultQueryOptions } from '../queries'
 import { addDeviceKey, openWithDevice, openWithKey, type CreatedKey } from '../operations'
 import { canUsePasskeys, currentDeviceUnlock, PasskeyFailure } from '../passkey'
-import { PrivateContext, type PrivateContextValue } from '../privateContext'
+import { PrivateContext, type PrivateContextValue, type PrivatePurpose } from '../privateContext'
 import {
   getUnlocked,
   lock,
@@ -38,9 +38,9 @@ import { UnlockSheet } from './UnlockSheet'
 
 /** La hoja abierta: una cada vez, y unas llevan a otras («He olvidado la clave» → código → nueva). */
 type Sheet =
-  | { kind: 'create'; reset: boolean; forTitle?: string }
+  | { kind: 'create'; reset: boolean; purpose?: PrivatePurpose }
   | { kind: 'protect'; title: string }
-  | { kind: 'unlock'; deviceFailed: boolean }
+  | { kind: 'unlock'; deviceFailed: boolean; forHidden: boolean }
   | { kind: 'change'; openedKey: CryptoKey | null }
   | { kind: 'forgot' }
   | { kind: 'code'; sentAt: number }
@@ -119,7 +119,7 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
   }
 
   /** Face ID con la llave de este aparato: después, desbloqueado o «Cambiar la clave» (C5b). */
-  const tryDevice = async (then: 'unlock' | 'change') => {
+  const tryDevice = async (then: 'unlock' | 'change', forHidden = false) => {
     if (!vault || !deviceKey) return
     try {
       const key = await withoutAutoLock(() => openWithDevice(vault, deviceKey))
@@ -132,7 +132,7 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       if (error instanceof PasskeyFailure && error.problem === 'unsupported') unsupported()
-      if (then === 'unlock') setSheet({ kind: 'unlock', deviceFailed: true })
+      if (then === 'unlock') setSheet({ kind: 'unlock', deviceFailed: true, forHidden })
       else notify(`${unlock.title} no ha funcionado.`, Lock)
     }
   }
@@ -147,21 +147,37 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
     return promise
   }
 
-  const requestUnlock = ({ withKey = false } = {}) => {
+  const requestUnlock = ({ withKey = false, forHidden = false } = {}) => {
     if (getUnlocked()) return Promise.resolve(true)
     if (!vault) return Promise.resolve(false)
     const useDevice = !withKey && deviceKey !== null && deviceSupported === true
-    const promise = waitFor(useDevice ? null : { kind: 'unlock', deviceFailed: false })
-    if (useDevice) void tryDevice('unlock')
+    const promise = waitFor(useDevice ? null : { kind: 'unlock', deviceFailed: false, forHidden })
+    if (useDevice) void tryDevice('unlock', forHidden)
     return promise
   }
 
   // «Proteger» (C6–C6c): sin clave, antes se crea; después se confirma y se desbloquea.
   const protectNote = async (title: string) => {
-    if (!vault && !(await waitFor({ kind: 'create', reset: false, forTitle: title }))) return false
+    if (
+      !vault &&
+      !(await waitFor({ kind: 'create', reset: false, purpose: { kind: 'note', title } }))
+    ) {
+      return false
+    }
     if (!(await waitFor({ kind: 'protect', title }))) return false
     return requestUnlock()
   }
+
+  // Ocultar una lista (diseño 27, D1): sin clave, antes se crea (D3c). Ocultar no la necesita
+  // para nada, pero sin ella no habría con qué verlas.
+  const ensureKey = () =>
+    vault
+      ? Promise.resolve(true)
+      : waitFor({ kind: 'create', reset: false, purpose: { kind: 'hidden' } })
+
+  // «Listas ocultas» (D3–D3c): sin clave se crea, y crearla ya deja desbloqueado.
+  const openHidden = ({ withKey = false } = {}) =>
+    vault ? requestUnlock({ withKey, forHidden: true }) : ensureKey()
 
   // Con la clave escrita en la ficha bloqueada, en escritorio (D4).
   const openWithPassword = async (password: string) => {
@@ -234,7 +250,7 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
     })()
   }
 
-  const created = ({ vault: next, key }: CreatedKey, reset: boolean, forTitle?: string) => {
+  const created = ({ vault: next, key }: CreatedKey, reset: boolean, purpose?: PrivatePurpose) => {
     // Las notas protegidas con la de antes se quedan sin texto (C5d).
     const lost =
       reset && vault ? queryClient.getQueryData<number>(queryKeys.protectedCount(vault.keyId)) : 0
@@ -247,8 +263,9 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
     void refresh()
     // Otra clave: lo dice siempre, con lo que se quedó sin texto (C5d).
     if (reset) notify(newKeyMessage(lost ?? 0))
-    // Para proteger una nota (C6b), se sigue con ella; Face ID se ofrece en Perfil.
-    if (deviceSupported && forTitle === undefined) {
+    // Para proteger una nota (C6b) u ocultar una lista (D3c), se sigue con ello; Face ID se
+    // ofrece en Perfil.
+    if (deviceSupported && purpose === undefined) {
       setSheet({ kind: 'offer', justCreated: true })
     } else {
       setSheet(null)
@@ -272,9 +289,13 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
     unlock,
     unlocked: unlocked !== null,
     requestUnlock,
+    ensureKey,
+    openHidden,
     openWithPassword,
     protectNote,
-    lock,
+    lock: () => {
+      lock()
+    },
     create: () => {
       setSheet({ kind: 'create', reset: false })
     },
@@ -296,9 +317,9 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
         isDesktop={isDesktop}
         unlock={unlock}
         reset={sheet?.kind === 'create' && sheet.reset}
-        forTitle={sheet?.kind === 'create' ? sheet.forTitle : undefined}
+        purpose={sheet?.kind === 'create' ? sheet.purpose : undefined}
         onCreated={(result) => {
-          if (sheet?.kind === 'create') created(result, sheet.reset, sheet.forTitle)
+          if (sheet?.kind === 'create') created(result, sheet.reset, sheet.purpose)
         }}
       />
       <ProtectNoteSheet
@@ -320,10 +341,11 @@ export function PrivateProvider({ children }: { children: ReactNode }) {
           vault={vault}
           unlock={unlock}
           deviceFailed={sheet?.kind === 'unlock' && sheet.deviceFailed}
+          forHidden={sheet?.kind === 'unlock' && sheet.forHidden}
           onTryDevice={
             deviceKey && deviceSupported
               ? () => {
-                  void tryDevice('unlock')
+                  void tryDevice('unlock', sheet?.kind === 'unlock' && sheet.forHidden)
                 }
               : undefined
           }

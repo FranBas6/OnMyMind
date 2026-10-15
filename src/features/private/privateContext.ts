@@ -20,13 +20,26 @@ export interface PrivateState {
   unlocked: boolean
 }
 
+/** Para qué se pide la clave: lo dicen las hojas («Listas ocultas», «Para proteger…»). */
+export type PrivatePurpose = { kind: 'note'; title: string } | { kind: 'hidden' }
+
 export interface PrivateActions {
   /**
    * Desbloquea: con la llave de este aparato si la hay; si falla o no la hay, con la clave
    * (`withKey`: directamente con la clave, «Usar la clave»). Da `true` si queda desbloqueado y
-   * `false` si se cancela.
+   * `false` si se cancela. `forHidden`: la hoja se llama «Listas ocultas» (diseño 27, D3b).
    */
-  requestUnlock: (options?: { withKey?: boolean }) => Promise<boolean>
+  requestUnlock: (options?: { withKey?: boolean; forHidden?: boolean }) => Promise<boolean>
+  /**
+   * Antes de ocultar una lista (5.8, diseño 27): sin clave, se crea antes (D3c). `true` si ya hay
+   * clave; `false` si se cancela.
+   */
+  ensureKey: () => Promise<boolean>
+  /**
+   * Abrir «Listas ocultas» (D3, D3b y D3c): sin clave, se crea (y queda desbloqueado); con ella,
+   * se desbloquea. `true` si se pueden ver.
+   */
+  openHidden: (options?: { withKey?: boolean }) => Promise<boolean>
   /** Con la clave escrita en la ficha bloqueada de escritorio (D4): `false` si no es esa. */
   openWithPassword: (password: string) => Promise<boolean>
   /**

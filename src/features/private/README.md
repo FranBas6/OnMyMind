@@ -29,3 +29,15 @@ protegidas (5.7) y las listas ocultas (5.8).
 - `PrivateProvider.protectNote(title)`: crea la clave si no hay (C6b), confirma
   (`ProtectNoteSheet`, C6c) y desbloquea; `openWithPassword` es la clave escrita en la ficha de
   escritorio (D4). `LockedNoteCard` y `UnlockedBand` son la ficha bloqueada y la franja.
+
+**Listas ocultas (5.8, diseño 27):** se ocultan, no se cifran; lo de las listas está en
+`features/lists`. Aquí, lo del desbloqueo:
+
+- `PrivateProvider.openHidden()`: entrar en «Listas ocultas» (sin clave, la crea con el texto de
+  las listas ocultas, D3c; con ella, desbloquea con la hoja «Listas ocultas», D3b);
+  `ensureKey()`: antes de ocultar, crea la clave si aún no hay.
+- `PrivateSection` lleva arriba la fila «Listas ocultas», siempre igual, y la nota «Lo privado se
+  bloquea solo a los 5 minutos…».
+- `unlock.ts` sabe por qué se bloqueó (`lastLockReason`): «Pasaron 5 minutos» solo si fue eso.
+- `SheetParts` (`SheetPoint`, `InfoBox`, `MainAction`…) y `UnlockedBand` (con otro texto) también
+  los usa la hoja de ocultar y la pantalla de las listas ocultas.

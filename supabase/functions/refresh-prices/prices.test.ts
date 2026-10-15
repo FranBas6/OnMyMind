@@ -27,6 +27,7 @@ function drop(overrides: Partial<PriceDrop> = {}): PriceDrop {
     currency: 'EUR',
     beforeCheckedAt: new Date('2026-10-06T07:00:00Z'),
     recipients: ['ana'],
+    concealedFor: [],
     ...overrides,
   }
 }
@@ -64,6 +65,23 @@ describe('lo que da la base', () => {
       }),
     ).toEqual(drop({ store: null }))
     expect(toPriceDrop({ item_id: 'i1' })).toBeNull()
+  })
+
+  it('quiénes la tienen oculta (5.8)', () => {
+    expect(
+      toPriceDrop({
+        item_id: 'i1',
+        list_id: 'l1',
+        title: 'Auriculares',
+        store: 'Keychron',
+        before_cents: 9900,
+        after_cents: 7900,
+        currency: 'EUR',
+        before_checked_at: '2026-10-06T07:00:00+00:00',
+        recipients: ['ana', 'bea'],
+        concealed_for: ['ana'],
+      })?.concealedFor,
+    ).toEqual(['ana'])
   })
 })
 
@@ -178,5 +196,33 @@ describe('a quién', () => {
       '2 compras bajaron de precio',
     )
     expect(plan.find((entry) => entry.userId === 'bea')?.message.title).toBe('Auriculares')
+  })
+
+  it('de una lista oculta, sin título ni precio y aparte de lo demás (diseño 27, D6)', () => {
+    const plan = planDrops(
+      [
+        drop({ recipients: ['ana', 'bea'], concealedFor: ['ana'] }),
+        drop({ itemId: 'i2', listId: 'l2', title: 'Monitor LG' }),
+      ],
+      NOW,
+    )
+    expect(plan.filter((entry) => entry.userId === 'ana').map((entry) => entry.message)).toEqual([
+      expect.objectContaining({ title: 'Monitor LG' }),
+      {
+        title: 'Ha bajado un precio en una lista oculta',
+        url: '/lists/l1?item=i1',
+        tag: 'price-concealed',
+      },
+    ])
+    expect(plan.find((entry) => entry.userId === 'bea')?.message.title).toBe('Auriculares')
+    expect(
+      planDrops(
+        [
+          drop({ concealedFor: ['ana'] }),
+          drop({ itemId: 'i2', title: 'Monitor LG', concealedFor: ['ana'] }),
+        ],
+        NOW,
+      ).map((entry) => entry.message.title),
+    ).toEqual(['Han bajado 2 precios en listas ocultas'])
   })
 })

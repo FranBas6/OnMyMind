@@ -19,7 +19,11 @@ export interface Unlocked {
   until: number
 }
 
+/** Por qué se bloqueó la última vez: «Pasaron 5 minutos» solo si fue eso (diseño 27, D3d). */
+export type LockReason = 'timeout' | 'left' | 'manual'
+
 let current: Unlocked | null = null
+let lastReason: LockReason = 'manual'
 let timer: ReturnType<typeof setTimeout> | undefined
 /** Mientras se usa Face ID, salir un momento de la página no bloquea (lo pide el sistema). */
 let holds = 0
@@ -35,7 +39,7 @@ function watchLeaving() {
   if (watching || typeof document === 'undefined') return
   watching = true
   const leave = () => {
-    if (holds === 0) lock()
+    if (holds === 0) lock('left')
   }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') leave()
@@ -47,16 +51,24 @@ export function unlock(key: CryptoKey, keyId: string, now: number = Date.now()):
   watchLeaving()
   clearTimeout(timer)
   current = { key, keyId, until: now + UNLOCK_MS }
-  timer = setTimeout(lock, UNLOCK_MS)
+  timer = setTimeout(() => {
+    lock('timeout')
+  }, UNLOCK_MS)
   emit()
 }
 
-export function lock(): void {
+export function lock(reason: LockReason = 'manual'): void {
   clearTimeout(timer)
   timer = undefined
   if (current === null) return
   current = null
+  lastReason = reason
   emit()
+}
+
+/** Por qué se bloqueó la última vez. */
+export function lastLockReason(): LockReason {
+  return lastReason
 }
 
 export function getUnlocked(): Unlocked | null {

@@ -36,6 +36,7 @@ function list(id: string, position: number): List {
     },
     archivedAt: null,
     isOwner: true,
+    hidden: false,
   }
 }
 

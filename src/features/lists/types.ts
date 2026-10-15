@@ -60,4 +60,9 @@ export interface List {
    * ni se archiva, ni se borra, ni se comparte: eso es de quien la creó.
    */
   isOwner: boolean
+  /**
+   * Oculta para ti (5.8, diseño 27): no sale en Inicio, el sidebar, Hoy, Buscar ni la captura;
+   * solo en Perfil › «Listas ocultas», desbloqueando. Es tuyo: los demás la ven como siempre.
+   */
+  hidden: boolean
 }

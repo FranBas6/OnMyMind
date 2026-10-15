@@ -154,6 +154,17 @@ describe('en directo: qué se vuelve a pedir (3.4)', () => {
     expect(invalidated()).toContain(JSON.stringify(queryKeys.lists.all))
   })
 
+  it('ocultar o mostrar en otro aparato (5.8): las listas, lo de dentro y el perfil', async () => {
+    const sync = createLiveSync(queryClient, HERE, { now: () => now })
+    sync.receive(liveChangeSchema.parse({ kind: 'hidden', list_id: 'regalos', by: ME }))
+    await vi.runAllTimersAsync()
+    expect(invalidated()).toEqual([
+      JSON.stringify(queryKeys.lists.all),
+      '["items"]',
+      JSON.stringify(queryKeys.profile()),
+    ])
+  })
+
   it('al volver la conexión, se pide de nuevo lo que se ve', () => {
     const sync = createLiveSync(queryClient, HERE, { now: () => now })
     sync.catchUp()

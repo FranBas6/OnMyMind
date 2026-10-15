@@ -24,6 +24,7 @@ function list(kind: List['kind'], name: string, pending = 3, notes = 0): List {
     },
     archivedAt: null,
     isOwner: true,
+    hidden: false,
   }
 }
 

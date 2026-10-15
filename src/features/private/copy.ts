@@ -10,10 +10,13 @@ export const WRONG_CURRENT_KEY = 'Esa no es la clave de ahora. Prueba otra vez.'
 export const NEEDS_CONNECTION = 'Hace falta conexión. Prueba otra vez cuando vuelva.'
 export const SOMETHING_FAILED = 'No ha salido. Prueba otra vez en un momento.'
 
-/** Debajo de las filas de Perfil, sin clave aún (C1). */
-export const ONE_KEY_NOTE = 'Una sola clave para tus notas protegidas y tus listas ocultas.'
-/** Debajo de las filas de Perfil, con la clave (C1b). */
-export const AUTO_LOCK_NOTE = 'Se bloquea solo a los 5 minutos y al salir de la app.'
+/**
+ * Debajo de las filas de Perfil (diseño 27, D2, D2b y E1): con la clave o sin ella, ahora que la
+ * sección tiene también las listas ocultas.
+ */
+export function autoLockNote(isDesktop: boolean): string {
+  return `Lo privado se bloquea solo a los 5 minutos y ${isDesktop ? 'al cerrar la pestaña' : 'al salir de la app'}.`
+}
 
 /** Para las contraseñas de verdad (C2 y D3): la app del sistema donde la hay. */
 export function passwordsApp(unlock: DeviceUnlock): string {

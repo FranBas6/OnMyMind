@@ -20,6 +20,8 @@ interface UnlockSheetProps {
   unlock: DeviceUnlock
   /** Viene de Face ID que no ha funcionado o se canceló (C3b). */
   deviceFailed: boolean
+  /** Para ver las listas ocultas (diseño 27, D3b y E2): la hoja se llama «Listas ocultas». */
+  forHidden: boolean
   /** Si este aparato tiene su llave: «Probar con Face ID». */
   onTryDevice: (() => void) | undefined
   onForgot: () => void
@@ -32,13 +34,13 @@ interface UnlockSheetProps {
  * «He olvidado la clave».
  */
 export function UnlockSheet(props: UnlockSheetProps) {
-  const { open, onOpenChange, isDesktop } = props
+  const { open, onOpenChange, isDesktop, forHidden } = props
   return (
     <ResponsiveSheet
       open={open}
       onOpenChange={onOpenChange}
       isDesktop={isDesktop}
-      title="Desbloquear"
+      title={forHidden ? 'Listas ocultas' : 'Desbloquear'}
       headerAction={<HeaderCancel />}
       closeHint
     >
@@ -52,6 +54,7 @@ function UnlockForm({
   vault,
   unlock,
   deviceFailed,
+  forHidden,
   onTryDevice,
   onForgot,
   onUnlocked,
@@ -68,7 +71,11 @@ function UnlockForm({
     },
   })
 
-  const notice = deviceFailed ? `${unlock.title} no ha funcionado. Escribe tu clave privada.` : null
+  const notice = deviceFailed
+    ? `${unlock.title} no ha funcionado. Escribe tu clave privada.`
+    : forHidden
+      ? 'Escribe tu clave privada para verlas.'
+      : null
   const label = check.isPending ? 'Comprobando…' : 'Desbloquear'
   const disabled = key.length === 0 || check.isPending
 

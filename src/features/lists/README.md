@@ -1,7 +1,7 @@
 # lists
 
 Listas del usuario: sin tipo desde la 5.3 (ADR-012), con sus textos, consultas, mutaciones y
-componentes.
+componentes, y las ocultas (5.8).
 
 - `types.ts`, `templates.ts` (los textos que dependen de los datos: los contadores comunes
   `tallyLabel` y `listCounterLabel` de la 5.5, menú, archivadas, borrado), `schemas.ts` (`listFormSchema`, `field_schema`,
@@ -19,3 +19,18 @@ componentes.
 (la hoja) y `useDuplicateList`, que llama a `duplicate_list` y luego copia las fotos subidas con
 `copyItemPhoto` (`features/items/photos.ts`). La abren el menú ··· (`ListCardMenu`), el menú del
 botón derecho del sidebar (`ListContextMenu`) y la hoja de una archivada.
+
+**Listas ocultas (5.8, diseño 27, ADR-013):** se ocultan para quien lo pide, sin cifrar nada.
+
+- `api.ts`: `fetchLists` y `fetchArchivedLists` piden `my_lists` sin las ocultas (`hidden = false`);
+  `fetchHiddenLists` las pide aparte, y `fetchHiddenListIds` solo cuáles son. `hideList` y
+  `showList` son una fila de `hidden_lists`.
+- `hooks/useHiddenLists.ts`: `useHiddenLists` (solo desbloqueado, en memoria), `useHiddenListIds`
+  (se guarda: es lo que pide desbloquear al abrir una y lo que `persister.ts` no guarda) y
+  `useForgetHiddenOnLock` (al bloquear, se olvida lo de dentro). `useHideList` y `useShowList`, en
+  `useListMutations`.
+- `components/`: «Ocultar» y «Mostrar» en `ListCardMenu`; `HideListSheet` (la confirmación);
+  `HiddenListsScreen` (Perfil › «Listas ocultas», ruta `/profile/hidden`); `HiddenLocked` (la
+  pantalla tapada); `HiddenListGate`, que abre una oculta desde su enlace o un aviso. La cabecera
+  (`ListDetailHeader`) dice «Oculta» y vuelve a «Listas ocultas».
+- `hidden.ts`: sus textos.

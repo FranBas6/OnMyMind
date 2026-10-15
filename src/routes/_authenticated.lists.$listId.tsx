@@ -4,7 +4,14 @@ import { useCallback } from 'react'
 import { z } from 'zod'
 
 import { itemsQueryOptions, ListDetail, useOpenSublist } from '@/features/items'
-import { listsQueryOptions, useLists } from '@/features/lists'
+import {
+  hiddenListIdsQueryOptions,
+  HiddenListGate,
+  listsQueryOptions,
+  useHiddenListIds,
+  useLists,
+} from '@/features/lists'
+import { getUnlocked } from '@/features/private'
 import { GoneList } from '@/features/sharing'
 
 /**
@@ -29,9 +36,16 @@ export const Route = createFileRoute('/_authenticated/lists/$listId')({
   loaderDeps: () => ({}),
   loader: async ({ context: { queryClient }, params }) => {
     if (!onlineManager.isOnline()) return
+    // Lo de una lista oculta no se pide sin desbloquear (5.8).
+    const hidden = await queryClient
+      .query({ ...hiddenListIdsQueryOptions, staleTime: 'static' })
+      .catch(() => [] as string[])
+    const locked = hidden.includes(params.listId) && getUnlocked() === null
     await Promise.all([
       queryClient.query(listsQueryOptions).catch(() => undefined),
-      queryClient.query(itemsQueryOptions(params.listId)).catch(() => undefined),
+      locked
+        ? undefined
+        : queryClient.query(itemsQueryOptions(params.listId)).catch(() => undefined),
     ])
   },
   component: ListDetailPage,
@@ -43,6 +57,7 @@ function ListDetailPage() {
   const { item } = Route.useSearch()
   const navigate = Route.useNavigate()
   const lists = useLists()
+  const hiddenIds = useHiddenListIds()
 
   // Abrir y cerrar el detalle cambia la URL sin apilar historial: pasar de un ítem a otro en el
   // panel de escritorio no llena el botón «atrás».
@@ -65,18 +80,24 @@ function ListDetailPage() {
 
   const { inbox, lists: others } = lists.data
   const list = inbox?.id === listId ? inbox : others.find((entry) => entry.id === listId)
-  // Borrada, archivada o de otra persona: de vuelta a Inicio (archivar y borrar desde el menú
-  // de esta pantalla acaban aquí, y el aviso «Deshacer» sale ya en Inicio). Si era una lista
-  // compartida contigo y te quitaron, o quien la creó la borró o archivó, antes se dice (3.3).
-  if (!list) return <GoneList listId={listId} />
-
-  return (
+  const detail = (shown: typeof list & {}) => (
     <ListDetail
-      key={list.id}
-      list={list}
+      key={shown.id}
+      list={shown}
       openItemId={item}
       onOpenItem={openItem}
       onOpenSublist={openSublist}
     />
   )
+  if (list) return detail(list)
+
+  // Oculta (5.8): desbloqueando, como siempre; bloqueada, la pantalla tapada.
+  if (hiddenIds.data?.includes(listId)) {
+    return <HiddenListGate listId={listId}>{detail}</HiddenListGate>
+  }
+  if (hiddenIds.data === undefined && hiddenIds.fetchStatus === 'fetching') return null
+  // Borrada, archivada o de otra persona: de vuelta a Inicio (archivar y borrar desde el menú
+  // de esta pantalla acaban aquí, y el aviso «Deshacer» sale ya en Inicio). Si era una lista
+  // compartida contigo y te quitaron, o quien la creó la borró o archivó, antes se dice (3.3).
+  return <GoneList listId={listId} />
 }

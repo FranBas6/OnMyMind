@@ -33,6 +33,8 @@ export interface DueReminder {
   done: boolean
   /** Callado: en una lista archivada o en una sublista pausada o hecha. */
   hidden: boolean
+  /** En una lista que quien lo recibe ha ocultado (5.8): sale sin título ni lista. */
+  concealed: boolean
 }
 
 /** Algo de hoy para el resumen, como lo devuelve `claim_daily_summaries`, ya en su orden. */
@@ -45,6 +47,9 @@ export interface SummaryEntry {
   overdue: boolean
 }
 
+/** El aviso de algo de una lista oculta (diseño 27, D6): sin título ni lista. */
+export const CONCEALED_REMINDER = 'Tienes un aviso en una lista oculta'
+
 export type ReminderPlan =
   { send: true; message: PushMessage } | { send: false; reason: 'done' | 'hidden' | 'late' }
 
@@ -55,14 +60,18 @@ export function planReminder(reminder: DueReminder, now: Date): ReminderPlan {
   if (now.getTime() - reminder.remindAt.getTime() > GRACE_MINUTES * 60_000) {
     return { send: false, reason: 'late' }
   }
+  const url = `/lists/${reminder.listId}?item=${reminder.itemId}`
+  // Un aviso nuevo del mismo ítem (la vez siguiente) sustituye al anterior.
+  const tag = `reminder:${reminder.itemId}`
+  // De una lista oculta, nada que la delate (diseño 27, D6): al tocarlo, se desbloquea y se abre.
+  if (reminder.concealed) return { send: true, message: { title: CONCEALED_REMINDER, url, tag } }
   return {
     send: true,
     message: {
       title: reminder.title,
       body: reminderBody(reminder, now),
-      url: `/lists/${reminder.listId}?item=${reminder.itemId}`,
-      // Un aviso nuevo del mismo ítem (la vez siguiente) sustituye al anterior.
-      tag: `reminder:${reminder.itemId}`,
+      url,
+      tag,
     },
   }
 }
@@ -208,6 +217,7 @@ export function toDueReminder(row: Record<string, unknown>): DueReminder | null 
     nowLocal,
     done: row.done === true,
     hidden: row.hidden === true,
+    concealed: row.concealed === true,
   }
 }
 

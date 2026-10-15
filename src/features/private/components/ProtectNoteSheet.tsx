@@ -1,10 +1,9 @@
-import { FileText, Lock, Search, type LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { FileText, Lock, Search } from 'lucide-react'
 
 import { ResponsiveSheet } from '@/components/ResponsiveSheet'
 
 import type { DeviceUnlock } from '../passkey'
-import { DesktopActions, HeaderCancel, MainAction } from './SheetParts'
+import { DesktopActions, HeaderCancel, MainAction, SheetPoint as Point } from './SheetParts'
 
 interface ProtectNoteSheetProps {
   open: boolean
@@ -57,16 +56,5 @@ export function ProtectNoteSheet({
       </ul>
       {isDesktop ? <DesktopActions>{action}</DesktopActions> : action}
     </ResponsiveSheet>
-  )
-}
-
-function Point({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
-  return (
-    <li className="flex gap-3 text-[15px] leading-[1.45]">
-      <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-brand-tint text-primary">
-        <Icon aria-hidden className="size-4" strokeWidth={2.2} />
-      </span>
-      <span className="pt-1">{children}</span>
-    </li>
   )
 }

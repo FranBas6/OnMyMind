@@ -17,9 +17,10 @@ export const ARCHIVED_SECTION_ID = 'archivadas'
 /**
  * Listas archivadas, al final de Inicio (diseño 04 Listas, L2, L12 y D9): una fila colapsada
  * «N listas archivadas» que se despliega en filas atenuadas con «Desarchivar». En móvil, tocar la
- * fila abre una hoja con «Desarchivar» y «Borrar» (L13). No aparece si no hay archivadas.
+ * fila abre una hoja con «Desarchivar» y «Borrar» (L13). No aparece si no hay archivadas. Con
+ * `lists`, esas en vez de las de Inicio: las ocultas archivadas, en su pantalla.
  */
-export function ArchivedListsSection() {
+export function ArchivedListsSection({ lists: given }: { lists?: List[] } = {}) {
   const archived = useArchivedLists()
   const hash = useRouterState({ select: (state) => state.location.hash })
   const [open, setOpen] = useState(hash === ARCHIVED_SECTION_ID)
@@ -28,7 +29,8 @@ export function ArchivedListsSection() {
   const { unarchive, duplicate } = useListActions()
   const panelId = useId()
 
-  const lists = archived.data ?? []
+  // En «Listas ocultas» (5.8), las archivadas de allí, que no salen en Inicio.
+  const lists = given ?? archived.data ?? []
   if (lists.length === 0) return null
 
   return (

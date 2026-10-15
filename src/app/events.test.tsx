@@ -37,6 +37,7 @@ const base: List = {
   },
   archivedAt: null,
   isOwner: true,
+  hidden: false,
 }
 const agenda: List = {
   ...base,

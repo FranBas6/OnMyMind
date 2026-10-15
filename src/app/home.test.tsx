@@ -25,6 +25,7 @@ function list(id: string, name: string, kind: List['kind'], pending: number, cen
     },
     archivedAt: null,
     isOwner: true,
+    hidden: false,
   }
 }
 

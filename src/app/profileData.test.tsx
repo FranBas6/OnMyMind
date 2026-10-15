@@ -40,6 +40,7 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
     },
     archivedAt: null,
     isOwner: true,
+    hidden: false,
     ...overrides,
   }
 }
@@ -118,7 +119,7 @@ describe('Perfil · Datos y Cuenta (2.8, diseño 18)', () => {
         'application/json',
       )
     })
-    expect(profileApi.fetchExport).toHaveBeenCalledWith(session.user.id)
+    expect(profileApi.fetchExport).toHaveBeenCalledWith(session.user.id, { withHidden: false })
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'Exportar mis datos' })).not.toBeInTheDocument()
     })

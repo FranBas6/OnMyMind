@@ -13,6 +13,8 @@ import {
   createList,
   deleteList,
   duplicateList,
+  hideList,
+  showList,
   unarchiveList,
   updateList,
   updateListPositions,
@@ -21,10 +23,21 @@ import {
 import type { ListFormValues } from '../schemas'
 import type { List, ListView } from '../types'
 
-/** Foto de las dos cachés de listas, para poder volver atrás si el servidor falla. */
+/** Foto de las cachés de listas, para poder volver atrás si el servidor falla. */
 interface ListsSnapshot {
   active: List[] | undefined
   archived: List[] | undefined
+  /** Las ocultas (5.8), si están desbloqueadas, y cuáles son. */
+  hidden: List[] | undefined
+  hiddenIds: string[] | undefined
+}
+
+/** Lo que cambia una mutación en cada caché de listas. */
+interface ListsChange {
+  active?: (lists: List[]) => List[]
+  archived?: (lists: List[]) => List[]
+  hidden?: (lists: List[]) => List[]
+  hiddenIds?: (ids: string[]) => string[]
 }
 
 const byPosition = (a: List, b: List) => a.position - b.position
@@ -36,19 +49,26 @@ const byPosition = (a: List, b: List) => a.position - b.position
  */
 async function applyOptimistic(
   queryClient: QueryClient,
-  change: { active?: (lists: List[]) => List[]; archived?: (lists: List[]) => List[] },
+  change: ListsChange,
 ): Promise<ListsSnapshot> {
   await queryClient.cancelQueries({ queryKey: queryKeys.lists.all })
   const snapshot: ListsSnapshot = {
     active: queryClient.getQueryData<List[]>(queryKeys.lists.all),
     archived: queryClient.getQueryData<List[]>(queryKeys.lists.archived),
+    hidden: queryClient.getQueryData<List[]>(queryKeys.lists.hidden),
+    hiddenIds: queryClient.getQueryData<string[]>(queryKeys.lists.hiddenIds),
   }
-  const { active, archived } = change
+  const { active, archived, hidden, hiddenIds } = change
   if (active && snapshot.active)
     queryClient.setQueryData(queryKeys.lists.all, active(snapshot.active))
   if (archived && snapshot.archived) {
     queryClient.setQueryData(queryKeys.lists.archived, archived(snapshot.archived))
   }
+  if (hidden && snapshot.hidden) {
+    queryClient.setQueryData(queryKeys.lists.hidden, hidden(snapshot.hidden))
+  }
+  if (hiddenIds)
+    queryClient.setQueryData(queryKeys.lists.hiddenIds, hiddenIds(snapshot.hiddenIds ?? []))
   return snapshot
 }
 
@@ -57,9 +77,15 @@ function rollback(queryClient: QueryClient, snapshot: ListsSnapshot | undefined,
   if (snapshot) {
     queryClient.setQueryData(queryKeys.lists.all, snapshot.active)
     queryClient.setQueryData(queryKeys.lists.archived, snapshot.archived)
+    if (snapshot.hidden) queryClient.setQueryData(queryKeys.lists.hidden, snapshot.hidden)
+    queryClient.setQueryData(queryKeys.lists.hiddenIds, snapshot.hiddenIds)
   }
   toast.error(message)
 }
+
+/** Una lista que cambia, en la caché de las ocultas: la misma, con el cambio. */
+const patchList = (id: string, patch: (list: List) => List) => (lists: List[]) =>
+  lists.map((list) => (list.id === id ? patch(list) : list))
 
 /** Paso 4 (`onSettled`): pase lo que pase, vuelve a pedir las listas para quedarse con la verdad. */
 function refetchLists(queryClient: QueryClient) {
@@ -76,10 +102,16 @@ export function useArchiveList() {
     // Paso 2: la llamada real.
     mutationFn: (list: List) => archiveList(list.id),
     onMutate: (list) =>
-      applyOptimistic(queryClient, {
-        active: (lists) => lists.filter((item) => item.id !== list.id),
-        archived: (lists) => [list, ...lists],
-      }),
+      applyOptimistic(
+        queryClient,
+        // Una oculta se queda en «Listas ocultas», abajo, con las archivadas de allí.
+        list.hidden
+          ? { hidden: patchList(list.id, (item) => ({ ...item, archivedAt: new Date() })) }
+          : {
+              active: (lists) => lists.filter((item) => item.id !== list.id),
+              archived: (lists) => [list, ...lists],
+            },
+      ),
     onError: (error, _list, snapshot) => {
       rollback(queryClient, snapshot, `No se ha podido archivar. ${errorMessage(error)}`)
     },
@@ -93,10 +125,15 @@ export function useUnarchiveList() {
   return useMutation({
     mutationFn: (list: List) => unarchiveList(list.id),
     onMutate: (list) =>
-      applyOptimistic(queryClient, {
-        active: (lists) => [...lists, list].sort(byPosition),
-        archived: (lists) => lists.filter((item) => item.id !== list.id),
-      }),
+      applyOptimistic(
+        queryClient,
+        list.hidden
+          ? { hidden: patchList(list.id, (item) => ({ ...item, archivedAt: null })) }
+          : {
+              active: (lists) => [...lists, { ...list, archivedAt: null }].sort(byPosition),
+              archived: (lists) => lists.filter((item) => item.id !== list.id),
+            },
+      ),
     onError: (error, _list, snapshot) => {
       rollback(queryClient, snapshot, `No se ha podido desarchivar. ${errorMessage(error)}`)
     },
@@ -113,6 +150,8 @@ export function useDeleteList() {
       applyOptimistic(queryClient, {
         active: (lists) => lists.filter((item) => item.id !== list.id),
         archived: (lists) => lists.filter((item) => item.id !== list.id),
+        hidden: (lists) => lists.filter((item) => item.id !== list.id),
+        hiddenIds: (ids) => ids.filter((id) => id !== list.id),
       }),
     onError: (error, _list, snapshot) => {
       rollback(queryClient, snapshot, `No se ha podido borrar. ${errorMessage(error)}`)
@@ -139,7 +178,9 @@ const reorderListsMutation = durableMutation(REORDER_KEY, (queryClient) => ({
   mutationFn: (changes: Positioned[]) => updateListPositions(changes),
   onMutate: (changes) =>
     applyOptimistic(queryClient, {
-      active: (lists) => withPositions(lists, changes).sort((a, b) => a.position - b.position),
+      active: (lists) => withPositions(lists, changes).sort(byPosition),
+      // Las ocultas también se ordenan, entre ellas, en su pantalla.
+      hidden: (lists) => withPositions(lists, changes).sort(byPosition),
     }),
   onError: (error, _changes, snapshot) => {
     rollback(queryClient, snapshot, `No se ha podido guardar el orden. ${errorMessage(error)}`)
@@ -167,7 +208,8 @@ const listViewMutation = durableMutation(VIEW_KEY, (queryClient) => ({
     updateListView(listId, view),
   onMutate: ({ listId, view }) =>
     applyOptimistic(queryClient, {
-      active: (lists) => lists.map((list) => (list.id === listId ? { ...list, view } : list)),
+      active: patchList(listId, (list) => ({ ...list, view })),
+      hidden: patchList(listId, (list) => ({ ...list, view })),
     }),
   onError: (error, _change, snapshot) => {
     rollback(queryClient, snapshot, `No se ha podido guardar la vista. ${errorMessage(error)}`)
@@ -180,6 +222,67 @@ const listViewMutation = durableMutation(VIEW_KEY, (queryClient) => ({
 
 export function useUpdateListView() {
   return useDurableMutation(listViewMutation)
+}
+
+/**
+ * «Ocultar» (5.8, diseño 27, D1): sale de Inicio y del sidebar al momento, y lo de dentro de Hoy y
+ * Buscar al volver a pedirlos. Hace falta conexión, como archivar. Si era la lista por defecto de
+ * la captura, la base la deja en «En mente»: el perfil se vuelve a pedir.
+ */
+export function useHideList() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (list: List) => hideList(list.id),
+    onMutate: (list) =>
+      applyOptimistic(queryClient, {
+        active: (lists) => lists.filter((item) => item.id !== list.id),
+        archived: (lists) => lists.filter((item) => item.id !== list.id),
+        hidden: (lists) => [...lists, { ...list, hidden: true }].sort(byPosition),
+        hiddenIds: (ids) => [...ids.filter((id) => id !== list.id), list.id],
+      }),
+    onError: (error, _list, snapshot) => {
+      rollback(queryClient, snapshot, `No se ha podido ocultar. ${errorMessage(error)}`)
+    },
+    onSettled: () =>
+      Promise.all([
+        refetchLists(queryClient),
+        queryClient.invalidateQueries({ queryKey: ['items'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.profile() }),
+      ]),
+  })
+}
+
+/** «Mostrar» (D5b): vuelve a Inicio y al sidebar en su sitio de antes. */
+export function useShowList() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (list: List) => showList(list.id),
+    onMutate: (list) => {
+      const shown = { ...list, hidden: false }
+      return applyOptimistic(
+        queryClient,
+        list.archivedAt
+          ? {
+              archived: (lists) => [shown, ...lists],
+              hidden: (lists) => lists.filter((item) => item.id !== list.id),
+              hiddenIds: (ids) => ids.filter((id) => id !== list.id),
+            }
+          : {
+              active: (lists) => [...lists, shown].sort(byPosition),
+              hidden: (lists) => lists.filter((item) => item.id !== list.id),
+              hiddenIds: (ids) => ids.filter((id) => id !== list.id),
+            },
+      )
+    },
+    onError: (error, _list, snapshot) => {
+      rollback(queryClient, snapshot, `No se ha podido mostrar. ${errorMessage(error)}`)
+    },
+    onSettled: () =>
+      Promise.all([
+        refetchLists(queryClient),
+        queryClient.invalidateQueries({ queryKey: ['items'] }),
+      ]),
+  })
 }
 
 /** Las mutaciones de listas que se registran en el QueryClient (2.10). */
@@ -224,6 +327,7 @@ export function useUpdateList() {
         )
       queryClient.setQueryData<List[]>(queryKeys.lists.all, patch)
       queryClient.setQueryData<List[]>(queryKeys.lists.archived, patch)
+      queryClient.setQueryData<List[]>(queryKeys.lists.hidden, patch)
     },
     onSettled: () => refetchLists(queryClient),
   })

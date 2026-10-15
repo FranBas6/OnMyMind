@@ -4,7 +4,15 @@ import { useCallback, useRef } from 'react'
 import { z } from 'zod'
 
 import { itemsQueryOptions, ListDetail, useItems, useOpenSublist } from '@/features/items'
-import { listsQueryOptions, useLists } from '@/features/lists'
+import type { List } from '@/features/lists'
+import {
+  hiddenListIdsQueryOptions,
+  HiddenListGate,
+  listsQueryOptions,
+  useHiddenListIds,
+  useLists,
+} from '@/features/lists'
+import { getUnlocked } from '@/features/private'
 import { GoneList } from '@/features/sharing'
 
 /**
@@ -29,15 +37,51 @@ export const Route = createFileRoute('/_authenticated/lists/$listId_/$sublistId'
   loaderDeps: () => ({}),
   loader: async ({ context: { queryClient }, params }) => {
     if (!onlineManager.isOnline()) return
+    // Lo de una lista oculta no se pide sin desbloquear (5.8).
+    const hidden = await queryClient
+      .query({ ...hiddenListIdsQueryOptions, staleTime: 'static' })
+      .catch(() => [] as string[])
+    const locked = hidden.includes(params.listId) && getUnlocked() === null
     await Promise.all([
       queryClient.query(listsQueryOptions).catch(() => undefined),
-      queryClient.query(itemsQueryOptions(params.listId)).catch(() => undefined),
+      locked
+        ? undefined
+        : queryClient.query(itemsQueryOptions(params.listId)).catch(() => undefined),
     ])
   },
   component: SublistPage,
 })
 
 function SublistPage() {
+  const { listId } = Route.useParams()
+  const lists = useLists()
+  const hiddenIds = useHiddenListIds()
+
+  if (lists.isError) {
+    return (
+      <p role="alert" className="px-1 text-[15px] text-muted-foreground">
+        No hemos podido cargar esta lista. Prueba otra vez en un momento.
+      </p>
+    )
+  }
+  if (!lists.data) return null
+
+  const { inbox, lists: others } = lists.data
+  const list = inbox?.id === listId ? inbox : others.find((entry) => entry.id === listId)
+  if (list) return <SublistScreen list={list} />
+  // De una lista oculta (5.8): desbloqueando, como siempre.
+  if (hiddenIds.data?.includes(listId)) {
+    return (
+      <HiddenListGate listId={listId}>{(hidden) => <SublistScreen list={hidden} />}</HiddenListGate>
+    )
+  }
+  if (hiddenIds.data === undefined && hiddenIds.fetchStatus === 'fetching') return null
+  // Como en la lista: si era compartida y ya no la tienes, se dice por qué (3.3).
+  return <GoneList listId={listId} />
+}
+
+/** La sublista, ya con su lista: lo de dentro se pide aquí, no antes de saber si se puede. */
+function SublistScreen({ list }: { list: List }) {
   const { listId, sublistId } = Route.useParams()
   const { item, rename, comparar } = Route.useSearch()
   const navigate = Route.useNavigate()
@@ -45,7 +89,6 @@ function SublistPage() {
   // Comparar entra en el historial, así que Atrás lo cierra. Si se abrió aquí, la ✕ hace lo mismo
   // que Atrás; si se llegó con `?comparar` (un enlace, recargar), se quita sin salir de la app.
   const comparedHere = useRef(false)
-  const lists = useLists()
   const items = useItems(listId)
   const openSublist = useOpenSublist(listId)
 
@@ -72,20 +115,6 @@ function SublistPage() {
     },
     [navigate, router],
   )
-
-  if (lists.isError) {
-    return (
-      <p role="alert" className="px-1 text-[15px] text-muted-foreground">
-        No hemos podido cargar esta lista. Prueba otra vez en un momento.
-      </p>
-    )
-  }
-  if (!lists.data) return null
-
-  const { inbox, lists: others } = lists.data
-  const list = inbox?.id === listId ? inbox : others.find((entry) => entry.id === listId)
-  // Como en la lista: si era compartida y ya no la tienes, se dice por qué (3.3).
-  if (!list) return <GoneList listId={listId} />
 
   // Sin los ítems de la lista aún no se sabe si existe; sin red y sin caché, a la lista, que lo
   // explica. Borrada o movida a otra lista (también desde su propio menú): de vuelta a su lista.

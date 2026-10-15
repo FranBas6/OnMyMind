@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import type { ReactNode } from 'react'
 
@@ -100,5 +101,20 @@ export function TextAction({
     >
       {children}
     </button>
+  )
+}
+
+/**
+ * Una de las líneas de antes de confirmar, con su icono en una caja índigo («Proteger», C6c;
+ * «Ocultar», diseño 27, D1b). Van en un `<ul>`.
+ */
+export function SheetPoint({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+  return (
+    <li className="flex gap-3 text-[15px] leading-[1.45]">
+      <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-brand-tint text-primary">
+        <Icon aria-hidden className="size-4" strokeWidth={2.2} />
+      </span>
+      <span className="pt-1">{children}</span>
+    </li>
   )
 }

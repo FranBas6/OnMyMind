@@ -36,4 +36,24 @@ describe('lo que se guarda con la caché (5.6, ADR-013)', () => {
     if (!found) throw new Error('falta la nota')
     expect(isPersistable(found)).toBe(false)
   })
+
+  it('lo de las listas ocultas no se guarda; cuáles son, sí (5.8)', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(queryKeys.lists.hidden, [{ id: 'regalos' }])
+    queryClient.setQueryData(queryKeys.lists.hiddenIds, ['regalos'])
+    queryClient.setQueryData(queryKeys.items.byList('regalos'), [{ title: 'Pendientes de plata' }])
+    queryClient.setQueryData(queryKeys.items.latest('regalos', 3), [])
+    queryClient.setQueryData(queryKeys.items.byList('casa'), [{ title: 'Arreglar el grifo' }])
+    const hidden = new Set(['regalos'])
+    const persistable = (key: readonly unknown[]) => {
+      const found = queryClient.getQueryCache().find({ queryKey: key, exact: true })
+      if (!found) throw new Error(`falta ${JSON.stringify(key)}`)
+      return isPersistable(found, hidden)
+    }
+    expect(persistable(queryKeys.lists.hidden)).toBe(false)
+    expect(persistable(queryKeys.lists.hiddenIds)).toBe(true)
+    expect(persistable(queryKeys.items.byList('regalos'))).toBe(false)
+    expect(persistable(queryKeys.items.latest('regalos', 3))).toBe(false)
+    expect(persistable(queryKeys.items.byList('casa'))).toBe(true)
+  })
 })

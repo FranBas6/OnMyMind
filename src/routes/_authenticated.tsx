@@ -50,9 +50,10 @@ function AuthenticatedLayout() {
   )
 
   return (
-    <ListActionsProvider>
-      {/* La clave privada (5.6): desbloquear y sus hojas, desde cualquier pantalla. */}
-      <PrivateProvider>
+    // La clave privada (5.6): desbloquear y sus hojas, desde cualquier pantalla. Por fuera de las
+    // acciones de listas: ocultar una sin clave la crea antes (5.8).
+    <PrivateProvider>
+      <ListActionsProvider>
         {/* El tema viaja con la cuenta: se aplica al llegar el perfil (08 B.14). */}
         <ThemeSync />
         {/* En Safari del iPhone, la primera vez: cómo instalarla (diseño 10). */}
@@ -62,7 +63,7 @@ function AuthenticatedLayout() {
             <Outlet />
           </AppShell>
         </CaptureProvider>
-      </PrivateProvider>
-    </ListActionsProvider>
+      </ListActionsProvider>
+    </PrivateProvider>
   )
 }

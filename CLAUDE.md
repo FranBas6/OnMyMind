@@ -90,7 +90,7 @@ src/
   routes/         Rutas file-based de TanStack Router (__root.tsx + una por pantalla)
   features/       Código de dominio agrupado por funcionalidad:
     auth/           login, sesión y guardas de ruta
-    lists/          listas y sus tipos/plantillas
+    lists/          listas y sus tipos/plantillas; las ocultas (5.8)
     items/          ítems, estados y campos flexibles
     capture/        captura rápida y detección de URLs
     today/          vista Hoy
@@ -99,7 +99,7 @@ src/
     reminders/      recordatorios y push
     sharing/        compartir listas: invitar con un enlace, unirse, quién está
     prices/         histórico de precios y gráficas
-    private/        la clave privada: la caja cifrada, desbloquear con la clave o la llave del aparato, y el texto de las notas protegidas
+    private/        la clave privada: la caja cifrada, desbloquear con la clave o la llave del aparato, el texto de las notas protegidas y abrir las listas ocultas
   components/
     ui/           Componentes generados por shadcn (no editar salvo ajustes de estilo)
     layout/       AppShell, BottomNav, Sidebar

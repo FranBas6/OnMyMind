@@ -49,6 +49,46 @@ export type Database = {
           },
         ]
       }
+      hidden_lists: {
+        Row: {
+          created_at: string
+          list_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          list_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          list_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hidden_lists_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'list_counters'
+            referencedColumns: ['list_id']
+          },
+          {
+            foreignKeyName: 'hidden_lists_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'lists'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hidden_lists_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'my_lists'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       item_completions: {
         Row: {
           done_at: string
@@ -259,6 +299,7 @@ export type Database = {
           url: string | null
           url_site: string | null
           url_title: string | null
+          in_hidden_list: boolean | null
         }
         Insert: {
           all_day?: boolean
@@ -877,6 +918,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           color: string | null
+          hidden: boolean | null
           icon: string | null
           id: string | null
           is_owner: boolean | null
@@ -926,6 +968,7 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: {
           all_day: boolean
+          concealed: boolean
           done: boolean
           hidden: boolean
           item_id: string
@@ -955,10 +998,17 @@ export type Database = {
       delete_own_account: { Args: Record<PropertyKey, never>; Returns: undefined }
       duplicate_list: { Args: { p_list_id: string; p_name: string }; Returns: Json }
       has_recent_email_code: { Args: Record<PropertyKey, never>; Returns: boolean }
+      in_hidden_list: {
+        Args: { '': Database['public']['Tables']['items']['Row'] }
+        Returns: {
+          error: true
+        } & 'the function public.in_hidden_list with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+      }
       invoke_refresh_prices: { Args: Record<PropertyKey, never>; Returns: number }
       invoke_send_reminders: { Args: Record<PropertyKey, never>; Returns: number }
       is_active_sublist_status: { Args: { p_status: string }; Returns: boolean }
       is_final_status: { Args: { p_status: string }; Returns: boolean }
+      is_hidden_list: { Args: { p_list_id: string }; Returns: boolean }
       is_list_member: { Args: { p_list_id: string }; Returns: boolean }
       item_statuses: {
         Args: { p_kind: Database['public']['Enums']['item_kind'] }
@@ -1031,6 +1081,7 @@ export type Database = {
           after_cents: number
           before_cents: number
           before_checked_at: string
+          concealed_for: string[]
           currency: string
           item_id: string
           list_id: string

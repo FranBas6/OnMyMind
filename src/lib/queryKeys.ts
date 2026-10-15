@@ -11,6 +11,17 @@ export const queryKeys = {
     /** Archivadas: cuelga de `['lists']`, así que invalidar `all` también las refresca. */
     archived: ['lists', 'archived'] as const,
     detail: (listId: string) => ['lists', listId] as const,
+    /**
+     * Tus listas ocultas (5.8), con su nombre y sus contadores: solo se piden desbloqueado, viven
+     * en memoria (`meta.private`) y se olvidan al bloquear. Cuelgan de `['lists']`, así que se
+     * refrescan con las demás.
+     */
+    hidden: ['lists', 'hidden'] as const,
+    /**
+     * Cuáles están ocultas, solo sus ids: lo que pide desbloquear al abrir una, lo que no se
+     * guarda en el aparato (`persister.ts`) y lo que se olvida al bloquear.
+     */
+    hiddenIds: ['lists', 'hidden-ids'] as const,
   },
   items: {
     byList: (listId: string) => ['items', { listId }] as const,

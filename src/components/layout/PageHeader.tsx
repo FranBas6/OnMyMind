@@ -9,7 +9,7 @@ interface PageHeaderProps {
   /** Línea pequeña sobre el título (la fecha en Inicio y Hoy). */
   eyebrow?: string
   /** Línea bajo el título (contadores en el detalle de lista). */
-  subtitle?: string
+  subtitle?: ReactNode
   /** Delante del título (el icono de la lista). */
   leading?: ReactNode
   /** A la derecha del título (el avatar en Inicio). */

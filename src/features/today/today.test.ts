@@ -43,6 +43,7 @@ function list(id: string, overrides: Partial<List> = {}): List {
     },
     archivedAt: null,
     isOwner: true,
+    hidden: false,
     ...overrides,
   }
 }

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { FormError } from '@/features/auth'
 import { InboxMark } from '@/features/capture'
 import { useArchivedLists, useLists, type List } from '@/features/lists'
+import { useUnlocked } from '@/features/private'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
@@ -40,6 +41,7 @@ const FORMATS: { value: Format; title: string; description: string }[] = [
  */
 export function ExportDialog({ open, onOpenChange, isDesktop }: ExportDialogProps) {
   const exportData = useExportData()
+  const unlocked = useUnlocked() !== null
   const lists = useLists()
   const archived = useArchivedLists()
   const [format, setFormat] = useState<Format>('json')
@@ -195,9 +197,10 @@ export function ExportDialog({ open, onOpenChange, isDesktop }: ExportDialogProp
           isDesktop && '-mt-1',
         )}
       >
-        {/* Lo de las notas protegidas (5.7): su texto no sale en claro. */}
+        {/* Lo de las notas protegidas (5.7): su texto no sale en claro. Las listas ocultas (5.8),
+            solo desbloqueado: lo dice siempre, haya o no, para no delatarlas. */}
         {format === 'json'
-          ? 'Las fotos van como enlaces y el texto de las notas protegidas, cifrado. Se descarga un archivo y lo guardas donde quieras.'
+          ? `Las fotos van como enlaces y el texto de las notas protegidas, cifrado.${unlocked ? '' : ' Las listas ocultas solo salen si las desbloqueas antes.'} Se descarga un archivo y lo guardas donde quieras.`
           : 'Las sublistas salen como filas con su nombre en la columna «Sublista». De las notas protegidas, solo la primera línea.'}
       </p>
     </ResponsiveSheet>

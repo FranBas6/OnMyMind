@@ -39,6 +39,7 @@ const inbox: List = {
   },
   archivedAt: null,
   isOwner: true,
+  hidden: false,
 }
 
 function renderProfile(token: string | null) {
