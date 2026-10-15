@@ -31,3 +31,16 @@ function subscribe(onChange: () => void): () => void {
 export function useKeyboardInset(): number {
   return useSyncExternalStore(subscribe, read, () => 0)
 }
+
+/** Lo que se ve de alto con el teclado abierto (`visualViewport.height`); el alto de la ventana sin él. */
+function readHeight(): number {
+  return Math.round(window.visualViewport?.height ?? window.innerHeight)
+}
+
+/**
+ * El alto que de verdad se ve (el arreglo del teclado en las hojas, 2026-10-15): con el teclado abierto,
+ * lo que queda por encima de él. Para que una hoja no pase de ahí.
+ */
+export function useVisibleHeight(): number {
+  return useSyncExternalStore(subscribe, readHeight, () => 0)
+}

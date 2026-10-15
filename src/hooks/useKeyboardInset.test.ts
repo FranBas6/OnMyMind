@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { useKeyboardInset } from './useKeyboardInset'
+import { useKeyboardInset, useVisibleHeight } from './useKeyboardInset'
 
 /** Un `visualViewport` de mentira: EventTarget con el alto y el desplazamiento que se le pidan. */
 class FakeViewport extends EventTarget {
@@ -50,5 +50,15 @@ describe('useKeyboardInset', () => {
       viewport.set(508, 120)
     })
     expect(result.current).toBe(216)
+  })
+
+  it('lo que se ve de alto, con el teclado y sin él', () => {
+    const { viewport } = setup()
+    const { result } = renderHook(() => useVisibleHeight())
+    expect(result.current).toBe(844)
+    act(() => {
+      viewport.set(507.6)
+    })
+    expect(result.current).toBe(508)
   })
 })

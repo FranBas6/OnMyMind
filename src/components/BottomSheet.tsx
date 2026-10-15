@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react'
 import { Drawer } from 'vaul'
 
+import { useKeyboardInset, useVisibleHeight } from '@/hooks/useKeyboardInset'
 import { cn } from '@/lib/utils'
+
+/** Lo que queda libre por encima de la hoja con el teclado abierto. */
+const KEYBOARD_TOP_GAP = 12
 
 interface BottomSheetProps {
   open: boolean
@@ -19,6 +23,12 @@ interface BottomSheetProps {
  * Hoja inferior de móvil (diseño 04 Listas): velo, radio de 28 px arriba, asa de 40 × 5, sombra
  * suave y 40 px de aire abajo (más la zona segura). Se cierra deslizando hacia abajo, tocando
  * el velo o con Escape.
+ *
+ * Con el teclado abierto (escribir en la ficha de un ítem), la hoja se apoya justo encima de él,
+ * no pasa del alto que se ve y deja el aire de abajo: con el teclado, la zona segura no hace
+ * falta. Lo calcula la app con `visualViewport`, como la captura (`KeyboardSheet`), y no vaul
+ * (`repositionInputs`): en el iPhone su cálculo dejaba una franja blanca entre el texto y el
+ * teclado que tapaba lo de abajo (bug de Fran, 2026-10-15).
  */
 export function BottomSheet({
   open,
@@ -30,11 +40,22 @@ export function BottomSheet({
   children,
 }: BottomSheetProps) {
   const Root = nested ? Drawer.NestedRoot : Drawer.Root
+  const keyboard = useKeyboardInset()
+  const visible = useVisibleHeight()
   return (
-    <Root open={open} onOpenChange={onOpenChange}>
+    <Root open={open} onOpenChange={onOpenChange} repositionInputs={false}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-scrim" />
         <Drawer.Content
+          style={
+            keyboard > 0
+              ? {
+                  bottom: keyboard,
+                  maxHeight: visible - KEYBOARD_TOP_GAP,
+                  paddingBottom: KEYBOARD_TOP_GAP,
+                }
+              : undefined
+          }
           className={cn(
             'fixed inset-x-0 bottom-0 z-50 flex flex-col gap-3 rounded-t-[28px] bg-card px-[22px] pb-[calc(env(safe-area-inset-bottom)+2.5rem)] text-foreground shadow-sheet outline-none',
             className,
