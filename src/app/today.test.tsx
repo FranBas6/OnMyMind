@@ -162,7 +162,13 @@ describe('Hoy', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Hoy' })).toBeInTheDocument()
     const headings = screen.getAllByRole('heading', { level: 2 })
-    expect(headings.map((heading) => heading.textContent)).toEqual(['Trabajo', 'Casa'])
+    // Sin el cuadrado de la lista, que va oculto a los lectores (5.9).
+    const visible = (heading: HTMLElement) =>
+      [...heading.childNodes]
+        .filter((node) => !(node instanceof Element && node.getAttribute('aria-hidden')))
+        .map((node) => node.textContent)
+        .join('')
+    expect(headings.map(visible)).toEqual(['Trabajo', 'Casa'])
 
     const [first, second] = within(section('Trabajo')).getAllByRole('listitem')
     expect(first).toHaveTextContent('Enviar informe trimestral')

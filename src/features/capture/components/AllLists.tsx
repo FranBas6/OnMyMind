@@ -43,6 +43,7 @@ function Icon({ destination, size }: { destination: Destination; size: 'xs' | 'r
     <ListIcon
       name={list.name}
       color={list.color}
+      icon={list.icon}
       size={size}
       className={size === 'row' ? 'rounded-[11px]' : undefined}
     />

@@ -502,7 +502,8 @@ function DestinationIcon({
       />
     )
   }
-  if (list.kind !== 'inbox') return <ListIcon name={list.name} color={list.color} size={size} />
+  if (list.kind !== 'inbox')
+    return <ListIcon name={list.name} color={list.color} icon={list.icon} size={size} />
   return (
     <span
       aria-hidden

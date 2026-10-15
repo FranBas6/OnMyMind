@@ -130,7 +130,7 @@ export function DuplicateListDialog({
             Nombre de la copia
           </span>
           <span className="flex h-13 items-center gap-3 rounded-2xl border border-primary bg-card px-3 shadow-[0_0_0_0.5px_var(--primary)]">
-            <ListIcon name={name || list.name} color={list.color} size="xs" />
+            <ListIcon name={name || list.name} color={list.color} icon={list.icon} size="xs" />
             <input
               value={name}
               maxLength={LIST_NAME_MAX_LENGTH}

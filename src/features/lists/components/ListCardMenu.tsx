@@ -113,7 +113,7 @@ export function ListCardMenu({
       />
       <BottomSheet open={open} onOpenChange={onOpenChange} title={`Opciones de «${list.name}»`}>
         <div className="flex items-center gap-3">
-          <ListIcon name={list.name} color={list.color} />
+          <ListIcon name={list.name} color={list.color} icon={list.icon} />
           <div className="min-w-0">
             <p className="truncate font-display text-lg font-extrabold tracking-[-0.02em]">
               {list.name}

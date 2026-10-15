@@ -32,7 +32,13 @@ export function SharedListsNotice() {
       <ul className="flex flex-col gap-3 rounded-2xl border border-border-soft bg-fill/60 p-3.5">
         {rows.map(({ list, note }) => (
           <li key={list.id} className="flex items-start gap-3">
-            <ListIcon name={list.name} color={list.color} size="xs" className="size-7 text-xs" />
+            <ListIcon
+              name={list.name}
+              color={list.color}
+              icon={list.icon}
+              size="xs"
+              className="size-7 text-xs"
+            />
             <p className="text-[14px] leading-[1.45]">{note}</p>
           </li>
         ))}

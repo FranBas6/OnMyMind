@@ -44,7 +44,7 @@ $$;
 
 :as_ana
 insert into public.lists (id, owner_id, name, color, icon, kind, position) values
-  (:maleta, :ana, 'Maleta de viaje', 'teal', 'suitcase', 'tasks', 5000),
+  (:maleta, :ana, 'Maleta de viaje', 'teal', 'lucide:luggage', 'tasks', 5000),
   (:casa, :ana, 'Casa', 'coral', null, 'tasks', 2000);
 
 insert into public.items (id, list_id, created_by, kind, parent_id, title, notes, status, fields,
@@ -87,7 +87,7 @@ select :'result'::jsonb ->> 'list_id' as copy \gset
 
 select results_eq(
   format('select name, color, icon, kind::text, owner_id, archived_at is null from public.lists where id = %L', :'copy'),
-  $$values ('Maleta de viaje (2)', 'teal', 'suitcase', 'tasks', '00000000-0000-4000-a440-00000000000a'::uuid, true)$$,
+  $$values ('Maleta de viaje (2)', 'teal', 'lucide:luggage', 'tasks', '00000000-0000-4000-a440-00000000000a'::uuid, true)$$,
   'la copia es de Ana, con el nombre nuevo sin espacios, su color e icono, y no está archivada');
 select ok((select position from public.lists where id = :'copy'::uuid) > 2000,
   'y va al final de sus listas');

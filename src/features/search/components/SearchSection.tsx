@@ -1,10 +1,9 @@
 import { Archive } from 'lucide-react'
 import { useId } from 'react'
 
+import { ListIcon } from '@/components/ListIcon'
 import { InboxMark } from '@/features/capture'
 import { hasPrices, ListScope } from '@/features/items'
-import { LIST_COLOR_BG } from '@/lib/listColors'
-import { cn } from '@/lib/utils'
 
 import type { SearchSection as Section } from '../search'
 import { SearchResultRow } from './SearchResultRow'
@@ -26,7 +25,14 @@ export function SearchSection({ section, now }: { section: Section; now: Date })
         {list.kind === 'inbox' ? (
           <InboxMark className="size-3" />
         ) : (
-          <span aria-hidden className={cn('size-2.5 rounded-[3px]', LIST_COLOR_BG[list.color])} />
+          // Su cuadrado a 20 px (diseño 28); archivada, sin color.
+          <ListIcon
+            name={list.name}
+            color={list.color}
+            icon={list.icon}
+            size="chip"
+            dimmed={list.archivedAt !== null}
+          />
         )}
         {list.name}
         {list.archivedAt && (

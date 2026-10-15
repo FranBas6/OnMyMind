@@ -1,8 +1,10 @@
 import { Check } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
+import { ListIcon } from '@/components/ListIcon'
 import { destinationName, type Destination } from '@/features/items'
 import { LIST_COLOR_BG } from '@/lib/listColors'
+import { parseListIcon } from '@/lib/listIcons'
 import { cn } from '@/lib/utils'
 
 /**
@@ -11,7 +13,8 @@ import { cn } from '@/lib/utils'
  * rellena de su color con un check; el diseño pone el texto en blanco, pero sobre casi todos los
  * colores de lista no llega a AA (coral 3:1, ámbar 2,2:1): va en `foreground`, salvo el índigo.
  * Una sublista dice «Viajes › Lisboa», con la lista más suave (diseño 12, A4), en el color de su
- * lista como las demás (el diseño la pinta en índigo).
+ * lista como las demás (el diseño la pinta en índigo). Sin elegir, el cuadrado de la lista a 20 px;
+ * elegida, su icono o su emoji sin cuadrado, y con la inicial, el check (diseño 28, L5).
  */
 export function DestinationChip({
   destination,
@@ -25,6 +28,7 @@ export function DestinationChip({
   const { list, sublist } = destination
   const inbox = list.kind === 'inbox'
   const lightText = inbox || list.color === 'indigo'
+  const glyph = parseListIcon(list.icon)
 
   return (
     <button
@@ -44,9 +48,17 @@ export function DestinationChip({
       {inbox ? (
         <InboxMark className="size-3.5" light={selected} />
       ) : selected ? (
-        <Check aria-hidden className="size-3.5" strokeWidth={3} />
+        glyph?.kind === 'icon' ? (
+          <glyph.choice.icon aria-hidden className="size-3.5" strokeWidth={2.4} />
+        ) : glyph?.kind === 'emoji' ? (
+          <span aria-hidden className="text-[13px] leading-none">
+            {glyph.emoji}
+          </span>
+        ) : (
+          <Check aria-hidden className="size-3.5" strokeWidth={3} />
+        )
       ) : (
-        <span aria-hidden className={cn('size-2 rounded-full', LIST_COLOR_BG[list.color])} />
+        <ListIcon name={list.name} color={list.color} icon={list.icon} size="chip" />
       )}
       {sublist ? (
         <span aria-hidden>

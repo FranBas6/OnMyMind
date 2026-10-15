@@ -116,7 +116,7 @@ export async function showList(listId: string): Promise<void> {
  * tiene la sesión: RLS exige `owner_id = auth.uid()`. Valida con el esquema del formulario.
  */
 export async function createList(values: ListFormValues, position: number): Promise<List> {
-  const { name, color } = listFormSchema.parse(values)
+  const { name, color, icon = null } = listFormSchema.parse(values)
   const { data: auth } = await supabase.auth.getSession()
   const ownerId = auth.session?.user.id
   if (!ownerId) throw new Error('Sin sesión')
@@ -124,7 +124,7 @@ export async function createList(values: ListFormValues, position: number): Prom
   const { data, error } = await supabase
     .from('lists')
     // Sin tipo (5.3): la base le pone `list`, y se ve como lista.
-    .insert({ owner_id: ownerId, name, color, position })
+    .insert({ owner_id: ownerId, name, color, icon, position })
     .select('id, name, color, icon, kind, view, position')
     .single()
 
@@ -134,10 +134,13 @@ export async function createList(values: ListFormValues, position: number): Prom
   return list
 }
 
-/** Cambia nombre y color. Las listas ya no tienen tipo (5.3). */
+/** Cambia nombre, color y el cuadrado (5.9). Las listas ya no tienen tipo (5.3). */
 export async function updateList(listId: string, values: ListFormValues): Promise<void> {
-  const { name, color } = listFormSchema.parse(values)
-  const { error } = await supabase.from('lists').update({ name, color }).eq('id', listId)
+  const { name, color, icon } = listFormSchema.parse(values)
+  const { error } = await supabase
+    .from('lists')
+    .update({ name, color, ...(icon !== undefined && { icon }) })
+    .eq('id', listId)
   if (error) throw error
 }
 

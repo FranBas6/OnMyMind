@@ -34,3 +34,12 @@ botón derecho del sidebar (`ListContextMenu`) y la hoja de una archivada.
   pantalla tapada); `HiddenListGate`, que abre una oculta desde su enlace o un aviso. La cabecera
   (`ListDetailHeader`) dice «Oculta» y vuelve a «Listas ocultas».
 - `hidden.ts`: sus textos.
+
+**Iconos y emojis (5.9, diseño 28):** el cuadrado de la lista lleva la inicial, un icono de lucide o
+un emoji (`lists.icon`: `lucide:<nombre>`, `emoji:<emoji>` o `null`).
+
+- `src/lib/listIcons.ts` (compartido, porque lo pinta `components/ListIcon`): los 8 grupos de 6
+  iconos, los 48 emojis y `parseListIcon`.
+- `components/ListIconPicker.tsx`: el cuadrado del formulario y su selector (hoja en el móvil,
+  popover en escritorio, con flechas). `ListFormDialog` guarda `icon` con `createList` y
+  `updateList`.

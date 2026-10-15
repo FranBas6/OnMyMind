@@ -33,6 +33,8 @@ export const invitePreviewSchema = z
     pending_count: z.number().nullable(),
     inviter_name: z.string().nullable(),
     member_since: z.string().nullable(),
+    // El cuadrado de la lista (5.9); de una base de antes, sin él.
+    list_icon: z.string().nullable().optional().catch(null),
   })
   .transform((row) => ({
     status: row.status,
@@ -43,6 +45,7 @@ export const invitePreviewSchema = z
     pendingCount: row.pending_count ?? 0,
     inviterName: row.inviter_name,
     memberSince: row.member_since ? new Date(row.member_since) : null,
+    listIcon: row.list_icon ?? null,
   }))
 export type InvitePreview = z.output<typeof invitePreviewSchema>
 

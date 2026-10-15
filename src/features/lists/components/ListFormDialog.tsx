@@ -6,13 +6,13 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { isNetworkError, OFFLINE_MESSAGE } from '@/lib/errors'
-import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
 
 import { useCreateList, useUpdateList } from '../hooks/useListMutations'
 import { listFormSchema, type ListFormValues } from '../schemas'
 import type { List } from '../types'
 import { ColorPicker } from './ColorPicker'
+import { ListIconPicker } from './ListIconPicker'
 
 /** Lo que explica que una lista no tiene tipo (diseño 25, B8 y D7). */
 const ANYTHING_FITS =
@@ -89,12 +89,13 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
     defaultValues: {
       name: list?.name ?? '',
       color: list?.color ?? 'indigo',
+      icon: list?.icon ?? null,
     },
   })
 
   const name = useWatch({ control, name: 'name' })
   const color = useWatch({ control, name: 'color' })
-  const initial = name.trim().charAt(0).toUpperCase() || '·'
+  const icon = useWatch({ control, name: 'icon' }) ?? null
 
   const onSubmit = handleSubmit((values: ListFormValues) => {
     if (list) {
@@ -182,15 +183,21 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3.5">
-            <span
-              aria-hidden
-              className={cn(
-                'grid size-16 shrink-0 place-items-center rounded-[20px] font-display text-[26px] font-extrabold text-white',
-                LIST_COLOR_BG[color],
+            {/* El cuadrado abre el selector de icono o emoji (diseño 28, I1–I6, E1 y E2). */}
+            <Controller
+              control={control}
+              name="icon"
+              render={({ field }) => (
+                <ListIconPicker
+                  name={name}
+                  color={color}
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                  editing={editing}
+                  isDesktop={isDesktop}
+                />
               )}
-            >
-              {initial}
-            </span>
+            />
             <label htmlFor={nameId} className="sr-only">
               Nombre de la lista
             </label>
@@ -208,6 +215,12 @@ function ListForm({ list, isDesktop, onCreated, onDone }: ListFormProps) {
           {errors.name?.message && (
             <p id={`${nameId}-error`} className="px-1 text-[13px] leading-[1.4] text-error">
               {errors.name.message}
+            </p>
+          )}
+          {/* Con la inicial, cómo cambiarla (I1); con icono, ya se ve (I5). */}
+          {icon === null && !errors.name?.message && (
+            <p className="px-1 text-[13px] leading-[1.4] text-muted-foreground">
+              Toca el cuadrado para elegir un icono o un emoji.
             </p>
           )}
         </div>

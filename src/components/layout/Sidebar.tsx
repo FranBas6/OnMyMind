@@ -4,6 +4,7 @@ import { Link, useNavigate, useRouter, useRouterState } from '@tanstack/react-ro
 import { Archive, Inbox, Plus, Sun, type LucideIcon } from 'lucide-react'
 import { useEffect, type ReactNode, type SyntheticEvent } from 'react'
 
+import { ListIcon } from '@/components/ListIcon'
 import { useCapture } from '@/features/capture'
 import {
   ARCHIVED_SECTION_ID,
@@ -20,7 +21,6 @@ import { ProfileLink } from '@/features/profile'
 import { focusSearchField, SidebarSearchField } from '@/features/search'
 import { useTodayCount } from '@/features/today'
 import { SidebarSharedIcon } from '@/features/sharing/components/SharedInitials'
-import { LIST_COLOR_BG } from '@/lib/listColors'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { cn } from '@/lib/utils'
 import { shortcutKey } from '@/lib/device'
@@ -202,10 +202,8 @@ function SortableSidebarList({ list, active }: { list: List; active: boolean }) 
 function SidebarListRow({ list, lifted = false }: { list: List; lifted?: boolean }) {
   const content = (
     <>
-      <span
-        aria-hidden
-        className={cn('size-3 shrink-0 rounded-[4px]', LIST_COLOR_BG[list.color])}
-      />
+      {/* Su cuadrado, con el icono, el emoji o la inicial (diseño 28, E3). */}
+      <ListIcon name={list.name} color={list.color} icon={list.icon} size="side" />
       <span className="truncate">{list.name}</span>
       <SidebarSharedIcon list={list} />
       {/* Solo lo pendiente; una lista con solo notas, sin número (diseño 25, D6). */}

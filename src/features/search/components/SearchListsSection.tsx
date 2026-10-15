@@ -73,12 +73,9 @@ function ListRowContent({ list, name }: { list: List; name: ReactNode }) {
           <InboxMark className="size-[18px]" />
         </span>
       ) : list.archivedAt ? (
-        <DimmedIcon
-          list={list}
-          className="grid size-[30px] shrink-0 place-items-center rounded-[9px] border border-border bg-fill font-display text-[13px] font-extrabold text-subtle-foreground"
-        />
+        <DimmedIcon list={list} size="xs" />
       ) : (
-        <ListIcon name={list.name} color={list.color} size="xs" />
+        <ListIcon name={list.name} color={list.color} icon={list.icon} size="xs" />
       )}
       {/* En móvil el contador va debajo: a la derecha no dejaba sitio al nombre. */}
       <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-3">

@@ -137,7 +137,8 @@ describe('captura rápida', () => {
     const field = within(dialog).getByRole('textbox', { name: '¿Qué tienes en mente?' })
     expect(field).toHaveFocus()
     expect(within(dialog).getByRole('button', { name: 'Guardar' })).toBeDisabled()
-    expect(destinations(dialog).map((chip) => chip.textContent)).toEqual([
+    // Su nombre (el cuadrado de cada lista va oculto a los lectores, 5.9).
+    expect(destinations(dialog).map((chip) => chip.getAttribute('aria-label'))).toEqual([
       'En mente',
       'Trabajo',
       'Casa',

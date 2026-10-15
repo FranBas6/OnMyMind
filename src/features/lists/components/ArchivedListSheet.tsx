@@ -2,6 +2,7 @@ import { ArchiveRestore } from 'lucide-react'
 import { useState } from 'react'
 
 import { BottomSheet } from '@/components/BottomSheet'
+import { ListIcon, type ListIconSize } from '@/components/ListIcon'
 
 import { archivedSheetSummary } from '../templates'
 import type { List } from '../types'
@@ -86,17 +87,10 @@ export function ArchivedListSheet({
   )
 }
 
-/** Icono de una archivada: pierde el color de la lista (fondo `fill`, borde e inicial en gris). */
-export function DimmedIcon({ list, className }: { list: List; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={
-        className ??
-        'grid size-10 shrink-0 place-items-center rounded-[13px] border border-border bg-fill font-display text-[17px] font-extrabold text-subtle-foreground'
-      }
-    >
-      {list.name.trim().charAt(0).toUpperCase()}
-    </span>
-  )
+/**
+ * Icono de una archivada: pierde el color de la lista (fondo `fill`, borde, y la inicial o el icono
+ * en gris; el emoji, en escala de grises: diseño 28, L7).
+ */
+export function DimmedIcon({ list, size = 'sm' }: { list: List; size?: ListIconSize }) {
+  return <ListIcon name={list.name} color={list.color} icon={list.icon} size={size} dimmed />
 }

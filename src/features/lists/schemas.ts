@@ -46,6 +46,13 @@ export const listFormSchema = z.object({
         `Máximo ${LIST_NAME_MAX_LENGTH} caracteres. Llevas ${typeof issue.input === 'string' ? issue.input.length : LIST_NAME_MAX_LENGTH + 1}.`,
     }),
   color: listColorSchema,
+  /** El cuadrado (5.9): `lucide:<nombre>`, `emoji:<emoji>` o `null`, la inicial. */
+  icon: z
+    .string()
+    .regex(/^(lucide:[a-z0-9]+(-[a-z0-9]+)*|emoji:\S{1,16})$/u)
+    .max(48)
+    .nullable()
+    .optional(),
 })
 export type ListFormValues = z.infer<typeof listFormSchema>
 

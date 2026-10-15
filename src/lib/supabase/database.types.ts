@@ -1021,6 +1021,7 @@ export type Database = {
         Returns: {
           inviter_name: string
           list_color: string
+          list_icon: string
           list_id: string
           list_kind: Database['public']['Enums']['list_kind']
           list_name: string

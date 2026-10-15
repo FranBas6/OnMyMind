@@ -245,5 +245,5 @@ function PickerIcon({ list }: { list: List }): ReactNode {
       </span>
     )
   }
-  return <ListIcon name={list.name} color={list.color} size="xs" />
+  return <ListIcon name={list.name} color={list.color} icon={list.icon} size="xs" />
 }

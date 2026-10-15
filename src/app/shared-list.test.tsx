@@ -177,7 +177,7 @@ describe('una lista compartida en el día a día (3.3, diseño 20)', () => {
     const sidebarLink = (name: string) =>
       within(sidebar)
         .getAllByRole('link')
-        .find((link) => link.textContent.startsWith(name))
+        .find((link) => link.textContent.includes(name))
     expect(sidebarLink('Compras')).toHaveTextContent('Compras (compartida)')
     expect(sidebarLink('Trabajo')).not.toHaveTextContent('compartida')
   })

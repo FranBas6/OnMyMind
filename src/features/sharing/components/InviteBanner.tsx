@@ -14,7 +14,12 @@ export function InviteBanner({ token }: { token: string }) {
   if (data?.status !== 'valid') return null
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-brand-tint px-4 py-3.5 text-primary-strong">
-      <ListIcon name={data.listName ?? ''} color={data.listColor ?? 'indigo'} size="sm" />
+      <ListIcon
+        name={data.listName ?? ''}
+        color={data.listColor ?? 'indigo'}
+        icon={data.listIcon}
+        size="sm"
+      />
       <div className="min-w-0">
         <p className="text-[15px] font-semibold">
           {personName(data.inviterName)} te invita a «{data.listName}»

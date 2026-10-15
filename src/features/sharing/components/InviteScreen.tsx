@@ -255,7 +255,12 @@ function Figure({
 }) {
   return (
     <span className="relative">
-      <ListIcon name={preview.listName ?? ''} color={preview.listColor ?? 'indigo'} size="xl" />
+      <ListIcon
+        name={preview.listName ?? ''}
+        color={preview.listColor ?? 'indigo'}
+        icon={preview.listIcon}
+        size="xl"
+      />
       {badge === 'inviter' ? (
         <PersonInitial
           name={preview.inviterName}

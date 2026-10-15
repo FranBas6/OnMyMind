@@ -99,3 +99,17 @@ export const LIST_COLOR_SUBLIST: Record<ListColor, { active: string; paused: str
   green: { active: 'bg-list-green/18 dark:bg-list-green/24', paused: 'bg-list-green/10' },
   indigo: { active: 'bg-list-indigo/18 dark:bg-list-indigo/24', paused: 'bg-list-indigo/10' },
 }
+
+/**
+ * Fondo del cuadrado de una lista con emoji (5.9, diseño 28): el color de la lista al 18 % (al 30 %
+ * en oscuro). Sobre el color puro muchos emojis se pierden; sin fondo, la lista pierde su color.
+ */
+export const LIST_COLOR_EMOJI: Record<ListColor, string> = {
+  coral: 'bg-list-coral/18 dark:bg-list-coral/30',
+  amber: 'bg-list-amber/18 dark:bg-list-amber/30',
+  teal: 'bg-list-teal/18 dark:bg-list-teal/30',
+  blue: 'bg-list-blue/18 dark:bg-list-blue/30',
+  pink: 'bg-list-pink/18 dark:bg-list-pink/30',
+  green: 'bg-list-green/18 dark:bg-list-green/30',
+  indigo: 'bg-list-indigo/18 dark:bg-list-indigo/30',
+}

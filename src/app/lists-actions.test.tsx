@@ -122,8 +122,11 @@ describe('acciones sobre listas', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
-    // Sin tipo (5.3): la lista se crea con nombre y color.
-    expect(api.createList).toHaveBeenCalledWith({ name: 'Trabajo', color: 'teal' }, 4000)
+    // Sin tipo (5.3): la lista se crea con nombre, color y la inicial (5.9).
+    expect(api.createList).toHaveBeenCalledWith(
+      { name: 'Trabajo', color: 'teal', icon: null },
+      4000,
+    )
     expect(
       within(screen.getByRole('list', { name: 'Mis listas' })).getByRole('link', {
         name: /Trabajo/,

@@ -88,7 +88,14 @@ export function ListDetailHeader({
     <PageHeader
       title={list.name}
       subtitle={subtitle}
-      leading={<ListIcon name={list.name} color={list.color} size={isDesktop ? 'lg' : 'md'} />}
+      leading={
+        <ListIcon
+          name={list.name}
+          color={list.color}
+          icon={list.icon}
+          size={isDesktop ? 'lg' : 'md'}
+        />
+      }
       back={
         list.hidden
           ? { to: '/profile/hidden', label: 'Listas ocultas' }

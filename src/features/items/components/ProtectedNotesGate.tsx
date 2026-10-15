@@ -92,7 +92,11 @@ export function ProtectedNotesGate({ list, children }: { list: List; children: R
                 }}
                 className="flex h-12 w-full items-center gap-3 rounded-xl px-2 text-left text-[15px] font-semibold outline-none hover:bg-fill focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
-                <ListIcon name={destination.name} color={destination.color} />
+                <ListIcon
+                  name={destination.name}
+                  color={destination.color}
+                  icon={destination.icon}
+                />
                 <span className="truncate">{destination.name}</span>
               </button>
             </li>

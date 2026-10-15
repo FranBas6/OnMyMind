@@ -1,8 +1,7 @@
 import { useId } from 'react'
 
+import { ListIcon } from '@/components/ListIcon'
 import { ListScope } from '@/features/items'
-import { LIST_COLOR_BG } from '@/lib/listColors'
-import { cn } from '@/lib/utils'
 import { SharedWith } from '@/features/sharing/components/SharedInitials'
 
 import type { TodaySection as Section } from '../today'
@@ -31,7 +30,8 @@ export function TodaySection({
         id={labelId}
         className="flex items-center gap-2 px-1 font-sans text-xs font-bold tracking-[0.06em] text-muted-foreground uppercase"
       >
-        <span aria-hidden className={cn('size-2.5 rounded-[3px]', LIST_COLOR_BG[list.color])} />
+        {/* Su cuadrado a 20 px, con el icono, el emoji o la inicial (diseño 28, L6). */}
+        <ListIcon name={list.name} color={list.color} icon={list.icon} size="chip" />
         {list.name}
         <SharedWith list={list} />
       </h2>

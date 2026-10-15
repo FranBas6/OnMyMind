@@ -118,6 +118,7 @@ const preview = (overrides: Partial<InvitePreview> = {}): InvitePreview => ({
   pendingCount: 7,
   inviterName: 'Fran',
   memberSince: null,
+  listIcon: null,
   ...overrides,
 })
 

@@ -125,7 +125,7 @@ function ListCardFace({ list }: { list: List }) {
   return (
     <>
       <div className="flex items-start justify-between">
-        <ListIcon name={list.name} color={list.color} />
+        <ListIcon name={list.name} color={list.color} icon={list.icon} />
         <div className="flex items-start gap-1">
           {/* Compartida: las iniciales de quienes están, junto al ··· (diseño 20, M1). */}
           <ListCardInitials list={list} />
