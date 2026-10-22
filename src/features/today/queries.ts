@@ -34,7 +34,7 @@ export function daysQueryOptions(month: Date) {
 }
 
 /**
- * Las veces hechas de las tareas que se repiten en un día (3.6): «N hechas hoy» y «Hecho ese
+ * Las veces hechas de las tareas que se repiten en un día (3.6): «Hecho hoy» y «Hecho ese
  * día». Cuelga de `['items']`, así que se vuelve a pedir con cualquier cambio de ítems.
  */
 export function completionsQueryOptions(day: Date) {

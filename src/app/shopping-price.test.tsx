@@ -312,8 +312,9 @@ describe('el precio de las compras (diseño 16)', () => {
     // Sin precio, la fila es la de siempre.
     expect(third).not.toHaveTextContent('€')
     expect(
+      // Y cuándo, sin repetir el verbo (Fran, 2026-10-22).
       within(screen.getByRole('region', { name: 'Fuera de la cabeza', hidden: true })).getByText(
-        'Comprado · 12 €',
+        /^Comprado · 12 € · hoy · \d{1,2}:\d{2}$/,
       ),
     ).toBeInTheDocument()
 

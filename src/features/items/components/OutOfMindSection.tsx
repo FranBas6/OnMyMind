@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
 import { useItemPerson } from '@/features/sharing/hooks/useSharing'
 
+import { doneMoment } from '../copy'
 import { eventWhen } from '../events'
 import { kindMark, proposedKind } from '../kind'
 import { itemPrice } from '../prices'
@@ -88,7 +89,7 @@ export function OutOfMindSection({
               entry.item.kind === 'sublist' ? (
                 <SublistRow key={entry.item.id} item={entry.item} done />
               ) : (
-                <DoneRow key={entry.item.id} item={entry.item} />
+                <DoneRow key={entry.item.id} item={entry.item} showDoneAt />
               )
             ) : (
               <MovedRow key={entry.moved.id} moved={entry.moved} />
@@ -139,7 +140,8 @@ export function FoldHeading({
   )
 }
 
-const ROW =
+/** La fila baja de lo terminado (40 px): «Fuera de la cabeza» y lo hecho y apuntado de Hoy. */
+export const COMPACT_ROW =
   'relative flex min-h-10 animate-in items-center gap-3.5 rounded-[18px] px-4 py-1 duration-200 fade-in md:gap-4 md:rounded-2xl md:px-[18px] md:py-2'
 
 /**
@@ -148,19 +150,22 @@ const ROW =
  * diseño 12), porque el título solo no dice cómo terminó. Una compra con precio dice debajo cómo
  * terminó y, si se compró, por cuánto («Comprado · 12 €», diseño 16, A1 y D2). `meta` es una
  * línea más debajo (en «Hecho ese día» de Hoy, su lista); con `muted: false`, el control no se
- * atenúa (diseño 17, C4).
+ * atenúa (diseño 17, C4). Con `showDoneAt` («Fuera de la cabeza» de una lista), dice cuándo se
+ * terminó: «hecha hoy · 14:05», «comprado ayer» (Fran, 2026-10-22).
  */
 export function DoneRow({
   item,
   aside,
   meta,
   muted = true,
+  showDoneAt = false,
   onToggle,
 }: {
   item: Item
   aside?: ReactNode
   meta?: ReactNode
   muted?: boolean
+  showDoneAt?: boolean
   /** Lo que hace el checkbox, si no es devolverla a pendiente (la vez hecha de una que se repite). */
   onToggle?: () => void
 }) {
@@ -182,12 +187,19 @@ export function DoneRow({
     !paid && !when && kindMark(item.kind, proposedKind(actions.list))
       ? STATUS_LABELS[item.status]
       : null
+  // Cuándo, si la fila no lo dice ya (lo de un evento es cuándo fue); sin el verbo si ya dice
+  // cómo terminó («Comprado · 12 € · hoy · 14:05»).
+  const doneAt =
+    showDoneAt && item.kind !== 'event'
+      ? doneMoment(item, new Date(), { verb: !paid && !status })
+      : null
+  const line = [paid ?? when, doneAt].filter(Boolean).join(' · ')
   // Si lo completó el otro, su inicial (diseño 20, M2).
   const person = useItemPerson(item)
   return (
     <SwipeableRow
       item={item}
-      surfaceClassName={cn(ROW, 'bg-background hover:bg-fill', rowHighlight(actions, item))}
+      surfaceClassName={cn(COMPACT_ROW, 'bg-background hover:bg-fill', rowHighlight(actions, item))}
     >
       <ItemControl
         item={item}
@@ -204,10 +216,10 @@ export function DoneRow({
         >
           {status ? `${item.title} · ${status}` : undefined}
         </RowTitle>
-        {(paid ?? when ?? person) && (
+        {(line || person) && (
           <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
             {person && <ItemPersonMark person={person} item={item} />}
-            {paid ?? when}
+            {line}
           </p>
         )}
         {meta}
@@ -220,7 +232,7 @@ export function DoneRow({
 /** Lo que salió de «En mente»: no se toca desde aquí (vive en su lista), solo se recuerda. */
 function MovedRow({ moved }: { moved: MovedItem }) {
   return (
-    <li className={ROW}>
+    <li className={COMPACT_ROW}>
       <span
         aria-hidden
         className="grid size-6 shrink-0 place-items-center rounded-full border border-border bg-fill opacity-60"

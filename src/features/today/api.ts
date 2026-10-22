@@ -17,46 +17,44 @@ import { todayBounds, type TodayItem } from './today'
  * `groupToday`, que así puede decir «Lo de «Roma» no sale: la sublista está pausada.». Son pocas
  * filas (las tareas con fecha de hoy o antes) y la consulta sigue usando `items_due_idx`.
  *
- * Son dos peticiones en paralelo: lo pendiente, que usa `items_due_idx` (parcial, `completed_at is
- * null`), y lo terminado hoy, para «2 hechas hoy». Juntas en un `or` el índice ya no serviría.
+ * Van en peticiones en paralelo: lo pendiente, que usa `items_due_idx` (parcial, `completed_at is
+ * null`), y lo terminado hoy de cualquier tipo y lista, con fecha o sin ella, para «Hecho hoy»
+ * (Fran, 2026-10-22). Juntas en un `or` el índice ya no serviría.
  *
  * Los eventos de hoy («Agenda», 2.4) van en una tercera: los próximos con fecha de hoy, y los que se
- * repiten y ya han empezado (su vez de hoy la calcula `groupToday` con `occursOn`).
+ * repiten y ya han empezado (su vez de hoy la calcula `groupToday` con `occursOn`). Y en una
+ * cuarta, las notas apuntadas hoy, para «Apuntado hoy».
  */
 export async function fetchToday(now: Date): Promise<TodayItem[]> {
   const { start, end } = todayBounds(now)
-  const [pending, done, events] = await Promise.all([
+  const [pending, done, events, notes] = await Promise.all([
     dated('task').lt('due_at', end.toISOString()).is('completed_at', null).order('due_at'),
-    dated('task')
-      .lt('due_at', end.toISOString())
-      .gte('completed_at', start.toISOString())
-      .order('due_at'),
+    doneBetween(start, end),
     upcomingEvents(start, end),
+    notesBetween(start, end),
   ])
-  return rows(pending, done, events)
+  return rows(pending, done, events, notes)
 }
 
 /**
  * Lo de unos días (la rejilla de un mes, `monthGrid`) para ver otro día en Hoy y poner los puntos
  * del calendario (sesión 2.5, diseño 17): lo pendiente que vence en esos días, lo terminado en
- * ellos (de cualquier tipo: «Hecho ese día») y los eventos, con los que se repiten y empezaron
- * antes (sus veces las calcula `occurrencesBetween`). También en tres peticiones, por los índices.
+ * ellos (de cualquier tipo: «Hecho ese día»), los eventos, con los que se repiten y empezaron
+ * antes (sus veces las calcula `occurrencesBetween`), y las notas apuntadas en ellos («Apuntado
+ * ese día»). También en peticiones separadas, por los índices.
  */
 export async function fetchDays(start: Date, end: Date): Promise<TodayItem[]> {
-  const [pending, done, events] = await Promise.all([
+  const [pending, done, events, notes] = await Promise.all([
     dated('task')
       .gte('due_at', start.toISOString())
       .lt('due_at', end.toISOString())
       .is('completed_at', null)
       .order('due_at'),
-    items()
-      .in('status', ['done', 'bought'])
-      .gte('completed_at', start.toISOString())
-      .lt('completed_at', end.toISOString())
-      .order('completed_at'),
+    doneBetween(start, end),
     upcomingEvents(start, end),
+    notesBetween(start, end),
   ])
-  return rows(pending, done, events)
+  return rows(pending, done, events, notes)
 }
 
 /**
@@ -75,6 +73,24 @@ function items() {
 
 function dated(kind: 'task' | 'event') {
   return items().eq('kind', kind)
+}
+
+/** Lo terminado entre dos días, de cualquier tipo: hecho o comprado (no lo descartado). */
+function doneBetween(start: Date, end: Date) {
+  return items()
+    .in('status', ['done', 'bought'])
+    .gte('completed_at', start.toISOString())
+    .lt('completed_at', end.toISOString())
+    .order('completed_at')
+}
+
+/** Las notas apuntadas entre dos días: creadas en ellos, estén en la lista que estén. */
+function notesBetween(start: Date, end: Date) {
+  return items()
+    .eq('kind', 'note')
+    .gte('created_at', start.toISOString())
+    .lt('created_at', end.toISOString())
+    .order('created_at')
 }
 
 /** Los eventos próximos entre dos días, y los que se repiten y ya han empezado antes del final. */

@@ -170,6 +170,12 @@ export interface TodayEvent {
   list: List
 }
 
+/** Una nota apuntada ese día, con su lista: «Apuntado hoy» (Fran, 2026-10-22). */
+export interface TodayNote {
+  item: TodayItem
+  list: List
+}
+
 export interface TodayGroups {
   /**
    * «Agenda» (diseño 17, H1): los eventos de hoy de cualquier lista, también los que se repiten,
@@ -178,8 +184,13 @@ export interface TodayGroups {
   agenda: TodayEvent[]
   /** Una sección por lista, en el orden de las listas. */
   sections: TodaySection[]
-  /** «2 hechas hoy»: lo que vencía hasta hoy y se ha terminado hoy, lo último primero. */
+  /**
+   * «Hecho hoy»: lo terminado hoy (hecho o comprado) de cualquier lista, con fecha o sin ella, lo
+   * último primero (Fran, 2026-10-22; antes, solo lo que vencía hasta hoy).
+   */
   done: TodayDone[]
+  /** «Apuntado hoy»: las notas creadas hoy, la última primero. */
+  noted: TodayNote[]
   /** Lo que queda por hacer (el contador de Hoy en el sidebar). */
   pending: number
   /** Sublistas pausadas con algo para hoy dentro, que no sale: «Lo de «Roma» no sale…» (A1). */
@@ -219,6 +230,12 @@ export function showsInToday(row: { parent?: { status: string } | null }): boole
   return !row.parent || isActiveSublistStatus(row.parent.status)
 }
 
+/** Lo último primero: lo terminado por cuándo se terminó y lo apuntado por cuándo se creó. */
+const latestDone = (a: TodayDone, b: TodayDone) =>
+  (b.item.completedAt?.getTime() ?? 0) - (a.item.completedAt?.getTime() ?? 0)
+const latestNoted = (a: TodayNote, b: TodayNote) =>
+  b.item.createdAt.getTime() - a.item.createdAt.getTime()
+
 /**
  * Reparte lo que trae la consulta de Hoy por listas (02 §Hoy). Lo de dentro de una sublista
  * pausada o hecha se calla (ADR-010); de las pausadas se guarda el nombre para decirlo. La consulta ya filtra, pero se
@@ -235,27 +252,39 @@ export function groupToday(
   const byId = new Map(lists.map((list) => [list.id, list]))
   const sections = new Map<string, TodaySection>()
   const done: TodayDone[] = []
+  const noted: TodayNote[] = []
   const agenda: TodayEvent[] = []
   const paused = new Set<string>()
 
   for (const item of items) {
     const list = byId.get(item.listId)
-    if (list && item.kind === 'event') {
+    if (!list) continue
+    if (item.kind === 'event') {
       // Lo cancelado no sale (F11); lo de una sublista pausada o hecha se calla, como las tareas.
       if (item.status === 'upcoming' && showsInToday(item) && occursOn(item, now)) {
         agenda.push({ item, list })
       }
       continue
     }
-    if (!list || item.kind !== 'task' || !item.dueAt || item.dueAt >= end) continue
+    if (item.kind === 'note') {
+      if (item.createdAt >= start && item.createdAt < end) noted.push({ item, list })
+      continue
+    }
+    // Lo que vence hasta hoy tiene su sección; recién terminado, se queda en ella 400 ms.
+    const due = item.kind === 'task' && item.dueAt !== null && item.dueAt < end
+    if (isFinalStatus(item.status) && !(due && lingering?.has(item.id))) {
+      // Lo hecho hoy cuenta aunque no tuviera fecha o esté en una sublista callada: es lo que se
+      // ha quitado de la cabeza.
+      if (DONE_STATUSES.has(item.status) && item.completedAt && item.completedAt >= start) {
+        done.push({ item, list })
+      }
+      continue
+    }
+    if (!due) continue
     if (!showsInToday(item)) {
       if (item.parent?.status === 'paused' && !isFinalStatus(item.status)) {
         paused.add(item.parent.title)
       }
-      continue
-    }
-    if (isFinalStatus(item.status) && !lingering?.has(item.id)) {
-      if (item.completedAt && item.completedAt >= start) done.push({ item, list })
       continue
     }
     const section = sections.get(list.id) ?? { list, items: [] }
@@ -265,14 +294,15 @@ export function groupToday(
 
   const ordered = [...sections.values()].sort((a, b) => a.list.position - b.list.position)
   for (const section of ordered) section.items.sort(byUrgency)
-  done.sort((a, b) => (b.item.completedAt?.getTime() ?? 0) - (a.item.completedAt?.getTime() ?? 0))
+  done.sort(latestDone)
+  noted.sort(latestNoted)
   agenda.sort(byTime(now))
 
   const pending = ordered.reduce(
     (total, section) => total + section.items.filter((item) => !isFinalStatus(item.status)).length,
     0,
   )
-  return { agenda, sections: ordered, done, pending, paused: [...paused] }
+  return { agenda, sections: ordered, done, noted, pending, paused: [...paused] }
 }
 
 /** Si un día es antes, el mismo o después que hoy. */
@@ -290,6 +320,8 @@ export interface DayGroups {
   sections: TodaySection[]
   /** Un día pasado: «Hecho ese día», lo terminado ese día de cualquier lista, lo último primero. */
   done: TodayDone[]
+  /** Un día pasado: «Apuntado ese día», las notas creadas ese día, la última primero. */
+  noted: TodayNote[]
 }
 
 /** Lo que se cuenta como hecho un día: lo terminado, no lo descartado ni lo cancelado. */
@@ -312,7 +344,8 @@ function byTime(day: Date) {
  * Otro día en Hoy (diseño 17, C2 y C4), con lo que trae la consulta de su mes (`fetchDays`). Un
  * día que viene enseña sus eventos y lo que vence ese día; uno pasado, sus eventos (atenuados en
  * la pantalla) y «Hecho ese día», lo que se terminó ese día (decisión de Fran, 2026-10-05). Lo que
- * venció ese día y sigue pendiente no sale en uno pasado: está en Hoy, atrasado. Hoy es
+ * venció ese día y sigue pendiente no sale en uno pasado: está en Hoy, atrasado. Y, desde el
+ * 2026-10-22, las notas apuntadas ese día («Apuntado ese día»). Hoy es
  * `groupToday`. Como allí, se vuelve a filtrar con las listas en caché.
  */
 export function groupDay(
@@ -325,6 +358,7 @@ export function groupDay(
   const agenda: TodayEvent[] = []
   const sections = new Map<string, TodaySection>()
   const done: TodayDone[] = []
+  const noted: TodayNote[] = []
 
   for (const item of items) {
     const list = byId.get(item.listId)
@@ -333,6 +367,10 @@ export function groupDay(
       if (item.status === 'upcoming' && showsInToday(item) && occursOn(item, day)) {
         agenda.push({ item, list })
       }
+      continue
+    }
+    if (item.kind === 'note') {
+      if (tense === 'past' && isOnDay(item.createdAt, day)) noted.push({ item, list })
       continue
     }
     if (tense === 'past') {
@@ -352,16 +390,17 @@ export function groupDay(
 
   const ordered = [...sections.values()].sort((a, b) => a.list.position - b.list.position)
   for (const section of ordered) section.items.sort(byUrgency)
-  done.sort((a, b) => (b.item.completedAt?.getTime() ?? 0) - (a.item.completedAt?.getTime() ?? 0))
+  done.sort(latestDone)
+  noted.sort(latestNoted)
   agenda.sort(byTime(day))
-  return { agenda, sections: ordered, done }
+  return { agenda, sections: ordered, done, noted }
 }
 
 /**
  * Los días con algo entre `start` y `end`: el punto bajo el día en la tira y en el mes (diseño 17,
  * C1 y D4). Un punto quiere decir que ese día no sale vacío: sus eventos (también las veces de lo
- * que se repite), lo que vence (en hoy o después) y lo hecho (hasta hoy). Lo que vencía un día
- * pasado y sigue pendiente no lo marca, como no sale en él.
+ * que se repite), lo que vence (en hoy o después), lo hecho y las notas apuntadas (hasta hoy). Lo
+ * que vencía un día pasado y sigue pendiente no lo marca, como no sale en él.
  */
 export function markedDays(
   items: readonly TodayItem[],
@@ -376,6 +415,13 @@ export function markedDays(
     if (item.kind === 'event') {
       if (item.status !== 'upcoming' || !showsInToday(item)) continue
       for (const at of occurrencesBetween(item, start, end)) marked.add(dayKey(at))
+      continue
+    }
+    if (item.kind === 'note') {
+      const { createdAt } = item
+      if (createdAt < tomorrow && createdAt >= start && createdAt < end) {
+        marked.add(dayKey(createdAt))
+      }
       continue
     }
     const { completedAt, dueAt } = item
@@ -449,9 +495,10 @@ export function emptyDay(day: Date, today: Date): { title: string; body: string 
     : { title: `Nada para el ${name}.`, body: 'Lo que tenga ese día como fecha saldrá aquí.' }
 }
 
-/** «1 hecha hoy» / «3 hechas hoy». */
-export function doneTodayLabel(count: number): string {
-  return `${count} ${count === 1 ? 'hecha' : 'hechas'} hoy`
+/** Las cabeceras de lo hecho y lo apuntado (Fran, 2026-10-22): en Hoy, plegadas; otro día, no. */
+export function dayLogLabel(kind: 'done' | 'noted', tense: 'today' | 'past'): string {
+  const verb = kind === 'done' ? 'Hecho' : 'Apuntado'
+  return `${verb} ${tense === 'today' ? 'hoy' : 'ese día'}`
 }
 
 /**

@@ -176,7 +176,7 @@ describe('repetición personalizada (3.6, diseño 21)', () => {
     })
   })
 
-  it('Hoy: la vez hecha sale en «hechas hoy» con cuándo vuelve y la hora (B12)', async () => {
+  it('Hoy: la vez hecha sale en «Hecho hoy» con cuándo vuelve y la hora (B12)', async () => {
     const user = userEvent.setup()
     const doneAt = set(today, { hours: 8, minutes: 40 })
     vi.mocked(todayApi.fetchToday).mockResolvedValue([])
@@ -185,7 +185,7 @@ describe('repetición personalizada (3.6, diseño 21)', () => {
       { id: 'c1', item: { ...basura, dueAt: next }, doneAt, doneBy: null, occurrence: today },
     ])
 
-    const done = await screen.findByRole('button', { name: '1 hecha hoy' })
+    const done = await screen.findByRole('button', { name: 'Hecho hoy · 1' })
     await user.click(done)
     expect(
       await screen.findByText(`Vuelve el ${format(next, 'EEEE d')} · 8:40`),

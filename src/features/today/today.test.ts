@@ -7,7 +7,7 @@ import {
   dayEyebrow,
   dayKey,
   dayTitle,
-  doneTodayLabel,
+  dayLogLabel,
   emptyDay,
   groupDay,
   groupToday,
@@ -152,7 +152,7 @@ describe('groupToday', () => {
     ])
   })
 
-  it('lo terminado hoy pasa a «hechas hoy», lo último primero; lo terminado antes, a ningún sitio', () => {
+  it('lo terminado hoy pasa a «Hecho hoy», lo último primero; lo terminado antes, a ningún sitio', () => {
     const items = [
       item('grifo'),
       item('basura', { status: 'done', completedAt: at(28, 8) }),
@@ -163,6 +163,39 @@ describe('groupToday', () => {
     expect(titles(groups)).toEqual([['casa', ['grifo']]])
     expect(groups.done.map((entry) => entry.item.id)).toEqual(['dni', 'basura'])
     expect(groups.pending).toBe(1)
+  })
+
+  it('«Hecho hoy» lleva también lo de sin fecha y lo comprado, no lo descartado (Fran, 2026-10-22)', () => {
+    const items = [
+      item('sin-fecha', { dueAt: null, status: 'done', completedAt: at(28, 9) }),
+      item('leche', {
+        kind: 'shopping',
+        dueAt: null,
+        status: 'bought',
+        completedAt: at(28, 9, 30),
+      }),
+      item('mañana', { dueAt: at(29), status: 'done', completedAt: at(28, 8) }),
+      item('roto', { kind: 'shopping', dueAt: null, status: 'discarded', completedAt: at(28, 9) }),
+      item('pendiente-sin-fecha', { dueAt: null }),
+    ]
+    const groups = groupToday(items, lists, { now })
+    expect(groups.sections).toEqual([])
+    expect(groups.done.map((entry) => entry.item.id)).toEqual(['leche', 'sin-fecha', 'mañana'])
+    expect(groups.pending).toBe(0)
+  })
+
+  it('«Apuntado hoy»: las notas creadas hoy, la última primero', () => {
+    const items = [
+      item('portal', { kind: 'note', dueAt: null, createdAt: at(28, 9) }),
+      item('viaje', { kind: 'note', dueAt: null, createdAt: at(28, 8), listId: 'trabajo' }),
+      item('vieja', { kind: 'note', dueAt: null, createdAt: at(27, 23) }),
+    ]
+    const groups = groupToday(items, lists, { now })
+    expect(groups.sections).toEqual([])
+    expect(groups.noted.map(({ item, list }) => [item.id, list.id])).toEqual([
+      ['portal', 'casa'],
+      ['viaje', 'trabajo'],
+    ])
   })
 
   it('un recién terminado se queda en su sección mientras está en `lingering`, sin contar', () => {
@@ -213,10 +246,12 @@ describe('overdueLabel', () => {
 })
 
 describe('textos', () => {
-  it('dayKey y «N hechas hoy»', () => {
+  it('dayKey y las cabeceras de lo hecho y lo apuntado', () => {
     expect(dayKey(now)).toBe('2026-09-28')
-    expect(doneTodayLabel(1)).toBe('1 hecha hoy')
-    expect(doneTodayLabel(3)).toBe('3 hechas hoy')
+    expect(dayLogLabel('done', 'today')).toBe('Hecho hoy')
+    expect(dayLogLabel('noted', 'today')).toBe('Apuntado hoy')
+    expect(dayLogLabel('done', 'past')).toBe('Hecho ese día')
+    expect(dayLogLabel('noted', 'past')).toBe('Apuntado ese día')
   })
 })
 
@@ -248,6 +283,13 @@ describe('sublistas en Hoy (diseño 12, A1)', () => {
     expect(titles(groups)).toEqual([['casa', ['publicar']]])
     expect(groups.pending).toBe(1)
     expect(groups.paused).toEqual(['Roma'])
+    // Lo terminado hoy sí cuenta en «Hecho hoy», aunque su sublista esté hecha.
+    const hecha = {
+      ...dentro('y', 'done', 'Oporto'),
+      status: 'done' as const,
+      completedAt: at(28, 9),
+    }
+    expect(groupToday([hecha], lists, { now }).done.map(({ item }) => item.id)).toEqual(['y'])
   })
 
   it('la meta empieza por la ruta', () => {
@@ -368,11 +410,15 @@ describe('groupDay', () => {
       item('descartado', { kind: 'shopping', status: 'discarded', completedAt: at(25, 12) }),
       item('pendiente', { dueAt: at(25) }),
       item('otro dia', { status: 'done', completedAt: at(24, 10) }),
+      item('idea', { kind: 'note', dueAt: null, createdAt: at(25, 9) }),
+      item('lista', { kind: 'note', dueAt: null, createdAt: at(25, 20) }),
+      item('nota otro dia', { kind: 'note', dueAt: null, createdAt: at(24, 9) }),
     ]
     const groups = groupDay(items, lists, { day: friday, today })
     expect(groups.agenda.map(({ item }) => item.id)).toEqual(['concierto'])
     expect(groups.sections).toEqual([])
     expect(groups.done.map(({ item }) => item.id)).toEqual(['pan', 'regalo'])
+    expect(groups.noted.map(({ item }) => item.id)).toEqual(['lista', 'idea'])
   })
 
   it('lo de una lista que ya no está (archivada) no sale', () => {
@@ -391,12 +437,14 @@ describe('markedDays', () => {
       item('demo', { dueAt: new Date(2026, 9, 1) }),
       item('atrasada', { dueAt: at(21) }),
       item('hecha', { status: 'done', dueAt: null, completedAt: at(15, 10) }),
+      item('nota', { kind: 'note', dueAt: null, createdAt: at(12, 10) }),
       event('cancelado', { dueAt: at(30), status: 'cancelled' }),
     ]
     const marked = markedDays(items, lists, { ...monthGrid(today), today })
     expect([...marked].sort()).toEqual([
       '2026-09-03',
       '2026-09-10',
+      '2026-09-12',
       '2026-09-15',
       '2026-09-17',
       '2026-09-24',

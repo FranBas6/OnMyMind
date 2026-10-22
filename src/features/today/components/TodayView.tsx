@@ -23,8 +23,7 @@ import {
 } from '../today'
 import { AgendaRow } from './AgendaRow'
 import { DayAside, DayStrip } from './DayCalendar'
-import { DoneOnDaySection } from './DoneOnDaySection'
-import { DoneTodaySection } from './DoneTodaySection'
+import { DoneSection, NotedSection } from './DayLog'
 import { TodayEmpty } from './TodayEmpty'
 import { TodaySection } from './TodaySection'
 
@@ -45,12 +44,12 @@ interface TodayViewProps {
  * Hoy (02 §Hoy, pantalla 7): la fecha, y por listas lo que vence hoy o está atrasado. Se completa
  * aquí mismo; tocar una fila abre su detalle sin salir de Hoy (hoja en móvil, panel en
  * escritorio). Arriba, la «Agenda» con los eventos de hoy de cualquier lista, por hora (diseño
- * 17, H1; solo si hay alguno). Al final, plegado, lo hecho hoy.
+ * 17, H1; solo si hay alguno). Al final, plegado, lo hecho y lo apuntado hoy.
  *
  * Desde la 2.5 (diseño 17, C1–C7 y D4–D8) deja ver cualquier día: en el móvil, con la tira de la
  * semana y el mes bajo el título; en escritorio, con ‹ › junto al título, el mes a la derecha y
  * las teclas ← → y T. Un día que viene enseña sus eventos y lo que vence; uno pasado, sus eventos
- * atenuados y «Hecho ese día».
+ * atenuados, «Hecho ese día» y «Apuntado ese día».
  */
 export function TodayView({ day, onSelectDay, openItemId, onOpenItem }: TodayViewProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -104,7 +103,8 @@ export function TodayView({ day, onSelectDay, openItemId, onOpenItem }: TodayVie
           other.groups &&
           (other.groups.agenda.length === 0 &&
           other.groups.sections.length === 0 &&
-          other.groups.done.length === 0 ? (
+          other.groups.done.length === 0 &&
+          other.groups.noted.length === 0 ? (
             <TodayEmpty {...emptyDay(selected, today)} />
           ) : (
             <div className="flex flex-col gap-[22px]">
@@ -114,7 +114,12 @@ export function TodayView({ day, onSelectDay, openItemId, onOpenItem }: TodayVie
               {other.groups.sections.map((section) => (
                 <TodaySection key={section.list.id} section={section} now={today} otherDay />
               ))}
-              {other.groups.done.length > 0 && <DoneOnDaySection done={other.groups.done} />}
+              {other.groups.done.length > 0 && (
+                <DoneSection done={other.groups.done} tense="past" />
+              )}
+              {other.groups.noted.length > 0 && (
+                <NotedSection notes={other.groups.noted} tense="past" />
+              )}
             </div>
           ))
         )}
@@ -127,7 +132,7 @@ export function TodayView({ day, onSelectDay, openItemId, onOpenItem }: TodayVie
   )
 }
 
-/** Hoy de siempre: la «Agenda», las tareas por lista, lo pausado y «N hechas hoy». */
+/** Hoy de siempre: la «Agenda», las tareas por lista, lo pausado, «Hecho hoy» y «Apuntado hoy». */
 function TodayContent({
   groups,
   now,
@@ -151,7 +156,12 @@ function TodayContent({
       {pausedNote(groups.paused) && (
         <p className="-mt-2 px-1 text-[13px] text-subtle-foreground">{pausedNote(groups.paused)}</p>
       )}
-      {groups.done.length > 0 && <DoneTodaySection done={groups.done} />}
+      {(groups.done.length > 0 || groups.noted.length > 0) && (
+        <div className="flex flex-col">
+          {groups.done.length > 0 && <DoneSection done={groups.done} tense="today" />}
+          {groups.noted.length > 0 && <NotedSection notes={groups.noted} tense="today" />}
+        </div>
+      )}
     </>
   )
 }

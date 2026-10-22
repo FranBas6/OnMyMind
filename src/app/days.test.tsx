@@ -116,7 +116,13 @@ const regalo = item('Comprar el regalo de Leo', {
   status: 'done',
   completedAt: at(9, 18, 10),
 })
-const all = [dentista, yoga, cumple, demo, concierto, regalo]
+const idea = item('Ideas para la fiesta', {
+  listId: 'regalos',
+  kind: 'note',
+  dueAt: null,
+  createdAt: at(9, 18, 9, 5),
+})
+const all = [dentista, yoga, cumple, demo, concierto, regalo, idea]
 
 function setDesktop(on: boolean) {
   Object.defineProperty(window, 'matchMedia', {
@@ -214,7 +220,7 @@ describe('cualquier día en Hoy (2.5, diseño 17)', () => {
     expect(screen.getByRole('list', { name: /^Semana del 19 de octubre/ })).toBeInTheDocument()
   })
 
-  it('un día pasado: sus eventos y «Hecho ese día»; uno vacío lo dice', async () => {
+  it('un día pasado: sus eventos, «Hecho ese día» y «Apuntado ese día», con la hora', async () => {
     renderToday('/today?day=2026-09-18')
 
     expect(await screen.findByRole('list', { name: 'Hecho ese día' })).toHaveTextContent(
@@ -223,7 +229,11 @@ describe('cualquier día en Hoy (2.5, diseño 17)', () => {
     expect(title()).toHaveTextContent('Viernes 18')
     expect(screen.getByText('Hoy es martes 22 · hace 4 días')).toBeInTheDocument()
     expect(agendaTitles()).toEqual(['Concierto'])
-    expect(screen.getByRole('list', { name: 'Hecho ese día' })).toHaveTextContent('Regalos')
+    expect(screen.getByRole('list', { name: 'Hecho ese día' })).toHaveTextContent('Regalos · 10:00')
+    // La nota apuntada ese día, sin tachar, con su lista y la hora (Fran, 2026-10-22).
+    const noted = screen.getByRole('list', { name: 'Apuntado ese día' })
+    expect(noted).toHaveTextContent('Ideas para la fiesta')
+    expect(noted).toHaveTextContent('Regalos · 9:05')
   })
 
   it('un día que viene sin nada', async () => {

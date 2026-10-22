@@ -165,6 +165,8 @@ describe('detalle de una lista de tareas', () => {
     expect(first).toHaveTextContent('Fecha límite: Hoy')
     expect(second).toHaveTextContent('Renovar el DNI')
     expect(within(outOfMind()).getByText('Sacar la basura')).toBeInTheDocument()
+    // Con cuándo se terminó (Fran, 2026-10-22); hace una hora, que antes de la una es ayer.
+    expect(within(outOfMind()).getByText(/^hecha (hoy · \d{1,2}:\d{2}|ayer)$/)).toBeInTheDocument()
   })
 
   it('añadir: el ítem sale al instante, el campo se vacía y conserva el foco', async () => {

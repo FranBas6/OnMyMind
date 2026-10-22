@@ -42,7 +42,7 @@ export function useToday({ lingering }: { lingering?: ReadonlySet<string> } = {}
   const lists = [...byId.values()]
   const grouped =
     query.data && ready ? groupToday(query.data, lists, { now, lingering }) : undefined
-  // Lo que se repite y se hizo hoy también cuenta en «N hechas hoy» (diseño 21, B12).
+  // Lo que se repite y se hizo hoy también cuenta en «Hecho hoy» (diseño 21, B12).
   const groups = grouped && {
     ...grouped,
     done: withCompletions(grouped.done, completionsOnDay(completions.data ?? [], lists, now)),

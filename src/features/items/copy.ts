@@ -23,11 +23,33 @@ function dayPhrase(date: Date, now: Date): string {
   return `el ${format(date, isSameYear(date, now) ? 'd MMM' : 'd MMM yyyy')}`
 }
 
+/** La hora de algo de hoy: « · 14:05»; de otro día, nada. */
+function todayTime(date: Date, now: Date, joiner: string): string {
+  return differenceInCalendarDays(now, date) === 0 ? `${joiner}${format(date, 'H:mm')}` : ''
+}
+
+/**
+ * Cuándo se terminó, en «Fuera de la cabeza» (Fran, 2026-10-22): «hecha hoy · 14:05», «comprado
+ * ayer», «hecha el 14 sep». Sin el verbo, si la fila ya dice cómo terminó: «hoy · 14:05», «14 sep».
+ */
+export function doneMoment(
+  item: Pick<Item, 'status' | 'completedAt'>,
+  now: Date,
+  { verb = true }: { verb?: boolean } = {},
+): string | null {
+  if (!isFinalStatus(item.status) || !item.completedAt) return null
+  const day = dayPhrase(item.completedAt, now)
+  const time = todayTime(item.completedAt, now, ' · ')
+  if (!verb) return `${day.replace(/^el /, '')}${time}`
+  return `${STATUS_LABELS[item.status].toLowerCase()} ${day}${time}`
+}
+
 /** Días que una captura se cuenta como reciente («capturada ayer») y no por su fecha. */
 const RECENT_DAYS = 7
 
 /**
- * Cuándo, en el subtítulo del detalle (diseño 06): «hecha hoy» (o «comprado ayer»), «capturada
+ * Cuándo, en el subtítulo del detalle (diseño 06): «hecha hoy a las 14:05» (con la hora desde el
+ * 2026-10-22, Fran) o «comprado ayer», «capturada
  * hace 5 min» o «capturada el martes» si es de esta semana, y si no «creada el 14 sep».
  */
 export function itemMoment(
@@ -35,7 +57,8 @@ export function itemMoment(
   now: Date = new Date(),
 ): string {
   if (isFinalStatus(item.status) && item.completedAt) {
-    return `${STATUS_LABELS[item.status].toLowerCase()} ${dayPhrase(item.completedAt, now)}`
+    const { completedAt } = item
+    return `${STATUS_LABELS[item.status].toLowerCase()} ${dayPhrase(completedAt, now)}${todayTime(completedAt, now, ' a las ')}`
   }
   if (differenceInCalendarDays(now, item.createdAt) < RECENT_DAYS) {
     const age = formatCaptureAge(item.createdAt, now)

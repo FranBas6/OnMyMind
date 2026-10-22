@@ -181,7 +181,7 @@ describe('Hoy', () => {
     expect(screen.queryByText('Llamar al seguro')).not.toBeInTheDocument()
   })
 
-  it('completar desde Hoy: se ve el check, sale y queda en «1 hecha hoy»', async () => {
+  it('completar desde Hoy: se ve el check, sale y queda en «Hecho hoy», con su lista y la hora', async () => {
     const user = userEvent.setup()
     renderToday([grifo, propuesta])
 
@@ -193,14 +193,48 @@ describe('Hoy', () => {
     await waitFor(() => {
       expect(screen.queryByRole('region', { name: 'Casa' })).not.toBeInTheDocument()
     })
-    const done = screen.getByRole('region', { name: 'Hechas hoy' })
-    await user.click(within(done).getByRole('button', { name: '1 hecha hoy' }))
+    const done = screen.getByRole('region', { name: 'Hecho hoy' })
+    await user.click(within(done).getByRole('button', { name: 'Hecho hoy · 1' }))
     expect(within(done).getByText('Arreglar el grifo de la cocina')).toBeInTheDocument()
+    expect(within(done).getByText(/^Casa · \d{1,2}:\d{2}$/)).toBeInTheDocument()
 
     // Desmarcarla la devuelve a su sección.
     await user.click(within(done).getByRole('checkbox', { name: 'Arreglar el grifo de la cocina' }))
     expect(await screen.findByRole('region', { name: 'Casa' })).toBeInTheDocument()
     expect(itemsApi.updateItemStatus).toHaveBeenLastCalledWith(grifo.id, 'pending')
+  })
+
+  it('«Hecho hoy» lleva lo de sin fecha y lo comprado, y «Apuntado hoy» las notas nuevas', async () => {
+    const user = userEvent.setup()
+    const leche = item('5a0c3e0e-1f7e-4d59-9a39-1c3b9f7a0011', 'Leche', {
+      kind: 'shopping',
+      dueAt: null,
+      status: 'bought',
+      completedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 20),
+    })
+    const portal = item('5a0c3e0e-1f7e-4d59-9a39-1c3b9f7a0012', 'Código del portal', {
+      listId: 'i',
+      kind: 'note',
+      dueAt: null,
+      createdAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 40),
+    })
+    renderToday([leche, portal])
+
+    // No hay nada pendiente: el vacío, y debajo lo de hoy, plegado.
+    expect(await screen.findByText('Nada en mente para hoy.')).toBeInTheDocument()
+    const done = screen.getByRole('region', { name: 'Hecho hoy' })
+    expect(within(done).queryByText(/^Leche/)).not.toBeInTheDocument()
+    await user.click(within(done).getByRole('button', { name: 'Hecho hoy · 1' }))
+    // En una lista de tareas, la compra dice cómo terminó (diseño 12).
+    expect(within(done).getByText('Leche · Comprado')).toBeInTheDocument()
+    expect(within(done).getByText('Casa · 10:20')).toBeInTheDocument()
+
+    const noted = screen.getByRole('region', { name: 'Apuntado hoy' })
+    await user.click(within(noted).getByRole('button', { name: 'Apuntado hoy · 1' }))
+    expect(within(noted).getByText('Código del portal')).toBeInTheDocument()
+    expect(within(noted).getByText('En mente · 12:40')).toBeInTheDocument()
+    // Sin tachar: una nota no se termina.
+    expect(within(noted).getByText('Código del portal')).not.toHaveClass('line-through')
   })
 
   it('sin nada para hoy, el vacío del diseño', async () => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { List } from '@/features/lists'
 
-import { addPlaceholder, destinationSummary, itemMoment } from './copy'
+import { addPlaceholder, destinationSummary, doneMoment, itemMoment } from './copy'
 
 const now = new Date(2026, 8, 25, 18, 0)
 
@@ -48,7 +48,7 @@ describe('itemMoment', () => {
     ],
     [
       { status: 'done', completedAt: new Date(2026, 8, 25, 9), createdAt: new Date(2026, 8, 14) },
-      'hecha hoy',
+      'hecha hoy a las 9:00',
     ],
     [
       { status: 'bought', completedAt: new Date(2026, 8, 24, 9), createdAt: new Date(2026, 8, 14) },
@@ -56,6 +56,27 @@ describe('itemMoment', () => {
     ],
   ] as const)('%j → «%s»', (item, expected) => {
     expect(itemMoment(item, now)).toBe(expected)
+  })
+})
+
+describe('doneMoment', () => {
+  const done = (completedAt: Date, status: 'done' | 'bought' = 'done') => ({ status, completedAt })
+
+  it('cuándo se terminó: con la hora solo si es de hoy (Fran, 2026-10-22)', () => {
+    expect(doneMoment(done(new Date(2026, 8, 25, 14, 5)), now)).toBe('hecha hoy · 14:05')
+    expect(doneMoment(done(new Date(2026, 8, 24, 9), 'bought'), now)).toBe('comprado ayer')
+    expect(doneMoment(done(new Date(2026, 8, 14, 9)), now)).toBe('hecha el 14 sep')
+    expect(doneMoment(done(new Date(2025, 11, 30, 9)), now)).toBe('hecha el 30 dic 2025')
+  })
+
+  it('sin el verbo, si la fila ya dice cómo terminó', () => {
+    const verb = false
+    expect(doneMoment(done(new Date(2026, 8, 25, 14, 5)), now, { verb })).toBe('hoy · 14:05')
+    expect(doneMoment(done(new Date(2026, 8, 14, 9)), now, { verb })).toBe('14 sep')
+  })
+
+  it('nada si no está terminado', () => {
+    expect(doneMoment({ status: 'pending', completedAt: null }, now)).toBeNull()
   })
 })
 
