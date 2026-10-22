@@ -29,7 +29,8 @@ export const PERSIST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 // `datos-2` (5.6): las listas ganaron `view` y contadores por tipo (5.3) y los ítems `chooseOne` y
 // `chosenId` (5.1); con lo guardado antes, la app nueva se rompía al pintar Inicio. `datos-3` (5.7):
 // los ítems ganan `sealed` (notas protegidas). `datos-4` (5.8): las listas ganan `hidden`.
-export const CACHE_BUSTER = 'datos-4'
+// `datos-5` (6.1): los ítems ganan `files` (documentos).
+export const CACHE_BUSTER = 'datos-5'
 
 const KEY = 'onmymind-query-cache'
 /** Guardar a lo sumo una vez por segundo: la caché cambia a menudo (optimistas, refrescos). */

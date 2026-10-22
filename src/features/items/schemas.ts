@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { parseTaskFields } from './fields'
 import { ITEM_KINDS, ITEM_STATUSES } from './status'
-import type { Item, ItemLink, PriceTracking } from './types'
+import type { Item, ItemFile, ItemLink, PriceTracking } from './types'
 
 /** Mismo límite que el `check` de `items.title` (03 §items). */
 export const ITEM_TITLE_MAX_LENGTH = 300
@@ -16,7 +16,7 @@ const priceSourceSchema = z.enum(['manual', 'web', 'auto']).nullable()
 
 /** Las columnas que la app lee de `items` (todas las consultas piden estas). */
 export const ITEM_COLUMNS =
-  'id, list_id, kind, parent_id, choose_one, chosen_id, title, notes, protected, sealed_notes, sealed_iv, sealed_key_id, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at, price_link_id, price_store, price_followed, price_failures, created_by, completed_by, links:item_links!item_links_item_id_fkey(id, url, url_title, url_site, price_cents, currency, price_source, price_checked_at, price_followed, price_failures, position), images:item_images(id, path, position)'
+  'id, list_id, kind, parent_id, choose_one, chosen_id, title, notes, protected, sealed_notes, sealed_iv, sealed_key_id, status, fields, position, due_at, all_day, recurrence, completed_at, created_at, left_inbox_id, left_inbox_at, url, url_title, image_url, image_path, url_site, price_cents, currency, price_source, previous_price_cents, price_checked_at, price_link_id, price_store, price_followed, price_failures, created_by, completed_by, links:item_links!item_links_item_id_fkey(id, url, url_title, url_site, price_cents, currency, price_source, price_checked_at, price_followed, price_failures, position), images:item_images(id, path, position), files:item_files(id, path, name, mime, size_bytes, position)'
 
 /** Límite de las notas: el `check` de `items.notes`. */
 export const ITEM_NOTES_MAX_LENGTH = 5000
@@ -62,6 +62,28 @@ export interface ItemRow {
   completed_by: string | null
   links: ItemLinkRow[]
   images: { id: string; path: string; position: number }[]
+  files: ItemFileRow[]
+}
+
+export interface ItemFileRow {
+  id: string
+  path: string
+  name: string
+  mime: string
+  size_bytes: number
+  position: number
+}
+
+/** Un documento de Supabase → de la app. */
+export function mapItemFileRow(row: ItemFileRow): ItemFile {
+  return {
+    id: row.id,
+    path: row.path,
+    name: row.name,
+    mime: row.mime,
+    sizeBytes: row.size_bytes,
+    position: row.position,
+  }
 }
 
 export interface ItemLinkRow {
@@ -139,6 +161,7 @@ export function mapItemRow(row: ItemRow): Item {
     priceCheckedAt: toDate(row.price_checked_at),
     links: row.links.map(mapItemLinkRow).sort((a, b) => a.position - b.position),
     images: [...row.images].sort((a, b) => a.position - b.position),
+    files: row.files.map(mapItemFileRow).sort((a, b) => a.position - b.position),
     priceLinkId: row.price_link_id,
     priceStore: row.price_store,
     priceTracking: priceTracking(row.price_followed, row.price_failures),

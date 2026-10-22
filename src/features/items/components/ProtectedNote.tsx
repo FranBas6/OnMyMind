@@ -338,3 +338,17 @@ export function ProtectedKindRow() {
     </div>
   )
 }
+
+/**
+ * En lugar de «+ Foto», «+ Enlace» y «+ Documento» (diseño 29, P1): una nota protegida no los
+ * lleva, y lo dice, en una caja gris con el candado.
+ */
+export function ProtectedMediaNote() {
+  return (
+    <p className="flex gap-2.5 rounded-2xl bg-fill px-4 py-3.5 text-[13.5px] leading-[1.45] text-muted-foreground">
+      <Lock aria-hidden className="mt-0.5 size-3.5 shrink-0" strokeWidth={2.4} />
+      Una nota protegida no lleva fotos, enlaces ni documentos: no se guardan con la clave y
+      parecerían protegidos.
+    </p>
+  )
+}

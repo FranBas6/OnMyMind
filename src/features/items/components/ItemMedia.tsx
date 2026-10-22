@@ -1,17 +1,29 @@
-import { Camera, ExternalLink, Link2, LoaderCircle, Trash2, WifiOff, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import {
+  Camera,
+  ExternalLink,
+  FileText,
+  Link2,
+  LoaderCircle,
+  Trash2,
+  WifiOff,
+  X,
+} from 'lucide-react'
+import { useRef, useState, type ReactNode } from 'react'
 
 import { dropNeighbors, reorder, POSITION_STEP } from '@/lib/reorder'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 
-import { useImageMutation } from '../hooks/useItemMutations'
+import { FILE_ACCEPT } from '../files'
+import { useFileUploads, useFileUrls } from '../hooks/useFileUploads'
+import { useFileMutation, useImageMutation } from '../hooks/useItemMutations'
 import type { LinkState } from '../hooks/useLinkMetadata'
 import { usePhotoSrc, usePhotoUploads } from '../hooks/usePhoto'
 import { linkDomain, linkPath } from '../links'
-import type { Item, ItemImage, ItemPatch } from '../types'
+import type { Item, ItemFile, ItemImage, ItemPatch } from '../types'
 import { hasLinks, sameLink } from '../stores'
 import { LinkInput } from './LinkInput'
+import { FileProblemLine, FilesSection } from './ItemFiles'
 import { AddStoreButton } from './Stores'
 import { PhotoStrip } from './PhotoStrip'
 import { PhotoViewer, type ViewerPhoto } from './PhotoViewer'
@@ -28,14 +40,18 @@ interface ItemMediaProps {
    */
   onAddLink: (url: string) => void
   onUpdate: (item: Item, patch: ItemPatch) => void
+  /** «Enlaces» con varios (4.6), que va entre el enlace y los documentos (diseño 29). */
+  linksSlot?: ReactNode
 }
 
 /**
- * Las fotos y el enlace de un ítem, debajo de las notas (diseño 15; diseño 23, D). Sin nada, dos
- * botones a medias, «+ Foto» y «+ Enlace» (D1). Con fotos propias, su tira, con «5 de 10» y el
+ * Las fotos, el enlace y los documentos de un ítem, debajo de las notas (diseño 15; diseño 23, D;
+ * diseño 29). Sin nada, una fila de tres botones iguales, «+ Foto», «+ Enlace» y «+ Documento»
+ * (29, F1). Cuando ya tiene de un tipo, su botón se va de la fila y su sección lleva su propio
+ * «añadir», en el orden Fotos, Enlaces, Documentos: con fotos propias, su tira, con «5 de 10» y el
  * «+ Foto» al final (`PhotoStrip`); con solo la imagen de la web, su cuadrado de 96 px con «De la
- * web», como en la 2a.6. Después la fila del enlace, y el botón que falta va debajo, a todo el
- * ancho. Pegar un enlace lo guarda al momento y busca solo el título y la imagen de la página
+ * web», como en la 2a.6; la fila del enlace o «Enlaces»; y «Documentos» (`FilesSection`). Debajo,
+ * la fila con lo que falta. Pegar un enlace lo guarda al momento y busca solo el título y la imagen de la página
  * (`useLinkMetadata`): si la cosa aún no tenía foto, esa imagen pasa a serlo, con «De la web».
  */
 export function ItemMedia({
@@ -45,6 +61,7 @@ export function ItemMedia({
   linkState,
   onAddLink,
   onUpdate,
+  linksSlot,
 }: ItemMediaProps) {
   const [editingLink, setEditingLink] = useState(false)
   const [addingLink, setAddingLink] = useState(false)
@@ -62,6 +79,14 @@ export function ItemMedia({
     },
   })
   const web = usePhotoSrc({ imagePath: null, imageUrl: item.imageUrl }, 'thumb')
+  // Los documentos (6.1, diseño 29).
+  const filePicker = useRef<HTMLInputElement>(null)
+  const fileMutation = useFileMutation()
+  const documents = useFileUploads(item, (file, onFailed) => {
+    fileMutation.mutate({ type: 'add', item, files: [file] }, { onError: onFailed })
+  })
+  const fileUrls = useFileUrls(item.files, online)
+  const hasFiles = item.files.length > 0 || documents.pending.length > 0
 
   const own = item.images
   const hasOwn = own.length > 0 || upload.pending.length > 0
@@ -120,30 +145,65 @@ export function ItemMedia({
     }
   }
 
+  const pickFiles = () => {
+    documents.clearProblem()
+    filePicker.current?.click()
+  }
+  // Quitar, con «Deshacer», que lo devuelve tal cual (F7). El archivo lo borra la limpieza de
+  // huérfanos cuando ya no se puede deshacer.
+  const removeFile = (file: ItemFile) => {
+    fileMutation.mutate({ type: 'remove', item, fileId: file.id })
+    showUndoToast({
+      icon: Trash2,
+      message: 'Documento quitado',
+      onUndo: () => {
+        fileMutation.mutate({ type: 'add', item, files: [file] })
+      },
+    })
+  }
+
   const viewerPhotos: ViewerPhoto[] = webOnly
     ? [{ key: 'web', path: null, url: item.imageUrl }]
     : own.map((image) => ({ key: image.id, path: image.path, url: null }))
 
-  const photoButton = (
-    <MediaButton
-      icon={Camera}
-      label="+ Foto"
-      note={online ? undefined : 'Necesita conexión'}
-      disabled={!online}
-      onClick={() => {
-        pickPhotos()
-      }}
-    />
-  )
-  const linkButton = (
-    <MediaButton
-      icon={Link2}
-      label="+ Enlace"
-      onClick={() => {
-        setEditingLink(true)
-      }}
-    />
-  )
+  // La fila con lo que falta (29, F1): sin fotos, sin enlace y sin documentos.
+  const missing = [
+    !hasOwn && !webOnly && (
+      <MediaButton
+        key="photo"
+        icon={Camera}
+        label="+ Foto"
+        note={online ? undefined : 'Necesita conexión'}
+        disabled={!online}
+        // Una foto elegida como documento: se dice que va aquí (X2).
+        highlight={documents.problem?.photo === true}
+        onClick={() => {
+          documents.clearProblem()
+          pickPhotos()
+        }}
+      />
+    ),
+    !hasLink && !editingLink && !many && (
+      <MediaButton
+        key="link"
+        icon={Link2}
+        label="+ Enlace"
+        onClick={() => {
+          setEditingLink(true)
+        }}
+      />
+    ),
+    !hasFiles && (
+      <MediaButton
+        key="file"
+        icon={FileText}
+        label="+ Documento"
+        note={online ? undefined : 'Necesita conexión'}
+        disabled={!online}
+        onClick={pickFiles}
+      />
+    ),
+  ].filter(Boolean)
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -164,89 +224,117 @@ export function ItemMedia({
           else if (files.length > 0) upload.add(files)
         }}
       />
+      <input
+        ref={filePicker}
+        type="file"
+        accept={FILE_ACCEPT}
+        multiple
+        hidden
+        aria-label="Elegir documentos"
+        onChange={(event) => {
+          const files = [...(event.target.files ?? [])]
+          event.target.value = ''
+          if (files.length > 0) documents.add(files)
+        }}
+      />
 
-      {!hasOwn && !webOnly && !hasLink && !editingLink && !many ? (
-        <div className="grid grid-cols-2 gap-2.5">
-          {photoButton}
-          {linkButton}
+      {hasOwn && (
+        <PhotoStrip
+          images={own}
+          pending={upload.pending}
+          online={online}
+          isDesktop={isDesktop}
+          onOpen={setViewing}
+          onAdd={() => {
+            pickPhotos()
+          }}
+          onMove={move}
+          onMakeFirst={makeFirst}
+          onRemove={remove}
+          onRetry={upload.retry}
+          onDiscard={upload.discard}
+        />
+      )}
+      {webOnly && (
+        <WebPhotoSquare
+          src={web.src}
+          title={item.title}
+          onOpen={() => {
+            setViewing(0)
+          }}
+        />
+      )}
+      {hasLink && item.url && (
+        <LinkRow
+          url={item.url}
+          title={item.urlTitle}
+          state={linkState}
+          onRemove={() => {
+            onUpdate(item, { url: null, urlTitle: null, urlSite: null })
+          }}
+        />
+      )}
+      {hasLink &&
+        item.url &&
+        (addingLink ? (
+          <LinkInput
+            validate={(url) =>
+              item.url && sameLink(item.url, url)
+                ? shopping
+                  ? 'Esta tienda ya está en la lista.'
+                  : 'Este enlace ya está.'
+                : null
+            }
+            onSave={(url) => {
+              setAddingLink(false)
+              onAddLink(url)
+            }}
+            onCancel={() => {
+              setAddingLink(false)
+            }}
+          />
+        ) : (
+          <AddStoreButton
+            label={shopping ? 'Otra tienda' : 'Otro enlace'}
+            className="-mt-1 h-9 self-start rounded-lg px-1"
+            onClick={() => {
+              setAddingLink(true)
+            }}
+          />
+        ))}
+      {!hasLink && editingLink && (
+        <LinkInput
+          onSave={saveLink}
+          onCancel={() => {
+            setEditingLink(false)
+          }}
+        />
+      )}
+      {linksSlot}
+      {hasFiles && (
+        <FilesSection
+          files={item.files}
+          pending={documents.pending}
+          urls={fileUrls.data}
+          online={online}
+          isDesktop={isDesktop}
+          onAdd={pickFiles}
+          onDrop={documents.add}
+          onRemove={removeFile}
+          onRetry={documents.retry}
+          onDiscard={documents.discard}
+        />
+      )}
+      {documents.problem && <FileProblemLine problem={documents.problem} />}
+      {missing.length > 0 && (
+        <div
+          className={cn(
+            'grid gap-2.5',
+            missing.length === 3 ? 'grid-cols-3 gap-2' : missing.length === 2 && 'grid-cols-2',
+          )}
+        >
+          {missing}
         </div>
-      ) : (
-        <>
-          {hasOwn && (
-            <PhotoStrip
-              images={own}
-              pending={upload.pending}
-              online={online}
-              isDesktop={isDesktop}
-              onOpen={setViewing}
-              onAdd={() => {
-                pickPhotos()
-              }}
-              onMove={move}
-              onMakeFirst={makeFirst}
-              onRemove={remove}
-              onRetry={upload.retry}
-              onDiscard={upload.discard}
-            />
-          )}
-          {webOnly && (
-            <WebPhotoSquare
-              src={web.src}
-              title={item.title}
-              onOpen={() => {
-                setViewing(0)
-              }}
-            />
-          )}
-          {hasLink && item.url && (
-            <LinkRow
-              url={item.url}
-              title={item.urlTitle}
-              state={linkState}
-              onRemove={() => {
-                onUpdate(item, { url: null, urlTitle: null, urlSite: null })
-              }}
-            />
-          )}
-          {hasLink &&
-            item.url &&
-            (addingLink ? (
-              <LinkInput
-                validate={(url) =>
-                  item.url && sameLink(item.url, url)
-                    ? shopping
-                      ? 'Esta tienda ya está en la lista.'
-                      : 'Este enlace ya está.'
-                    : null
-                }
-                onSave={(url) => {
-                  setAddingLink(false)
-                  onAddLink(url)
-                }}
-                onCancel={() => {
-                  setAddingLink(false)
-                }}
-              />
-            ) : (
-              <AddStoreButton
-                label={shopping ? 'Otra tienda' : 'Otro enlace'}
-                className="-mt-1 h-9 self-start rounded-lg px-1"
-                onClick={() => {
-                  setAddingLink(true)
-                }}
-              />
-            ))}
-          {!hasLink && editingLink && (
-            <LinkInput
-              onSave={saveLink}
-              onCancel={() => {
-                setEditingLink(false)
-              }}
-            />
-          )}
-          {!hasOwn && !webOnly && photoButton}
-          {!hasLink && !editingLink && !many && linkButton}
-        </>
       )}
 
       <PhotoViewer
@@ -290,17 +378,23 @@ export function ItemMedia({
   )
 }
 
+/**
+ * Un botón de la fila de lo que falta (diseño 29, F1): 48 px, gris. Sin red, «Necesita conexión»
+ * debajo (X6); `highlight`, resaltado en índigo, cuando una foto se eligió como documento (X2).
+ */
 function MediaButton({
   icon: Icon,
   label,
   note,
   disabled = false,
+  highlight = false,
   onClick,
 }: {
   icon: typeof Camera
   label: string
   note?: string | undefined
   disabled?: boolean
+  highlight?: boolean
   onClick: () => void
 }) {
   return (
@@ -308,11 +402,20 @@ function MediaButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="flex h-11 items-center justify-center gap-2 rounded-[14px] bg-fill px-3 text-sm font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:hover:text-muted-foreground"
+      className={cn(
+        'flex h-12 min-w-0 flex-col items-center justify-center rounded-[14px] px-1.5 text-[13.5px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        highlight
+          ? 'border-[1.5px] border-primary bg-brand-tint text-primary'
+          : 'bg-fill text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground',
+      )}
     >
-      <Icon aria-hidden className="size-4" strokeWidth={2.2} />
-      <span className={cn(disabled && 'opacity-70')}>{label}</span>
-      {note && <span className="text-xs font-medium text-subtle-foreground">· {note}</span>}
+      <span className={cn('flex items-center gap-1.5 whitespace-nowrap', disabled && 'opacity-70')}>
+        <Icon aria-hidden className="size-4 shrink-0" strokeWidth={2.2} />
+        {label}
+      </span>
+      {note && (
+        <span className="text-[11px] leading-tight font-medium text-subtle-foreground">{note}</span>
+      )}
     </button>
   )
 }

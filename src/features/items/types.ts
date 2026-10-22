@@ -80,6 +80,8 @@ export interface Item {
    * la miniatura de la fila; la mantiene el trigger `item_images_sync`.
    */
   images: ItemImage[]
+  /** Sus documentos, por su orden (6.1, diseño 29): hasta 5, de 5 MB. */
+  files: ItemFile[]
   /** La tienda de la que sale el precio: la más barata o, comprada, donde se compró. */
   priceLinkId: string | null
   /** Su nombre («MediaMarkt»), para «En MediaMarkt, la más barata de 3». */
@@ -98,6 +100,19 @@ export interface Item {
 export interface ItemImage {
   id: string
   path: string
+  position: number
+}
+
+/**
+ * Un documento de una cosa (`item_files`, 6.1): su archivo en Storage (`item-files`), su nombre, su
+ * tipo y su tamaño, para enseñarlo sin abrirlo (también sin conexión).
+ */
+export interface ItemFile {
+  id: string
+  path: string
+  name: string
+  mime: string
+  sizeBytes: number
   position: number
 }
 

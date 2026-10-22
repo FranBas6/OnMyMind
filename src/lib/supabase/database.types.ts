@@ -128,6 +128,47 @@ export type Database = {
           },
         ]
       }
+      item_files: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          mime: string
+          name: string
+          path: string
+          position: number
+          size_bytes: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          mime: string
+          name: string
+          path: string
+          position?: number
+          size_bytes: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          mime?: string
+          name?: string
+          path?: string
+          position?: number
+          size_bytes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'item_files_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       item_images: {
         Row: {
           created_at: string
@@ -951,6 +992,7 @@ export type Database = {
       broadcast_user: { Args: { p_payload: Json; p_user_id: string }; Returns: undefined }
       calendar_feed: { Args: { p_token: string }; Returns: Json }
       calendar_token: { Args: Record<PropertyKey, never>; Returns: string }
+      can_see_file: { Args: { p_name: string }; Returns: boolean }
       can_see_photo: { Args: { p_name: string }; Returns: boolean }
       change_author: { Args: Record<PropertyKey, never>; Returns: Json }
       claim_daily_summaries: {
@@ -1010,6 +1052,7 @@ export type Database = {
       is_final_status: { Args: { p_status: string }; Returns: boolean }
       is_hidden_list: { Args: { p_list_id: string }; Returns: boolean }
       is_list_member: { Args: { p_list_id: string }; Returns: boolean }
+      item_file_types: { Args: Record<PropertyKey, never>; Returns: string[] }
       item_statuses: {
         Args: { p_kind: Database['public']['Enums']['item_kind'] }
         Returns: string[]
@@ -1065,7 +1108,9 @@ export type Database = {
         Args: { p_list_id: string; p_reason: string; p_user_id?: string }
         Returns: undefined
       }
+      orphan_files: { Args: Record<PropertyKey, never>; Returns: string[] }
       orphan_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
+      own_files: { Args: Record<PropertyKey, never>; Returns: string[] }
       own_photos: { Args: Record<PropertyKey, never>; Returns: string[] }
       price_checks_due: {
         Args: { p_limit?: number }

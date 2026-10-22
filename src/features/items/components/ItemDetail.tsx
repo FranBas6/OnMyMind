@@ -46,7 +46,7 @@ import { ItemMedia } from './ItemMedia'
 import { ItemTitleField, NotesField } from './ItemTextFields'
 import { KindField } from './KindField'
 import { NoteTextField } from './NoteTextField'
-import { ProtectedKindRow, ProtectedNote } from './ProtectedNote'
+import { ProtectedKindRow, ProtectedMediaNote, ProtectedNote } from './ProtectedNote'
 import { useRowActionsContext } from './choiceContext'
 import { rowActions, type RowActionId } from '../rowActions'
 import { PriceAlertCard } from './PriceAlertCard'
@@ -223,17 +223,6 @@ export function ItemDetail({
     </div>
   )
 
-  const media = item.kind !== 'sublist' && (
-    <ItemMedia
-      key={`media-${item.id}`}
-      item={item}
-      isDesktop={isDesktop}
-      online={online}
-      linkState={link.linkState}
-      onAddLink={addLink}
-      onUpdate={onUpdate}
-    />
-  )
   const links = hasLinks(item) && item.kind !== 'shopping' && item.kind !== 'sublist' && (
     <LinksSection
       item={item}
@@ -244,6 +233,18 @@ export function ItemDetail({
         updateLink(item, linkId, patch)
       }}
       onRemove={removeLink}
+    />
+  )
+  const media = item.kind !== 'sublist' && (
+    <ItemMedia
+      key={`media-${item.id}`}
+      item={item}
+      isDesktop={isDesktop}
+      online={online}
+      linkState={link.linkState}
+      onAddLink={addLink}
+      onUpdate={onUpdate}
+      linksSlot={links}
     />
   )
   const kindField = isChoosable(item) && (
@@ -286,7 +287,7 @@ export function ItemDetail({
   // de dónde es y, en el móvil, su ··· y «Listo»; debajo, fotos, enlaces, «Tipo» y mover o borrar.
   if (item.kind === 'note') {
     // Vacía y sin fotos ni enlaces, al cerrarla se borra sola (B2e); con algo, se queda como estaba.
-    const hasMedia = hasThumb(item) || item.url !== null || hasLinks(item)
+    const hasMedia = hasThumb(item) || item.url !== null || hasLinks(item) || item.files.length > 0
     // Protegida y sin abrir, «Cerrar» en vez de «Listo» (diseño 26, C8): no hay nada que guardar.
     const locked = item.sealed !== null && opened.state !== 'open' && opened.state !== 'opening'
     return (
@@ -329,6 +330,7 @@ export function ItemDetail({
                 onDiscardEmpty(item)
               }}
             />
+            {opened.state === 'open' && <ProtectedMediaNote />}
             <ProtectedKindRow />
           </>
         ) : (
@@ -344,7 +346,6 @@ export function ItemDetail({
               }}
             />
             {media}
-            {links}
             {kindField}
           </>
         )}
@@ -419,8 +420,6 @@ export function ItemDetail({
           onNotice={setNotice}
         />
       )}
-
-      {links}
 
       {/* Debajo de la foto y del enlace, de donde sale (Fran, 2026-10-01; el diseño 16 lo ponía
           bajo el título). */}

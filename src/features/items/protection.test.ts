@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { protectionBlock } from './protection'
 
-const plain = { images: [], imagePath: null, imageUrl: null, url: null, links: [] }
+const plain = { images: [], imagePath: null, imageUrl: null, url: null, links: [], files: [] }
 const photo = (id: string) => ({ id, path: `u/i/${id}.webp`, position: 1000 })
 
 describe('proteger una nota (protection.ts, diseño 26)', () => {
@@ -31,6 +31,23 @@ describe('proteger una nota (protection.ts, diseño 26)', () => {
       protectionBlock({ ...plain, images: [photo('a')], url: 'https://example.com' }, []),
     ).toBe(
       'Esta nota tiene 1 foto y 1 enlace. De momento, una nota protegida es solo texto: quítalos para protegerla.',
+    )
+  })
+
+  it('con documentos, no: no se protegen con la clave (diseño 29, P2)', () => {
+    const doc = (id: string) => ({
+      id,
+      path: `u/i/${id}/x.pdf`,
+      name: `${id}.pdf`,
+      mime: 'application/pdf',
+      sizeBytes: 1000,
+      position: 1000,
+    })
+    expect(protectionBlock({ ...plain, files: [doc('a'), doc('b')] }, [])).toBe(
+      'Esta nota tiene 2 documentos. Los documentos no se protegen con la clave: quítalos antes; si los necesitas, guárdalos en otra nota sin proteger.',
+    )
+    expect(protectionBlock({ ...plain, files: [doc('a')], images: [photo('a')] }, [])).toBe(
+      'Esta nota tiene 1 foto y 1 documento. De momento, una nota protegida es solo texto: quítalos para protegerla.',
     )
   })
 })

@@ -1,10 +1,12 @@
 import { supabase } from '@/lib/supabase/client'
 import { UNDO_MS } from '@/lib/undoToast'
 
+import { FILE_BUCKET } from './files'
 import { PHOTO_BUCKET } from './photos'
 
 /**
- * Las fotos que ya no usa nadie dejan de ocupar sitio (sesión 2.8; 03 §Storage, 08 B.10). Una foto
+ * Las fotos que ya no usa nadie dejan de ocupar sitio (sesión 2.8; 03 §Storage, 08 B.10), y
+ * desde la 6.1 también los documentos. Una foto
  * se puede compartir entre un ítem y su copia («Duplicar» copia `image_path`), así que no se
  * borra la del ítem que cambia: la base dice cuáles no usa ningún ítem (`orphan_photos`, que
  * además deja lo subido hace menos de 10 minutos) y se borran con la API de Storage, que es la
@@ -22,28 +24,41 @@ export const CLEANUP_DELAY_MS = UNDO_MS + 25_000
 const DAILY_KEY = 'omm.photoCleanupAt'
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Borra estas rutas del bucket, de cien en cien. */
-export async function removePhotos(paths: readonly string[]): Promise<void> {
-  const bucket = supabase.storage.from(PHOTO_BUCKET)
+/** Borra estas rutas del bucket (el de las fotos, si no se dice otro), de cien en cien. */
+export async function removePhotos(
+  paths: readonly string[],
+  bucketId: string = PHOTO_BUCKET,
+): Promise<void> {
+  const bucket = supabase.storage.from(bucketId)
   for (let start = 0; start < paths.length; start += REMOVE_CHUNK) {
     const { error } = await bucket.remove(paths.slice(start, start + REMOVE_CHUNK))
     if (error) throw error
   }
 }
 
-/** Borra tus fotos que ya no usa ningún ítem. Devuelve cuántos archivos. */
+/**
+ * Borra tus fotos y tus documentos (6.1, `orphan_files`) que ya no usa ninguna cosa. Devuelve
+ * cuántos archivos.
+ */
 export async function removeOrphanPhotos(): Promise<number> {
-  const { data, error } = await supabase.rpc('orphan_photos')
-  if (error) throw error
-  await removePhotos(data)
-  return data.length
+  const [photos, files] = await Promise.all([
+    supabase.rpc('orphan_photos'),
+    supabase.rpc('orphan_files'),
+  ])
+  if (photos.error) throw photos.error
+  if (files.error) throw files.error
+  await removePhotos(photos.data)
+  await removePhotos(files.data, FILE_BUCKET)
+  return photos.data.length + files.data.length
 }
 
-/** Borra todas tus fotos (antes de borrar la cuenta). */
+/** Borra todas tus fotos y tus documentos (antes de borrar la cuenta). */
 export async function removeAllPhotos(): Promise<void> {
-  const { data, error } = await supabase.rpc('own_photos')
-  if (error) throw error
-  await removePhotos(data)
+  const [photos, files] = await Promise.all([supabase.rpc('own_photos'), supabase.rpc('own_files')])
+  if (photos.error) throw photos.error
+  if (files.error) throw files.error
+  await removePhotos(photos.data)
+  await removePhotos(files.data, FILE_BUCKET)
 }
 
 let timer: ReturnType<typeof setTimeout> | undefined

@@ -13,6 +13,7 @@ import type {
   Completion,
   Item,
   ItemKind,
+  ItemFile,
   ItemImage,
   ItemLink,
   ItemLinkPatch,
@@ -314,6 +315,9 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
     item.images.map((image) => ({ ...image, item_id: item.id })),
   )
   if (images.length > 0) await insertImages(images)
+  // Y sus documentos (6.1), igual.
+  const files = ordered.flatMap((item) => item.files.map((file) => ({ ...file, item_id: item.id })))
+  if (files.length > 0) await insertFiles(files)
 
   const links = ordered.flatMap((item) => item.links.map((link) => linkRow(item.id, link)))
   if (links.length === 0) return
@@ -524,5 +528,33 @@ export async function updateImage(
 /** Quita una foto. Su archivo lo borra después la limpieza de huérfanas (2.8). */
 export async function deleteImage(imageId: string): Promise<void> {
   const { error } = await supabase.from('item_images').delete().eq('id', imageId)
+  if (error) throw error
+}
+
+/**
+ * Añade documentos a cosas (6.1), con sus ids generados en el cliente: subir y «Deshacer» un
+ * borrado. Idempotente, como `insertImages`.
+ */
+export async function insertFiles(
+  files: readonly (ItemFile & { item_id: string })[],
+): Promise<void> {
+  const { error } = await supabase.from('item_files').upsert(
+    files.map((file) => ({
+      id: file.id,
+      item_id: file.item_id,
+      path: file.path,
+      name: file.name,
+      mime: file.mime,
+      size_bytes: file.sizeBytes,
+      position: file.position,
+    })),
+    { onConflict: 'id', ignoreDuplicates: true },
+  )
+  if (error) throw error
+}
+
+/** Quita un documento. Su archivo lo borra después la limpieza de huérfanos. */
+export async function deleteFile(fileId: string): Promise<void> {
+  const { error } = await supabase.from('item_files').delete().eq('id', fileId)
   if (error) throw error
 }

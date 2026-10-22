@@ -10,8 +10,10 @@ import { queryKeys } from '@/lib/queryKeys'
 import {
   createItem,
   deleteItem,
+  deleteFile,
   deleteImage,
   deleteLink,
+  insertFiles,
   insertImages,
   insertLinks,
   updateImage,
@@ -33,6 +35,7 @@ import { countItems, type Counts } from '../sublists'
 import type {
   Completion,
   Item,
+  ItemFile,
   ItemImage,
   ItemLink,
   ItemLinkPatch,
@@ -339,6 +342,7 @@ export function itemFromNew(item: NewItem, position: number): Item {
     priceCheckedAt: link?.price ? new Date() : null,
     links: [],
     images: [],
+    files: [],
     priceLinkId: null,
     priceStore: null,
     // El precio que trae al pegarlo es de la web: desde ahí se mira solo (3.8).
@@ -892,6 +896,58 @@ export function useImageMutation() {
   return useDurableMutation(imageMutation)
 }
 
+/** Añadir unos documentos ya subidos, o quitar uno (6.1, diseño 29). */
+export type FileChange =
+  { type: 'add'; item: Item; files: ItemFile[] } | { type: 'remove'; item: Item; fileId: string }
+
+/** Los documentos después del cambio, por su orden. */
+export function filesAfter(files: readonly ItemFile[], change: FileChange): ItemFile[] {
+  const next =
+    change.type === 'add'
+      ? [
+          ...files.filter((file) => !change.files.some((added) => added.id === file.id)),
+          ...change.files,
+        ]
+      : files.filter((file) => file.id !== change.fileId)
+  return next.sort((a, b) => a.position - b.position)
+}
+
+/**
+ * Los documentos (optimista), como las fotos: añadir los ya subidos y quitar uno, con su
+ * «Deshacer». En la cola de ítems: quitar sin red se envía al volver. Lo que se queda sin usar lo
+ * borra la limpieza de huérfanos.
+ */
+const fileMutation = durableMutation(itemMutationKey('file'), (queryClient) => ({
+  ...OFFLINE_TOLERANT,
+  mutationFn: (change: FileChange) =>
+    change.type === 'add'
+      ? insertFiles(change.files.map((file) => ({ ...file, item_id: change.item.id })))
+      : deleteFile(change.fileId),
+  onMutate: (change) => {
+    const update = (items: Item[]) =>
+      items.map((entry) =>
+        entry.id === change.item.id ? { ...entry, files: filesAfter(entry.files, change) } : entry,
+      )
+    return applyOptimistic(queryClient, {
+      items: { [change.item.listId]: update },
+      mixed: update,
+    })
+  },
+  onError: (error, _change, snapshot) => {
+    rollback(queryClient, snapshot, `No se ha podido guardar el documento. ${errorMessage(error)}`)
+  },
+  onSuccess: (_data, change) => {
+    if (change.type === 'remove') schedulePhotoCleanup()
+  },
+  onSettled: () => {
+    settle(queryClient)
+  },
+}))
+
+export function useFileMutation() {
+  return useDurableMutation(fileMutation)
+}
+
 /** Las mutaciones de ítems que se registran en el QueryClient (`setMutationDefaults`, 2.10). */
 export const itemMutations = [
   createItemMutation,
@@ -904,4 +960,5 @@ export const itemMutations = [
   insertItemsMutation,
   storeMutation,
   imageMutation,
+  fileMutation,
 ]

@@ -58,6 +58,8 @@ export const queryKeys = {
    * espera listas de ítems.
    */
   photo: (path: string, size: 'thumb' | 'full') => ['photo', path, size] as const,
+  /** Los enlaces firmados para abrir los documentos de una cosa (6.1). */
+  fileUrls: (paths: readonly string[]) => ['fileUrls', ...paths] as const,
   /** El título y la imagen de la página de un enlace (`fetch-metadata`). */
   // `2`: desde la 2.1 trae también el precio; lo guardado antes en caché no lo tenía.
   linkMetadata: (url: string) => ['link-metadata', 2, url] as const,

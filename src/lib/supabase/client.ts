@@ -16,18 +16,18 @@ function requireEnv(name: SupabaseEnvVar): string {
   return value
 }
 
+/** La dirección y la clave pública, para lo que no pasa por el cliente (subir con progreso, 6.1). */
+export const SUPABASE_URL = requireEnv('VITE_SUPABASE_URL')
+export const SUPABASE_ANON_KEY = requireEnv('VITE_SUPABASE_ANON_KEY')
+
 /** Cliente único de Supabase, tipado con el esquema generado en database.types.ts. */
-export const supabase = createClient<Database>(
-  requireEnv('VITE_SUPABASE_URL'),
-  requireEnv('VITE_SUPABASE_ANON_KEY'),
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      // Google (1.16) vuelve con un código de un solo uso que se canjea aquí con el verificador
-      // guardado al salir, en vez de con los tokens a la vista en la URL (flujo implícito).
-      flowType: 'pkce',
-    },
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    // Google (1.16) vuelve con un código de un solo uso que se canjea aquí con el verificador
+    // guardado al salir, en vez de con los tokens a la vista en la URL (flujo implícito).
+    flowType: 'pkce',
   },
-)
+})

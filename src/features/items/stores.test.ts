@@ -52,6 +52,7 @@ const compra: Item = {
   priceCheckedAt: new Date(2026, 6, 30),
   links: [],
   images: [],
+  files: [],
   priceLinkId: null,
   priceStore: null,
   priceTracking: null,

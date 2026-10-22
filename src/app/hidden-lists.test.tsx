@@ -97,6 +97,7 @@ function item(id: string, listId: string, title: string): Item {
     priceCheckedAt: null,
     links: [],
     images: [],
+    files: [],
     priceLinkId: null,
     priceStore: null,
     priceTracking: null,
