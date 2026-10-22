@@ -233,7 +233,14 @@ describe('la nota sin estado y las listas sin tipo (5.3, ADR-012)', () => {
     renderAt(`/lists/casa?item=${borrador.id}`, [inbox, casa], { casa: [borrador] })
 
     const sheet = await screen.findByRole('dialog', { name: /Detalle de «Borrador»/ })
-    await user.clear(within(sheet).getByRole('textbox', { name: 'Texto de la nota' }))
+    // Con la primera línea y sin resto, el resto dice dónde escribir (Fran, 2026-10-22); vacía
+    // del todo, solo «Escribe…» arriba.
+    const first = within(sheet).getByRole('textbox', { name: 'Texto de la nota' })
+    const rest = within(sheet).getByRole('textbox', { name: 'El resto de la nota' })
+    expect(rest).toHaveAttribute('placeholder', 'Escribe aquí…')
+    await user.clear(first)
+    expect(first).toHaveAttribute('placeholder', 'Escribe…')
+    expect(rest).not.toHaveAttribute('placeholder')
     await user.click(within(sheet).getByRole('button', { name: 'Listo' }))
 
     await waitFor(() => {

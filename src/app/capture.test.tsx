@@ -152,11 +152,13 @@ describe('captura rápida', () => {
     // En «En mente» se escribe una nota (diseño 25, B3): Intro hace otra línea y guarda «Guardar».
     expect(within(dialog).getByRole('button', { name: 'Tipo: Nota. Cambiar' })).toBeInTheDocument()
     expect(within(dialog).getByText('Intro, otra línea')).toBeInTheDocument()
+    // Debajo, dónde va el resto (Fran, 2026-10-22), hasta que se escribe en él.
+    const rest = within(dialog).getByRole('textbox', { name: 'El resto de la nota' })
+    expect(rest).toHaveAttribute('placeholder', 'Escribe aquí…')
     await user.type(field, 'Código del portal de Marta{Enter}4821 · el timbre no va')
     expect(screen.getByRole('dialog', { name: 'Captura rápida' })).toBeInTheDocument()
-    expect(within(dialog).getByRole('textbox', { name: 'El resto de la nota' })).toHaveValue(
-      '4821 · el timbre no va',
-    )
+    expect(rest).toHaveValue('4821 · el timbre no va')
+    expect(rest).not.toHaveAttribute('placeholder')
     await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
 
     await waitFor(() => {

@@ -42,6 +42,8 @@ interface NoteEditorProps {
   /** Teclas antes de las del texto (⌘↩ para guardar en la captura). */
   onKeyDown?: (event: KeyboardEvent<HTMLTextAreaElement>) => void
   placeholder: string
+  /** En el resto mientras está vacío, para que se vea dónde va el contenido (Fran, 2026-10-22). */
+  bodyPlaceholder?: string
   /** El nombre de la primera línea para lectores de pantalla; el resto es «El resto de la nota». */
   label: string
   autoFocus?: boolean
@@ -64,6 +66,7 @@ export function NoteEditor({
   onPaste,
   onKeyDown,
   placeholder,
+  bodyPlaceholder,
   label,
   autoFocus = false,
   titleClassName,
@@ -193,6 +196,7 @@ export function NoteEditor({
         }}
         data-vaul-no-drag
         aria-label="El resto de la nota"
+        placeholder={value.body === '' ? bodyPlaceholder : undefined}
         rows={1}
         value={value.body}
         maxLength={ITEM_NOTES_MAX_LENGTH}
@@ -203,7 +207,7 @@ export function NoteEditor({
         onKeyDown={bodyKeyDown}
         onBlur={blur}
         className={cn(
-          'min-w-0 resize-none overflow-hidden bg-transparent wrap-break-word outline-none',
+          'min-w-0 resize-none overflow-hidden bg-transparent wrap-break-word outline-none placeholder:text-subtle-foreground',
           bodyClassName,
         )}
       />
@@ -292,6 +296,8 @@ export function NoteTextField({
       onBlur={commit}
       autoFocus={autoFocus}
       placeholder="Escribe…"
+      // Vacía del todo ya dice «Escribe…» arriba: «Escribe aquí…» sale cuando hay primera línea.
+      bodyPlaceholder={value.title ? 'Escribe aquí…' : undefined}
       label="Texto de la nota"
       titleClassName="font-display text-2xl leading-[1.25] font-extrabold tracking-[-0.02em]"
       bodyClassName={cn('mt-1.5 text-[16.5px] leading-normal', !value.body && 'min-h-12')}

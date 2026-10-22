@@ -405,6 +405,7 @@ export function CaptureForm({
             onPaste={onNotePaste}
             onKeyDown={onNoteKeyDown}
             placeholder="¿Qué tienes en mente?"
+            bodyPlaceholder="Escribe aquí…"
             label="¿Qué tienes en mente?"
             autoFocus
             titleClassName={cn(
@@ -412,7 +413,7 @@ export function CaptureForm({
               'placeholder:text-placeholder',
               text.length > LONG_TEXT ? 'text-[22px]' : 'text-[26px]',
             )}
-            bodyClassName="mt-1 text-base leading-normal"
+            bodyClassName="mt-1 text-base leading-normal placeholder:text-placeholder"
           />
         </div>
       ) : (
