@@ -1,5 +1,6 @@
 import {
   checkboxState,
+  FileMeta,
   hasThumb,
   ItemRowDotsMenu,
   LinkMeta,
@@ -75,6 +76,12 @@ export function TodayRow({
           )}
           {item.url && <LinkMeta url={item.url} item={item} />}
           {detail && <span>{detail}</span>}
+          {item.files.length > 0 && (
+            <span className="flex items-center gap-2">
+              {detail && <span aria-hidden>·</span>}
+              <FileMeta item={item} />
+            </span>
+          )}
         </p>
       </div>
       {actions.isDesktop && <ItemRowDotsMenu item={item} />}

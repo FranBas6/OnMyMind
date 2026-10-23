@@ -2,6 +2,7 @@ import { Repeat } from 'lucide-react'
 
 import {
   eventTime,
+  FileMeta,
   hasThumb,
   isEarlierToday,
   ItemRowDotsMenu,
@@ -82,6 +83,12 @@ export function AgendaRow({ item, tense = 'today' }: { item: TodayItem; tense?: 
               <span aria-hidden>·</span>
               <Repeat aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
               <span className="truncate">{repeat}</span>
+            </>
+          )}
+          {item.files.length > 0 && (
+            <>
+              <span aria-hidden>·</span>
+              <FileMeta item={item} />
             </>
           )}
         </p>

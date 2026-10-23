@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as files from '@/features/items/files'
 import * as photos from '@/features/items/photos'
 import * as api from '@/features/lists/api'
 import type { List } from '@/features/lists'
@@ -11,6 +12,10 @@ import { queryKeys } from '@/lib/queryKeys'
 import { fakeSession, renderRoute } from '@/test/render-route'
 
 vi.mock('@/features/lists/api')
+vi.mock('@/features/items/files', async (importOriginal) => ({
+  ...(await importOriginal<typeof files>()),
+  copyItemFile: vi.fn(),
+}))
 vi.mock('@/features/items/photos', async (importOriginal) => ({
   ...(await importOriginal<typeof photos>()),
   copyItemPhoto: vi.fn(),
@@ -114,7 +119,12 @@ describe('duplicar una lista (4.4, diseño 23, C)', () => {
 
   it('desde el menú: el nombre propuesto, qué se copia, se abre la copia y «Deshacer» la borra (C1–C3)', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.duplicateList).mockResolvedValue({ listId: COPY, items: 24, photos: [] })
+    vi.mocked(api.duplicateList).mockResolvedValue({
+      listId: COPY,
+      items: 24,
+      photos: [],
+      files: [],
+    })
     const { router } = renderHome()
 
     await user.click(await screen.findByRole('button', { name: 'Opciones de «Maleta de viaje»' }))
@@ -150,7 +160,12 @@ describe('duplicar una lista (4.4, diseño 23, C)', () => {
 
   it('el nombre se puede cambiar', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.duplicateList).mockResolvedValue({ listId: COPY, items: 24, photos: [] })
+    vi.mocked(api.duplicateList).mockResolvedValue({
+      listId: COPY,
+      items: 24,
+      photos: [],
+      files: [],
+    })
     renderHome()
     await user.click(await screen.findByRole('button', { name: 'Opciones de «Maleta de viaje»' }))
     await user.click(await screen.findByRole('button', { name: 'Duplicar' }))
@@ -163,13 +178,23 @@ describe('duplicar una lista (4.4, diseño 23, C)', () => {
     expect(api.duplicateList).toHaveBeenCalledWith('maleta', 'Maleta de Lisboa')
   })
 
-  it('las fotos subidas se copian después, cada una a su copia', async () => {
+  it('las fotos y los documentos subidos se copian después, cada uno a su copia', async () => {
     const user = userEvent.setup()
     vi.mocked(photos.copyItemPhoto).mockResolvedValue()
+    vi.mocked(files.copyItemFile).mockResolvedValue()
+    const billete = {
+      itemId: 'nuevo-neceser',
+      path: 'ana/neceser/x/Billete.pdf',
+      name: 'Billete.pdf',
+      mime: 'application/pdf',
+      sizeBytes: 120000,
+      position: 1000,
+    }
     vi.mocked(api.duplicateList).mockResolvedValue({
       listId: COPY,
       items: 24,
       photos: [{ itemId: 'nuevo-neceser', path: 'ana/neceser/foto.webp', position: 1000 }],
+      files: [billete],
     })
     renderHome()
     await user.click(await screen.findByRole('button', { name: 'Opciones de «Maleta de viaje»' }))
@@ -184,6 +209,7 @@ describe('duplicar una lista (4.4, diseño 23, C)', () => {
         1000,
       )
     })
+    expect(files.copyItemFile).toHaveBeenCalledWith(billete)
   })
 
   it('una compartida contigo: «Compras de Fran», y la de Fran no cambia (C4, C5)', async () => {
@@ -191,7 +217,12 @@ describe('duplicar una lista (4.4, diseño 23, C)', () => {
     vi.mocked(sharingApi.fetchListPeople).mockResolvedValue([
       { userId: 'fran', displayName: 'Fran', avatarUrl: null, isOwner: true, joinedAt: null },
     ])
-    vi.mocked(api.duplicateList).mockResolvedValue({ listId: COPY, items: 5, photos: [] })
+    vi.mocked(api.duplicateList).mockResolvedValue({
+      listId: COPY,
+      items: 5,
+      photos: [],
+      files: [],
+    })
     renderHome()
 
     await user.click(await screen.findByRole('button', { name: 'Opciones de «Compras»' }))

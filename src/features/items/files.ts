@@ -230,3 +230,37 @@ export async function signedFileUrls(paths: readonly string[]): Promise<Record<s
     data.flatMap((entry) => (entry.path && entry.signedUrl ? [[entry.path, entry.signedUrl]] : [])),
   )
 }
+
+/** Un documento de otra cosa que se copia al duplicar su lista (lo que devuelve `duplicate_list`). */
+export interface CopiedFile {
+  itemId: string
+  path: string
+  name: string
+  mime: string
+  sizeBytes: number
+  position: number
+}
+
+/**
+ * Copia un documento subido de otra cosa para una nueva (6.2, al duplicar una lista): el archivo a
+ * tu carpeta (`{tú}/{cosa}/{uuid}/{nombre}`) y su fila, en su sitio. Así la copia lo sigue abriendo
+ * aunque se borre la original. El de una lista compartida contigo se puede leer (`can_see_file`),
+ * así que también se copia.
+ */
+export async function copyItemFile(file: CopiedFile): Promise<void> {
+  const { data: auth } = await supabase.auth.getSession()
+  const userId = auth.session?.user.id
+  if (!userId) throw new Error('Sin sesión')
+  const path = `${userId}/${file.itemId}/${crypto.randomUUID()}/${storageName(file.name)}`
+  const { error: copyError } = await supabase.storage.from(FILE_BUCKET).copy(file.path, path)
+  if (copyError) throw copyError
+  const { error } = await supabase.from('item_files').insert({
+    item_id: file.itemId,
+    path,
+    name: file.name,
+    mime: file.mime,
+    size_bytes: file.sizeBytes,
+    position: file.position,
+  })
+  if (error) throw error
+}

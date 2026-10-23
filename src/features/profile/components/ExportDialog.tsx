@@ -200,7 +200,7 @@ export function ExportDialog({ open, onOpenChange, isDesktop }: ExportDialogProp
         {/* Lo de las notas protegidas (5.7): su texto no sale en claro. Las listas ocultas (5.8),
             solo desbloqueado: lo dice siempre, haya o no, para no delatarlas. */}
         {format === 'json'
-          ? `Las fotos van como enlaces y el texto de las notas protegidas, cifrado.${unlocked ? '' : ' Las listas ocultas solo salen si las desbloqueas antes.'} Se descarga un archivo y lo guardas donde quieras.`
+          ? `Las fotos y los documentos van como enlaces y el texto de las notas protegidas, cifrado.${unlocked ? '' : ' Las listas ocultas solo salen si las desbloqueas antes.'} Se descarga un archivo y lo guardas donde quieras.`
           : 'Las sublistas salen como filas con su nombre en la columna «Sublista». De las notas protegidas, solo la primera línea.'}
       </p>
     </ResponsiveSheet>

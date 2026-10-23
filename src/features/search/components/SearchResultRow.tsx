@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react'
 import {
   hasThumb,
   ItemControl,
+  FileMeta,
   LinkMeta,
   RowPrice,
   RowNotes,
@@ -72,6 +73,7 @@ export function SearchResultRow({ result, now }: { result: SearchResult; now: Da
         <p className="mt-[5px] flex min-w-0 flex-wrap items-center gap-x-2 text-xs font-semibold text-muted-foreground md:mt-0 md:text-[13px] md:whitespace-nowrap">
           {item.url && <LinkMeta url={item.url} item={item} />}
           <span>{resultMeta(item, now, route)}</span>
+          <FileMeta item={item} />
         </p>
       </div>
       {/* Una compra con precio lo lleva a la derecha, como en su lista (diseño 16, A5 y D6). */}

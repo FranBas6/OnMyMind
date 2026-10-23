@@ -1,4 +1,4 @@
-import { Link2, Store } from 'lucide-react'
+import { Link2, Paperclip, Store } from 'lucide-react'
 import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
@@ -76,6 +76,22 @@ export function LinkMeta({
       <Icon aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
       {!many && <span className="sr-only">Enlace: </span>}
       <span className="truncate">{many ?? linkDomain(url)}</span>
+    </span>
+  )
+}
+
+/**
+ * El clip con cuántos documentos lleva, detrás de lo demás de la meta (6.2, diseño 29, L1–L3):
+ * «📎 1». Sin documentos, nada.
+ */
+export function FileMeta({ item, className }: { item: Pick<Item, 'files'>; className?: string }) {
+  const count = item.files.length
+  if (count === 0) return null
+  return (
+    <span className={cn('inline-flex shrink-0 items-center gap-1', className)}>
+      <Paperclip aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
+      <span className="sr-only">{count === 1 ? '1 documento' : `${String(count)} documentos`}</span>
+      <span aria-hidden>{count}</span>
     </span>
   )
 }

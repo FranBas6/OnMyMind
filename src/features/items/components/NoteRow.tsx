@@ -10,7 +10,7 @@ import type { Item } from '../types'
 import { ItemControl } from './ItemControl'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { ItemRowDotsMenu } from './ItemRowMenu'
-import { LinkMeta, RowThumb } from './RowMedia'
+import { FileMeta, LinkMeta, RowThumb } from './RowMedia'
 import { RowNotes, RowTitle } from './RowTitle'
 import { SwipeableRow } from './SwipeableRow'
 
@@ -28,6 +28,8 @@ export function NoteRow({ item }: { item: Item }) {
   const inbox = actions.list.kind === 'inbox'
   const { person, arrived } = useLiveRow(item)
   const link = item.url ? <LinkMeta url={item.url} item={item} /> : null
+  // Sus documentos (diseño 29, L2), con el enlace.
+  const clip = item.files.length > 0 ? <FileMeta item={item} /> : null
   // Protegida (C7): solo la primera línea. De la clave anterior, lo dice (C5d).
   const lost = useIsLostNote(item.sealed)
   return (
@@ -63,9 +65,11 @@ export function NoteRow({ item }: { item: Item }) {
           lines={2}
           className="text-[13.5px]"
         />
-        {link && (
-          <p className="mt-1 flex min-w-0 text-xs font-semibold text-muted-foreground md:text-[13px]">
+        {(link ?? clip) && (
+          <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs font-semibold text-muted-foreground md:text-[13px]">
             {link}
+            {link && clip && <span aria-hidden>·</span>}
+            {clip}
           </p>
         )}
       </div>

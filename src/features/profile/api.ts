@@ -1,3 +1,4 @@
+import { FILE_BUCKET } from '@/features/items/files'
 import { removeAllPhotos } from '@/features/items/photoCleanup'
 import { PHOTO_BUCKET, SIGNED_URL_SECONDS } from '@/features/items/photos'
 import { supabase } from '@/lib/supabase/client'
@@ -97,9 +98,10 @@ async function allRows(
 
 /**
  * Todo lo tuyo, para el JSON de «Exportar mis datos» (diseño 18, P7): el perfil con sus ajustes,
- * las listas (también las archivadas), los ítems (con las sublistas y lo de dentro), sus fotos, las tiendas,
+ * las listas (también las archivadas), los ítems (con las sublistas y lo de dentro), sus fotos y
+ * sus documentos, las tiendas,
  * el histórico de precios y los avisos. RLS ya deja solo lo tuyo. Las suscripciones a avisos no:
- * son de cada navegador. Las fotos, como URLs firmadas de una semana. Tus listas ocultas (5.8),
+ * son de cada navegador. Las fotos y los documentos, como URLs firmadas de una semana. Tus listas ocultas (5.8),
  * solo con `withHidden` (desbloqueado): si no, ni se descargan.
  */
 export async function fetchExport(
@@ -107,34 +109,46 @@ export async function fetchExport(
   { withHidden = false }: { withHidden?: boolean } = {},
 ): Promise<ReturnType<typeof exportDocument>> {
   const hiddenIds = withHidden ? [] : await fetchHiddenIds()
-  const [profile, lists, items, allLinks, allImages, allPrices, allReminders, allCompletions] =
-    await Promise.all([
-      allRows((from, to) => supabase.from('profiles').select('*').eq('id', userId).range(from, to)),
-      allRows((from, to) => {
-        const query = supabase.from('lists').select('*')
-        return (hiddenIds.length > 0 ? query.not('id', 'in', `(${hiddenIds.join(',')})`) : query)
-          .order('id')
-          .range(from, to)
-      }),
-      allRows((from, to) => {
-        const query = supabase.from('items').select('*')
-        return (withHidden ? query : query.eq('in_hidden_list', false)).order('id').range(from, to)
-      }),
-      allRows((from, to) => supabase.from('item_links').select('*').order('id').range(from, to)),
-      // Todas las fotos de cada cosa (4.5), no solo la primera.
-      allRows((from, to) => supabase.from('item_images').select('*').order('id').range(from, to)),
-      allRows((from, to) => supabase.from('item_prices').select('*').order('id').range(from, to)),
-      allRows((from, to) => supabase.from('reminders').select('*').order('id').range(from, to)),
-      // Las veces hechas de lo que se repite (3.6): hecho no es borrado.
-      allRows((from, to) =>
-        supabase.from('item_completions').select('*').order('id').range(from, to),
-      ),
-    ])
+  const [
+    profile,
+    lists,
+    items,
+    allLinks,
+    allImages,
+    allFiles,
+    allPrices,
+    allReminders,
+    allCompletions,
+  ] = await Promise.all([
+    allRows((from, to) => supabase.from('profiles').select('*').eq('id', userId).range(from, to)),
+    allRows((from, to) => {
+      const query = supabase.from('lists').select('*')
+      return (hiddenIds.length > 0 ? query.not('id', 'in', `(${hiddenIds.join(',')})`) : query)
+        .order('id')
+        .range(from, to)
+    }),
+    allRows((from, to) => {
+      const query = supabase.from('items').select('*')
+      return (withHidden ? query : query.eq('in_hidden_list', false)).order('id').range(from, to)
+    }),
+    allRows((from, to) => supabase.from('item_links').select('*').order('id').range(from, to)),
+    // Todas las fotos de cada cosa (4.5), no solo la primera.
+    allRows((from, to) => supabase.from('item_images').select('*').order('id').range(from, to)),
+    // Y sus documentos (6.2).
+    allRows((from, to) => supabase.from('item_files').select('*').order('id').range(from, to)),
+    allRows((from, to) => supabase.from('item_prices').select('*').order('id').range(from, to)),
+    allRows((from, to) => supabase.from('reminders').select('*').order('id').range(from, to)),
+    // Las veces hechas de lo que se repite (3.6): hecho no es borrado.
+    allRows((from, to) =>
+      supabase.from('item_completions').select('*').order('id').range(from, to),
+    ),
+  ])
   // Lo de cada ítem, solo de los que salen.
   const kept = new Set(items.map((item) => item.id))
   const ofKept = (rows: Record<string, unknown>[]) => rows.filter((row) => kept.has(row.item_id))
   const itemLinks = ofKept(allLinks)
   const itemImages = ofKept(allImages)
+  const itemFiles = ofKept(allFiles)
   const itemPrices = ofKept(allPrices)
   const reminders = ofKept(allReminders)
   const itemCompletions = ofKept(allCompletions)
@@ -145,16 +159,11 @@ export async function fetchExport(
       ),
     ),
   ]
-  const photoUrls = new Map<string, string>()
-  for (let start = 0; start < paths.length; start += 100) {
-    const { data, error } = await supabase.storage
-      .from(PHOTO_BUCKET)
-      .createSignedUrls(paths.slice(start, start + 100), SIGNED_URL_SECONDS)
-    if (error) throw error
-    for (const entry of data) {
-      if (entry.path && entry.signedUrl) photoUrls.set(entry.path, entry.signedUrl)
-    }
-  }
+  const photoUrls = await signAll(PHOTO_BUCKET, paths)
+  const fileUrls = await signAll(
+    FILE_BUCKET,
+    itemFiles.flatMap((file) => (typeof file.path === 'string' ? [file.path] : [])),
+  )
   return exportDocument(
     {
       profile: profile[0] ?? null,
@@ -162,12 +171,30 @@ export async function fetchExport(
       items,
       itemLinks,
       itemImages,
+      itemFiles,
       itemPrices,
       reminders,
       itemCompletions,
     },
     photoUrls,
+    new Date(),
+    fileUrls,
   )
+}
+
+/** Enlaces firmados de una semana para unos archivos de un bucket, de cien en cien. */
+async function signAll(bucket: string, paths: readonly string[]): Promise<Map<string, string>> {
+  const urls = new Map<string, string>()
+  for (let start = 0; start < paths.length; start += 100) {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUrls(paths.slice(start, start + 100), SIGNED_URL_SECONDS)
+    if (error) throw error
+    for (const entry of data) {
+      if (entry.path && entry.signedUrl) urls.set(entry.path, entry.signedUrl)
+    }
+  }
+  return urls
 }
 
 /** Cuáles has ocultado (solo los ids). */

@@ -17,7 +17,7 @@ import { hasThumb } from '../photos'
 import type { Item } from '../types'
 import { rowHighlight, useItemActions } from './itemActionsContext'
 import { ItemRowDotsMenu } from './ItemRowMenu'
-import { RowThumb } from './RowMedia'
+import { FileMeta, RowThumb } from './RowMedia'
 import { RowNotes, RowTitle } from './RowTitle'
 import { SwipeableRow } from './SwipeableRow'
 
@@ -113,6 +113,9 @@ export function EventRow({ item, byMonth = false }: { item: Item; byMonth?: bool
     meta.push(
       <ReminderBell key="reminder" item={item} className={cn(META, 'text-muted-foreground')} />,
     )
+  }
+  if (item.files.length > 0) {
+    meta.push(<FileMeta key="files" item={item} className={cn(META, 'text-muted-foreground')} />)
   }
   if (cancelled) {
     meta.push(

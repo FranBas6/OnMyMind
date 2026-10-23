@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import type { CopiedFile } from '@/features/items/files'
 import type { Positioned } from '@/lib/reorder'
 import { supabase } from '@/lib/supabase/client'
 
@@ -185,6 +186,19 @@ const duplicatedSchema = z.object({
   list_id: z.uuid(),
   items: z.number().int().nonnegative(),
   photos: z.array(z.object({ item_id: z.uuid(), path: z.string(), position: z.number().int() })),
+  // Desde la 6.1; una base sin la migración aún no los devuelve.
+  files: z
+    .array(
+      z.object({
+        item_id: z.uuid(),
+        path: z.string(),
+        name: z.string(),
+        mime: z.string(),
+        size_bytes: z.number().int(),
+        position: z.number().int(),
+      }),
+    )
+    .default([]),
 })
 
 /** Lo que devuelve duplicar: la copia, cuántas cosas tiene y las fotos subidas que faltan. */
@@ -192,12 +206,15 @@ export interface DuplicatedList {
   listId: string
   items: number
   photos: { itemId: string; path: string; position: number }[]
+  /** Los documentos subidos (6.2), para copiarlos igual (`copyItemFile`). */
+  files: CopiedFile[]
 }
 
 /**
  * Duplica una lista (4.4, diseño 23, C) con `duplicate_list`, de una vez en la base: la copia es
  * tuya, con todo pendiente, sin fechas, avisos ni personas. Las fotos subidas no se comparten entre
- * dos ítems: vuelven aquí para copiarlas en Storage (`copyItemPhoto`).
+ * dos ítems: vuelven aquí para copiarlas en Storage (`copyItemPhoto`); los documentos, igual
+ * (`copyItemFile`, 6.2).
  */
 export async function duplicateList(listId: string, name: string): Promise<DuplicatedList> {
   const { data, error } = await supabase.rpc('duplicate_list', {
@@ -213,6 +230,14 @@ export async function duplicateList(listId: string, name: string): Promise<Dupli
       itemId: photo.item_id,
       path: photo.path,
       position: photo.position,
+    })),
+    files: parsed.files.map((file) => ({
+      itemId: file.item_id,
+      path: file.path,
+      name: file.name,
+      mime: file.mime,
+      sizeBytes: file.size_bytes,
+      position: file.position,
     })),
   }
 }

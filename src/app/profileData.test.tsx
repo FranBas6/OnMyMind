@@ -91,13 +91,14 @@ describe('Perfil · Datos y Cuenta (2.8, diseño 18)', () => {
     const user = userEvent.setup()
     vi.mocked(profileApi.fetchExport).mockResolvedValue({
       app: 'OnMyMind',
-      format: 2,
+      format: 3,
       exported_at: '2026-10-05T10:00:00.000Z',
       profile: null,
       lists: [],
       items: [],
       item_links: [],
       item_images: [],
+      item_files: [],
       item_prices: [],
       reminders: [],
       item_completions: [],
@@ -109,7 +110,9 @@ describe('Perfil · Datos y Cuenta (2.8, diseño 18)', () => {
     )
     const dialog = await sheet('Exportar mis datos')
     expect(within(dialog).getByRole('radio', { name: /JSON · todo/ })).toBeChecked()
-    expect(within(dialog).getByText(/Las fotos van como enlaces/)).toBeInTheDocument()
+    expect(
+      within(dialog).getByText(/Las fotos y los documentos van como enlaces/),
+    ).toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Exportar' }))
 
     await waitFor(() => {

@@ -15,8 +15,8 @@ import type { List } from '@/features/lists/types'
  */
 
 /** La versión de la forma del JSON: si cambia, un importador sabrá qué tiene delante. */
-/** 2 (4.5): con `item_images`, todas las fotos de cada cosa. */
-export const EXPORT_FORMAT = 2
+/** 2 (4.5): con `item_images`, todas las fotos de cada cosa. 3 (6.2): con `item_files`. */
+export const EXPORT_FORMAT = 3
 
 export interface ExportTables {
   profile: Record<string, unknown> | null
@@ -25,6 +25,8 @@ export interface ExportTables {
   itemLinks: Record<string, unknown>[]
   /** Las fotos de cada cosa, en orden (4.5). */
   itemImages: Record<string, unknown>[]
+  /** Los documentos de cada cosa, en orden (6.2). */
+  itemFiles: Record<string, unknown>[]
   itemPrices: Record<string, unknown>[]
   reminders: Record<string, unknown>[]
   itemCompletions: Record<string, unknown>[]
@@ -33,7 +35,8 @@ export interface ExportTables {
 /**
  * El documento del JSON. Las fotos van como enlaces (diseño 18, P7): cada ítem con foto lleva
  * `photo_url`, una URL firmada que dura una semana, además de su `image_path`; y todas sus fotos van
- * en `item_images`, cada una con su `photo_url` (4.5). Van también las
+ * en `item_images`, cada una con su `photo_url` (4.5). Los documentos, igual: en `item_files`, cada
+ * uno con su nombre, su tipo, su tamaño y su `file_url` (6.2). Van también las
  * listas compartidas contigo (3.3, decisión de Fran: todo lo que ves), cada una con
  * `created_by_me` para distinguirlas de las tuyas.
  */
@@ -41,6 +44,7 @@ export function exportDocument(
   tables: ExportTables,
   photoUrls: ReadonlyMap<string, string>,
   now: Date = new Date(),
+  fileUrls: ReadonlyMap<string, string> = new Map(),
 ) {
   return {
     app: 'OnMyMind',
@@ -61,6 +65,10 @@ export function exportDocument(
     item_images: tables.itemImages.map((image) => {
       const url = typeof image.path === 'string' ? photoUrls.get(image.path) : undefined
       return url ? { ...image, photo_url: url } : image
+    }),
+    item_files: tables.itemFiles.map((file) => {
+      const url = typeof file.path === 'string' ? fileUrls.get(file.path) : undefined
+      return url ? { ...file, file_url: url } : file
     }),
     item_prices: tables.itemPrices,
     reminders: tables.reminders,

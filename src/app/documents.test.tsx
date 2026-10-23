@@ -271,4 +271,35 @@ describe('documentos en la ficha (6.1, diseño 29)', () => {
       within(box).getByText('Has llegado a 5 documentos. Quita alguno para añadir otro.'),
     ).toBeInTheDocument()
   })
+
+  it('en la lista, el clip con el número (6.2, diseño 29, L2)', async () => {
+    const contrato: Item = {
+      ...revolut(),
+      id: '00000000-0000-4000-8000-000000000062',
+      kind: 'note',
+      title: 'Contrato del alquiler',
+      notes: 'Firmado el 1 de marzo',
+      position: 2000,
+      files: [doc(1), doc(2)],
+    }
+    vi.mocked(listsApi.fetchLists).mockResolvedValue([casa])
+    vi.mocked(listsApi.fetchArchivedLists).mockResolvedValue([])
+    vi.mocked(itemsApi.fetchItems).mockReturnValue(new Promise(() => undefined))
+    renderRoute('/lists/casa', {
+      session,
+      seed: (queryClient) => {
+        queryClient.setQueryData(queryKeys.lists.all, [casa])
+        queryClient.setQueryData(queryKeys.lists.archived, [])
+        queryClient.setQueryData(queryKeys.items.byList('casa'), [
+          revolut({ files: [doc(3)] }),
+          contrato,
+        ])
+      },
+    })
+
+    const row = (await screen.findByText('Revisar el plan de ahorro de Revolut')).closest('li')
+    expect(row).toHaveTextContent('1 documento')
+    const nota = screen.getByText('Contrato del alquiler').closest('li')
+    expect(nota).toHaveTextContent('2 documentos')
+  })
 })

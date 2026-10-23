@@ -63,7 +63,7 @@ describe('los nombres de los archivos', () => {
 })
 
 describe('el JSON', () => {
-  it('lleva todo tal cual y cada foto como enlace', () => {
+  it('lleva todo tal cual, y cada foto y cada documento como enlace', () => {
     const document = exportDocument(
       {
         profile: { id: 'u1', settings: { theme: 'dark' } },
@@ -80,6 +80,16 @@ describe('el JSON', () => {
           { id: 'f1', item_id: 'a', path: 'u1/a/foto.webp', position: 1000 },
           { id: 'f2', item_id: 'a', path: 'u1/a/otra.webp', position: 2000 },
         ],
+        itemFiles: [
+          {
+            id: 'd1',
+            item_id: 'a',
+            path: 'u1/a/x/Plan.pdf',
+            name: 'Plan.pdf',
+            mime: 'application/pdf',
+            size_bytes: 1258291,
+          },
+        ],
         itemPrices: [{ id: 'p', price_cents: 1250 }],
         reminders: [{ id: 'r', offset_minutes: 60 }],
         itemCompletions: [{ id: 'c', item_id: 'a' }],
@@ -89,10 +99,11 @@ describe('el JSON', () => {
         ['u1/a/otra.webp', 'https://firmada/otra'],
       ]),
       NOW,
+      new Map([['u1/a/x/Plan.pdf', 'https://firmado/plan']]),
     )
     expect(document).toMatchObject({
       app: 'OnMyMind',
-      format: 2,
+      format: 3,
       exported_at: NOW.toISOString(),
       profile: { settings: { theme: 'dark' } },
       // Las compartidas contigo van también, marcadas (3.3).
@@ -117,6 +128,15 @@ describe('el JSON', () => {
     expect(document.item_images.map((image) => image.photo_url)).toEqual([
       'https://firmada/foto',
       'https://firmada/otra',
+    ])
+    // Y los documentos, con su nombre, su tipo, su tamaño y su enlace (6.2).
+    expect(document.item_files).toEqual([
+      expect.objectContaining({
+        name: 'Plan.pdf',
+        mime: 'application/pdf',
+        size_bytes: 1258291,
+        file_url: 'https://firmado/plan',
+      }),
     ])
   })
 })

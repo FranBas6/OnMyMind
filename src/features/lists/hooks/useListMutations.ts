@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-q
 import { toast } from 'sonner'
 
 import { schedulePhotoCleanup } from '@/features/items/photoCleanup'
+import { copyItemFile } from '@/features/items/files'
 import { copyItemPhoto } from '@/features/items/photos'
 import { errorMessage } from '@/lib/errors'
 import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/mutations'
@@ -343,7 +344,7 @@ export function useUpdateList() {
 /**
  * Duplicar una lista (4.4, diseño 23, C). Hace falta conexión: es una sola llamada a la base, que
  * hace la copia entera o nada, así que no se guarda para luego. Después, en segundo plano, se
- * copian las fotos subidas; la que no se pueda copiar deja ese ítem sin foto.
+ * copian las fotos y los documentos subidos (6.2); el que no se pueda copiar deja ese ítem sin él.
  */
 export function useDuplicateList() {
   const queryClient = useQueryClient()
@@ -351,10 +352,13 @@ export function useDuplicateList() {
     networkMode: 'online',
     mutationFn: ({ list, name }: { list: List; name: string }) => duplicateList(list.id, name),
     onSuccess: (copy) => {
-      if (copy.photos.length === 0) return
-      void Promise.allSettled(
-        copy.photos.map((photo) => copyItemPhoto(photo.itemId, photo.path, photo.position)),
-      ).then(() => queryClient.invalidateQueries({ queryKey: queryKeys.items.byList(copy.listId) }))
+      if (copy.photos.length === 0 && copy.files.length === 0) return
+      void Promise.allSettled([
+        ...copy.photos.map((photo) => copyItemPhoto(photo.itemId, photo.path, photo.position)),
+        ...copy.files.map((file) => copyItemFile(file)),
+      ]).then(() =>
+        queryClient.invalidateQueries({ queryKey: queryKeys.items.byList(copy.listId) }),
+      )
     },
     onSettled: () => refetchLists(queryClient),
   })

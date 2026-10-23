@@ -24,7 +24,7 @@ import { ItemRowDotsMenu } from './ItemRowMenu'
 import { itemPrice } from '../prices'
 import { PriorityChip } from './PriorityChip'
 import { hasThumb } from '../photos'
-import { LinkMeta, RowPrice, RowThumb } from './RowMedia'
+import { FileMeta, LinkMeta, RowPrice, RowThumb } from './RowMedia'
 import { OptionAside } from './OptionAside'
 import { RowNotes, RowTitle } from './RowTitle'
 import { SwipeableRow } from './SwipeableRow'
@@ -128,6 +128,8 @@ export function TaskRow({ item }: { item: Item }) {
     !quiet && showsBell(reminder, item) ? <ReminderBell item={item} className={META} /> : null
   const thumb = hasThumb(item)
   const link = !quiet && item.url ? <LinkMeta url={item.url} item={item} className={META} /> : null
+  // El clip de los documentos (diseño 29, L2): el último de la meta, tras la campana.
+  const clip = !quiet && item.files.length > 0 ? <FileMeta item={item} className={META} /> : null
   const author =
     person &&
     (liveDone ? (
@@ -181,10 +183,27 @@ export function TaskRow({ item }: { item: Item }) {
               {link}
             </p>
           )}
-          {repeat && <p className="mt-0.5 hidden md:flex">{repeat}</p>}
-          {bell && <p className="mt-0.5 hidden md:flex">{bell}</p>}
+          {/* El clip, al final de la última línea: la de la campana, la de la repetición o la suya. */}
+          {repeat && (
+            <p className="mt-0.5 hidden items-center gap-1.5 md:flex">
+              {repeat}
+              {!bell && clip && (
+                <>
+                  {dot}
+                  {clip}
+                </>
+              )}
+            </p>
+          )}
+          {(bell ?? (!repeat && clip)) && (
+            <p className="mt-0.5 hidden items-center gap-1.5 md:flex">
+              {bell}
+              {bell && clip && dot}
+              {(bell ?? !repeat) && clip}
+            </p>
+          )}
         </div>
-        {first || second || link || bell || author ? (
+        {first || second || link || bell || clip || author ? (
           <div className="mt-1.5 flex min-w-0 items-center gap-2 md:contents">
             {author && (
               <span className="flex items-center gap-2 md:hidden">
@@ -211,6 +230,16 @@ export function TaskRow({ item }: { item: Item }) {
                   </span>
                 )}
                 {bell}
+              </span>
+            )}
+            {clip && (
+              <span className="flex items-center gap-2 md:hidden">
+                {(first ?? second ?? link ?? repeat ?? bell) && (
+                  <span aria-hidden className={META}>
+                    ·
+                  </span>
+                )}
+                {clip}
               </span>
             )}
           </div>
