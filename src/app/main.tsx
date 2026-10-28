@@ -7,6 +7,7 @@ import { createRoot } from 'react-dom/client'
 import { z } from 'zod'
 
 import { getSession } from '@/features/auth'
+import { watchConnectivity } from '@/lib/connectivity'
 import { configureDateLocale } from '@/lib/date'
 
 import { restoreQueryCache } from './persister'
@@ -19,8 +20,10 @@ configureDateLocale()
 z.config({ jitless: true })
 
 // TanStack Query supone que hay red hasta que llega un evento `offline`: si la app se abre ya sin
-// conexión (modo avión), ese evento no llega nunca. Se parte de lo que diga el navegador.
+// conexión (modo avión), ese evento no llega nunca. Se parte de lo que diga el navegador y, si dice
+// que no hay red, se comprueba con el servidor, ahora y cada vez que haga falta (`connectivity.ts`).
 onlineManager.setOnline(navigator.onLine)
+watchConnectivity()
 
 const queryClient = createQueryClient()
 const router = createAppRouter({ queryClient, getSession })
