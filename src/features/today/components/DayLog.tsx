@@ -26,20 +26,25 @@ type LogTense = 'today' | 'past'
  * Lo que se ha quitado de la cabeza un día (Fran, 2026-10-22): «Hecho», lo terminado de cualquier
  * lista, y «Apuntado», las notas nuevas. En Hoy, al final y plegadas, con la cabecera de «Fuera de
  * la cabeza» y su número (antes «2 hechas hoy», 1.11); en un día pasado, abiertas y con la etiqueta
- * de sección (diseño 17, C4 y D6: «Hecho ese día»).
+ * de sección (diseño 17, C4 y D6: «Hecho ese día»). Con `defaultOpen` (en Hoy sin nada pendiente,
+ * Fran, 2026-10-30), abierta mientras no se pliegue a mano.
  */
 function DayLogSection({
   kind,
   tense,
   count,
+  defaultOpen = false,
   children,
 }: {
   kind: 'done' | 'noted'
   tense: LogTense
   count: number
+  defaultOpen?: boolean
   children: ReactNode
 }) {
-  const [open, setOpen] = useState(false)
+  // `null`: sin tocar, lo que toque (y cambia si se completa lo último pendiente).
+  const [choice, setChoice] = useState<boolean | null>(null)
+  const open = choice ?? defaultOpen
   const listId = useId()
   const label = dayLogLabel(kind, tense)
 
@@ -65,7 +70,7 @@ function DayLogSection({
         open={open}
         controls={listId}
         onToggle={() => {
-          setOpen((current) => !current)
+          setChoice(!open)
         }}
       >
         {label} <span className="font-semibold text-subtle-foreground">· {count}</span>
@@ -106,10 +111,19 @@ function ListAndTime({ list, at, tense }: { list: List; at: Date | null; tense: 
  * repite lleva su línea (diseño 21, B12 y B13), que ya dice la hora; el resto, su lista y la hora
  * a la que se terminó. En un día pasado el control no se atenúa (diseño 17, C4).
  */
-export function DoneSection({ done, tense }: { done: readonly TodayDone[]; tense: LogTense }) {
+export function DoneSection({
+  done,
+  tense,
+  defaultOpen = false,
+}: {
+  done: readonly TodayDone[]
+  tense: LogTense
+  /** En Hoy sin nada pendiente, abierta: es lo único que hay que ver (Fran, 2026-10-30). */
+  defaultOpen?: boolean
+}) {
   const undo = useUndoCompletion()
   return (
-    <DayLogSection kind="done" tense={tense} count={done.length}>
+    <DayLogSection kind="done" tense={tense} count={done.length} defaultOpen={defaultOpen}>
       {done.map(({ item, list, completion }) => (
         <ListScope key={completion?.id ?? item.id} list={list}>
           <DoneRow

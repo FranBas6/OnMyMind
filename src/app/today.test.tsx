@@ -221,14 +221,20 @@ describe('Hoy', () => {
     })
     renderToday([leche, portal])
 
-    // No hay nada pendiente: el vacío, y debajo lo de hoy, plegado.
+    // No hay nada pendiente: el vacío, y debajo «Hecho hoy» ya abierta (Fran, 2026-10-30);
+    // «Apuntado hoy», plegada.
     expect(await screen.findByText('Nada en mente para hoy.')).toBeInTheDocument()
     const done = screen.getByRole('region', { name: 'Hecho hoy' })
-    expect(within(done).queryByText(/^Leche/)).not.toBeInTheDocument()
-    await user.click(within(done).getByRole('button', { name: 'Hecho hoy · 1' }))
+    expect(within(done).getByRole('button', { name: 'Hecho hoy · 1' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
     // En una lista de tareas, la compra dice cómo terminó (diseño 12).
     expect(within(done).getByText('Leche · Comprado')).toBeInTheDocument()
     expect(within(done).getByText('Casa · 10:20')).toBeInTheDocument()
+    // Se puede plegar.
+    await user.click(within(done).getByRole('button', { name: 'Hecho hoy · 1' }))
+    expect(within(done).queryByText(/^Leche/)).not.toBeInTheDocument()
 
     const noted = screen.getByRole('region', { name: 'Apuntado hoy' })
     await user.click(within(noted).getByRole('button', { name: 'Apuntado hoy · 1' }))

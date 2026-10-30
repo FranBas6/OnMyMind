@@ -141,10 +141,12 @@ function TodayContent({
   now: Date
 }) {
   if (!groups) return null
+  const nothingPending = groups.sections.length === 0 && groups.agenda.length === 0
+  const logged = groups.done.length > 0 || groups.noted.length > 0
   return (
     <>
-      {groups.sections.length === 0 && groups.agenda.length === 0 ? (
-        <TodayEmpty />
+      {nothingPending ? (
+        <TodayEmpty compact={logged} />
       ) : (
         <div className="flex flex-col gap-[22px]">
           {groups.agenda.length > 0 && <Agenda events={groups.agenda} tense="today" />}
@@ -158,7 +160,9 @@ function TodayContent({
       )}
       {(groups.done.length > 0 || groups.noted.length > 0) && (
         <div className="flex flex-col">
-          {groups.done.length > 0 && <DoneSection done={groups.done} tense="today" />}
+          {groups.done.length > 0 && (
+            <DoneSection done={groups.done} tense="today" defaultOpen={nothingPending} />
+          )}
           {groups.noted.length > 0 && <NotedSection notes={groups.noted} tense="today" />}
         </div>
       )}

@@ -358,7 +358,8 @@ export function DayAside({ selected, today, onSelect }: DayCalendarProps) {
         </button>
       )}
       <p className="px-1 text-[12.5px] leading-normal text-subtle-foreground">
-        Un punto: ese día hay eventos o tareas que vencen. ← → cambian de día; T vuelve a hoy.
+        Un punto: ese día hay algo (eventos, lo que vence, lo hecho o lo apuntado). ← → cambian de
+        día; T vuelve a hoy.
       </p>
     </aside>
   )
