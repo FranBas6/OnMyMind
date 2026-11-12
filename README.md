@@ -137,3 +137,7 @@ side by side. The app is in Spanish; it is the one I use every day.
 | Back end  | Supabase: PostgreSQL with RLS, Auth, Storage, Realtime and Edge Functions (Deno) |
 | App       | PWA with its own service worker, IndexedDB cache, Web Push, WebAuthn             |
 | Quality   | Vitest, Testing Library, pgTAP, ESLint (type-checked), Prettier, Husky           |
+
+---
+
+More about this project and my other work on my portfolio: [franbasguil.netlify.app](https://franbasguil.netlify.app/en/projects/onmymind/)

@@ -139,3 +139,7 @@ compras y eventos. La uso a diario.
 | Servidor | Supabase: PostgreSQL con RLS, Auth, Storage, Realtime y Edge Functions (Deno) |
 | App      | PWA con su propio service worker, caché en IndexedDB, Web Push, WebAuthn      |
 | Calidad  | Vitest, Testing Library, pgTAP, ESLint (con tipos), Prettier, Husky           |
+
+---
+
+Más sobre este proyecto y el resto de mi trabajo en mi portfolio: [franbasguil.netlify.app](https://franbasguil.netlify.app/es/proyectos/onmymind/)
