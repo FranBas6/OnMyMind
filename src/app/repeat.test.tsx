@@ -42,6 +42,10 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
       pending: 1,
       done: 0,
       pendingPriceCents: 0,
+      payments: 0,
+      trials: 0,
+      yearlyCents: null,
+      onceCents: 0,
       notes: 0,
       kinds: { note: 0, task: 0, shopping: 0, event: 0 },
     },
@@ -68,6 +72,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     dueAt: today,
     allDay: true,
     recurrence: null,
+    trial: false,
     position: 1000,
     completedAt: null,
     createdAt: addDays(today, -10),
@@ -182,7 +187,15 @@ describe('repetición personalizada (3.6, diseño 21)', () => {
     vi.mocked(todayApi.fetchToday).mockResolvedValue([])
     renderAt('/today', [])
     vi.mocked(itemsApi.fetchCompletions).mockResolvedValue([
-      { id: 'c1', item: { ...basura, dueAt: next }, doneAt, doneBy: null, occurrence: today },
+      {
+        id: 'c1',
+        item: { ...basura, dueAt: next },
+        doneAt,
+        doneBy: null,
+        occurrence: today,
+        priceCents: null,
+        currency: null,
+      },
     ])
 
     // Sin nada pendiente, «Hecho hoy» ya está abierta (Fran, 2026-10-30).

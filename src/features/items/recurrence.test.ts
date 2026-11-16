@@ -12,6 +12,7 @@ import {
   presetHint,
   presetOf,
   presetRule,
+  repeatOnDone,
   ruleLabel,
   ruleShortLabel,
   type Rule,
@@ -124,6 +125,38 @@ describe('la fecha y la regla', () => {
       seen.push(show(due))
     }
     expect(seen).toEqual(['2026-02-28 00:00', '2026-03-31 00:00', '2026-04-30 00:00'])
+  })
+})
+
+describe('pagar un pago que se repite (6.3)', () => {
+  const netflix = {
+    kind: 'shopping',
+    status: 'pending',
+    dueAt: at('2026-12-03 00:00'),
+    recurrence: 'FREQ=MONTHLY',
+  }
+
+  it('pagado antes de tiempo, salta al cobro siguiente al que tenía (diseño 30, F4)', () => {
+    expect(show(repeatOnDone(netflix, 'bought', at('2026-11-15 10:00')))).toBe('2027-01-03 00:00')
+  })
+
+  it('atrasado, al siguiente desde su fecha, no antes de mañana', () => {
+    const luz = { ...netflix, dueAt: at('2026-11-12 00:00') }
+    expect(show(repeatOnDone(luz, 'bought', at('2026-11-15 10:00')))).toBe('2026-12-12 00:00')
+  })
+
+  it('darse de baja, sin repetir o una compra sin fecha no saltan', () => {
+    const now = at('2026-11-15 10:00')
+    expect(repeatOnDone(netflix, 'discarded', now)).toBeNull()
+    expect(repeatOnDone({ ...netflix, recurrence: null }, 'bought', now)).toBeNull()
+    expect(repeatOnDone({ ...netflix, dueAt: null }, 'bought', now)).toBeNull()
+    expect(repeatOnDone({ ...netflix, status: 'bought' }, 'bought', now)).toBeNull()
+  })
+
+  it('una tarea no salta al «comprarla», solo al hacerla', () => {
+    const task = { ...netflix, kind: 'task' }
+    expect(repeatOnDone(task, 'bought', at('2026-11-15 10:00'))).toBeNull()
+    expect(show(repeatOnDone(task, 'done', at('2026-11-15 10:00')))).toBe('2027-01-03 00:00')
   })
 })
 

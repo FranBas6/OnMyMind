@@ -249,6 +249,10 @@ describe('el tipo que propone una lista sin tipo (5.3, ADR-012)', () => {
       done: 0,
       notes: 0,
       pendingPriceCents: 0,
+      payments: 0,
+      trials: 0,
+      yearlyCents: null,
+      onceCents: 0,
       kinds,
     },
   })

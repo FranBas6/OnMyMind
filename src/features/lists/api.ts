@@ -16,7 +16,7 @@ const MY_LIST_COLUMNS = 'id, name, color, icon, kind, view, position, archived_a
 
 /** Lo que se pide de `list_counters` (5.3: también las notas y cuántas hay de cada tipo). */
 const COUNTER_COLUMNS =
-  'list_id, pending_count, done_count, pending_price_cents, notes_count, note_total, task_total, shopping_total, event_total'
+  'list_id, pending_count, done_count, pending_price_cents, notes_count, note_total, task_total, shopping_total, event_total, payment_count, trial_count, yearly_cents, once_cents'
 
 /**
  * Listas no archivadas, tuyas y compartidas contigo, en tu orden y con sus contadores. Dos

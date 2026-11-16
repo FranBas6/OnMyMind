@@ -32,6 +32,17 @@ export interface ListCounters {
   notes: number
   /** Total pendiente en compras, en céntimos. */
   pendingPriceCents: number
+  /** Los pagos pendientes (6.3): compras con fecha, se repitan o no: «4 pagos». */
+  payments: number
+  /** Los que aún están en prueba: «1 en prueba». */
+  trials: number
+  /**
+   * Lo que suman al año los pagos que se repiten, en céntimos (sin los que están en prueba); al mes,
+   * su doceava parte. `null` si no hay ninguno: la cabecera dice «Total».
+   */
+  yearlyCents: number | null
+  /** Lo pendiente que no se repite: «60 € de una vez». */
+  onceCents: number
   /** De dónde sale el tipo que propone la barra de añadir sin los ítems a mano. */
   kinds: KindTotals
 }

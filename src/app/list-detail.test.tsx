@@ -32,6 +32,10 @@ function list(id: string, name: string, overrides: Partial<List> = {}): List {
       pending: 2,
       done: 1,
       pendingPriceCents: 0,
+      payments: 0,
+      trials: 0,
+      yearlyCents: null,
+      onceCents: 0,
       notes: 0,
       // Casa tiene tareas: propone tarea (5.4: una vacía propondría nota).
       kinds: { note: 0, task: 3, shopping: 0, event: 0 },
@@ -59,6 +63,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     dueAt: null,
     allDay: false,
     recurrence: null,
+    trial: false,
     position: 1000,
     completedAt: null,
     createdAt: new Date(Date.now() - 2 * HOUR),

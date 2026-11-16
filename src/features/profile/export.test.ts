@@ -22,6 +22,7 @@ function item(title: string, overrides: Partial<Item> = {}): Item {
     dueAt: null,
     allDay: true,
     recurrence: null,
+    trial: false,
     position: next * 1000,
     completedAt: null,
     createdAt: new Date(2026, 8, 20, 18, 5),

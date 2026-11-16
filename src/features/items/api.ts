@@ -178,6 +178,7 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
   if (patch.urlTitle !== undefined) row.url_title = patch.urlTitle
   if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl
   if (patch.recurrence !== undefined) row.recurrence = patch.recurrence
+  if (patch.trial !== undefined) row.trial = patch.trial
   if (patch.urlSite !== undefined) row.url_site = patch.urlSite
   if (patch.priceCents !== undefined) row.price_cents = patch.priceCents
   if (patch.currency !== undefined) row.currency = patch.currency
@@ -288,6 +289,7 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
       due_at: item.dueAt?.toISOString() ?? null,
       all_day: item.allDay,
       recurrence: item.recurrence,
+      trial: item.trial,
       completed_at: item.completedAt?.toISOString() ?? null,
       created_at: item.createdAt.toISOString(),
       left_inbox_id: item.leftInboxId,
@@ -473,7 +475,7 @@ export async function fetchCompletions(start: Date, end: Date): Promise<Completi
   const { data, error } = await supabase
     .from('item_completions')
     .select(
-      `id, done_at, done_by, occurrence, item:items!inner(${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id))`,
+      `id, done_at, done_by, occurrence, price_cents, currency, item:items!inner(${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id))`,
     )
     .gte('done_at', start.toISOString())
     .lt('done_at', end.toISOString())
@@ -487,6 +489,8 @@ export async function fetchCompletions(start: Date, end: Date): Promise<Completi
     doneAt: new Date(row.done_at),
     doneBy: row.done_by,
     occurrence: new Date(row.occurrence),
+    priceCents: row.price_cents,
+    currency: row.currency,
   }))
 }
 

@@ -43,6 +43,11 @@ export interface Item {
   dueAt: Date | null
   allDay: boolean
   recurrence: string | null
+  /**
+   * Una prueba gratis (6.3, diseño 30, P1): solo en una compra con fecha que se repite (la base lo
+   * apaga en lo demás). No cuenta en el total hasta su fecha; al pagarla deja de serlo.
+   */
+  trial: boolean
   position: number
   /** La rellena el trigger al pasar a un estado final. */
   completedAt: Date | null
@@ -179,6 +184,8 @@ export interface ItemPatch {
   chosenId?: string | null
   /** Se quita al pasar a un tipo que no la usa (y vuelve si el cambio falla). */
   recurrence?: string | null
+  /** «Es una prueba» (diseño 30, P1). */
+  trial?: boolean
   /**
    * El enlace y la imagen de la web (2a.6): se guardan como el resto, campo a campo. Las fotos
    * propias van aparte, en `item_images` (4.5).
@@ -219,4 +226,7 @@ export interface Completion {
   doneAt: Date
   doneBy: string | null
   occurrence: Date
+  /** Lo pagado esa vez, en un pago que se repite (6.3); `null` en una tarea. */
+  priceCents: number | null
+  currency: string | null
 }

@@ -75,6 +75,10 @@ const EMPTY_COUNTERS: ListCounters = {
   done: 0,
   notes: 0,
   pendingPriceCents: 0,
+  payments: 0,
+  trials: 0,
+  yearlyCents: null,
+  onceCents: 0,
   kinds: { note: 0, task: 0, shopping: 0, event: 0 },
 }
 
@@ -91,6 +95,10 @@ export function mergeListsWithCounters(lists: ListRow[], counters: CountersRow[]
       done: row.done_count ?? 0,
       notes: row.notes_count ?? 0,
       pendingPriceCents: row.pending_price_cents ?? 0,
+      payments: row.payment_count ?? 0,
+      trials: row.trial_count ?? 0,
+      yearlyCents: row.yearly_cents ?? null,
+      onceCents: row.once_cents ?? 0,
       kinds: {
         note: row.note_total ?? 0,
         task: row.task_total ?? 0,

@@ -26,6 +26,7 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
     dueAt: null,
     allDay: false,
     recurrence: null,
+    trial: false,
     position: 1000,
     completedAt: null,
     createdAt: new Date(2026, 9, 11),

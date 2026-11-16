@@ -259,9 +259,10 @@ export function repeatOnDone(
   status: string,
   now: Date = new Date(),
 ): Date | null {
-  if (item.kind !== 'task' || status !== 'done' || item.status === 'done' || !item.dueAt) {
-    return null
-  }
+  // Una tarea al hacerla y un pago al pagarlo (6.3, `items_repeat_task`).
+  const completes =
+    (item.kind === 'task' && status === 'done') || (item.kind === 'shopping' && status === 'bought')
+  if (!completes || item.status === status || !item.dueAt) return null
   const rule = parseRule(item.recurrence)
   return rule ? nextAfterDone(item.dueAt, rule, now) : null
 }

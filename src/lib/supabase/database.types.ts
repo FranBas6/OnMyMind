@@ -91,25 +91,34 @@ export type Database = {
       }
       item_completions: {
         Row: {
+          currency: string | null
           done_at: string
           done_by: string | null
           id: string
           item_id: string
           occurrence: string
+          price_cents: number | null
+          trial: boolean
         }
         Insert: {
+          currency?: string | null
           done_at?: string
           done_by?: string | null
           id?: string
           item_id: string
           occurrence: string
+          price_cents?: number | null
+          trial?: boolean
         }
         Update: {
+          currency?: string | null
           done_at?: string
           done_by?: string | null
           id?: string
           item_id?: string
           occurrence?: string
+          price_cents?: number | null
+          trial?: boolean
         }
         Relationships: [
           {
@@ -336,6 +345,7 @@ export type Database = {
           sealed_notes: string | null
           status: string
           title: string
+          trial: boolean
           updated_at: string
           url: string | null
           url_site: string | null
@@ -379,6 +389,7 @@ export type Database = {
           sealed_notes?: string | null
           status?: string
           title: string
+          trial?: boolean
           updated_at?: string
           url?: string | null
           url_site?: string | null
@@ -421,6 +432,7 @@ export type Database = {
           sealed_notes?: string | null
           status?: string
           title?: string
+          trial?: boolean
           updated_at?: string
           url?: string | null
           url_site?: string | null
@@ -948,10 +960,14 @@ export type Database = {
           list_id: string | null
           note_total: number | null
           notes_count: number | null
+          once_cents: number | null
+          payment_count: number | null
           pending_count: number | null
           pending_price_cents: number | null
           shopping_total: number | null
           task_total: number | null
+          trial_count: number | null
+          yearly_cents: number | null
         }
         Relationships: []
       }
@@ -1011,6 +1027,7 @@ export type Database = {
         Returns: {
           all_day: boolean
           concealed: boolean
+          currency: string
           done: boolean
           hidden: boolean
           item_id: string
@@ -1020,9 +1037,12 @@ export type Database = {
           now_local: string
           occurs_at: string
           occurs_local: string
+          price_cents: number
+          recurring: boolean
           remind_at: string
           reminder_id: string
           title: string
+          trial: boolean
           user_id: string
         }[]
       }
@@ -1145,6 +1165,7 @@ export type Database = {
         Args: { p_day: number; p_month: string; p_time: string }
         Returns: string
       }
+      recurrence_per_year: { Args: { p_rule: string }; Returns: number }
       recurrence_rule: { Args: { p_text: string }; Returns: string }
       reminder_time: {
         Args: {

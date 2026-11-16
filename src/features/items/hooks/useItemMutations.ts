@@ -271,6 +271,9 @@ function patchItem(item: Item, patch: CachePatch): Item {
   if (patch.urlTitle !== undefined) next.urlTitle = patch.urlTitle
   if (patch.imageUrl !== undefined) next.imageUrl = patch.imageUrl
   if (patch.recurrence !== undefined) next.recurrence = patch.recurrence
+  if (patch.trial !== undefined) next.trial = patch.trial
+  // Como `items_trial_check`: la prueba solo vale en una compra con fecha que se repite.
+  if (next.kind !== 'shopping' || !next.recurrence || !next.dueAt) next.trial = false
   if (patch.urlSite !== undefined) next.urlSite = patch.urlSite
   if (patch.currency !== undefined) next.currency = patch.currency
   if (patch.priceSource !== undefined) next.priceSource = patch.priceSource
@@ -324,6 +327,7 @@ export function itemFromNew(item: NewItem, position: number): Item {
     dueAt: item.due?.at ?? null,
     allDay: item.due?.allDay ?? false,
     recurrence: item.recurrence ?? null,
+    trial: false,
     position,
     // Una línea pegada con «[x] » nace hecha (4.3): el trigger le pone la fecha.
     completedAt: isFinalStatus(item.status) ? new Date() : null,
@@ -399,12 +403,14 @@ const setItemStatusMutation = durableMutation(itemMutationKey('status'), (queryC
     updateItemStatus(item.id, status),
   onMutate: ({ item, status }) => {
     // Una tarea que se repite no se completa: pasa a su siguiente fecha y queda la vez hecha (3.6).
+    // Un pago que se repite, igual al pagarlo, y deja de ser prueba (6.3).
     const next = repeatOnDone(item, status)
     if (next) {
       addCompletion(queryClient, item, next)
+      const patch = { dueAt: next, trial: false }
       return applyOptimistic(queryClient, {
-        items: { [item.listId]: (items) => patchIn(items, item.id, { dueAt: next }) },
-        mixed: (items) => patchIn(items, item.id, { dueAt: next }),
+        items: { [item.listId]: (items) => patchIn(items, item.id, patch) },
+        mixed: (items) => patchIn(items, item.id, patch),
       })
     }
     return applyOptimistic(queryClient, {
@@ -433,10 +439,13 @@ function addCompletion(queryClient: QueryClient, item: Item, next: Date) {
   if (!item.dueAt) return
   const completion: Completion = {
     id: crypto.randomUUID(),
-    item: { ...item, dueAt: next },
+    item: { ...item, dueAt: next, trial: false },
     doneAt: new Date(),
     doneBy: null,
     occurrence: item.dueAt,
+    // Lo pagado, en un pago (6.3).
+    priceCents: item.kind === 'shopping' ? item.priceCents : null,
+    currency: item.kind === 'shopping' ? item.currency : null,
   }
   queryClient.setQueriesData<Completion[]>(
     { queryKey: queryKeys.items.completionsAll },
