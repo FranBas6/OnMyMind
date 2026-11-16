@@ -253,6 +253,11 @@ describe('pagos que se repiten (6.4, diseño 30)', () => {
     expect(within(charges).getByText('Youtube')).toBeInTheDocument()
     expect(within(charges).getByText('Se cobra solo')).toBeInTheDocument()
     expect(within(charges).getByText('15,99 €')).toBeInTheDocument()
+    // El título es el botón que abre la ficha y se estira a la fila, que tiene que ser `relative`:
+    // sin ella, cubría toda la pantalla y cualquier clic abría el cobro (bug del 2026-11-16).
+    const title = within(charges).getByRole('button', { name: 'Youtube' })
+    expect(title.parentElement?.closest('button')).toBeNull()
+    expect(title.closest('div.relative')).not.toBeNull()
   })
 
   it('Hoy: el cobro de hoy, con su precio (H1)', async () => {
