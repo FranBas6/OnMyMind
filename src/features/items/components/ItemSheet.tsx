@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { BottomSheet } from '@/components/BottomSheet'
+import { PANEL_WIDTH, useLayoutWidths } from '@/components/layout/layoutWidths'
+import { ResizeHandle } from '@/components/layout/ResizeHandle'
 import { useSidePanel } from '@/components/layout/sidePanel'
 
 import type { Item } from '../types'
@@ -48,6 +50,7 @@ export function ItemSheet({ item, ...props }: ItemSheetProps) {
 
 function DesktopPanel({ item, ...props }: ItemDetailProps) {
   const { onClose } = props
+  const widths = useLayoutWidths()
 
   // Escape cierra el panel, salvo que venga de un menú, popover o diálogo abierto encima: esos
   // se cierran solos con su propio Escape.
@@ -67,11 +70,25 @@ function DesktopPanel({ item, ...props }: ItemDetailProps) {
   }, [onClose])
 
   return (
-    <section
-      aria-label={`Detalle de «${item.title}»`}
-      className="h-dvh w-[420px] overflow-y-auto border-l border-border bg-card px-7 pt-6 pb-7 shadow-panel"
-    >
-      <ItemDetail key={item.id} item={item} {...props} />
-    </section>
+    <div className="relative h-dvh" style={{ width: widths.panel }}>
+      {/* Su borde izquierdo se arrastra (Fran, 2026-11-16): fuera del scroll, para que no se mueva. */}
+      <ResizeHandle
+        label="Ancho del panel de detalle"
+        edge="start"
+        value={widths.panel}
+        min={PANEL_WIDTH.min}
+        max={widths.panelMax}
+        onChange={widths.setPanel}
+        onReset={() => {
+          widths.setPanel(PANEL_WIDTH.initial)
+        }}
+      />
+      <section
+        aria-label={`Detalle de «${item.title}»`}
+        className="h-dvh w-full overflow-y-auto border-l border-border bg-card px-7 pt-6 pb-7 shadow-panel min-[1760px]:border-r"
+      >
+        <ItemDetail key={item.id} item={item} {...props} />
+      </section>
+    </div>
   )
 }

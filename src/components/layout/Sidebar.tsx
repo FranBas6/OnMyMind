@@ -44,7 +44,7 @@ export function Sidebar() {
   useSearchShortcut()
 
   return (
-    <aside className="sticky top-0 flex h-dvh flex-col gap-[22px] overflow-y-auto border-r border-border-soft bg-secondary px-4 py-6">
+    <aside className="sticky top-0 flex h-dvh flex-col gap-[22px] overflow-y-auto border-r border-border-soft bg-secondary px-4 py-6 min-[1760px]:border-l">
       {/* La marca lleva a Inicio (diseño 03 Inicio). */}
       <Link
         to="/"
