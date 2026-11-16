@@ -339,6 +339,51 @@ describe('sublistas por toda la app (diseño 12)', () => {
     )
   })
 
+  it('en escritorio, «Mover a…» se busca: sin tildes, Intro mueve al primero (Fran, 2026-11-16)', async () => {
+    setDesktop(true)
+    const user = userEvent.setup()
+    vi.mocked(itemsApi.moveItem).mockReturnValue(new Promise(() => undefined))
+    renderAt('/lists/viajes')
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Opciones de «Renovar el pasaporte»' }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: /Mover a…/ }))
+    const popover = await screen.findByRole('dialog', { name: 'Mover a…' })
+    const search = within(popover).getByRole('textbox', { name: 'Buscar lista o sublista' })
+    // El cursor ya está dentro, y sin escribir siguen los números.
+    expect(search).toHaveFocus()
+    expect(within(popover).getAllByText('1').length).toBeGreaterThan(0)
+
+    await user.type(search, 'MALÉ')
+    const shown = within(within(popover).getByRole('list', { name: 'Listas' })).getAllByRole(
+      'button',
+    )
+    expect(shown.map((button) => button.textContent)).toEqual(['Viajes › MaletaSublista'])
+    await user.keyboard('{Enter}')
+    expect(itemsApi.moveItem).toHaveBeenCalledWith(
+      ID.pasaporte,
+      expect.objectContaining({ listId: 'viajes', parentId: ID.maleta }),
+    )
+  })
+
+  it('en escritorio, sin resultados lo dice', async () => {
+    setDesktop(true)
+    const user = userEvent.setup()
+    renderAt('/lists/viajes')
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Opciones de «Renovar el pasaporte»' }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: /Mover a…/ }))
+    const popover = await screen.findByRole('dialog', { name: 'Mover a…' })
+    await user.type(
+      within(popover).getByRole('textbox', { name: 'Buscar lista o sublista' }),
+      'zzz',
+    )
+    expect(within(popover).getByText('Nada con «zzz».')).toBeInTheDocument()
+  })
+
   it('una sublista no se mueve a «En mente» ni dentro de otra', async () => {
     setDesktop(true)
     const user = userEvent.setup()

@@ -139,6 +139,8 @@ describe('Perfil · Datos y Cuenta (2.8, diseño 18)', () => {
     const dialog = await sheet('Exportar mis datos')
     await user.click(within(dialog).getByRole('radio', { name: /CSV · una lista/ }))
     const lists = within(dialog).getByRole('radiogroup', { name: 'Qué lista' })
+    // Con pocas listas, sin buscador.
+    expect(within(dialog).queryByRole('textbox', { name: 'Buscar lista' })).not.toBeInTheDocument()
     expect(
       within(lists)
         .getAllByRole('radio')

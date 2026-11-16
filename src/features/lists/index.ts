@@ -17,6 +17,7 @@ export {
   NewListHeaderButton,
   NewListRoundButton,
 } from './components/NewListEntries'
+export { filterListsByName, LIST_SEARCH_FROM } from './filterLists'
 export { useArchivedLists } from './hooks/useArchivedLists'
 export { hiddenListIds, useHiddenListIds, useHiddenLists } from './hooks/useHiddenLists'
 export { listMutations, useUpdateListView } from './hooks/useListMutations'

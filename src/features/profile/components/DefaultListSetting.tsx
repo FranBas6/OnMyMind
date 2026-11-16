@@ -5,7 +5,14 @@ import { useState, type ReactNode } from 'react'
 import { BottomSheet } from '@/components/BottomSheet'
 import { ListIcon } from '@/components/ListIcon'
 import { InboxMark } from '@/features/capture'
-import { listCounterLabel, useArchivedLists, useLists, type List } from '@/features/lists'
+import {
+  filterListsByName,
+  LIST_SEARCH_FROM,
+  listCounterLabel,
+  useArchivedLists,
+  useLists,
+  type List,
+} from '@/features/lists'
 import { shortcutKey } from '@/lib/device'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -15,8 +22,8 @@ import { useUpdateSettings } from '../hooks/useProfileMutations'
 
 /**
  * «Lista por defecto» de «Captura» (diseño 09, P6, P7 y D4): dónde cae lo que capturas sin
- * elegir lista. En móvil abre la hoja de «Todas las listas»; en escritorio, el popover con
- * buscador bajo la fila. «En mente» va siempre primera y las archivadas no salen. Si la elegida
+ * elegir lista. En móvil abre la hoja de «Todas las listas» (con buscador si hay muchas, Fran,
+ * 2026-11-16); en escritorio, el popover con buscador bajo la fila. «En mente» va siempre primera y las archivadas no salen. Si la elegida
  * se archiva o se borra, la captura vuelve a «En mente» sin preguntar y aquí sale una línea que
  * lo cuenta; se va al tocar la fila.
  */
@@ -79,7 +86,13 @@ export function DefaultListSetting({ isDesktop }: { isDesktop: boolean }) {
   )
 
   const picker = (
-    <Picker lists={choices} chosenId={current?.id} onChoose={choose} withSearch={isDesktop} />
+    <Picker
+      lists={choices}
+      chosenId={current?.id}
+      onChoose={choose}
+      compact={isDesktop}
+      withSearch={isDesktop || choices.length >= LIST_SEARCH_FROM}
+    />
   )
 
   return (
@@ -147,24 +160,32 @@ function Picker({
   lists,
   chosenId,
   onChoose,
+  compact,
   withSearch,
 }: {
   lists: readonly List[]
   chosenId: string | undefined
   onChoose: (list: List) => void
+  /** El popover de escritorio: filas de 44 px, sin la línea de debajo. */
+  compact: boolean
   withSearch: boolean
 }) {
   const [query, setQuery] = useState('')
-  const needle = query.trim().toLowerCase()
-  const shown = needle ? lists.filter((list) => list.name.toLowerCase().includes(needle)) : lists
+  const shown = filterListsByName(lists, query)
 
   return (
     <>
       {withSearch && (
-        <label className="mb-1.5 flex h-10 items-center gap-2.5 rounded-xl bg-fill px-3 text-sm text-subtle-foreground">
+        <label
+          className={cn(
+            'flex items-center gap-2.5 bg-fill text-subtle-foreground',
+            compact ? 'mb-1.5 h-10 rounded-xl px-3 text-sm' : 'h-11 shrink-0 rounded-[14px] px-3.5',
+          )}
+        >
           <Search aria-hidden className="size-4" strokeWidth={2.2} />
           <input
-            autoFocus
+            // En el móvil, sin teclado al abrir: casi siempre se elige con la vista.
+            autoFocus={compact}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value)
@@ -178,7 +199,10 @@ function Picker({
             }}
             placeholder="Buscar lista…"
             aria-label="Buscar lista"
-            className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-subtle-foreground"
+            className={cn(
+              'min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-subtle-foreground',
+              !compact && 'text-base',
+            )}
           />
         </label>
       )}
@@ -186,7 +210,7 @@ function Picker({
         aria-label="Listas"
         className={cn(
           'flex flex-col gap-0.5 overflow-y-auto',
-          withSearch ? 'max-h-[60dvh]' : '-mx-2 max-h-[55dvh]',
+          compact ? 'max-h-[60dvh]' : '-mx-2 max-h-[55dvh]',
         )}
       >
         {shown.map((list) => {
@@ -201,7 +225,7 @@ function Picker({
                 }}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-xl px-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                  withSearch ? 'h-11 gap-2.5' : 'min-h-12 py-1.5',
+                  compact ? 'h-11 gap-2.5' : 'min-h-12 py-1.5',
                   selected ? 'bg-brand-tint' : 'hover:bg-fill',
                 )}
               >
@@ -210,13 +234,13 @@ function Picker({
                   <span
                     className={cn(
                       'block truncate font-semibold',
-                      withSearch ? 'text-sm' : 'text-[15px]',
+                      compact ? 'text-sm' : 'text-[15px]',
                       selected && 'text-primary-strong',
                     )}
                   >
                     {list.name}
                   </span>
-                  {!withSearch && (
+                  {!compact && (
                     <span className="block text-xs text-subtle-foreground">
                       {list.kind === 'inbox' ? 'Siempre disponible' : listCounterLabel(list)}
                     </span>
@@ -229,6 +253,9 @@ function Picker({
             </li>
           )
         })}
+        {shown.length === 0 && (
+          <li className="px-3 py-4 text-sm text-muted-foreground">Nada con «{query.trim()}».</li>
+        )}
       </ul>
     </>
   )

@@ -88,7 +88,12 @@ function setDesktop(on: boolean) {
  * Perfil con la caché sembrada. `server` hace de Supabase: guardar el nombre o un ajuste se le
  * aplica, y `fetchProfile` devuelve lo que tenga, para que el refresco tras guardar sea realista.
  */
-function renderProfile(profile: Partial<Profile> = {}, path = '/profile', savings = 0) {
+function renderProfile(
+  profile: Partial<Profile> = {},
+  path = '/profile',
+  savings = 0,
+  more: List[] = [],
+) {
   let signedIn = true
   vi.mocked(authApi.signOut).mockImplementation(() => {
     signedIn = false
@@ -96,7 +101,7 @@ function renderProfile(profile: Partial<Profile> = {}, path = '/profile', saving
   })
   const seeded = testProfile(session.user.id, profile)
   let server = seeded
-  vi.mocked(listsApi.fetchLists).mockResolvedValue([inbox, casa, trabajo])
+  vi.mocked(listsApi.fetchLists).mockResolvedValue([inbox, casa, trabajo, ...more])
   vi.mocked(listsApi.fetchArchivedLists).mockResolvedValue([regalos])
   vi.mocked(listsApi.fetchRecentCaptures).mockResolvedValue([])
   vi.mocked(pricesApi.fetchSavings).mockResolvedValue(savings)
@@ -121,7 +126,7 @@ function renderProfile(profile: Partial<Profile> = {}, path = '/profile', saving
     session,
     getSession: () => Promise.resolve(signedIn ? session : null),
     seed: (queryClient) => {
-      queryClient.setQueryData(queryKeys.lists.all, [inbox, casa, trabajo])
+      queryClient.setQueryData(queryKeys.lists.all, [inbox, casa, trabajo, ...more])
       queryClient.setQueryData(queryKeys.lists.archived, [regalos])
       queryClient.setQueryData(queryKeys.profile(), seeded)
     },
@@ -253,12 +258,37 @@ describe('Perfil', () => {
     })
   })
 
+  it('con muchas listas, la lista por defecto se busca (Fran, 2026-11-16)', async () => {
+    const user = userEvent.setup()
+    const names = ['Cumpleaños', 'Viaje a Lisboa', 'Ideas', 'Gimnasio', 'Lecturas', 'Recetas']
+    renderProfile(
+      {},
+      '/profile',
+      0,
+      names.map((name, index) => list(`l${String(index)}`, name, { position: 4000 + index })),
+    )
+
+    await user.click(await screen.findByRole('button', { name: /Lista por defecto/ }))
+    const sheet = await screen.findByRole('dialog', { name: 'Lista por defecto' })
+    await user.type(within(sheet).getByRole('textbox', { name: 'Buscar lista' }), 'cumpleanos')
+    expect(
+      within(within(sheet).getByRole('list', { name: 'Listas' }))
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual([expect.stringContaining('Cumpleaños')])
+    await user.clear(within(sheet).getByRole('textbox', { name: 'Buscar lista' }))
+    await user.type(within(sheet).getByRole('textbox', { name: 'Buscar lista' }), 'zzz')
+    expect(within(sheet).getByText('Nada con «zzz».')).toBeInTheDocument()
+  })
+
   it('elegir la lista por defecto, y la captura la trae elegida', async () => {
     const user = userEvent.setup()
     renderProfile()
 
     await user.click(await screen.findByRole('button', { name: /Lista por defecto/ }))
     const sheet = await screen.findByRole('dialog', { name: 'Lista por defecto' })
+    // Con pocas listas, sin buscador: se ven todas.
+    expect(within(sheet).queryByRole('textbox', { name: 'Buscar lista' })).not.toBeInTheDocument()
     expect(within(sheet).getByText('Siempre disponible')).toBeInTheDocument()
     expect(within(sheet).queryByText('Regalos')).not.toBeInTheDocument()
     await user.click(within(sheet).getByRole('button', { name: /Casa/ }))

@@ -87,7 +87,9 @@ export function MoveToList({
             sideOffset={8}
             collisionPadding={16}
             aria-label="Mover a…"
-            className="z-50 w-[300px] rounded-[18px] border border-border-soft bg-popover p-2 text-popover-foreground shadow-popover outline-none"
+            // No más alto que el sitio que hay: con muchas listas, hace scroll solo la lista, y el
+            // título y el buscador se quedan a la vista.
+            className="z-50 flex max-h-[var(--radix-popover-content-available-height)] w-[300px] flex-col rounded-[18px] border border-border-soft bg-popover p-2 text-popover-foreground shadow-popover outline-none"
           >
             {target && <DesktopMenu item={target.item} {...props} {...handlers} />}
           </Popover.Content>
@@ -239,6 +241,7 @@ function MobileSheet({ item, from, destinations, onMove, onMoveToNewList, onClos
             />
           </li>
         ))}
+        {query.trim() !== '' && shown.length === 0 && <NoMatch query={query} />}
         {from.kind === 'inbox' && !query && (
           <li>
             <NewListButton
@@ -325,30 +328,72 @@ function MobileOption({
   )
 }
 
+/**
+ * «Mover a…» en escritorio (diseño 05, D2): un menú con cada destino y su número. Arriba, «Buscar
+ * lista o sublista…» con el cursor dentro, como el de la captura (Fran, 2026-11-16): con muchas
+ * listas y sublistas, escribir es más rápido que buscar con la vista. Sin escribir, 1–9 mueven al
+ * momento; escribiendo, filtra sin tildes por lista y sublista, e Intro mueve al primero.
+ */
 function DesktopMenu({ item, from, destinations, onMove, onMoveToNewList, onClose }: MenuProps) {
   const [hovered, setHovered] = useState<MoveOption | null>(null)
+  const [query, setQuery] = useState('')
   const hint = useHint(item, hovered)
   const choose = (option: MoveOption) => {
     onClose()
     onMove(item, option.destination)
   }
+  const searching = query.trim() !== ''
+  const matches = new Set(
+    filterDestinations(
+      destinations.map((option) => option.destination),
+      query,
+    ).map((destination) => destination.id),
+  )
+  // Buscando, «Sacar de…» no sale: es quedarse, no un destino que se busque.
+  const shown = searching
+    ? destinations.filter((option) => !option.takeOut && matches.has(option.destination.id))
+    : destinations
 
-  // Atajos 1–9: el número de cada destino (diseño 05, D2).
   const onKeyDown = (event: KeyboardEvent) => {
-    const index = Number(event.key) - 1
-    const option = Number.isInteger(index) ? destinations[index] : undefined
+    if (event.key === 'Enter') {
+      const first = shown.find((option) => !option.here)
+      if (first) {
+        event.preventDefault()
+        choose(first)
+      }
+      return
+    }
+    // Atajos 1–9: el número de cada destino (diseño 05, D2), solo sin nada escrito.
+    if (searching || !/^[1-9]$/.test(event.key)) return
+    const option = destinations[Number(event.key) - 1]
     if (!option || option.here) return
     event.preventDefault()
     choose(option)
   }
 
   return (
-    <div onKeyDown={onKeyDown}>
-      <p className="px-2.5 pt-1.5 pb-2 text-[11px] font-bold tracking-[0.06em] text-subtle-foreground uppercase">
+    <div onKeyDown={onKeyDown} className="flex min-h-0 flex-col">
+      <p className="shrink-0 px-2.5 pt-1.5 pb-2 text-[11px] font-bold tracking-[0.06em] text-subtle-foreground uppercase">
         Mover a…
       </p>
-      <ul aria-label="Listas" className="flex max-h-[60dvh] flex-col gap-0.5 overflow-y-auto">
-        {destinations.map((option, index) => (
+      <label className="mb-1.5 flex h-10 shrink-0 items-center gap-2.5 rounded-xl bg-fill px-3 text-sm text-subtle-foreground">
+        <Search aria-hidden className="size-4" strokeWidth={2.2} />
+        <input
+          autoFocus
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value)
+          }}
+          placeholder="Buscar lista o sublista…"
+          aria-label="Buscar lista o sublista"
+          className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-subtle-foreground"
+        />
+      </label>
+      <ul
+        aria-label="Listas"
+        className="flex max-h-[60dvh] min-h-0 flex-col gap-0.5 overflow-y-auto"
+      >
+        {shown.map((option, index) => (
           <li
             key={option.takeOut ? 'sacar' : option.destination.id}
             className={cn(option.takeOut && 'mb-1 border-b border-border-soft pb-1')}
@@ -381,7 +426,7 @@ function DesktopMenu({ item, from, destinations, onMove, onMoveToNewList, onClos
                   {optionNote(option, true)}
                 </span>
               </span>
-              {index < 9 && (
+              {!searching && index < 9 && (
                 <kbd aria-hidden className="font-sans text-[11px] text-subtle-foreground">
                   {index + 1}
                 </kbd>
@@ -389,9 +434,10 @@ function DesktopMenu({ item, from, destinations, onMove, onMoveToNewList, onClos
             </button>
           </li>
         ))}
+        {searching && shown.length === 0 && <NoMatch query={query} />}
       </ul>
-      {from.kind === 'inbox' && (
-        <div className="mt-1 border-t border-border-soft pt-1">
+      {from.kind === 'inbox' && !searching && (
+        <div className="mt-1 shrink-0 border-t border-border-soft pt-1">
           <NewListButton
             compact
             onClick={() => {
@@ -402,12 +448,17 @@ function DesktopMenu({ item, from, destinations, onMove, onMoveToNewList, onClos
         </div>
       )}
       {hint && (
-        <p className="mt-1 border-t border-border-soft px-2.5 pt-2.5 pb-1.5 text-xs text-muted-foreground">
+        <p className="mt-1 shrink-0 border-t border-border-soft px-2.5 pt-2.5 pb-1.5 text-xs text-muted-foreground">
           {hint}
         </p>
       )}
     </div>
   )
+}
+
+/** Sin resultados al buscar, como en la captura: «Nada con «volantes».». */
+function NoMatch({ query }: { query: string }) {
+  return <li className="px-3 py-4 text-sm text-muted-foreground">Nada con «{query.trim()}».</li>
 }
 
 /** «Buscar lista o sublista…» (A5): 44 px sobre `fill`. */

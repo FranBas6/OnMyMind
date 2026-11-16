@@ -1,9 +1,15 @@
-import { Check, Download, FileText } from 'lucide-react'
+import { Check, Download, FileText, Search } from 'lucide-react'
 import { useState } from 'react'
 
 import { FormError } from '@/features/auth'
 import { InboxMark } from '@/features/capture'
-import { useArchivedLists, useLists, type List } from '@/features/lists'
+import {
+  filterListsByName,
+  LIST_SEARCH_FROM,
+  useArchivedLists,
+  useLists,
+  type List,
+} from '@/features/lists'
 import { useUnlocked } from '@/features/private'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -46,9 +52,11 @@ export function ExportDialog({ open, onOpenChange, isDesktop }: ExportDialogProp
   const archived = useArchivedLists()
   const [format, setFormat] = useState<Format>('json')
   const [listId, setListId] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
 
   const choices = exportableLists(lists.data?.inbox, lists.data?.lists ?? [], archived.data ?? [])
   // Por defecto, la primera de tus listas (o «En mente» si no hay otra).
+  const shownChoices = filterListsByName(choices, query)
   const chosen =
     choices.find((list) => list.id === listId) ??
     choices.find((list) => list.kind !== 'inbox') ??
@@ -151,12 +159,30 @@ export function ExportDialog({ open, onOpenChange, isDesktop }: ExportDialogProp
           >
             Qué lista
           </p>
+          {/* Con muchas listas, buscarla (Fran, 2026-11-16). */}
+          {choices.length >= LIST_SEARCH_FROM && (
+            <label className="mb-2 flex h-11 items-center gap-2.5 rounded-[14px] bg-fill px-3.5 text-subtle-foreground">
+              <Search aria-hidden className="size-4" strokeWidth={2.2} />
+              <input
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value)
+                }}
+                placeholder="Buscar lista…"
+                aria-label="Buscar lista"
+                className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-subtle-foreground md:text-[15px]"
+              />
+            </label>
+          )}
           <div
             role="radiogroup"
             aria-labelledby="export-list-label"
             className="max-h-[30dvh] overflow-y-auto rounded-2xl border border-border-soft bg-background"
           >
-            {choices.map((list, index) => (
+            {shownChoices.length === 0 && (
+              <p className="px-4 py-4 text-sm text-muted-foreground">Nada con «{query.trim()}».</p>
+            )}
+            {shownChoices.map((list, index) => (
               <ListChoice
                 key={list.id}
                 list={list}
