@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-query-persist-client'
 import { del, get, set } from 'idb-keyval'
 
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 /**
  * Cuánto vale la caché guardada: una semana sin abrir la app y se vuelve a pedir todo. La cola de

@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { cn } from '@/lib/utils'
 
 export interface LinkOption {

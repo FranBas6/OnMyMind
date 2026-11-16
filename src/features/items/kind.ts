@@ -1,7 +1,7 @@
 import { startOfDay } from 'date-fns'
 
 import type { KindTotals, List } from '@/features/lists'
-import { formatDueDate } from '@/lib/date'
+import { formatDueDate } from '@/lib/dates/date'
 
 import { PRIORITY_LABELS } from './fields'
 import { translateStatus } from './move'

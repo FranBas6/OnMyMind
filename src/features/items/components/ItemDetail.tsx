@@ -25,7 +25,7 @@ import {
 } from '@/features/reminders/hooks/useReminders'
 import { TWO_DAYS_BEFORE } from '@/features/reminders/reminders'
 import { useOnline } from '@/hooks/useOnline'
-import { LIST_COLOR_BG } from '@/lib/listColors'
+import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 

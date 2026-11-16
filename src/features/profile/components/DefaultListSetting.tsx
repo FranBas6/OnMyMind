@@ -2,8 +2,8 @@ import { Check, ChevronRight, Search } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { useState, type ReactNode } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
-import { ListIcon } from '@/components/ListIcon'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
 import { InboxMark } from '@/features/capture'
 import {
   filterListsByName,
@@ -13,8 +13,8 @@ import {
   useLists,
   type List,
 } from '@/features/lists'
-import { shortcutKey } from '@/lib/device'
-import { LIST_COLOR_BG } from '@/lib/listColors'
+import { shortcutKey } from '@/lib/device/device'
+import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
 import { cn } from '@/lib/utils'
 
 import { useProfile } from '../hooks/useProfile'

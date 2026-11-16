@@ -6,7 +6,7 @@ import { render } from '@testing-library/react'
 import { createQueryClient } from '@/app/query-client'
 import { createAppRouter } from '@/app/router'
 import { parseSettings, type Profile } from '@/features/profile'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 interface RenderRouteOptions {
   /** Sesión que verán las guardas de ruta; por defecto, sin sesión. */

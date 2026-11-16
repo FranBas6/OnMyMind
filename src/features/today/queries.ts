@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { queryOptions } from '@tanstack/react-query'
 
 import { fetchCompletions } from '@/features/items'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { fetchDays, fetchToday } from './api'
 import { dayKey, monthGrid, todayBounds } from './today'

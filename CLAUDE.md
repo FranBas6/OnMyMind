@@ -87,10 +87,11 @@ Lema: "Sácalo de la cabeza". Mobile-first, instalable y usable offline, con Sup
 ```
 src/
   app/            Arranque: main.tsx, router, QueryClient, providers y routeTree.gen.ts (generado)
+    shell/          El armazón: AppShell, Sidebar, BottomNav y su navegación (sí importan features)
   routes/         Rutas file-based de TanStack Router (__root.tsx + una por pantalla)
   features/       Código de dominio agrupado por funcionalidad:
     auth/           login, sesión y guardas de ruta
-    lists/          listas y sus tipos/plantillas; las ocultas (5.8)
+    lists/          listas y sus tipos/plantillas; las ocultas (5.8); icons/: ListIcon, colores e iconos
     items/          ítems, estados y campos flexibles
     capture/        captura rápida y detección de URLs
     today/          vista Hoy
@@ -100,16 +101,23 @@ src/
     sharing/        compartir listas: invitar con un enlace, unirse, quién está
     prices/         histórico de precios y gráficas
     private/        la clave privada: la caja cifrada, desbloquear con la clave o la llave del aparato, el texto de las notas protegidas y abrir las listas ocultas
-  components/
+  components/     Solo piezas genéricas, sin dominio, que no importan features
     ui/           Componentes generados por shadcn (no editar salvo ajustes de estilo)
-    layout/       AppShell, BottomNav, Sidebar
-  lib/
+    layout/       PageHeader, ResizeHandle, anchos de los paneles y el panel lateral
+    sheets/       BottomSheet, ResponsiveSheet, KeyboardSheet, ConfirmDialog, InlineConfirm
+    feedback/     EmptyState, UndoToast, OfflineBanner, InstallHint, KeyboardDragHint
+    controls/     Switch, Fab, OutlineButton
+  lib/            Infraestructura y utilidades sin dominio
     supabase/     client.ts (cliente tipado) y database.types.ts (generado, no editar)
+    query/        queryKeys, mutaciones duraderas, errores
+    dates/        fechas en español y fechas escritas («mañana a las 10»)
+    device/       el aparato, la conexión, instalar la PWA, descargas
     utils.ts      cn() y helpers genéricos
   hooks/          Hooks genéricos compartidos entre features
   styles/         globals.css: Tailwind, tokens de diseño (@theme), tema claro/oscuro, capa base
   types/          Tipos globales del dominio
   test/           Setup de Vitest y utilidades de test
+    flows/          Tests de flujos: la app entera con una ruta (`renderRoute`)
 supabase/
   config.toml     Configuración del stack local de Supabase
   migrations/     Migraciones SQL (supabase migration new <nombre>)

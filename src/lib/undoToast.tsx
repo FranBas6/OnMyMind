@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 
-import { UndoToast, type UndoToastProps } from '@/components/UndoToast'
+import { UndoToast, type UndoToastProps } from '@/components/feedback/UndoToast'
 
 /** Cuánto dura el aviso con «Deshacer» (diseño 04 Listas y 06 Detalle de tarea). */
 export const UNDO_MS = 5000

@@ -1,6 +1,6 @@
 import { Calendar, Circle, FileText, Square, type LucideIcon } from 'lucide-react'
 
-import { SublistGlyph } from '@/components/SublistGlyph'
+import { SublistGlyph } from '@/features/lists/icons/SublistGlyph'
 
 import type { AddableKind } from '../kind'
 

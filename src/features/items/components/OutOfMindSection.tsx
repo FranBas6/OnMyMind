@@ -2,7 +2,7 @@ import { format, isSameYear } from 'date-fns'
 import { ArrowRightLeft, ChevronDown } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
 
-import { formatCaptureAge } from '@/lib/date'
+import { formatCaptureAge } from '@/lib/dates/date'
 import { cn } from '@/lib/utils'
 import { personName } from '@/features/sharing/copy'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'

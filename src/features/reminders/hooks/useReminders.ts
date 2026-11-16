@@ -3,9 +3,9 @@ import { toast } from 'sonner'
 
 import { itemMutationKey, OFFLINE_TOLERANT } from '@/features/items/hooks/useItemMutations'
 import type { Item } from '@/features/items/types'
-import { errorMessage } from '@/lib/errors'
-import { durableMutation, useDurableMutation } from '@/lib/mutations'
-import { queryKeys } from '@/lib/queryKeys'
+import { errorMessage } from '@/lib/query/errors'
+import { durableMutation, useDurableMutation } from '@/lib/query/mutations'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { deleteReminder, saveReminder } from '../api'
 import { remindersQueryOptions } from '../queries'

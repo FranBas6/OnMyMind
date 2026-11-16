@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { PANEL_WIDTH, useLayoutWidths } from '@/components/layout/layoutWidths'
 import { ResizeHandle } from '@/components/layout/ResizeHandle'
 import { useSidePanel } from '@/components/layout/sidePanel'

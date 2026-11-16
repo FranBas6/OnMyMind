@@ -3,7 +3,7 @@ import { ListPlus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { z } from 'zod'
 
-import { EmptyState } from '@/components/EmptyState'
+import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PriceDropsSheet } from '@/features/items'
 import {
@@ -18,7 +18,7 @@ import {
   useLists,
 } from '@/features/lists'
 import { initialOf, useProfile } from '@/features/profile'
-import { formatHeaderDate } from '@/lib/date'
+import { formatHeaderDate } from '@/lib/dates/date'
 
 /**
  * `?bajadas=hoy` abre «Bajaron esta mañana» (3.8, diseño 22, N3): es a donde lleva el aviso de

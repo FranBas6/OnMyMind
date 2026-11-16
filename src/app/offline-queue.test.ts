@@ -7,7 +7,7 @@ import type { NewItem } from '@/features/items/api'
 import { itemMutationKey } from '@/features/items/hooks/useItemMutations'
 import type { Item } from '@/features/items'
 import type { List } from '@/features/lists'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { restoreQueryCache } from './persister'
 import { createQueryClient } from './query-client'

@@ -12,9 +12,9 @@ import {
 import { ContextMenu, DropdownMenu } from 'radix-ui'
 import { useState, type ReactNode } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
-import { SublistGlyph } from '@/components/SublistGlyph'
-import { ListIcon } from '@/components/ListIcon'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
+import { SublistGlyph } from '@/features/lists/icons/SublistGlyph'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
 import { personName } from '@/features/sharing/copy'
 import { SharedInitials } from '@/features/sharing/components/SharedInitials'
 import { useListPeople } from '@/features/sharing/hooks/useSharing'

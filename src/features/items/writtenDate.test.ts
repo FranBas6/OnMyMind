@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseNaturalDate } from '@/lib/naturalDate'
+import { parseNaturalDate } from '@/lib/dates/naturalDate'
 
 import {
   compactWrittenDateLabel,

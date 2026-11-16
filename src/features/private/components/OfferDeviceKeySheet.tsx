@@ -1,4 +1,4 @@
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 
 import { deviceActionLabel } from '../copy'
 import type { DeviceUnlock } from '../passkey'

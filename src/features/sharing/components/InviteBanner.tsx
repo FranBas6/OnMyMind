@@ -1,4 +1,4 @@
-import { ListIcon } from '@/components/ListIcon'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
 
 import { personName } from '../copy'
 import { useInvitePreview } from '../hooks/useSharing'

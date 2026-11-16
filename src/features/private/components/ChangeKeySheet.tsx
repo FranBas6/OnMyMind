@@ -1,10 +1,10 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 import { FormError, PasswordField } from '@/features/auth'
 import { useOnline } from '@/hooks/useOnline'
-import { isNetworkError } from '@/lib/errors'
+import { isNetworkError } from '@/lib/query/errors'
 
 import type { PrivateVault } from '../api'
 import {

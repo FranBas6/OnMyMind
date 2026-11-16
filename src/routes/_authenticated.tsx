@@ -1,8 +1,8 @@
 import { createFileRoute, Outlet, redirect, useRouter } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
-import { InstallHint } from '@/components/InstallHint'
-import { AppShell } from '@/components/layout/AppShell'
+import { InstallHint } from '@/components/feedback/InstallHint'
+import { AppShell } from '@/app/shell/AppShell'
 import { useSession } from '@/features/auth'
 import { CaptureProvider } from '@/features/capture'
 import { cleanupPhotosDaily } from '@/features/items'

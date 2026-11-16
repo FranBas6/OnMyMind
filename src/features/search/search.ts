@@ -2,7 +2,7 @@ import { format, isSameYear } from 'date-fns'
 
 import { eventWhen, isOutOfMind, STATUS_LABELS, type Item } from '@/features/items'
 import type { List } from '@/features/lists'
-import { formatCaptureAge, formatDueDate } from '@/lib/date'
+import { formatCaptureAge, formatDueDate } from '@/lib/dates/date'
 
 /** Todo / Pendientes / Hechas (pantalla 13). «Hechas» es lo que está fuera de la cabeza. */
 export type SearchFilter = 'all' | 'open' | 'done'

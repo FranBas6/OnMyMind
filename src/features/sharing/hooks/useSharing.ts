@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { Item } from '@/features/items/types'
 import { useCurrentUser } from '@/features/profile/hooks/useProfile'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import {
   acceptInvite,

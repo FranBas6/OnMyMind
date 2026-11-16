@@ -20,7 +20,7 @@ import {
 import { DropdownMenu } from 'radix-ui'
 import { Fragment, useRef, useState, type KeyboardEvent } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { canStep } from '@/lib/reorder'
 import { cn } from '@/lib/utils'
 

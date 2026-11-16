@@ -2,7 +2,7 @@ import { Ellipsis, ExternalLink, Plus, RotateCw, Trash2, WifiOff, X } from 'luci
 import { DropdownMenu } from 'radix-ui'
 import { useState, type DragEvent } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { cn } from '@/lib/utils'
 
 import { fileSummary, fileType, MAX_FILES, viewerHint } from '../files'

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { parseNaturalDate, type NaturalDate } from '@/lib/naturalDate'
+import { parseNaturalDate, type NaturalDate } from '@/lib/dates/naturalDate'
 
 import type { ItemKind } from '../status'
 import { writtenDateFields, type WrittenDate } from '../writtenDate'

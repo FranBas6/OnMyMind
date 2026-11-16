@@ -2,7 +2,7 @@ import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-quer
 import { useEffect } from 'react'
 
 import { getUnlocked, subscribeUnlocked, useUnlocked } from '@/features/private'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { hiddenListIdsQueryOptions, hiddenListsQueryOptions } from '../queries'
 

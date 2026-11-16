@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { DayPicker } from 'react-day-picker'
 import { es } from 'react-day-picker/locale'
 
-import { formatMonthCaption } from '@/lib/date'
+import { formatMonthCaption } from '@/lib/dates/date'
 import { cn } from '@/lib/utils'
 
 interface DueDatePickerProps {

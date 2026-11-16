@@ -3,7 +3,7 @@ import { Dialog } from 'radix-ui'
 import type { ReactNode } from 'react'
 import { toast } from 'sonner'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { cn } from '@/lib/utils'
 
 import { usePush } from '../hooks/usePush'

@@ -9,7 +9,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import { KeyboardDragHint } from '@/components/KeyboardDragHint'
+import { KeyboardDragHint } from '@/components/feedback/KeyboardDragHint'
 import {
   isKeyboardStart,
   isTouchStart,

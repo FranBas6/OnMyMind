@@ -3,7 +3,7 @@ import { AlertDialog } from 'radix-ui'
 
 import { authErrorMessage, FormError, useSignOut } from '@/features/auth'
 import { useOnline } from '@/hooks/useOnline'
-import { isPendingChange } from '@/lib/flushMutations'
+import { isPendingChange } from '@/lib/query/flushMutations'
 import { cn } from '@/lib/utils'
 
 interface SignOutDialogProps {

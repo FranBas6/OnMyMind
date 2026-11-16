@@ -20,7 +20,7 @@ import { ArrowUp, Camera, CircleAlert, Eye, LoaderCircle, Trash2, WifiOff } from
 import { ContextMenu } from 'radix-ui'
 import { useState, type ComponentProps, type ReactNode } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import {
   isTouchStart,
   LIFT_DELAY_MS,

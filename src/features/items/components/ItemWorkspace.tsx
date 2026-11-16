@@ -4,7 +4,7 @@ import { Check, Copy, Lock, LockOpen, Trash2, WifiOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { useEffect, useState, type ReactNode } from 'react'
 
-import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ConfirmDialog } from '@/components/sheets/ConfirmDialog'
 import { useListActions, type List } from '@/features/lists'
 import {
   NEEDS_CONNECTION,
@@ -18,7 +18,7 @@ import { useSetReminder } from '@/features/reminders/hooks/useReminders'
 import { canHaveReminder, type Reminder } from '@/features/reminders/reminders'
 import { copyText } from '@/features/sharing/share'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 import { showUndoToast } from '@/lib/undoToast'
 
 import { chosenLabel, isChoosing } from '../chooseOne'

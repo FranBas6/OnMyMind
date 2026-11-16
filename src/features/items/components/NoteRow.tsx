@@ -1,7 +1,7 @@
 import { LOST_NOTE, useIsLostNote } from '@/features/private'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
 import { useLiveRow } from '@/features/sharing/hooks/useLiveRow'
-import { formatCaptureAge } from '@/lib/date'
+import { formatCaptureAge } from '@/lib/dates/date'
 import { cn } from '@/lib/utils'
 
 import { noteBody } from '../noteText'

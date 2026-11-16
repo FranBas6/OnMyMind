@@ -4,8 +4,8 @@ import { useState } from 'react'
 
 import { useOnline } from '@/hooks/useOnline'
 import { usePwa } from '@/hooks/usePwa'
-import { formatCaptureAge } from '@/lib/date'
-import { thisDevice } from '@/lib/device'
+import { formatCaptureAge } from '@/lib/dates/date'
+import { thisDevice } from '@/lib/device/device'
 import { cn } from '@/lib/utils'
 
 const dayOf = (date: Date, now: Date) =>

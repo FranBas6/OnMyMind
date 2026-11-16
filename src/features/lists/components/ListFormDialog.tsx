@@ -5,7 +5,7 @@ import { useId } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { isNetworkError, OFFLINE_MESSAGE } from '@/lib/errors'
+import { isNetworkError, OFFLINE_MESSAGE } from '@/lib/query/errors'
 import { cn } from '@/lib/utils'
 
 import { useCreateList, useUpdateList } from '../hooks/useListMutations'

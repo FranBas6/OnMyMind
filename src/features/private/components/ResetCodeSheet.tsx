@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { REGEXP_ONLY_DIGITS } from 'input-otp'
 import { useState } from 'react'
 
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 import { InputOTP } from '@/components/ui/input-otp'
 import {
   CODE_LENGTH,

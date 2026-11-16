@@ -1,7 +1,7 @@
 import { Dialog } from 'radix-ui'
 import { useRef, useState, type KeyboardEvent } from 'react'
 
-import { KeyboardSheetContent } from '@/components/KeyboardSheet'
+import { KeyboardSheetContent } from '@/components/sheets/KeyboardSheet'
 import { cn } from '@/lib/utils'
 
 import { DISPLAY_NAME_MAX_LENGTH, displayNameSchema } from '../schemas'

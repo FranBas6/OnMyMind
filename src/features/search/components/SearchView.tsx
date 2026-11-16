@@ -4,7 +4,7 @@ import { useState, type KeyboardEvent } from 'react'
 import { FilterChips, ItemWorkspace, useLingering } from '@/features/items'
 import { ARCHIVED_SECTION_ID, ArchivedListSheet, type List } from '@/features/lists'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { OFFLINE_MESSAGE } from '@/lib/errors'
+import { OFFLINE_MESSAGE } from '@/lib/query/errors'
 
 import { useSearch } from '../hooks/useSearch'
 import {

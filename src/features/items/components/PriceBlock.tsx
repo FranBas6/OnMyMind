@@ -1,7 +1,7 @@
 import { Check, Clock, Euro, LoaderCircle, Pencil, RefreshCw, WifiOff } from 'lucide-react'
 import { useId, useRef, useState, type KeyboardEvent } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import {
   firstPrice,
   morningChange,

@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { ChevronRight, Key, Lock } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { Switch } from '@/components/Switch'
+import { Switch } from '@/components/controls/Switch'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'

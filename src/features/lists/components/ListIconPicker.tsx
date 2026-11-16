@@ -2,16 +2,21 @@ import { Check, Pencil } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
-import { ListIcon } from '@/components/ListIcon'
-import { LIST_COLOR_BG, LIST_COLOR_EMOJI, LIST_COLOR_RING, type ListColor } from '@/lib/listColors'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
+import {
+  LIST_COLOR_BG,
+  LIST_COLOR_EMOJI,
+  LIST_COLOR_RING,
+  type ListColor,
+} from '@/features/lists/icons/listColors'
 import {
   emojiValue,
   iconValue,
   LIST_EMOJIS,
   LIST_ICON_GROUPS,
   parseListIcon,
-} from '@/lib/listIcons'
+} from '@/features/lists/icons/listIcons'
 import { cn } from '@/lib/utils'
 
 type Tab = 'icons' | 'emoji'

@@ -1,8 +1,8 @@
 import { ArchiveRestore } from 'lucide-react'
 import { useState } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
-import { ListIcon, type ListIconSize } from '@/components/ListIcon'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
+import { ListIcon, type ListIconSize } from '@/features/lists/icons/ListIcon'
 
 import { archivedSheetSummary } from '../templates'
 import type { List } from '../types'

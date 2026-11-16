@@ -2,7 +2,7 @@ import { ChevronRight } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { useState } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 // Por su ruta y no por el índice: `reminders` usa piezas de `items`.
 import { useItemReminder } from '@/features/reminders/hooks/useReminders'
 import { cn } from '@/lib/utils'

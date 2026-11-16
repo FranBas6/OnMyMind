@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 
 import { confirmsDeletion, deleteSummary } from '../account'
 import { useAccountCounts, useDeleteAccount } from '../hooks/useAccountData'
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 
 interface DeleteAccountDialogProps {
   open: boolean

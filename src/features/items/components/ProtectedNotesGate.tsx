@@ -1,8 +1,8 @@
 import { ChevronDown, Lock, Users } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
-import { ListIcon } from '@/components/ListIcon'
-import { OutlineButton } from '@/components/OutlineButton'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
+import { OutlineButton } from '@/components/controls/OutlineButton'
 import { useLists, type List } from '@/features/lists'
 // Por su ruta y no por el índice: `sharing` usa piezas de `items`.
 import { useSharedPeople } from '@/features/sharing/hooks/useSharing'

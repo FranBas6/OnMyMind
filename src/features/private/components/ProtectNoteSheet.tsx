@@ -1,6 +1,6 @@
 import { FileText, Lock, Search } from 'lucide-react'
 
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 
 import type { DeviceUnlock } from '../passkey'
 import { DesktopActions, HeaderCancel, MainAction, SheetPoint as Point } from './SheetParts'

@@ -1,10 +1,10 @@
 import { useMutation } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 import { FormError, PasswordField } from '@/features/auth'
 import { useOnline } from '@/hooks/useOnline'
-import { isNetworkError } from '@/lib/errors'
+import { isNetworkError } from '@/lib/query/errors'
 
 import { KEY_HINT, KEY_MISMATCH, NEEDS_CONNECTION, passwordsApp, SOMETHING_FAILED } from '../copy'
 import { createKey, type CreatedKey } from '../operations'

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { useSession } from '@/features/auth'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 import { showUndoToast } from '@/lib/undoToast'
 
 import { removeVaultDeviceKey, type PrivateVaultState } from '../api'

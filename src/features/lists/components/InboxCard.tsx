@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { ChevronRight } from 'lucide-react'
 
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { formatCaptureAge } from '@/lib/date'
+import { formatCaptureAge } from '@/lib/dates/date'
 
 import { useRecentCaptures } from '../hooks/useRecentCaptures'
 import { counterLabel, waitingCount } from '../templates'

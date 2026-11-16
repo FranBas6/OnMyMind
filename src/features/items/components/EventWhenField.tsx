@@ -3,8 +3,8 @@ import { Calendar, ChevronRight, Clock, Repeat } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { useState, type ReactNode } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
-import { Switch } from '@/components/Switch'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
+import { Switch } from '@/components/controls/Switch'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 

@@ -3,9 +3,9 @@ import { useCallback } from 'react'
 import { toast } from 'sonner'
 
 import { useCurrentUser } from '@/features/profile/hooks/useProfile'
-import { errorMessage } from '@/lib/errors'
-import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/mutations'
-import { queryKeys } from '@/lib/queryKeys'
+import { errorMessage } from '@/lib/query/errors'
+import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/query/mutations'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import {
   fetchPriceAlerts,

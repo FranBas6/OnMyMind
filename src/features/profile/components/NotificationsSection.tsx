@@ -2,7 +2,7 @@ import { Bell, BellOff, ChevronRight } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
-import { Switch } from '@/components/Switch'
+import { Switch } from '@/components/controls/Switch'
 import { usePriceAlerts } from '@/features/prices'
 // Por sus rutas y no por el índice: `reminders` usa piezas de `profile`.
 import { PushPrompt, type PushPromptKind } from '@/features/reminders/components/PushPrompt'

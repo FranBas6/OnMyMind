@@ -1,4 +1,4 @@
-import { ListIcon } from '@/components/ListIcon'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
 import { useArchivedLists } from '@/features/lists/hooks/useArchivedLists'
 import { useLists } from '@/features/lists/hooks/useLists'
 import type { List } from '@/features/lists/types'

@@ -2,7 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Check, Clock, WifiOff, X, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { ListIcon } from '@/components/ListIcon'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
 import { Spinner } from '@/features/auth/components/Spinner'
 import { useOnline } from '@/hooks/useOnline'
 import { showUndoToast } from '@/lib/undoToast'

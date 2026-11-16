@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 import { startOfDay } from 'date-fns'
 import { z } from 'zod'
 
-import { isNetworkError } from '@/lib/errors'
+import { isNetworkError } from '@/lib/query/errors'
 import type { Database } from '@/lib/supabase/database.types'
 import type { Positioned } from '@/lib/reorder'
 import { supabase } from '@/lib/supabase/client'

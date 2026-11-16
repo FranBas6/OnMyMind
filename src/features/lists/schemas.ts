@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { LIST_COLORS } from '@/lib/listColors'
+import { LIST_COLORS } from '@/features/lists/icons/listColors'
 import { Constants, type Database } from '@/lib/supabase/database.types'
 
 import type { List, ListCounters } from './types'

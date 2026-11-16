@@ -1,6 +1,6 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query'
 
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { usePrivateKeyId } from './privateContext'
 import { getUnlocked, UNLOCK_MS, useUnlocked, type Unlocked } from './unlock'

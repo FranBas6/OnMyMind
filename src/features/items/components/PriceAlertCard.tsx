@@ -3,7 +3,7 @@ import { Bell, Pause, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { Switch } from '@/components/Switch'
+import { Switch } from '@/components/controls/Switch'
 import { morningChange, usePriceAlert, usePriceHistory, useSetPriceAlert } from '@/features/prices'
 import { useProfile, useUpdateSettings } from '@/features/profile'
 import { PushPrompt, type PushPromptKind } from '@/features/reminders/components/PushPrompt'

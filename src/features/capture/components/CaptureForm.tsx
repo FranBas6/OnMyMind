@@ -34,7 +34,7 @@ import {
 } from '@/features/items'
 import { useOnline } from '@/hooks/useOnline'
 import { cn } from '@/lib/utils'
-import { shortcutKey } from '@/lib/device'
+import { shortcutKey } from '@/lib/device/device'
 
 import { defaultDestination, destinationChips, shoppingDestination } from '../destinations'
 import { captureLink, capturedLink, captureTitle } from '../links'

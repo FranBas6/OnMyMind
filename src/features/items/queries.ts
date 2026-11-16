@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { fetchItems, fetchLinkMetadata, fetchMovedFromInbox, fetchSublists } from './api'
 

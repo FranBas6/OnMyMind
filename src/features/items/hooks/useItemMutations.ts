@@ -2,10 +2,10 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import type { List } from '@/features/lists'
-import { errorMessage } from '@/lib/errors'
-import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/mutations'
+import { errorMessage } from '@/lib/query/errors'
+import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/query/mutations'
 import { withPositions, type Positioned } from '@/lib/reorder'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import {
   createItem,

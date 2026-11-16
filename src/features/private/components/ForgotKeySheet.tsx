@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 import { FormError } from '@/features/auth'
 import { useOnline } from '@/hooks/useOnline'
-import { isNetworkError } from '@/lib/errors'
-import { queryKeys } from '@/lib/queryKeys'
+import { isNetworkError } from '@/lib/query/errors'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { countProtectedNotes, sendResetCode, type VaultDeviceKey } from '../api'
 import { NEEDS_CONNECTION, protectedNotesLabel, SOMETHING_FAILED, tryDeviceLabel } from '../copy'

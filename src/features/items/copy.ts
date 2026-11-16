@@ -1,7 +1,7 @@
 import { differenceInCalendarDays, format, isSameYear } from 'date-fns'
 
 import { listCounterLabel, waitingCount, type List } from '@/features/lists'
-import { formatCaptureAge } from '@/lib/date'
+import { formatCaptureAge } from '@/lib/dates/date'
 
 import { isFinalStatus, STATUS_LABELS } from './status'
 import type { Item } from './types'

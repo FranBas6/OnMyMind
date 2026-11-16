@@ -2,8 +2,8 @@ import { Calendar, ChevronRight } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { useState } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
-import { formatDueDateLong } from '@/lib/date'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
+import { formatDueDateLong } from '@/lib/dates/date'
 import { cn } from '@/lib/utils'
 
 import { isFinalStatus } from '../status'

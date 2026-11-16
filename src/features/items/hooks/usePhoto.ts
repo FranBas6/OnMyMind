@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { POSITION_STEP } from '@/lib/reorder'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { MAX_PHOTOS, signedPhotoUrl, SIGNED_URL_SECONDS, uploadItemPhoto } from '../photos'
 import type { Item, ItemImage } from '../types'

@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { WifiOff } from 'lucide-react'
 import { useState } from 'react'
 
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 import { PasswordField } from '@/features/auth'
 import { useOnline } from '@/hooks/useOnline'
 

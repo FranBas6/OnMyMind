@@ -10,7 +10,7 @@ import {
   type SubmitEvent,
 } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { cn } from '@/lib/utils'
 
 import { withBullets } from '../bullets'

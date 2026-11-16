@@ -14,7 +14,7 @@ import {
 } from '@/features/items'
 import { recurrenceLabel } from '@/features/items/recurrence'
 import { useNow } from '@/hooks/useNow'
-import { LIST_COLOR_BG } from '@/lib/listColors'
+import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
 import { cn } from '@/lib/utils'
 
 import type { DayTense, TodayItem } from '../today'

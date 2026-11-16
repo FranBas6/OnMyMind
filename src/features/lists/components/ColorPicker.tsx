@@ -4,7 +4,7 @@ import {
   LIST_COLOR_ORDER,
   LIST_COLOR_RING,
   type ListColor,
-} from '@/lib/listColors'
+} from '@/features/lists/icons/listColors'
 import { cn } from '@/lib/utils'
 
 interface ColorPickerProps {

@@ -1,13 +1,13 @@
 import { Calendar, Check, Copy, ExternalLink, Eye, WifiOff } from 'lucide-react'
 import { Fragment, useState } from 'react'
 
-import { InlineConfirm } from '@/components/InlineConfirm'
-import { OutlineButton } from '@/components/OutlineButton'
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { InlineConfirm } from '@/components/sheets/InlineConfirm'
+import { OutlineButton } from '@/components/controls/OutlineButton'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 import { copyText } from '@/features/sharing/share'
 import { useCopied } from '@/hooks/useCopied'
 import { useOnline } from '@/hooks/useOnline'
-import type { DevicePlatform } from '@/lib/device'
+import type { DevicePlatform } from '@/lib/device/device'
 import { cn } from '@/lib/utils'
 
 import { useCalendarFeed, useRotateCalendarFeed } from '../hooks/useCalendarFeed'

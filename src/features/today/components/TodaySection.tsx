@@ -1,6 +1,6 @@
 import { useId } from 'react'
 
-import { ListIcon } from '@/components/ListIcon'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
 import { ListScope } from '@/features/items'
 import { SharedWith } from '@/features/sharing/components/SharedInitials'
 

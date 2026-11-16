@@ -1,6 +1,6 @@
 import { Check, X } from 'lucide-react'
 
-import { LIST_COLOR_BORDER, type ListColor } from '@/lib/listColors'
+import { LIST_COLOR_BORDER, type ListColor } from '@/features/lists/icons/listColors'
 import { cn } from '@/lib/utils'
 
 import type { CheckboxState } from '../status'

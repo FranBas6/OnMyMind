@@ -2,14 +2,14 @@ import type { QueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { toast } from 'sonner'
 
-import { errorMessage } from '@/lib/errors'
+import { errorMessage } from '@/lib/query/errors'
 import {
   durableMutation,
   useDurableMutation,
   WAITS_FOR_NETWORK,
   type DurableMutation,
-} from '@/lib/mutations'
-import { queryKeys } from '@/lib/queryKeys'
+} from '@/lib/query/mutations'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { updateDisplayName, updateSettings } from '../api'
 import type { SettingsPatch } from '../schemas'

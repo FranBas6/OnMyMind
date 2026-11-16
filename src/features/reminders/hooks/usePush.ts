@@ -3,8 +3,8 @@ import { toast } from 'sonner'
 
 import { useProfile } from '@/features/profile/hooks/useProfile'
 import { useUpdateSettings } from '@/features/profile/hooks/useProfileMutations'
-import { errorMessage } from '@/lib/errors'
-import { queryKeys } from '@/lib/queryKeys'
+import { errorMessage } from '@/lib/query/errors'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import { disablePush, enablePush, type PushState } from '../push'
 import { pushStateQueryOptions } from '../queries'

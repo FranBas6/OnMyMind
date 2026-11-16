@@ -1,7 +1,7 @@
-import type { ListColor } from '@/lib/listColors'
+import type { ListColor } from '@/features/lists/icons/listColors'
 import type { Database } from '@/lib/supabase/database.types'
 
-export type { ListColor } from '@/lib/listColors'
+export type { ListColor } from '@/features/lists/icons/listColors'
 
 /**
  * Desde la 5.3 (ADR-012) las listas no tienen tipo: `inbox` distingue «En mente» y `list` es una

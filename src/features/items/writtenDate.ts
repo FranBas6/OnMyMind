@@ -1,6 +1,6 @@
 import { addDays, format, isSameDay, isSameYear, startOfDay } from 'date-fns'
 
-import type { NaturalDate } from '@/lib/naturalDate'
+import type { NaturalDate } from '@/lib/dates/naturalDate'
 
 import { formatRule, recurrenceLabel, simpleRule } from './recurrence'
 import type { ItemKind } from './status'

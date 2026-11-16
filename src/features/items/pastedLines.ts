@@ -1,4 +1,4 @@
-import { parseNaturalDate, type NaturalDate } from '@/lib/naturalDate'
+import { parseNaturalDate, type NaturalDate } from '@/lib/dates/naturalDate'
 
 import { ITEM_TITLE_MAX_LENGTH } from './schemas'
 import type { ItemKind } from './status'

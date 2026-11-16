@@ -2,7 +2,7 @@ import { differenceInCalendarDays, format, isSameMonth, isSameYear } from 'date-
 import { Check, Gift, Landmark } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
-import { Switch } from '@/components/Switch'
+import { Switch } from '@/components/controls/Switch'
 import { useCurrentUser } from '@/features/profile/hooks/useProfile'
 import { personName } from '@/features/sharing/copy'
 import { PersonInitial } from '@/features/sharing/components/PersonInitial'

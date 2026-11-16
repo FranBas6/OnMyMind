@@ -7,8 +7,8 @@ import { createRoot } from 'react-dom/client'
 import { z } from 'zod'
 
 import { getSession } from '@/features/auth'
-import { watchConnectivity } from '@/lib/connectivity'
-import { configureDateLocale } from '@/lib/date'
+import { watchConnectivity } from '@/lib/device/connectivity'
+import { configureDateLocale } from '@/lib/dates/date'
 
 import { restoreQueryCache } from './persister'
 import { createQueryClient } from './query-client'

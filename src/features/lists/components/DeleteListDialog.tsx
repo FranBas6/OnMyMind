@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ConfirmDialog } from '@/components/sheets/ConfirmDialog'
 
 import { deleteMessage } from '../templates'
 import type { List } from '../types'

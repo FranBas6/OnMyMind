@@ -3,7 +3,7 @@ import { Check, ChevronLeft, ChevronRight, Minus, Plus, Repeat } from 'lucide-re
 import { Popover } from 'radix-ui'
 import { useState } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { cn } from '@/lib/utils'
 
 import {

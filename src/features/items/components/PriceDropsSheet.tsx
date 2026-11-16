@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 import { type PriceDrop, usePriceDrops } from '@/features/prices'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { formatCents } from '@/lib/money'

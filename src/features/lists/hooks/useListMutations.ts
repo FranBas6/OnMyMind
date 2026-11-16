@@ -4,10 +4,10 @@ import { toast } from 'sonner'
 import { schedulePhotoCleanup } from '@/features/items/photoCleanup'
 import { copyItemFile } from '@/features/items/files'
 import { copyItemPhoto } from '@/features/items/photos'
-import { errorMessage } from '@/lib/errors'
-import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/mutations'
+import { errorMessage } from '@/lib/query/errors'
+import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/query/mutations'
 import { withPositions, type Positioned } from '@/lib/reorder'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import {
   archiveList,

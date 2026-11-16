@@ -1,7 +1,11 @@
-import { LIST_COLOR_SUBLIST, LIST_COLOR_TEXT, type ListColor } from '@/lib/listColors'
+import {
+  LIST_COLOR_SUBLIST,
+  LIST_COLOR_TEXT,
+  type ListColor,
+} from '@/features/lists/icons/listColors'
 import { cn } from '@/lib/utils'
 
-import { SublistGlyph } from '@/components/SublistGlyph'
+import { SublistGlyph } from '@/features/lists/icons/SublistGlyph'
 
 const SIZES = {
   // Fila (S1): 24 px, radio 7, líneas de 12.

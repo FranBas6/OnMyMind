@@ -2,7 +2,7 @@ import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { Search, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { shortcutKey } from '@/lib/device'
+import { shortcutKey } from '@/lib/device/device'
 
 import { focusSearchField } from '../searchField'
 

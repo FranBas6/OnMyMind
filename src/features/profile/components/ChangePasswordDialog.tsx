@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { useForm } from 'react-hook-form'
 
-import { KeyboardSheetContent } from '@/components/KeyboardSheet'
+import { KeyboardSheetContent } from '@/components/sheets/KeyboardSheet'
 import {
   authErrorMessage,
   changePasswordSchema,

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
-import { flushMutations, SIGN_OUT_MUTATION_KEY } from '@/lib/flushMutations'
+import { flushMutations, SIGN_OUT_MUTATION_KEY } from '@/lib/query/flushMutations'
 
 import { signInWithPassword, signOut, signUp, updatePassword } from '../api'
 import type { ChangePasswordValues } from '../schemas'

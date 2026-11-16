@@ -1,6 +1,6 @@
 import { Calendar } from 'lucide-react'
 
-import { formatDueDate } from '@/lib/date'
+import { formatDueDate } from '@/lib/dates/date'
 import { cn } from '@/lib/utils'
 
 /**

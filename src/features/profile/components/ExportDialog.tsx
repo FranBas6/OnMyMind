@@ -11,12 +11,12 @@ import {
   type List,
 } from '@/features/lists'
 import { useUnlocked } from '@/features/private'
-import { LIST_COLOR_BG } from '@/lib/listColors'
+import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
 import { cn } from '@/lib/utils'
 
 import { exportableLists } from '../export'
 import { useExportData } from '../hooks/useAccountData'
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 
 interface ExportDialogProps {
   open: boolean

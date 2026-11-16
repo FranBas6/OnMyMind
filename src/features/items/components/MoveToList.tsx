@@ -2,8 +2,8 @@ import { Check, Plus, Search } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { useState, type KeyboardEvent, type ReactNode } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
-import { ListIcon } from '@/components/ListIcon'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
 import { listCounterLabel, useLists, type List } from '@/features/lists'
 // Por su ruta y no por el índice: `sharing` usa piezas de `items`.
 import { useSharedPeople } from '@/features/sharing/hooks/useSharing'

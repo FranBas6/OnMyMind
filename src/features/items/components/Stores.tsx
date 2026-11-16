@@ -11,7 +11,7 @@ import {
 import { format } from 'date-fns'
 import { useState, type ReactNode } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
+import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { morningChange, usePriceHistory } from '@/features/prices'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'

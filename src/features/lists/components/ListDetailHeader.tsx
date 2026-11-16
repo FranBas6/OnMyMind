@@ -2,7 +2,7 @@ import { Lock } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { PageHeader } from '@/components/layout/PageHeader'
-import { ListIcon } from '@/components/ListIcon'
+import { ListIcon } from '@/features/lists/icons/ListIcon'
 import { withPeople } from '@/features/sharing/copy'
 import { PeopleButton } from '@/features/sharing/components/SharedInitials'
 import { useListSharing } from '@/features/sharing/hooks/useSharing'

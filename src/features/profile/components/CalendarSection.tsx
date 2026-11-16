@@ -2,7 +2,7 @@ import { Calendar, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
 import { useOnline } from '@/hooks/useOnline'
-import { currentPlatform } from '@/lib/device'
+import { currentPlatform } from '@/lib/device/device'
 
 import { useCalendarFeed, useCreateCalendarFeed } from '../hooks/useCalendarFeed'
 import { CalendarSheet } from './CalendarSheet'

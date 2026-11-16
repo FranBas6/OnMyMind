@@ -1,6 +1,6 @@
 import { Bell, EyeOff, Lock } from 'lucide-react'
 
-import { ResponsiveSheet } from '@/components/ResponsiveSheet'
+import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 import {
   DesktopActions,
   HeaderCancel,

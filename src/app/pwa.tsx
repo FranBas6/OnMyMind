@@ -4,10 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { toast } from 'sonner'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
-import { UndoToast } from '@/components/UndoToast'
+import { UndoToast } from '@/components/feedback/UndoToast'
 import { PwaContext, type PwaApi } from '@/hooks/usePwa'
-import type { InstallPromptEvent } from '@/lib/device'
-import { isIosSafari, isStandalone, readInstallHint, writeInstallHint } from '@/lib/installHint'
+import type { InstallPromptEvent } from '@/lib/device/device'
+import {
+  isIosSafari,
+  isStandalone,
+  readInstallHint,
+  writeInstallHint,
+} from '@/lib/device/installHint'
 
 /** Cada cuánto se busca una versión nueva con la app abierta (además de al abrirla). */
 const CHECK_EVERY_MS = 60 * 60 * 1000

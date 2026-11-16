@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 
-import { KeyboardSheetContent } from '@/components/KeyboardSheet'
+import { KeyboardSheetContent } from '@/components/sheets/KeyboardSheet'
 import {
   destinationShortName,
   destinationsOf,

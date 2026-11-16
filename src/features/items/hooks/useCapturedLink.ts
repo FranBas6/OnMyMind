@@ -2,7 +2,7 @@ import { CancelledError, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 import { useOnline } from '@/hooks/useOnline'
-import { queryKeys } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/query/queryKeys'
 
 import type { LinkMetadata, NewItem } from '../api'
 import { linkMetadataQueryOptions } from '../queries'

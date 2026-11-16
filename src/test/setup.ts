@@ -5,7 +5,7 @@ import { afterEach, vi } from 'vitest'
 
 import type * as PrivateApi from '@/features/private/api'
 import type * as SharingApi from '@/features/sharing/api'
-import { configureDateLocale } from '@/lib/date'
+import { configureDateLocale } from '@/lib/dates/date'
 
 configureDateLocale()
 

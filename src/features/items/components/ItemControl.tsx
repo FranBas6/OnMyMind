@@ -1,6 +1,6 @@
 import { Calendar, FileText, Lock } from 'lucide-react'
 
-import type { ListColor } from '@/lib/listColors'
+import type { ListColor } from '@/features/lists/icons/listColors'
 import { cn } from '@/lib/utils'
 
 import { checkboxState } from '../status'
