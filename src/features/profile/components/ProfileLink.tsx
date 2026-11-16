@@ -21,7 +21,7 @@ export function ProfileLink() {
       aria-label="Perfil"
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex h-12 shrink-0 items-center gap-2.5 rounded-[14px] border bg-card px-2.5 text-sm font-semibold outline-none hover:border-control focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'flex h-12 shrink-0 items-center gap-2.5 rounded-[14px] border bg-card px-2.5 text-[15px] font-semibold outline-none hover:border-control focus-visible:ring-[3px] focus-visible:ring-ring/50',
         active ? 'border-primary text-primary' : 'border-border',
       )}
     >

@@ -10,12 +10,12 @@ import { cn } from '@/lib/utils'
 const SIZES = {
   // Chips de la captura y secciones de Hoy y Buscar (diseño 28, L5 y L6)
   chip: { box: 'size-5 rounded-[6px] text-[10px]', glyph: 13, stroke: 2.4, emoji: 'text-[11px]' },
-  // El sidebar de escritorio (diseño 28, E3)
+  // El sidebar de escritorio (diseño 28, E3; de 22 a 26 px, Fran, 2026-11-16)
   side: {
-    box: 'size-[22px] rounded-[7px] text-[11px]',
-    glyph: 14,
+    box: 'size-[26px] rounded-[8px] text-[12px]',
+    glyph: 16,
     stroke: 2.4,
-    emoji: 'text-[12px]',
+    emoji: 'text-[14px]',
   },
   // Destino en el popover «Mover a…» de escritorio (diseño 06, D6)
   xs: {

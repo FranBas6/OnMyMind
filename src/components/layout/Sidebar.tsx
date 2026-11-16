@@ -98,7 +98,7 @@ export function Sidebar() {
       <section aria-labelledby="sidebar-lists" className="flex flex-col gap-0.5">
         <h2
           id="sidebar-lists"
-          className="px-3 pb-2 font-sans text-[11px] font-bold tracking-[0.06em] text-subtle-foreground uppercase"
+          className="px-3 pb-2 font-sans text-xs font-bold tracking-[0.06em] text-subtle-foreground uppercase"
         >
           Mis listas
         </h2>
@@ -126,7 +126,7 @@ export function Sidebar() {
           <Link
             to="/"
             hash={ARCHIVED_SECTION_ID}
-            className="mt-1.5 flex h-10 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium text-subtle-foreground outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="mt-1.5 flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-subtle-foreground outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <Archive aria-hidden className="size-[18px]" strokeWidth={2} />
             Archivadas
@@ -143,9 +143,9 @@ export function Sidebar() {
           onClick={() => {
             openCreate()
           }}
-          className="flex h-11 shrink-0 items-center gap-2.5 rounded-[14px] px-3 text-sm font-semibold text-primary outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="flex h-11 shrink-0 items-center gap-3 rounded-[14px] px-3 text-[15px] font-semibold text-primary outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
-          <Plus aria-hidden className="size-4" />
+          <Plus aria-hidden className="size-[18px]" />
           Nueva lista
         </button>
         <ProfileLink />
@@ -185,7 +185,7 @@ function SortableSidebarList({ list, active }: { list: List; active: boolean }) 
             }
           }}
           className={cn(
-            'flex h-10 items-center gap-2.5 rounded-xl px-3 text-sm font-medium outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            'flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
             active && 'bg-card',
             drag?.settledId === list.id && 'bg-brand-tint',
             isDragging && 'invisible',
@@ -212,7 +212,7 @@ function SidebarListRow({ list, lifted = false }: { list: List; lifted?: boolean
   )
   if (!lifted) return content
   return (
-    <div className="flex h-10 cursor-grabbing items-center gap-2.5 rounded-xl border border-border-soft bg-card px-3 text-sm font-medium shadow-lift">
+    <div className="flex h-11 cursor-grabbing items-center gap-3 rounded-xl border border-border-soft bg-card px-3 text-[15px] font-medium shadow-lift">
       {content}
     </div>
   )
@@ -233,11 +233,11 @@ function SidebarLink({ to, params, icon: Icon, active, count, children }: Sideba
       {...(params ? { to, params } : { to })}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex h-10 items-center gap-2.5 rounded-xl px-3 text-sm outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] outline-none hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50',
         active ? 'font-semibold text-primary' : 'font-medium',
       )}
     >
-      <Icon aria-hidden className="size-4" />
+      <Icon aria-hidden className="size-[18px]" />
       <span className="truncate">{children}</span>
       {count !== undefined && <Count value={count} />}
     </Link>
@@ -245,7 +245,7 @@ function SidebarLink({ to, params, icon: Icon, active, count, children }: Sideba
 }
 
 function Count({ value }: { value: number }) {
-  return <span className="ml-auto text-xs font-normal text-subtle-foreground">{value}</span>
+  return <span className="ml-auto text-[13px] font-normal text-subtle-foreground">{value}</span>
 }
 
 /**
