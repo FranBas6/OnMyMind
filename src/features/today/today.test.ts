@@ -69,6 +69,7 @@ function item(id: string, overrides: Partial<Item> = {}): Item {
     allDay: true,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: 1000,
     completedAt: null,
     createdAt: at(20),
@@ -153,9 +154,16 @@ describe('groupToday', () => {
   it('un pago (una compra con fecha) que vence hoy o venció sale en Hoy (6.4, diseño 30, H1)', () => {
     const gastos = list('gastos', { kind: 'shopping' })
     const items = [
-      item('spotify', { listId: 'gastos', kind: 'shopping', recurrence: 'FREQ=MONTHLY' }),
+      item('spotify', {
+        listId: 'gastos',
+        kind: 'shopping',
+        recurrence: 'FREQ=MONTHLY',
+        autoPay: false,
+      }),
       item('luz', { listId: 'gastos', kind: 'shopping', dueAt: at(25) }),
       item('netflix', { listId: 'gastos', kind: 'shopping', dueAt: at(30) }),
+      // Lo que se cobra solo no sale como pendiente (6.5): no hay nada que hacer.
+      item('youtube', { listId: 'gastos', kind: 'shopping', recurrence: 'FREQ=MONTHLY' }),
     ]
     expect(titles(groupToday(items, [...lists, gastos], { now }))).toEqual([
       ['gastos', ['luz', 'spotify']],

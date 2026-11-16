@@ -15,8 +15,8 @@ import {
 import {
   isActiveSublistStatus,
   isFinalStatus,
+  isAutoPayment,
   isPayment,
-  isRecurringPayment,
   occurrence,
   occurrencesBetween,
   occursOn,
@@ -123,8 +123,9 @@ export function todayMeta(
 }
 
 /**
- * Lo de debajo del título de un pago en Hoy (diseño 30, H1): «Cobra hoy · ↻ Cada mes» o, atrasado,
- * «Venció el 12 · ↻ Cada mes» (en rojo, sin el chip de las tareas). De una vez, «Vence hoy». Dentro
+ * Lo de debajo del título de un pago en Hoy (diseño 30, H1): «Vence hoy · ↻ Cada mes» o, atrasado,
+ * «Venció el 12 · ↻ Cada mes» (en rojo, sin el chip de las tareas). Solo los que se pagan a mano
+ * (6.5), así que vencen, como una tarea; el diseño decía «Cobra hoy». Dentro
  * de una sublista, con su ruta delante, como las tareas.
  */
 export function paymentTodayMeta(
@@ -133,11 +134,11 @@ export function paymentTodayMeta(
   listName?: string,
   { otherDay = false }: { otherDay?: boolean } = {},
 ): { route: string | null; when: string; overdue: boolean; repeat: string | null } {
-  const recurring = isRecurringPayment(item)
   const overdue = !otherDay && isOverdue(item, now)
+  // Lo que sale en Hoy es lo que se paga a mano (6.5): vence, como una tarea.
   const when = overdue
     ? (paymentWhen(item, now)?.text ?? '')
-    : `${recurring ? 'Cobra' : 'Vence'} ${otherDay ? 'ese día' : 'hoy'}`
+    : `Vence ${otherDay ? 'ese día' : 'hoy'}`
   return {
     route: item.parent && listName ? `${listName} › ${item.parent.title}` : null,
     when,
@@ -353,9 +354,12 @@ export interface DayGroups {
   noted: TodayNote[]
 }
 
-/** Lo que vence un día y sale en Hoy: una tarea o un pago (una compra con fecha, 6.4). */
-function dues(item: Pick<Item, 'kind' | 'dueAt'>): boolean {
-  return item.kind === 'task' || isPayment(item)
+/**
+ * Lo que vence un día y sale en Hoy: una tarea o un pago (una compra con fecha, 6.4). Lo que se
+ * cobra solo no (6.5): no hay nada que hacer; sale ya pagado en «Hecho hoy».
+ */
+function dues(item: Item): boolean {
+  return item.kind === 'task' || (isPayment(item) && !isAutoPayment(item))
 }
 
 /** Lo que se cuenta como hecho un día: lo terminado, no lo descartado ni lo cancelado. */

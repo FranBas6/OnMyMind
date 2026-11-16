@@ -41,6 +41,8 @@ export interface DueReminder {
   /** Si se repite y si aún es una prueba gratis (P2). */
   recurring: boolean
   trial: boolean
+  /** Si se cobra solo (6.5): «Se cobra mañana»; si no, se paga a mano y «Vence mañana». */
+  autoPay: boolean
 }
 
 /** Algo de hoy para el resumen, como lo devuelve `claim_daily_summaries`, ya en su orden. */
@@ -122,9 +124,9 @@ export function reminderBody(reminder: DueReminder, now: Date): string {
 
 /**
  * El aviso de un pago (6.4, diseño 30). Una prueba gratis (P2): «Pasado mañana empieza a cobrar
- * Disney+ · 8,99 €. Si no lo quieres, date de baja antes.». Uno que se repite: «Cobra mañana · 12,99
- * € · Suscripciones». Uno de una vez, como una tarea con su importe: «Vence el lun 30 · 60 € ·
- * Gastos».
+ * Disney+ · 8,99 €. Si no lo quieres, date de baja antes.». Uno que se cobra solo (6.5): «Se cobra
+ * mañana · 15,99 € · Suscripciones». Uno que se paga a mano, se repita o no, como una tarea con su
+ * importe: «Vence el lun 30 · 60 € · Gastos».
  */
 function paymentBody(reminder: DueReminder, days: number, day: string): string {
   const price =
@@ -141,7 +143,7 @@ function paymentBody(reminder: DueReminder, days: number, day: string): string {
       ? days === -1
         ? 'Venció ayer'
         : `Venció el ${day}`
-      : `${reminder.recurring ? 'Cobra' : 'Vence'} ${relative}`
+      : `${reminder.recurring && reminder.autoPay ? 'Se cobra' : 'Vence'} ${relative}`
   return [when, price, reminder.listName].filter(Boolean).join(' · ')
 }
 
@@ -266,6 +268,7 @@ export function toDueReminder(row: Record<string, unknown>): DueReminder | null 
     currency: text('currency') ?? 'EUR',
     recurring: row.recurring === true,
     trial: row.trial === true,
+    autoPay: row.auto_pay === true,
   }
 }
 

@@ -73,6 +73,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     allDay: true,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: 1000,
     completedAt: null,
     createdAt: addDays(today, -10),
@@ -195,6 +196,7 @@ describe('repetición personalizada (3.6, diseño 21)', () => {
         occurrence: today,
         priceCents: null,
         currency: null,
+        auto: false,
       },
     ])
 

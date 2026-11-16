@@ -30,6 +30,14 @@ export function isRecurringPayment(item: PaymentFields): boolean {
 }
 
 /**
+ * Si se cobra solo (6.5): un pago que se repite con «Se cobra solo». El día del cobro lo apunta la
+ * base; no es algo que hacer, así que no sale como pendiente en Hoy ni se pone en rojo.
+ */
+export function isAutoPayment(item: PaymentFields & Pick<Item, 'autoPay'>): boolean {
+  return item.autoPay && isRecurringPayment(item)
+}
+
+/**
  * Si aún está en prueba (diseño 30, P1): marcada como prueba y su primer cobro es mañana o después.
  * El día que cobra ya es un pago más (`list_counters` hace lo mismo).
  */
@@ -75,7 +83,7 @@ export type PaymentTone = 'today' | 'overdue' | 'trial' | 'plain'
  * vez, «Antes del lun 30». En prueba, «Prueba · cobra desde el 20», en índigo (P1).
  */
 export function paymentWhen(
-  item: PaymentFields & Pick<Item, 'trial'>,
+  item: PaymentFields & Pick<Item, 'trial' | 'autoPay'>,
   now: Date = new Date(),
 ): { text: string; tone: PaymentTone } | null {
   const due = item.dueAt
@@ -84,6 +92,11 @@ export function paymentWhen(
     return { text: `Prueba · cobra desde el ${dayOfMonth(due, now)}`, tone: 'trial' }
   }
   const days = differenceInCalendarDays(due, now)
+  // Lo que se cobra solo (6.5) no vence: «Se cobra el 2 dic», sin rojo ni negrita.
+  if (isAutoPayment(item)) {
+    const when = days <= 0 ? 'hoy' : days === 1 ? 'mañana' : `el ${dayMonth(due, now)}`
+    return { text: `Se cobra ${when}`, tone: 'plain' }
+  }
   if (days === 0) return { text: 'Hoy', tone: 'today' }
   if (days < 0) return { text: `Venció el ${dayOfMonth(due, now)}`, tone: 'overdue' }
   if (days === 1) return { text: 'Mañana', tone: 'plain' }

@@ -180,6 +180,7 @@ export async function updateItem(itemId: string, patch: ItemPatch): Promise<void
   if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl
   if (patch.recurrence !== undefined) row.recurrence = patch.recurrence
   if (patch.trial !== undefined) row.trial = patch.trial
+  if (patch.autoPay !== undefined) row.auto_pay = patch.autoPay
   if (patch.urlSite !== undefined) row.url_site = patch.urlSite
   if (patch.priceCents !== undefined) row.price_cents = patch.priceCents
   if (patch.currency !== undefined) row.currency = patch.currency
@@ -291,6 +292,7 @@ export async function insertItems(items: readonly Item[]): Promise<void> {
       all_day: item.allDay,
       recurrence: item.recurrence,
       trial: item.trial,
+      auto_pay: item.autoPay,
       completed_at: item.completedAt?.toISOString() ?? null,
       created_at: item.createdAt.toISOString(),
       left_inbox_id: item.leftInboxId,
@@ -476,7 +478,7 @@ export async function fetchCompletions(start: Date, end: Date): Promise<Completi
   const { data, error } = await supabase
     .from('item_completions')
     .select(
-      `id, done_at, done_by, occurrence, price_cents, currency, item:items!inner(${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id))`,
+      `id, done_at, done_by, occurrence, price_cents, currency, auto, item:items!inner(${ITEM_COLUMNS}, list:lists!items_list_id_fkey!inner(id))`,
     )
     .gte('done_at', start.toISOString())
     .lt('done_at', end.toISOString())
@@ -492,6 +494,7 @@ export async function fetchCompletions(start: Date, end: Date): Promise<Completi
     occurrence: new Date(row.occurrence),
     priceCents: row.price_cents,
     currency: row.currency,
+    auto: row.auto,
   }))
 }
 
@@ -502,7 +505,9 @@ export async function fetchCompletions(start: Date, end: Date): Promise<Completi
 export async function fetchListPayments(listId: string): Promise<Payment[]> {
   const { data, error } = await supabase
     .from('item_completions')
-    .select('id, item_id, done_at, done_by, price_cents, currency, item:items!inner(list_id, kind)')
+    .select(
+      'id, item_id, done_at, done_by, price_cents, currency, auto, item:items!inner(list_id, kind)',
+    )
     .eq('item.list_id', listId)
     .eq('item.kind', 'shopping')
     .order('done_at', { ascending: false })
@@ -515,6 +520,7 @@ export async function fetchListPayments(listId: string): Promise<Payment[]> {
     paidBy: row.done_by,
     priceCents: row.price_cents,
     currency: row.currency,
+    auto: row.auto,
   }))
 }
 

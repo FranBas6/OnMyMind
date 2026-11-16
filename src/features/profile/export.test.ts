@@ -23,6 +23,7 @@ function item(title: string, overrides: Partial<Item> = {}): Item {
     allDay: true,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: next * 1000,
     completedAt: null,
     createdAt: new Date(2026, 8, 20, 18, 5),

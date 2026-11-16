@@ -91,6 +91,7 @@ export type Database = {
       }
       item_completions: {
         Row: {
+          auto: boolean
           currency: string | null
           done_at: string
           done_by: string | null
@@ -101,6 +102,7 @@ export type Database = {
           trial: boolean
         }
         Insert: {
+          auto?: boolean
           currency?: string | null
           done_at?: string
           done_by?: string | null
@@ -111,6 +113,7 @@ export type Database = {
           trial?: boolean
         }
         Update: {
+          auto?: boolean
           currency?: string | null
           done_at?: string
           done_by?: string | null
@@ -310,6 +313,7 @@ export type Database = {
       items: {
         Row: {
           all_day: boolean
+          auto_pay: boolean
           choose_one: boolean
           chosen_id: string | null
           completed_at: string | null
@@ -354,6 +358,7 @@ export type Database = {
         }
         Insert: {
           all_day?: boolean
+          auto_pay?: boolean
           choose_one?: boolean
           chosen_id?: string | null
           completed_at?: string | null
@@ -397,6 +402,7 @@ export type Database = {
         }
         Update: {
           all_day?: boolean
+          auto_pay?: boolean
           choose_one?: boolean
           chosen_id?: string | null
           completed_at?: string | null
@@ -1011,6 +1017,7 @@ export type Database = {
       can_see_file: { Args: { p_name: string }; Returns: boolean }
       can_see_photo: { Args: { p_name: string }; Returns: boolean }
       change_author: { Args: Record<PropertyKey, never>; Returns: Json }
+      charge_auto_payments: { Args: Record<PropertyKey, never>; Returns: number }
       claim_daily_summaries: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1026,6 +1033,7 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: {
           all_day: boolean
+          auto_pay: boolean
           concealed: boolean
           currency: string
           done: boolean

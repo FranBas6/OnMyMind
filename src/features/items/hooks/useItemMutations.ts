@@ -275,6 +275,7 @@ function patchItem(item: Item, patch: CachePatch): Item {
   if (patch.imageUrl !== undefined) next.imageUrl = patch.imageUrl
   if (patch.recurrence !== undefined) next.recurrence = patch.recurrence
   if (patch.trial !== undefined) next.trial = patch.trial
+  if (patch.autoPay !== undefined) next.autoPay = patch.autoPay
   // Como `items_trial_check`: la prueba solo vale en una compra con fecha que se repite.
   if (next.kind !== 'shopping' || !next.recurrence || !next.dueAt) next.trial = false
   if (patch.urlSite !== undefined) next.urlSite = patch.urlSite
@@ -331,6 +332,7 @@ export function itemFromNew(item: NewItem, position: number): Item {
     allDay: item.due?.allDay ?? false,
     recurrence: item.recurrence ?? null,
     trial: false,
+    autoPay: true,
     position,
     // Una línea pegada con «[x] » nace hecha (4.3): el trigger le pone la fecha.
     completedAt: isFinalStatus(item.status) ? new Date() : null,
@@ -449,6 +451,7 @@ function addCompletion(queryClient: QueryClient, item: Item, next: Date) {
     // Lo pagado, en un pago (6.3).
     priceCents: item.kind === 'shopping' ? item.priceCents : null,
     currency: item.kind === 'shopping' ? item.currency : null,
+    auto: false,
   }
   queryClient.setQueriesData<Completion[]>(
     { queryKey: queryKeys.items.completionsAll },
@@ -463,6 +466,7 @@ function addCompletion(queryClient: QueryClient, item: Item, next: Date) {
       paidBy: null,
       priceCents: completion.priceCents,
       currency: completion.currency,
+      auto: false,
     }
     queryClient.setQueryData<Payment[]>(
       queryKeys.payments(item.listId),

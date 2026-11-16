@@ -62,6 +62,7 @@ function item(n: number, title: string, overrides: Partial<Item> = {}): Item {
     allDay: false,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: 1000 * n,
     completedAt: null,
     createdAt: new Date(2026, 8, 20 - n),

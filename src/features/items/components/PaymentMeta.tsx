@@ -12,7 +12,7 @@ import { useListSharing } from '@/features/sharing/hooks/useSharing'
 import { cn } from '@/lib/utils'
 
 import { paymentsOf, useListPayments } from '../hooks/usePayments'
-import { isRecurringPayment, paymentRepeatLabel, paymentWhen } from '../payments'
+import { isAutoPayment, isRecurringPayment, paymentRepeatLabel, paymentWhen } from '../payments'
 import type { Item } from '../types'
 
 const META = 'text-xs font-semibold whitespace-nowrap text-muted-foreground md:text-[13px]'
@@ -44,7 +44,8 @@ export function PaymentMeta({
       </p>
     )
   }
-  const repeat = paymentRepeatLabel(item)
+  // Lo que se cobra solo ya dice el día en «Se cobra el 2 dic»: solo cada cuánto (6.5).
+  const repeat = paymentRepeatLabel(item, { bare: isAutoPayment(item) })
   const parts: ReactNode[] = [
     <span
       key="when"

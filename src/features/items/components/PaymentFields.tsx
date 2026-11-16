@@ -1,5 +1,5 @@
 import { differenceInCalendarDays, format, isSameMonth, isSameYear } from 'date-fns'
-import { Check, Gift } from 'lucide-react'
+import { Check, Gift, Landmark } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { Switch } from '@/components/Switch'
@@ -62,6 +62,21 @@ export function PaymentBox({
         {dated && recurring && (
           <label className="flex h-13 w-full cursor-pointer items-center justify-between gap-3 px-4 text-[15px]">
             <span className="flex items-center gap-2.5 font-medium">
+              <Landmark aria-hidden className="size-4 text-muted-foreground" strokeWidth={2} />
+              Se cobra solo
+            </span>
+            <Switch
+              label="Se cobra solo"
+              checked={item.autoPay}
+              onCheckedChange={(autoPay) => {
+                onChange({ autoPay })
+              }}
+            />
+          </label>
+        )}
+        {dated && recurring && (
+          <label className="flex h-13 w-full cursor-pointer items-center justify-between gap-3 px-4 text-[15px]">
+            <span className="flex items-center gap-2.5 font-medium">
               <Gift aria-hidden className="size-4 text-primary" strokeWidth={2} />
               Es una prueba
             </span>
@@ -78,6 +93,14 @@ export function PaymentBox({
             ? format(item.dueAt, 'd')
             : format(item.dueAt, 'd MMM')}
           , no pagas nada.
+        </p>
+      )}
+      {/* Qué hace «Se cobra solo» (6.5), en una línea gris como la de la prueba. */}
+      {dated && recurring && !inTrial(item, now) && (
+        <p className="px-1 text-[13px] leading-snug text-muted-foreground">
+          {item.autoPay
+            ? 'El día del cobro se apunta solo como pagado y pasa al siguiente.'
+            : 'Saldrá en Hoy el día del cobro para que lo pagues tú.'}
         </p>
       )}
       {dated && reminder.note}
@@ -122,11 +145,14 @@ export function PaymentHistory({ item, payments }: { item: Item; payments: reado
               ? (people.find((entry) => entry.userId === payment.paidBy) ?? null)
               : null
           const mine = payment.paidBy === null || payment.paidBy === me.id
-          const who = !shared
-            ? 'Pagado'
-            : mine
-              ? 'Pagaste'
-              : `Pagado por ${personName(person?.displayName)}`
+          // Lo que apuntó la base porque se cobra solo (6.5): «Cobrado».
+          const who = payment.auto
+            ? 'Cobrado'
+            : !shared
+              ? 'Pagado'
+              : mine
+                ? 'Pagaste'
+                : `Pagado por ${personName(person?.displayName)}`
           return (
             <li key={payment.id} className="flex h-12 items-center gap-3 px-4 text-[15px]">
               {shared && person ? (

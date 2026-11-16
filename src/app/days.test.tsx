@@ -73,6 +73,7 @@ function item(title: string, overrides: Partial<Item> = {}): Item {
     allDay: false,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: next * 1000,
     completedAt: null,
     createdAt: at(9, 3),

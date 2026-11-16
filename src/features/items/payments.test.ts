@@ -37,6 +37,7 @@ function compra(overrides: Partial<Item> = {}): Item {
     allDay: false,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: 1000,
     completedAt: null,
     createdAt: NOW,
@@ -64,7 +65,9 @@ function compra(overrides: Partial<Item> = {}): Item {
   }
 }
 
+/** Uno que se paga a mano (6.5): el de las fechas «Jue 3 dic», «Hoy» y «Venció el 12». */
 const netflix = compra({
+  autoPay: false,
   title: 'Netflix',
   priceCents: 1299,
   dueAt: day(12, 3),
@@ -102,6 +105,13 @@ describe('las fechas de un pago', () => {
     const disney = compra({ trial: true, dueAt: day(11, 20), recurrence: 'FREQ=MONTHLY' })
     expect(paymentWhen(disney, NOW)).toEqual({ text: 'Prueba · cobra desde el 20', tone: 'trial' })
     expect(paymentWhen(compra(), NOW)).toBeNull()
+  })
+
+  it('lo que se cobra solo no vence (6.5): «Se cobra el 2 dic», «Se cobra hoy»', () => {
+    const youtube = { ...netflix, autoPay: true, dueAt: day(12, 2) }
+    expect(paymentWhen(youtube, NOW)).toEqual({ text: 'Se cobra el 2 dic', tone: 'plain' })
+    expect(paymentWhen({ ...youtube, dueAt: day(11, 15) }, NOW)?.text).toBe('Se cobra hoy')
+    expect(paymentWhen({ ...youtube, dueAt: day(11, 16) }, NOW)?.text).toBe('Se cobra mañana')
   })
 
   it('en la ficha (F1, F6, F7)', () => {

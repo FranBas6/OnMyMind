@@ -94,6 +94,7 @@ function note(id: string, title: string, overrides: Partial<Item> = {}): Item {
     allDay: false,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: 1000,
     completedAt: null,
     createdAt: new Date(2026, 9, 3, 10, 0),

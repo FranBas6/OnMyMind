@@ -43,6 +43,7 @@ function reminder(overrides: Partial<DueReminder> = {}): DueReminder {
     currency: 'EUR',
     recurring: false,
     trial: false,
+    autoPay: false,
     ...overrides,
   }
 }
@@ -75,10 +76,15 @@ describe('el aviso de un pago (6.4, diseño 30)', () => {
     )
   })
 
-  it('uno que se repite: «Cobra mañana · 12,99 € · Suscripciones»', () => {
-    expect(body(pago('2026-10-06'))).toBe('Cobra mañana · 12,99 € · Suscripciones')
-    expect(body(pago('2026-10-05'))).toBe('Cobra hoy · 12,99 € · Suscripciones')
-    expect(body(pago('2026-10-08'))).toBe('Cobra el jue 8 · 12,99 € · Suscripciones')
+  it('uno que se cobra solo (6.5): «Se cobra mañana · 12,99 € · Suscripciones»', () => {
+    const auto = (day: string) => pago(day, { autoPay: true })
+    expect(body(auto('2026-10-06'))).toBe('Se cobra mañana · 12,99 € · Suscripciones')
+    expect(body(auto('2026-10-05'))).toBe('Se cobra hoy · 12,99 € · Suscripciones')
+    expect(body(auto('2026-10-08'))).toBe('Se cobra el jue 8 · 12,99 € · Suscripciones')
+  })
+
+  it('uno que se repite y se paga a mano vence, como una tarea', () => {
+    expect(body(pago('2026-10-06'))).toBe('Vence mañana · 12,99 € · Suscripciones')
   })
 
   it('uno de una vez, como una tarea con su importe', () => {
@@ -287,6 +293,7 @@ describe('las filas de la base', () => {
       currency: 'EUR',
       recurring: false,
       trial: false,
+      auto_pay: false,
     }
     expect(toDueReminder(row)).toEqual(reminder())
     expect(toDueReminder({ ...row, price_cents: 899, trial: true })).toMatchObject({

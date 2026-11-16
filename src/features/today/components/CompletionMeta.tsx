@@ -40,8 +40,11 @@ export function CompletionMeta({
       ) : (
         <span className="truncate">
           {item.kind === 'shopping'
-            ? // Un pago (diseño 30, H2): «Pagado · vuelve el 15 dic».
-              ['Pagado', item.dueAt && returnsShort(item.dueAt)].filter(Boolean).join(' · ')
+            ? // Un pago (diseño 30, H2): «Pagado · vuelve el 15 dic»; si se cobra solo, «Se cobró
+              // solo» (6.5).
+              [completion.auto ? 'Se cobró solo' : 'Pagado', item.dueAt && returnsShort(item.dueAt)]
+                .filter(Boolean)
+                .join(' · ')
             : `${item.dueAt ? `Vuelve el ${format(item.dueAt, 'EEEE d')}` : 'Hecha'} · ${time}`}
         </span>
       )}

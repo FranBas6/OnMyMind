@@ -24,6 +24,7 @@ export { ITEM_COLUMNS, mapItemRow } from './schemas'
 export { sublistMeta } from './sublists'
 export {
   inTrial,
+  isAutoPayment,
   isPayment,
   isRecurringPayment,
   paidToast,

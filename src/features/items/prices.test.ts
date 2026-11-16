@@ -23,6 +23,7 @@ function compra(overrides: Partial<Item> = {}): Item {
     allDay: false,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: 1000,
     completedAt: null,
     createdAt: NOW,

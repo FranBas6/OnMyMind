@@ -63,6 +63,7 @@ function revolut(overrides: Partial<Item> = {}): Item {
     allDay: true,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: 1000,
     completedAt: null,
     createdAt: new Date(2026, 8, 3),

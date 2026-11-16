@@ -48,6 +48,11 @@ export interface Item {
    * apaga en lo demás). No cuenta en el total hasta su fecha; al pagarla deja de serlo.
    */
   trial: boolean
+  /**
+   * «Se cobra solo» (6.5): en un pago que se repite, el día del cobro la base lo apunta como pagado
+   * y lo pasa al siguiente (`charge_auto_payments`). Apagado, se paga a mano. Nace encendido.
+   */
+  autoPay: boolean
   position: number
   /** La rellena el trigger al pasar a un estado final. */
   completedAt: Date | null
@@ -186,6 +191,8 @@ export interface ItemPatch {
   recurrence?: string | null
   /** «Es una prueba» (diseño 30, P1). */
   trial?: boolean
+  /** «Se cobra solo» (6.5). */
+  autoPay?: boolean
   /**
    * El enlace y la imagen de la web (2a.6): se guardan como el resto, campo a campo. Las fotos
    * propias van aparte, en `item_images` (4.5).
@@ -226,6 +233,8 @@ export interface Payment {
   paidBy: string | null
   priceCents: number | null
   currency: string | null
+  /** La apuntó la base el día del cobro: «Cobrado» (6.5). */
+  auto: boolean
 }
 
 /**
@@ -242,4 +251,6 @@ export interface Completion {
   /** Lo pagado esa vez, en un pago que se repite (6.3); `null` en una tarea. */
   priceCents: number | null
   currency: string | null
+  /** La apuntó la base porque se cobra solo (6.5): no se deshace desde Hoy. */
+  auto: boolean
 }

@@ -63,6 +63,7 @@ function item(id: string, title: string, overrides: Partial<Item> = {}): Item {
     allDay: true,
     recurrence: null,
     trial: false,
+    autoPay: true,
     position: 1000,
     completedAt: null,
     createdAt: addDays(today, -10),
@@ -114,6 +115,8 @@ const netflix = item('5a0c3e0e-1f7e-4d59-9a39-1c3b9f7a0c01', 'Netflix', {
 })
 const spotify = item('5a0c3e0e-1f7e-4d59-9a39-1c3b9f7a0c02', 'Spotify', {
   kind: 'shopping',
+  // Se paga a mano (6.5): sale en Hoy.
+  autoPay: false,
   dueAt: today,
   recurrence: 'FREQ=MONTHLY',
   priceCents: 1001,
@@ -149,6 +152,7 @@ function renderAt(path: string, items: Item[]) {
       paidBy: null,
       priceCents: 1299,
       currency: 'EUR',
+      auto: false,
     },
   ])
   vi.mocked(itemsApi.updateItem).mockResolvedValue()
@@ -182,9 +186,9 @@ describe('pagos que se repiten (6.4, diseño 30)', () => {
         exact: false,
       }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText('Cada mes · el ' + format(netflix.dueAt ?? today, 'd')),
-    ).toBeInTheDocument()
+    // Netflix se cobra solo (6.5); Spotify se paga a mano, y vence hoy.
+    expect(screen.getByText(/^Se cobra el /)).toBeInTheDocument()
+    expect(screen.getByText('Cada mes · el ' + format(today, 'd'))).toBeInTheDocument()
   })
 
   it('la ficha: la caja «Pago», el historial y, sin «Estado», «Darse de baja» (F1)', async () => {
@@ -236,7 +240,7 @@ describe('pagos que se repiten (6.4, diseño 30)', () => {
   it('Hoy: el cobro de hoy, con su precio (H1)', async () => {
     vi.mocked(todayApi.fetchToday).mockResolvedValue([{ ...spotify, parent: null }])
     renderAt('/today', [])
-    expect(await screen.findByText('Cobra hoy')).toBeInTheDocument()
+    expect(await screen.findByText('Vence hoy')).toBeInTheDocument()
     expect(screen.getByText('10,01 €')).toBeInTheDocument()
   })
 })

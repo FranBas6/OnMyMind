@@ -133,7 +133,9 @@ export function DoneSection({
             onToggle={
               completion &&
               (() => {
-                undo(completion)
+                // Lo que apuntó la base porque se cobra solo no se deshace aquí: volvería a cobrarse
+                // en unos minutos (6.5). Se cambia desde su ficha.
+                if (!completion.auto) undo(completion)
               })
             }
             meta={
