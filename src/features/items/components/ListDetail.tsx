@@ -51,6 +51,7 @@ import { kindProposal, type AddableKind } from '../kind'
 import type { WrittenDate } from '../writtenDate'
 import { pastedLinesSaved, type LineToSave } from '../pastedLines'
 import { firstFinalStatus, initialStatus } from '../status'
+import { countedItems, paymentSummary, paymentTotals } from '../payments'
 import { hasPrices, pendingTotals } from '../prices'
 import { childrenOf, sublistSummary, topLevel } from '../sublists'
 import type { Item, MovedItem } from '../types'
@@ -72,7 +73,7 @@ import {
 } from './ItemsEmptyState'
 import { ItemWorkspace, ListScope } from './ItemWorkspace'
 import { OutOfMindSection } from './OutOfMindSection'
-import { PriceTotal } from './PriceTotal'
+import { MonthlyTotal, PriceTotal } from './PriceTotal'
 import { SortableRows } from './SortableRows'
 import { SublistHeader } from './SublistHeader'
 
@@ -176,7 +177,7 @@ export function ListDetail({
   const staying = useWithCompletedLive(lingering)
   const { active, outOfMind } = splitItems(shown ?? [], list.kind, { lingering: staying, sort })
   // El resumen no espera a la animación: cuenta lo que ya está hecho aunque aún se vea arriba.
-  const summary = !all
+  const baseSummary = !all
     ? detailSummary(style, list.counters)
     : sublist
       ? sublistSummary(sublist, shown ?? [], list.name)
@@ -245,15 +246,25 @@ export function ListDetail({
     label: price.paid ? 'Pagaste' : `Cuenta en ${list.name}`,
     amount: formatCents(price.cents, price.currency),
   }
-  const total = !inbox && !chooseOne && (
-    <PriceTotal
-      totals={
-        all && shown
-          ? pendingTotals(sublist ? shown : all)
-          : { euros: list.counters.pendingPriceCents, others: [] }
-      }
-    />
-  )
+  const priceTotals =
+    all && shown
+      ? pendingTotals(sublist ? shown : all)
+      : { euros: list.counters.pendingPriceCents, others: [] }
+  // Los pagos que se repiten (6.4, diseño 30, L1 y L2): «AL MES» en vez de «Total» y el resumen
+  // «4 pagos · 1 en prueba · 60 € de una vez». Con lo cargado, al instante; si no, los contadores.
+  const payments = all && shown ? paymentTotals(sublist ? shown : countedItems(all)) : null
+  const yearly = payments ? payments.yearlyCents : list.counters.yearlyCents
+  const paymentLine =
+    inbox || chooseOne || yearly === null
+      ? null
+      : payments
+        ? paymentSummary(payments, priceTotals.euros - payments.recurringCents)
+        : paymentSummary(list.counters, list.counters.onceCents)
+  const total =
+    !inbox &&
+    !chooseOne &&
+    (yearly !== null ? <MonthlyTotal yearlyCents={yearly} /> : <PriceTotal totals={priceTotals} />)
+  const summary = paymentLine ?? baseSummary
 
   // Sin red y sin nada de esta lista en caché (nunca se abrió aquí): se puede añadir igual.
   // (Sin esperar a que la consulta quede en pausa, que tarda lo que su primer intento.)

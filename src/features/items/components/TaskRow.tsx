@@ -26,6 +26,8 @@ import { PriorityChip } from './PriorityChip'
 import { hasThumb } from '../photos'
 import { FileMeta, LinkMeta, RowPrice, RowThumb } from './RowMedia'
 import { OptionAside } from './OptionAside'
+import { PaymentMeta } from './PaymentMeta'
+import { isFinalStatus } from '../status'
 import { RowNotes, RowTitle } from './RowTitle'
 import { SwipeableRow } from './SwipeableRow'
 
@@ -63,12 +65,15 @@ export function TaskRow({ item }: { item: Item }) {
   const priority = task ? item.priority : null
   const dueAt = task ? item.dueAt : null
   const event = item.kind === 'event'
+  // Un pago pendiente (6.4, diseño 30, L1): su propia línea bajo el título, con su fecha, su
+  // repetición, su aviso y quién pagó; las columnas de la derecha quedan vacías.
+  const payment = item.kind === 'shopping' && item.dueAt !== null && !isFinalStatus(item.status)
   // El día y la hora (diseño 17, E8 y D3): en móvil en una línea, en escritorio en dos.
   const eventDate = event ? eventWhen(item) : null
   const at = event ? occurrence(item) : null
   // Lo que se repite, también una tarea (diseño 21, B7): la regla corta, cortada con puntos si no
   // cabe.
-  const repeatText = quiet ? null : recurrenceLabel(item.recurrence, true)
+  const repeatText = quiet || payment ? null : recurrenceLabel(item.recurrence, true)
   const repeat = repeatText && (
     <span className={cn(META, 'flex min-w-0 items-center gap-1')}>
       <Repeat aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
@@ -85,7 +90,7 @@ export function TaskRow({ item }: { item: Item }) {
   // En «En mente» todo propone nota: la casilla ya dice que es una tarea (diseño 25, B1b).
   const inbox = list.kind === 'inbox'
   const mark =
-    priority === null && dueAt === null && eventDate === null && !inbox
+    priority === null && dueAt === null && eventDate === null && !inbox && !payment
       ? kindMark(item.kind, proposedKind(list))
       : null
   // En «En mente», cuándo se capturó (diseño 25, B1b: «ayer»): a la derecha en el móvil y en la
@@ -125,16 +130,20 @@ export function TaskRow({ item }: { item: Item }) {
   // La campana del aviso (diseño 18, R13): junto a la fecha; sin fecha, con su momento.
   const reminder = useItemReminder(item.id)
   const bell =
-    !quiet && showsBell(reminder, item) ? <ReminderBell item={item} className={META} /> : null
+    !quiet && !payment && showsBell(reminder, item) ? (
+      <ReminderBell item={item} className={META} />
+    ) : null
   const thumb = hasThumb(item)
-  const link = !quiet && item.url ? <LinkMeta url={item.url} item={item} className={META} /> : null
+  const link =
+    !quiet && !payment && item.url ? <LinkMeta url={item.url} item={item} className={META} /> : null
   // El clip de los documentos (diseño 29, L2): el último de la meta, tras la campana.
-  const clip = !quiet && item.files.length > 0 ? <FileMeta item={item} className={META} /> : null
+  const files = !quiet && item.files.length > 0 ? <FileMeta item={item} /> : null
+  const clip = payment ? null : files && <FileMeta item={item} className={META} />
   const author =
     person &&
     (liveDone ? (
       <LiveDoneNote person={person} item={item} />
-    ) : (
+    ) : payment ? null : (
       <span className="flex shrink-0 items-center">
         <ItemPersonMark person={person} item={item} />
       </span>
@@ -176,6 +185,7 @@ export function TaskRow({ item }: { item: Item }) {
             className={cn((liveDone || justDone) && 'text-subtle-foreground line-through')}
           />
           {!quiet && <RowNotes notes={item.notes} />}
+          {payment && !quiet && <PaymentMeta item={item} extra={files} className="mt-1" />}
           {(link ?? author) && (
             <p className="mt-0.5 hidden items-center gap-1.5 md:flex">
               {author}

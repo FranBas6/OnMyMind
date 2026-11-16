@@ -34,6 +34,7 @@ import { patchLink, regainCheapest, withLinks } from '../stores'
 import { countItems, type Counts } from '../sublists'
 import type {
   Completion,
+  Payment,
   Item,
   ItemFile,
   ItemImage,
@@ -202,6 +203,8 @@ function settle(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.lists.all })
   // Cambiar la fecha de un ítem mueve su aviso en la base (`items_sync_reminders`, 2.6).
   void queryClient.invalidateQueries({ queryKey: queryKeys.reminders })
+  // Pagar o deshacer un pago que se repite cambia su historial (6.4).
+  void queryClient.invalidateQueries({ queryKey: queryKeys.paymentsAll })
 }
 
 /** Cuánto suma un ítem a los contadores: un pendiente, un hecho o una nota (5.3). */
@@ -451,6 +454,21 @@ function addCompletion(queryClient: QueryClient, item: Item, next: Date) {
     { queryKey: queryKeys.items.completionsAll },
     (completions) => completions && [completion, ...completions],
   )
+  // En la ficha de un pago, «Pagado · hoy» al instante (diseño 30, F5).
+  if (item.kind === 'shopping') {
+    const payment: Payment = {
+      id: completion.id,
+      itemId: item.id,
+      paidAt: completion.doneAt,
+      paidBy: null,
+      priceCents: completion.priceCents,
+      currency: completion.currency,
+    }
+    queryClient.setQueryData<Payment[]>(
+      queryKeys.payments(item.listId),
+      (payments) => payments && [payment, ...payments],
+    )
+  }
 }
 
 /**

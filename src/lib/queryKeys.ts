@@ -63,6 +63,13 @@ export const queryKeys = {
   /** El título y la imagen de la página de un enlace (`fetch-metadata`). */
   // `2`: desde la 2.1 trae también el precio; lo guardado antes en caché no lo tenía.
   linkMetadata: (url: string) => ['link-metadata', 2, url] as const,
+  /**
+   * Los pagos de los pagos que se repiten de una lista (6.4, `item_completions` con importe): el
+   * historial de la ficha y quién pagó en una compartida. Fuera de `['items']`, que son listas de
+   * ítems; `paymentsAll` las abarca todas.
+   */
+  paymentsAll: ['payments'] as const,
+  payments: (listId: string) => ['payments', listId] as const,
   /** El histórico de precios de una compra (2.2). */
   prices: (itemId: string) => ['prices', itemId] as const,
   /** «Ahorrado» de Perfil (2.2): fuera de `['prices']`, que son históricos de un ítem. */

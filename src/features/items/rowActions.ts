@@ -16,6 +16,7 @@ export type RowActionId =
   | 'copyText'
   | 'protect'
   | 'unprotect'
+  | 'unsubscribe'
   | 'delete'
 
 export interface RowAction {
@@ -53,7 +54,16 @@ export interface RowActionsContext {
   option?: { note: string; chosen: boolean }
   /** En una nota: si está protegida o si se puede proteger (5.7). */
   protection?: Protection
+  /**
+   * Una compra con fecha, un pago (6.4, diseño 30): «Pagado» en vez de «Comprado». Si se repite,
+   * `returns` dice cuándo vuelve al pagarlo («vuelve el 3 ene») y el menú es el suyo (B1).
+   */
+  payment?: { recurring: boolean; returns: string | null }
 }
+
+/** Lo que explica la hoja bajo «Darse de baja» (diseño 30, B1). */
+export const UNSUBSCRIBE_NOTE =
+  'Darse de baja la quita de los totales y la deja en «Fuera de la cabeza» con sus pagos. Borrar la quita del todo.'
 
 const FINISH_LABEL: Record<ItemKind, string> = {
   note: 'Hecha',
@@ -99,6 +109,29 @@ export function rowActions(
   }
   const initial = initialStatus(kind)
   const final = STATUSES_BY_KIND[kind].find(isFinalStatus) ?? initial
+  const { payment } = context
+
+  // Un pago que se repite (B1): pagarlo (y cuándo vuelve), moverlo, darse de baja o borrarlo.
+  if (payment?.recurring && status === initial) {
+    actions.push({
+      id: 'finish',
+      label: 'Pagado',
+      shortcut: 'H',
+      status: final,
+      ...(payment.returns && { hint: payment.returns }),
+    })
+    actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })
+    actions.push({
+      id: 'unsubscribe',
+      label: 'Darse de baja',
+      shortcut: 'B',
+      status: 'discarded',
+      hint: 'deja de contar',
+      highlight: { note: UNSUBSCRIBE_NOTE },
+    })
+    actions.push({ id: 'delete', label: 'Borrar', shortcut: '⌫' })
+    return actions
+  }
 
   if (kind === 'task' && status === 'pending') {
     actions.push({ id: 'progress', label: 'Marcar en curso', shortcut: 'E', status: 'in_progress' })
@@ -107,7 +140,8 @@ export function rowActions(
   }
   // La nota no se marca hecha (5.3): no tiene estado final.
   if (!isFinalStatus(status) && isFinalStatus(final)) {
-    actions.push({ id: 'finish', label: FINISH_LABEL[kind], shortcut: 'H', status: final })
+    const label = payment && final === 'bought' ? 'Pagado' : FINISH_LABEL[kind]
+    actions.push({ id: 'finish', label, shortcut: 'H', status: final })
   }
   actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })
   actions.push({ id: 'delete', label: 'Borrar', shortcut: '⌫' })

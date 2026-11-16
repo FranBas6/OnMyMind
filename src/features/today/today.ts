@@ -15,9 +15,13 @@ import {
 import {
   isActiveSublistStatus,
   isFinalStatus,
+  isPayment,
+  isRecurringPayment,
   occurrence,
   occurrencesBetween,
   occursOn,
+  paymentRepeatLabel,
+  paymentWhen,
   PRIORITY_LABELS,
   type Completion,
   type Item,
@@ -116,6 +120,30 @@ export function todayMeta(
   const parts = overdue ? route : [...route, otherDay ? 'Vence ese día' : 'Vence hoy']
   if (item.priority) parts.push(`Prioridad ${PRIORITY_LABELS[item.priority].toLowerCase()}`)
   return { overdue, detail: parts.join(' · ') }
+}
+
+/**
+ * Lo de debajo del título de un pago en Hoy (diseño 30, H1): «Cobra hoy · ↻ Cada mes» o, atrasado,
+ * «Venció el 12 · ↻ Cada mes» (en rojo, sin el chip de las tareas). De una vez, «Vence hoy». Dentro
+ * de una sublista, con su ruta delante, como las tareas.
+ */
+export function paymentTodayMeta(
+  item: TodayItem,
+  now: Date,
+  listName?: string,
+  { otherDay = false }: { otherDay?: boolean } = {},
+): { route: string | null; when: string; overdue: boolean; repeat: string | null } {
+  const recurring = isRecurringPayment(item)
+  const overdue = !otherDay && isOverdue(item, now)
+  const when = overdue
+    ? (paymentWhen(item, now)?.text ?? '')
+    : `${recurring ? 'Cobra' : 'Vence'} ${otherDay ? 'ese día' : 'hoy'}`
+  return {
+    route: item.parent && listName ? `${listName} › ${item.parent.title}` : null,
+    when,
+    overdue,
+    repeat: paymentRepeatLabel(item, { bare: true }),
+  }
 }
 
 export interface TodaySection {
@@ -271,7 +299,8 @@ export function groupToday(
       continue
     }
     // Lo que vence hasta hoy tiene su sección; recién terminado, se queda en ella 400 ms.
-    const due = item.kind === 'task' && item.dueAt !== null && item.dueAt < end
+    // Las tareas y los pagos (6.4, diseño 30, H1): lo que vence hasta hoy.
+    const due = dues(item) && item.dueAt !== null && item.dueAt < end
     if (isFinalStatus(item.status) && !(due && lingering?.has(item.id))) {
       // Lo hecho hoy cuenta aunque no tuviera fecha o esté en una sublista callada: es lo que se
       // ha quitado de la cabeza.
@@ -322,6 +351,11 @@ export interface DayGroups {
   done: TodayDone[]
   /** Un día pasado: «Apuntado ese día», las notas creadas ese día, la última primero. */
   noted: TodayNote[]
+}
+
+/** Lo que vence un día y sale en Hoy: una tarea o un pago (una compra con fecha, 6.4). */
+function dues(item: Pick<Item, 'kind' | 'dueAt'>): boolean {
+  return item.kind === 'task' || isPayment(item)
 }
 
 /** Lo que se cuenta como hecho un día: lo terminado, no lo descartado ni lo cancelado. */
@@ -380,7 +414,7 @@ export function groupDay(
       continue
     }
     const pending = !isFinalStatus(item.status) || lingering?.has(item.id) === true
-    if (item.kind !== 'task' || !pending || !showsInToday(item) || !isOnDay(item.dueAt, day)) {
+    if (!dues(item) || !pending || !showsInToday(item) || !isOnDay(item.dueAt, day)) {
       continue
     }
     const section = sections.get(list.id) ?? { list, items: [] }
@@ -430,7 +464,7 @@ export function markedDays(
       continue
     }
     if (
-      item.kind === 'task' &&
+      dues(item) &&
       !isFinalStatus(item.status) &&
       showsInToday(item) &&
       dueAt &&

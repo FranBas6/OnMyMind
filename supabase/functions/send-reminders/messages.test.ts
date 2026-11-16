@@ -39,9 +39,58 @@ function reminder(overrides: Partial<DueReminder> = {}): DueReminder {
     done: false,
     hidden: false,
     concealed: false,
+    priceCents: null,
+    currency: 'EUR',
+    recurring: false,
+    trial: false,
     ...overrides,
   }
 }
+
+describe('el aviso de un pago (6.4, diseño 30)', () => {
+  // Las 9:00 del lunes 5 de octubre: el pago es de un día sin hora (a las 00:00).
+  const pago = (day: string, overrides: Partial<DueReminder> = {}) =>
+    reminder({
+      kind: 'shopping',
+      allDay: true,
+      title: 'Netflix',
+      listName: 'Suscripciones',
+      occursLocal: `${day}T00:00`,
+      priceCents: 1299,
+      recurring: true,
+      ...overrides,
+    })
+
+  // Los importes llevan espacio duro antes del «€», como en la app.
+  const body = (reminder: DueReminder) => reminderBody(reminder, NOW).replace(/\u00a0/g, ' ')
+
+  it('una prueba gratis, dos días antes (P2)', () => {
+    const plan = planReminder(
+      pago('2026-10-07', { title: 'Disney+', priceCents: 899, trial: true }),
+      NOW,
+    )
+    expect(plan.send && plan.message.title).toBe('Disney+')
+    expect(body(pago('2026-10-07', { title: 'Disney+', priceCents: 899, trial: true }))).toBe(
+      'Pasado mañana empieza a cobrar Disney+ · 8,99 €. Si no lo quieres, date de baja antes.',
+    )
+  })
+
+  it('uno que se repite: «Cobra mañana · 12,99 € · Suscripciones»', () => {
+    expect(body(pago('2026-10-06'))).toBe('Cobra mañana · 12,99 € · Suscripciones')
+    expect(body(pago('2026-10-05'))).toBe('Cobra hoy · 12,99 € · Suscripciones')
+    expect(body(pago('2026-10-08'))).toBe('Cobra el jue 8 · 12,99 € · Suscripciones')
+  })
+
+  it('uno de una vez, como una tarea con su importe', () => {
+    const multa = pago('2026-10-30', {
+      title: 'Multa',
+      listName: 'Gastos',
+      priceCents: 6000,
+      recurring: false,
+    })
+    expect(body(multa)).toBe('Vence el vie 30 · 60 € · Gastos')
+  })
+})
 
 describe('qué se envía de un aviso vencido', () => {
   it('un evento con hora: «En 1 h · 10:00 · Agenda», que abre el ítem (diseño 18, N1)', () => {
@@ -234,8 +283,16 @@ describe('las filas de la base', () => {
       done: false,
       hidden: false,
       concealed: false,
+      price_cents: null,
+      currency: 'EUR',
+      recurring: false,
+      trial: false,
     }
     expect(toDueReminder(row)).toEqual(reminder())
+    expect(toDueReminder({ ...row, price_cents: 899, trial: true })).toMatchObject({
+      priceCents: 899,
+      trial: true,
+    })
     expect(toDueReminder({ ...row, concealed: true })).toMatchObject({ concealed: true })
     expect(toDueReminder({ ...row, occurs_at: null, occurs_local: null })).toMatchObject({
       occursAt: null,

@@ -6,6 +6,8 @@ import { personName } from '@/features/sharing/copy'
 import { useListSharing } from '@/features/sharing/hooks/useSharing'
 
 import { chooseNote, isChoosing, type OptionMark } from '../chooseOne'
+import { isPayment, isRecurringPayment, returnsShort } from '../payments'
+import { repeatOnDone } from '../recurrence'
 import { protectionBlock } from '../protection'
 import type { Protection, RowActionsContext } from '../rowActions'
 import { isOutOfMind } from '../status'
@@ -38,14 +40,24 @@ export function useRowActionsContext(item: Item | undefined): RowActionsContext 
   const protection = useProtection(item)
   if (!item) return {}
   if (item.kind === 'sublist') return { chooseOne: item.chooseOne }
+  // Un pago (6.4): «Pagado» y, si se repite, cuándo vuelve y «Darse de baja» (diseño 30, B1).
+  const payment = paymentContext(item)
   const sublist = choice?.sublist
   if (sublist?.id !== item.parentId || !isChoosing(sublist) || isOutOfMind(item)) {
-    return protection ? { protection } : {}
+    return { ...(protection && { protection }), ...(payment && { payment }) }
   }
   return {
     option: { note: chooseNote(item), chosen: sublist.chosenId === item.id },
     ...(protection && { protection }),
+    ...(payment && { payment }),
   }
+}
+
+function paymentContext(item: Item): RowActionsContext['payment'] {
+  if (!isPayment(item)) return undefined
+  const recurring = isRecurringPayment(item)
+  const next = recurring ? repeatOnDone(item, 'bought') : null
+  return { recurring, returns: next ? returnsShort(next) : null }
 }
 
 /**

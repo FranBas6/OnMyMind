@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import type { WebPriceState } from '../hooks/useLinkMetadata'
 import type { RefreshState } from '../hooks/useRefreshPrice'
 import { linkDomain } from '../links'
+import { priceEvery } from '../payments'
 import {
   changeAmountLabel,
   changeDescription,
@@ -159,6 +160,7 @@ export function PriceBlock({
     />
   )
   const best = cheapestLink(item.links)
+  const every = priceEvery(item)
   // Lo que cambió esta mañana, si lo hizo la consulta de cada día (diseño 22, P2–P4).
   const morning = history.data ? morningChange(history.data, item.currency) : null
   // Con varias tiendas, el seguimiento es el de la más barata, que es la del precio.
@@ -211,6 +213,10 @@ export function PriceBlock({
         <p className="font-display text-[34px] leading-none font-extrabold tracking-[-0.03em]">
           {price.text}
         </p>
+        {/* Un pago que se repite (diseño 30, F1 y P1): «cada mes», «cada mes, desde el 20 nov». */}
+        {!bought && every && (
+          <span className="text-[15px] font-semibold text-muted-foreground">{every}</span>
+        )}
         {!bought && change && item.previousPriceCents !== null && (
           <span
             className={cn(

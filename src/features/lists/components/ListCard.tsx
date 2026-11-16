@@ -5,6 +5,8 @@ import { useState, type SyntheticEvent } from 'react'
 
 import { ListIcon } from '@/components/ListIcon'
 import { LIFT_TOLERANCE_PX } from '@/hooks/useReorderSensors'
+// Por su ruta y no por el índice: `items` usa piezas de `lists`.
+import { monthlyText } from '@/features/items/payments'
 import { cn } from '@/lib/utils'
 
 import { listCounterLabel, pendingTotal } from '../templates'
@@ -139,8 +141,11 @@ function ListCardFace({ list }: { list: List }) {
           <ListCardSharedNote list={list} />
         </p>
         <p className="mt-[3px] text-[13px] leading-[1.35] text-muted-foreground">
-          {listCounterLabel(list)}
-          {total && (
+          {/* Con pagos que se repiten, lo que suman al mes (diseño 30, L3: «958,28 € al mes»). */}
+          {list.counters.yearlyCents !== null
+            ? `${monthlyText(list.counters.yearlyCents)} al mes`
+            : listCounterLabel(list)}
+          {total && list.counters.yearlyCents === null && (
             <span className="mt-0.5 block font-display text-[15px] font-extrabold tracking-[-0.02em] whitespace-nowrap text-foreground md:mt-0 md:inline md:font-sans md:text-[13px] md:font-normal md:tracking-normal md:text-muted-foreground md:before:content-['_·_']">
               {total}
             </span>

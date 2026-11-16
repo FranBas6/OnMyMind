@@ -15,7 +15,7 @@ import {
 } from '@/features/private'
 // Por sus rutas y no por el índice: `reminders` y `sharing` usan piezas de `items`.
 import { useSetReminder } from '@/features/reminders/hooks/useReminders'
-import type { Reminder } from '@/features/reminders/reminders'
+import { canHaveReminder, type Reminder } from '@/features/reminders/reminders'
 import { copyText } from '@/features/sharing/share'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { queryKeys } from '@/lib/queryKeys'
@@ -32,6 +32,7 @@ import {
   useUndoRepeat,
   useUpdateItem,
 } from '../hooks/useItemMutations'
+import { isRecurringPayment, paidToast } from '../payments'
 import { repeatOnDone } from '../recurrence'
 import { markRepeatDone } from '../repeatMarks'
 import { isFinalStatus, nextStatusOnToggle } from '../status'
@@ -139,7 +140,11 @@ export function ItemWorkspace({
       markRepeatDone(item.id, occurrence)
       statusMutation.mutate({ item, status })
       showUndoToast({
-        message: `Hecha · vuelve el ${format(next, 'EEEE d')}`,
+        // Un pago que se repite (diseño 30, F4): «Pagado · vuelve el 3 de enero».
+        message:
+          item.kind === 'shopping'
+            ? paidToast(next)
+            : `Hecha · vuelve el ${format(next, 'EEEE d')}`,
         onUndo: () => {
           undoRepeat.mutate({ item: { ...item, dueAt: next }, occurrence })
         },
@@ -149,6 +154,15 @@ export function ItemWorkspace({
     // Lo que se termina se queda un instante en su sitio antes de irse (06 §Interacción).
     if (isFinalStatus(status) && !isFinalStatus(item.status)) onFinish(item.id)
     statusMutation.mutate({ item, status })
+    // Darse de baja de un pago que se repite (diseño 30, B2): sin confirmar, con «Deshacer».
+    if (status === 'discarded' && item.status !== 'discarded' && isRecurringPayment(item)) {
+      showUndoToast({
+        message: `${item.title}, de baja`,
+        onUndo: () => {
+          statusMutation.mutate({ item: { ...item, status }, status: item.status })
+        },
+      })
+    }
   }
 
   const move = (item: Item, to: List, parentId: string | null = null) => {
@@ -235,7 +249,10 @@ export function ItemWorkspace({
       message: kindChangedMessage(kind),
       onUndo: () => {
         updateItem.mutate({ item: { ...item, ...patch }, patch: revertKindChange(item, patch) })
-        if (reminder && kind !== 'task' && kind !== 'event') {
+        // La base lo quitó: el tipo nuevo no lleva aviso, o se quedó sin la fecha de la que contaba.
+        const removed =
+          !canHaveReminder({ kind }) || (patch.dueAt === null && reminder?.offsetMinutes !== null)
+        if (reminder && removed) {
           setReminder.mutate({ item, next: { ...reminder, sentAt: null } })
         }
       },
@@ -379,8 +396,13 @@ export function ItemWorkspace({
           isDesktop={isDesktop}
           onToggle={actions.toggle}
           onUpdate={(item, patch) => {
-            // «Hecha» en la ficha de una que se repite: como el check de su fila.
-            if (patch.status && repeatOnDone(item, patch.status)) {
+            // «Hecha» en la ficha de una que se repite: como el check de su fila. Y darse de baja
+            // de un pago, con su aviso.
+            if (
+              patch.status &&
+              (repeatOnDone(item, patch.status) ||
+                (patch.status === 'discarded' && isRecurringPayment(item)))
+            ) {
               setStatus(item, patch.status)
               return
             }

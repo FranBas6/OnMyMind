@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase/client'
 import { todayBounds, type TodayItem } from './today'
 
 /**
- * Lo que sale en Hoy (03 §Consultas clave): tareas que vencen hoy o antes, estén en la lista que
+ * Lo que sale en Hoy (03 §Consultas clave): tareas y pagos (6.4) que vencen hoy o antes, estén en la lista que
  * estén (el tipo es del ítem, ADR-009), de listas sin archivar. No filtra por usuario: RLS ya deja
  * solo tus listas, y así valdrá igual para las compartidas en fase 3. El embed de la lista
  * (`!inner`, por la clave `items_list_id_fkey`, porque `items` tiene dos hacia `lists`) solo sirve
@@ -28,7 +28,7 @@ import { todayBounds, type TodayItem } from './today'
 export async function fetchToday(now: Date): Promise<TodayItem[]> {
   const { start, end } = todayBounds(now)
   const [pending, done, events, notes] = await Promise.all([
-    dated('task').lt('due_at', end.toISOString()).is('completed_at', null).order('due_at'),
+    pendingDated().lt('due_at', end.toISOString()).is('completed_at', null).order('due_at'),
     doneBetween(start, end),
     upcomingEvents(start, end),
     notesBetween(start, end),
@@ -45,7 +45,7 @@ export async function fetchToday(now: Date): Promise<TodayItem[]> {
  */
 export async function fetchDays(start: Date, end: Date): Promise<TodayItem[]> {
   const [pending, done, events, notes] = await Promise.all([
-    dated('task')
+    pendingDated()
       .gte('due_at', start.toISOString())
       .lt('due_at', end.toISOString())
       .is('completed_at', null)
@@ -73,6 +73,11 @@ function items() {
 
 function dated(kind: 'task' | 'event') {
   return items().eq('kind', kind)
+}
+
+/** Lo que vence: las tareas y, desde la 6.4, los pagos (compras con fecha, diseño 30, H1). */
+function pendingDated() {
+  return items().in('kind', ['task', 'shopping'])
 }
 
 /** Lo terminado entre dos días, de cualquier tipo: hecho o comprado (no lo descartado). */

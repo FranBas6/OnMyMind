@@ -1,16 +1,19 @@
+import { format, isSameYear } from 'date-fns'
 import { ArrowRightLeft, ChevronDown } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
 
 import { formatCaptureAge } from '@/lib/date'
 import { cn } from '@/lib/utils'
+import { personName } from '@/features/sharing/copy'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
 import { useItemPerson } from '@/features/sharing/hooks/useSharing'
 
 import { doneMoment } from '../copy'
 import { eventWhen } from '../events'
 import { kindMark, proposedKind } from '../kind'
+import { isPayment, isRecurringPayment } from '../payments'
 import { itemPrice } from '../prices'
-import { STATUS_LABELS } from '../status'
+import { isFinalStatus, STATUS_LABELS } from '../status'
 import type { Item, MovedItem } from '../types'
 import { ItemControl } from './ItemControl'
 import { rowHighlight, useItemActions } from './itemActionsContext'
@@ -171,11 +174,21 @@ export function DoneRow({
 }) {
   const actions = useItemActions()
   const price = itemPrice(item)
-  const paid = price
-    ? item.status === 'bought'
-      ? `${STATUS_LABELS[item.status]} · ${price.text}`
-      : STATUS_LABELS[item.status]
-    : null
+  // Si lo completó el otro, su inicial (diseño 20, M2).
+  const person = useItemPerson(item)
+  // Un pago (diseño 30, L1, L2 y B3): «Pagado el 6 nov», «Marta pagó el 9 nov» o, si se repetía,
+  // «De baja desde el 2 oct», con el importe a la derecha.
+  const payment = paymentDoneLine(item, person ? personName(person.displayName) : null)
+  // La vez pagada de uno que se repite (Hoy, «Hecho hoy») sigue pendiente: su línea es otra.
+  const repeated = isRecurringPayment(item) && !isFinalStatus(item.status)
+  const paid = repeated
+    ? null
+    : (payment ??
+      (price
+        ? item.status === 'bought'
+          ? `${STATUS_LABELS[item.status]} · ${price.text}`
+          : STATUS_LABELS[item.status]
+        : null))
   // Un evento dice cuándo fue o que se canceló (diseño 17, E1: «Sáb 12 sep · 21:30»).
   const when =
     item.kind === 'event'
@@ -190,12 +203,10 @@ export function DoneRow({
   // Cuándo, si la fila no lo dice ya (lo de un evento es cuándo fue); sin el verbo si ya dice
   // cómo terminó («Comprado · 12 € · hoy · 14:05»).
   const doneAt =
-    showDoneAt && item.kind !== 'event'
+    showDoneAt && item.kind !== 'event' && !payment
       ? doneMoment(item, new Date(), { verb: !paid && !status })
       : null
   const line = [paid ?? when, doneAt].filter(Boolean).join(' · ')
-  // Si lo completó el otro, su inicial (diseño 20, M2).
-  const person = useItemPerson(item)
   return (
     <SwipeableRow
       item={item}
@@ -224,7 +235,12 @@ export function DoneRow({
         )}
         {meta}
       </div>
-      {aside}
+      {aside ??
+        (payment && price && (
+          <span className="shrink-0 font-display text-[15px] font-bold text-subtle-foreground">
+            {price.text}
+          </span>
+        ))}
     </SwipeableRow>
   )
 }
@@ -247,4 +263,17 @@ function MovedRow({ moved }: { moved: MovedItem }) {
       </span>
     </li>
   )
+}
+
+/**
+ * La línea de un pago terminado (diseño 30): «Pagado el 6 nov» o, si lo pagó el otro, «Marta pagó
+ * el 9 nov»; uno que se repetía y se dio de baja, «De baja desde el 2 oct». `null` si no es un pago.
+ */
+function paymentDoneLine(item: Item, other: string | null): string | null {
+  if (!isPayment(item) || !item.completedAt) return null
+  const now = new Date()
+  const day = format(item.completedAt, isSameYear(item.completedAt, now) ? 'd MMM' : 'd MMM yyyy')
+  if (item.status === 'bought') return other ? `${other} pagó el ${day}` : `Pagado el ${day}`
+  if (item.status === 'discarded' && isRecurringPayment(item)) return `De baja desde el ${day}`
+  return null
 }

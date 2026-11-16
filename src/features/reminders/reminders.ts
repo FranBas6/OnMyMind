@@ -33,9 +33,12 @@ export interface Reminder {
 
 type ReminderItem = Pick<Item, 'kind' | 'dueAt' | 'allDay' | 'recurrence'>
 
-/** Si un ítem puede llevar aviso: tareas y eventos (no compras ni «En mente»). */
+/**
+ * Si un ítem puede llevar aviso: tareas, eventos y, desde la 6.4, compras (el aviso de un pago,
+ * diseño 30). No las notas ni las sublistas.
+ */
 export function canHaveReminder(item: Pick<Item, 'kind'>): boolean {
-  return item.kind === 'task' || item.kind === 'event'
+  return item.kind === 'task' || item.kind === 'event' || item.kind === 'shopping'
 }
 
 /**
@@ -72,9 +75,19 @@ const DATED_OPTIONS: readonly ReminderOption[] = [
   { label: `El día antes a las ${DATED_HOUR}:00`, offsetMinutes: (24 - DATED_HOUR) * 60 },
 ]
 
+/** «2 días antes a las 9:00», lo que propone una prueba gratis (diseño 30, P1). */
+export const TWO_DAYS_BEFORE = (48 - DATED_HOUR) * 60
+
+/** Un pago, además, dos días antes: da tiempo a darse de baja de una prueba. */
+const PAYMENT_OPTIONS: readonly ReminderOption[] = [
+  ...DATED_OPTIONS,
+  { label: `2 días antes a las ${DATED_HOUR}:00`, offsetMinutes: TWO_DAYS_BEFORE },
+]
+
 /** Las opciones relativas de un ítem (sin «Sin aviso» ni «Personalizado…», que van siempre). */
 export function reminderOptions(item: ReminderItem): readonly ReminderOption[] {
   const shape = reminderShape(item)
+  if (shape === 'dated' && item.kind === 'shopping') return PAYMENT_OPTIONS
   return shape === 'timed' ? TIMED_OPTIONS : shape === 'dated' ? DATED_OPTIONS : []
 }
 
@@ -102,8 +115,8 @@ export function reminderAt(
 ): Date | null {
   if (item.dueAt === null) return null
   if (item.recurrence === null) return wallClockMinus(item.dueAt, offsetMinutes)
-  // El aviso va como mucho un día antes o nueve horas después: basta con mirar desde ayer.
-  const times = occurrencesBetween(item, addDays(now, -1), addYears(now, 1))
+  // El aviso va como mucho dos días antes o nueve horas después: basta con mirar desde hace tres.
+  const times = occurrencesBetween(item, addDays(now, -3), addYears(now, 1))
   for (const at of times) {
     const remind = wallClockMinus(at, offsetMinutes)
     if (remind >= now) return remind
@@ -153,6 +166,7 @@ const SHORT_LABELS: Record<number, string> = {
   [24 * 60]: '1 día antes',
   [-DATED_HOUR * 60]: 'Ese día',
   [(24 - DATED_HOUR) * 60]: 'El día antes',
+  [TWO_DAYS_BEFORE]: '2 días antes',
 }
 
 const time = (at: Date) => format(at, 'HH:mm')
@@ -217,9 +231,11 @@ export function reminderSheetSubtitle(
   const shape = reminderShape(item)
   if (shape === 'timed') return `${item.title} · ${dayName(at, now)} a las ${time(at)}`
   const day = dayName(at, now)
-  return item.kind === 'task'
-    ? `${item.title} · vence ${day === 'hoy' || day === 'mañana' ? day : `el ${day}`}`
-    : `${item.title} · ${day}`
+  const on = day === 'hoy' || day === 'mañana' ? day : `el ${day}`
+  if (item.kind === 'task') return `${item.title} · vence ${on}`
+  // Un pago (diseño 30): «Netflix · se cobra el jueves 3 dic».
+  if (item.kind === 'shopping') return `${item.title} · se cobra ${on}`
+  return `${item.title} · ${day}`
 }
 
 /**

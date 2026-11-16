@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils'
 import { useSwipe } from '../hooks/useSwipe'
 import { LEFT_OPEN_PX, rightActions, rightStage, type SwipeStatusAction } from '../swipe'
 import type { Item } from '../types'
+import { isPayment } from '../payments'
 import { useItemActions } from './itemActionsContext'
 import { LiftedRowContext, useRowDrag, type RowDrag } from './rowDragContext'
 
@@ -69,7 +70,7 @@ export function SwipeableRow(props: SwipeableRowProps) {
 /** Lo de deslizar que comparten las dos filas: el gesto, la que está abierta y cerrarla al tocar fuera. */
 function useRowSwipe(item: Item, disabled = false) {
   const actions = useItemActions()
-  const right = rightActions(item.kind, item.status)
+  const right = rightActions(item.kind, item.status, isPayment(item))
   const open = actions.swipeOpenId === item.id
   const setOpen = (next: boolean) => {
     actions.setSwipeOpenId(next ? item.id : undefined)

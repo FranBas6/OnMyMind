@@ -35,6 +35,21 @@ import { SegmentedControl } from './SegmentedControl'
 
 const MAX_INTERVAL = 99
 
+/**
+ * En un pago (diseño 30, F3), las de siempre se dicen por lo que pasa: «Cada semana · los jueves»,
+ * «Cada mes · el día 3», «Cada año · el 3 de diciembre». Sin «Diaria»: no hay pagos diarios.
+ */
+const PAYMENT_PRESETS: readonly { freq: Freq; label: string }[] = [
+  { freq: 'WEEKLY', label: 'Cada semana' },
+  { freq: 'MONTHLY', label: 'Cada mes' },
+  { freq: 'YEARLY', label: 'Cada año' },
+]
+
+function paymentHint(freq: Freq, day: Date, now: Date): string | null {
+  if (freq !== 'YEARLY') return presetHint(freq, day, now)
+  return format(day, isSameYear(day, now) ? "'el' d 'de' MMMM" : "'el' d 'de' MMMM 'de' yyyy")
+}
+
 const UNIT_NAMES: Record<Freq, [one: string, many: string, tab: string]> = {
   DAILY: ['día', 'días', 'Días'],
   WEEKLY: ['semana', 'semanas', 'Semanas'],
@@ -70,7 +85,12 @@ export function RepeatField({
   const now = new Date()
   // Desde dónde cuenta una regla nueva: la fecha del ítem o, sin ella, hoy.
   const base = item.dueAt ?? startOfDay(now)
-  const preset = rule ? presetOf(rule, item.dueAt) : null
+  // Un pago (6.4): sus opciones y sus textos (diseño 30, F1 y F3).
+  const payment = item.kind === 'shopping'
+  const presets = payment ? PAYMENT_PRESETS : PRESETS
+  const ruled = rule ? presetOf(rule, item.dueAt) : null
+  // Una de las de siempre que aquí no está (diaria en un pago) es personalizada.
+  const preset = presets.some((entry) => entry.freq === ruled) ? ruled : null
 
   const save = (next: Rule | null) => {
     if (!next) {
@@ -117,7 +137,9 @@ export function RepeatField({
     >
       {rule ? (
         <span className="max-w-[200px] text-right font-semibold whitespace-normal md:max-w-[240px]">
-          {ruleLabel(rule)}
+          {payment && preset
+            ? (presets.find((entry) => entry.freq === preset)?.label ?? ruleLabel(rule))
+            : ruleLabel(rule)}
         </span>
       ) : (
         <span className="text-muted-foreground">No se repite</span>
@@ -135,11 +157,11 @@ export function RepeatField({
             save(null)
           }}
         />
-        {PRESETS.map(({ freq, label }) => (
+        {presets.map(({ freq, label }) => (
           <Option
             key={freq}
             label={label}
-            hint={presetHint(freq, base, now)}
+            hint={payment ? paymentHint(freq, base, now) : presetHint(freq, base, now)}
             selected={preset === freq}
             onClick={() => {
               setStopped(false)
@@ -156,6 +178,11 @@ export function RepeatField({
           onClick={openCustom}
         />
       </div>
+      {payment && (
+        <p className="px-3 pt-2 text-[13px] leading-normal text-muted-foreground">
+          Al pagarla, salta sola a la siguiente fecha y apunta lo pagado.
+        </p>
+      )}
       {stopped && !rule && item.kind === 'task' && item.dueAt && (
         <p className="px-3 pt-2 text-[13px] leading-normal text-muted-foreground">
           Se queda con su fecha, el {format(item.dueAt, 'EEEE d')}. Al completarla bajará a «Fuera
@@ -244,6 +271,10 @@ function subtitle(item: Item, now: Date): string {
   if (!item.dueAt) return `${item.title} · sin fecha`
   const day = format(item.dueAt, isSameYear(item.dueAt, now) ? 'EEEE d' : 'EEEE d MMM yyyy')
   if (item.kind === 'task') return `${item.title} · vence el ${day}`
+  // Un pago (diseño 30, F3): «Netflix · se cobra el jueves 3 dic».
+  if (item.kind === 'shopping') {
+    return `${item.title} · se cobra el ${format(item.dueAt, isSameYear(item.dueAt, now) ? 'EEEE d MMM' : 'EEEE d MMM yyyy')}`
+  }
   return item.allDay
     ? `${item.title} · ${day}`
     : `${item.title} · ${day} a las ${format(item.dueAt, 'H:mm')}`

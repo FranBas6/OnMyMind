@@ -216,6 +216,19 @@ export interface ItemLinkPatch {
 }
 
 /**
+ * Una vez pagada de un pago que se repite (6.4, `item_completions`): cuándo, quién y cuánto. El
+ * historial de la ficha («Pagado · 3 nov · 12,99 €») y «Marta pagó el 1 nov».
+ */
+export interface Payment {
+  id: string
+  itemId: string
+  paidAt: Date
+  paidBy: string | null
+  priceCents: number | null
+  currency: string | null
+}
+
+/**
  * Una vez hecha de una tarea que se repite (3.6, `item_completions`): la tarea no baja a «Fuera de
  * la cabeza», pasa a su siguiente fecha, y esto es la constancia («Hecho hoy», «Hecho ese día»).
  * `item` es la tarea como está ahora (con su fecha nueva); `occurrence`, la fecha que tenía.

@@ -52,7 +52,12 @@ export interface SwipeStatusAction {
  * («Hecha», «Comprado», «Cancelado»). Salen de `rowActions`, las mismas del menú de fila. Una
  * sublista se desliza como una tarea; pausada, «En curso» la reanuda.
  */
-export function rightActions(kind: ItemKind, status: ItemStatus): SwipeStatusAction[] {
+export function rightActions(
+  kind: ItemKind,
+  status: ItemStatus,
+  /** Una compra con fecha, un pago (6.4): «Pagado» en vez de «Comprado». */
+  payment = false,
+): SwipeStatusAction[] {
   // Pausar una sublista no se hace deslizando: se hace a propósito, desde el menú.
   const withStatus = rowActions(kind, status).filter(
     (action) => action.status !== undefined && action.id !== 'pause',
@@ -64,7 +69,7 @@ export function rightActions(kind: ItemKind, status: ItemStatus): SwipeStatusAct
       ? [
           {
             status: action.status,
-            label: STATUS_LABELS[action.status],
+            label: payment && action.status === 'bought' ? 'Pagado' : STATUS_LABELS[action.status],
             tone:
               action.id === 'progress' || action.id === 'resume'
                 ? 'progress'

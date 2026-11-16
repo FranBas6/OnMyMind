@@ -34,10 +34,10 @@ const task = (dueAt: Date | null) => ({
 })
 
 describe('qué avisos admite cada ítem', () => {
-  it('solo tareas y eventos', () => {
+  it('tareas, eventos y, desde la 6.4, compras (el aviso de un pago)', () => {
     expect(canHaveReminder({ kind: 'task' })).toBe(true)
     expect(canHaveReminder({ kind: 'event' })).toBe(true)
-    expect(canHaveReminder({ kind: 'shopping' })).toBe(false)
+    expect(canHaveReminder({ kind: 'shopping' })).toBe(true)
     expect(canHaveReminder({ kind: 'note' })).toBe(false)
   })
 

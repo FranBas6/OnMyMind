@@ -136,17 +136,29 @@ describe('groupToday', () => {
     ])
   })
 
-  it('solo tareas de listas que sigan en caché (no capturas, ni compras, ni archivadas)', () => {
+  it('solo tareas de listas que sigan en caché (no capturas, ni compras sin fecha, ni archivadas)', () => {
     const inbox = list('inbox', { kind: 'inbox' })
     const compras = list('compras', { kind: 'shopping' })
     const items = [
       item('captura', { listId: 'inbox', kind: 'note' }),
-      item('leche', { listId: 'compras', kind: 'shopping' }),
+      item('leche', { listId: 'compras', kind: 'shopping', dueAt: null }),
       item('archivada', { listId: 'otra' }),
       item('grifo'),
     ]
     expect(titles(groupToday(items, [...lists, inbox, compras], { now }))).toEqual([
       ['casa', ['grifo']],
+    ])
+  })
+
+  it('un pago (una compra con fecha) que vence hoy o venció sale en Hoy (6.4, diseño 30, H1)', () => {
+    const gastos = list('gastos', { kind: 'shopping' })
+    const items = [
+      item('spotify', { listId: 'gastos', kind: 'shopping', recurrence: 'FREQ=MONTHLY' }),
+      item('luz', { listId: 'gastos', kind: 'shopping', dueAt: at(25) }),
+      item('netflix', { listId: 'gastos', kind: 'shopping', dueAt: at(30) }),
+    ]
+    expect(titles(groupToday(items, [...lists, gastos], { now }))).toEqual([
+      ['gastos', ['luz', 'spotify']],
     ])
   })
 

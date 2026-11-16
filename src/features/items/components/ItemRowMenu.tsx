@@ -2,6 +2,7 @@ import {
   ArrowDown,
   ArrowRightLeft,
   ArrowUp,
+  Ban,
   Check,
   Circle,
   CircleCheck,
@@ -24,7 +25,8 @@ import { canStep } from '@/lib/reorder'
 import { cn } from '@/lib/utils'
 
 import { rowActions, type RowAction, type RowActionId } from '../rowActions'
-import { STATUS_LABELS } from '../status'
+import { isRecurringPayment, paymentRepeatLabel, statusLabel } from '../payments'
+import { itemPrice } from '../prices'
 import type { Item } from '../types'
 import { useItems } from '../hooks/useItems'
 import { noteBody } from '../noteText'
@@ -50,6 +52,7 @@ const ICONS: Record<RowActionId, LucideIcon> = {
   copyText: Copy,
   protect: Lock,
   unprotect: LockOpen,
+  unsubscribe: Ban,
   delete: Trash2,
 }
 
@@ -128,7 +131,7 @@ export function ItemRowMenuSheet({
                       : ['Nota', notesExcerpt(noteBody(shown))].filter(Boolean).join(' · ')}
                   </span>
                 ) : (
-                  `${list.name} · ${STATUS_LABELS[shown.status].toLowerCase()}`
+                  menuSummary(shown, list.name)
                 )}
               </p>
             </div>
@@ -415,4 +418,18 @@ function SublistMenuSummary({ item, listName }: { item: Item; listName: string }
 /** Por qué no se puede algo del menú («Proteger» en una lista compartida, C9), si lo hay. */
 function blockedNote(actions: readonly RowAction[]): string | undefined {
   return actions.find((action) => action.disabled)?.disabled?.note
+}
+
+/**
+ * Bajo el nombre en la hoja: su lista y su estado («Compras · pendiente»); un pago que se repite,
+ * lo que cuesta y cuándo (diseño 30, B1: «12,99 € cada mes · el 3»).
+ */
+function menuSummary(item: Item, listName: string): string {
+  const repeat = isRecurringPayment(item) ? paymentRepeatLabel(item) : null
+  if (repeat) {
+    const price = itemPrice(item)
+    const text = repeat.charAt(0).toLowerCase() + repeat.slice(1)
+    return price ? `${price.text} ${text}` : repeat
+  }
+  return `${listName} · ${statusLabel(item, item.status).toLowerCase()}`
 }

@@ -1,8 +1,7 @@
 import {
   ArrowRightLeft,
-  Calendar,
+  Ban,
   ChevronDown,
-  ChevronRight,
   Circle,
   Copy,
   Lock,
@@ -12,16 +11,20 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { DropdownMenu, Popover } from 'radix-ui'
+import { DropdownMenu } from 'radix-ui'
 import { Fragment, useCallback, useState } from 'react'
 
-import { BottomSheet } from '@/components/BottomSheet'
 import type { List } from '@/features/lists'
 import { useOpenedNote } from '@/features/private'
 // Por su ruta y no por el índice: `reminders` usa piezas de `items` y así no hay ciclo.
 import { useReminderField } from '@/features/reminders/hooks/useReminderField'
+import {
+  reminderFor,
+  useItemReminder,
+  useSetReminder,
+} from '@/features/reminders/hooks/useReminders'
+import { TWO_DAYS_BEFORE } from '@/features/reminders/reminders'
 import { useOnline } from '@/hooks/useOnline'
-import { formatDueDateLong } from '@/lib/date'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
@@ -33,12 +36,14 @@ import { isChoosableKind, type ChoosableKind } from '../kind'
 import { useStoreMutation } from '../hooks/useItemMutations'
 import { useItems } from '../hooks/useItems'
 import { useLinkMetadata } from '../hooks/useLinkMetadata'
+import { paymentsOf, useListPayments } from '../hooks/usePayments'
+import { isRecurringPayment, statusLabel } from '../payments'
 import { useRefreshPrice } from '../hooks/useRefreshPrice'
 import { hasThumb } from '../photos'
 import { cheapestLink, hasLinks, hasStores, linkFromItem, newLink, storeName } from '../stores'
 import { isFinalStatus, STATUS_LABELS, STATUSES_BY_KIND } from '../status'
 import type { Item, ItemKind, ItemLink, ItemLinkPatch, ItemPatch, ItemStatus } from '../types'
-import { DueDatePicker } from './DueDatePicker'
+import { DueDateField } from './DueDateField'
 import { EventWhenField } from './EventWhenField'
 import { RepeatField } from './RepeatField'
 import { ItemControl } from './ItemControl'
@@ -50,6 +55,7 @@ import { ProtectedKindRow, ProtectedMediaNote, ProtectedNote } from './Protected
 import { useRowActionsContext } from './choiceContext'
 import { rowActions, type RowActionId } from '../rowActions'
 import { PriceAlertCard } from './PriceAlertCard'
+import { PaymentBox, PaymentHistory } from './PaymentFields'
 import { PriceBlock } from './PriceBlock'
 import { LinksSection } from './Links'
 import { StoresSection } from './Stores'
@@ -117,10 +123,28 @@ export function ItemDetail({
   onClose,
 }: ItemDetailProps) {
   const done = isFinalStatus(item.status)
+  // «Pagado» en vez de «Comprado» en una compra con fecha (diseño 30, F6).
   const statusOptions = STATUSES_BY_KIND[item.kind].map((status) => ({
     value: status,
-    label: STATUS_LABELS[status],
+    label: statusLabel(item, status),
   }))
+  // Un pago que se repite (diseño 30, F1): sin «Estado» ni «Mover a…»; se paga con el checkbox y
+  // se da de baja al pie. De baja o pagado del todo, la ficha de siempre.
+  const subscribed = isRecurringPayment(item) && !isFinalStatus(item.status)
+  // Lo pagado en su lista: el historial (F1) y quién pagó (B4).
+  const listPayments = useListPayments(
+    item.listId,
+    item.kind === 'shopping' && item.recurrence !== null,
+  )
+  const storedReminder = useItemReminder(item.id)
+  const setReminder = useSetReminder()
+  // «Es una prueba» (P1): propone el aviso de dos días antes si aún no hay ninguno.
+  const setTrial = (trial: boolean) => {
+    onUpdate(item, { trial })
+    if (!trial || storedReminder) return
+    const next = reminderFor({ ...item, trial }, { offsetMinutes: TWO_DAYS_BEFORE }, undefined)
+    if (next) setReminder.mutate({ item, next })
+  }
   const online = useOnline()
   // Los días con eventos de su lista, para los puntos del calendario (diseño 17, F3).
   const listItems = useItems(item.listId).data
@@ -440,6 +464,22 @@ export function ItemDetail({
       {/* Bajo el bloque de precio, en las compras que se miran solas (diseño 22, A1). */}
       {item.kind === 'shopping' && <PriceAlertCard item={item} isDesktop={isDesktop} />}
 
+      {/* La fecha de pago, su repetición y su aviso, y lo pagado (diseño 30, F1). */}
+      {item.kind === 'shopping' && (
+        <PaymentBox
+          item={item}
+          isDesktop={isDesktop}
+          reminder={reminder}
+          onChange={(patch) => {
+            onUpdate(item, patch)
+          }}
+          onTrial={setTrial}
+        />
+      )}
+      {item.kind === 'shopping' && (
+        <PaymentHistory item={item} payments={paymentsOf(listPayments, item.id)} />
+      )}
+
       {kindField}
 
       {item.kind === 'task' && (
@@ -480,27 +520,54 @@ export function ItemDetail({
         </>
       )}
 
-      <Field label="Estado">
-        {item.kind === 'event' ? (
-          <EventStatusField
-            item={item}
-            onChange={(status) => {
-              onUpdate(item, { status })
-            }}
-          />
-        ) : (
-          <SegmentedControl<ItemStatus>
-            label="Estado"
-            options={statusOptions}
-            value={item.status}
-            onChange={(status) => {
-              if (status) onUpdate(item, { status })
-            }}
-          />
-        )}
-      </Field>
+      {!subscribed && (
+        <Field label="Estado">
+          {item.kind === 'event' ? (
+            <EventStatusField
+              item={item}
+              onChange={(status) => {
+                onUpdate(item, { status })
+              }}
+            />
+          ) : (
+            <SegmentedControl<ItemStatus>
+              label="Estado"
+              options={statusOptions}
+              value={item.status}
+              onChange={(status) => {
+                if (status) onUpdate(item, { status })
+              }}
+            />
+          )}
+        </Field>
+      )}
 
-      {footer}
+      {subscribed ? (
+        <div className="mt-auto flex h-11 shrink-0 items-center justify-between text-sm font-semibold">
+          <button
+            type="button"
+            onClick={() => {
+              onUpdate(item, { status: 'discarded' })
+            }}
+            className="-ml-1 flex h-11 items-center gap-2 rounded-xl px-1 text-foreground outline-none hover:opacity-80 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Ban aria-hidden className="size-4" strokeWidth={2.2} />
+            Darse de baja
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onDelete(item)
+            }}
+            className="-mr-1 flex h-11 items-center gap-1.5 rounded-xl px-1 text-destructive outline-none hover:opacity-80 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Trash2 aria-hidden className="size-4" strokeWidth={2.2} />
+            Borrar
+          </button>
+        </div>
+      ) : (
+        footer
+      )}
     </div>
   )
 }
@@ -598,102 +665,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       </p>
       {children}
     </div>
-  )
-}
-
-interface DueDateFieldProps {
-  item: Item
-  isDesktop: boolean
-  onChange: (dueAt: Date | null) => void
-}
-
-/**
- * Fila «Fecha límite» (diseño 06): «Hoy, 25 sep» en rojo si es hoy o antes, «Sin fecha» en
- * terciario, y la fecha sola si la tarea está hecha. Abre el selector: una hoja encima del
- * detalle en móvil (con «Listo») y un popover bajo la fila en escritorio.
- */
-function DueDateField({ item, isDesktop, onChange }: DueDateFieldProps) {
-  const [open, setOpen] = useState(false)
-  const done = isFinalStatus(item.status)
-  const label = item.dueAt ? formatDueDateLong(item.dueAt, { relative: !done }) : null
-
-  const row = (
-    <button
-      type="button"
-      onClick={() => {
-        setOpen(true)
-      }}
-      className={cn(
-        'flex h-13 w-full items-center justify-between gap-3 px-4 text-[15px] outline-none hover:bg-fill/50 focus-visible:bg-fill',
-        open && isDesktop && 'bg-brand-tint hover:bg-brand-tint',
-      )}
-    >
-      <span className="flex items-center gap-2.5 font-medium">
-        <Calendar aria-hidden className="size-4 text-muted-foreground" strokeWidth={2} />
-        Fecha límite
-      </span>
-      <span
-        className={cn(
-          'flex items-center gap-1.5 font-semibold whitespace-nowrap',
-          !label && 'font-medium text-subtle-foreground',
-          label?.urgent && 'text-error',
-        )}
-      >
-        {label?.text ?? 'Sin fecha'}
-        <ChevronRight aria-hidden className="size-4 text-subtle-foreground" strokeWidth={2} />
-      </span>
-    </button>
-  )
-
-  const picker = (
-    <DueDatePicker
-      value={item.dueAt}
-      onChange={(dueAt) => {
-        onChange(dueAt)
-        // En escritorio, elegir es terminar; en móvil se confirma con «Listo».
-        if (isDesktop) setOpen(false)
-      }}
-    />
-  )
-
-  if (isDesktop) {
-    return (
-      <Popover.Root open={open} onOpenChange={setOpen}>
-        <Popover.Anchor asChild>{row}</Popover.Anchor>
-        <Popover.Portal>
-          <Popover.Content
-            align="start"
-            sideOffset={8}
-            aria-label="Fecha límite"
-            className="z-50 w-[var(--radix-popover-trigger-width)] min-w-[320px] rounded-[18px] border border-border-soft bg-popover p-3.5 text-popover-foreground shadow-popover outline-none"
-          >
-            {picker}
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
-    )
-  }
-
-  return (
-    <>
-      {row}
-      <BottomSheet nested open={open} onOpenChange={setOpen} title="Fecha límite">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="font-display text-xl font-extrabold tracking-[-0.02em]">Fecha límite</p>
-          <p className="truncate text-[13px] text-subtle-foreground">{item.title}</p>
-        </div>
-        {picker}
-        <button
-          type="button"
-          onClick={() => {
-            setOpen(false)
-          }}
-          className="mt-1 h-13 rounded-2xl bg-primary font-display text-base font-bold text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
-          Listo
-        </button>
-      </BottomSheet>
-    </>
   )
 }
 

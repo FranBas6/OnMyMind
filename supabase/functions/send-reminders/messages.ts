@@ -35,6 +35,12 @@ export interface DueReminder {
   hidden: boolean
   /** En una lista que quien lo recibe ha ocultado (5.8): sale sin título ni lista. */
   concealed: boolean
+  /** Lo que cuesta, en una compra: el aviso de un pago lo dice (6.4, diseño 30). */
+  priceCents: number | null
+  currency: string
+  /** Si se repite y si aún es una prueba gratis (P2). */
+  recurring: boolean
+  trial: boolean
 }
 
 /** Algo de hoy para el resumen, como lo devuelve `claim_daily_summaries`, ya en su orden. */
@@ -99,6 +105,8 @@ export function reminderBody(reminder: DueReminder, now: Date): string {
   }
 
   const lower = day.charAt(0).toLowerCase() + day.slice(1)
+  if (reminder.kind === 'shopping') return paymentBody(reminder, days, lower)
+
   const when =
     days === 0
       ? 'Vence hoy'
@@ -110,6 +118,42 @@ export function reminderBody(reminder: DueReminder, now: Date): string {
             ? `Venció el ${lower}`
             : `Vence el ${lower}`
   return [when, listName].join(' · ')
+}
+
+/**
+ * El aviso de un pago (6.4, diseño 30). Una prueba gratis (P2): «Pasado mañana empieza a cobrar
+ * Disney+ · 8,99 €. Si no lo quieres, date de baja antes.». Uno que se repite: «Cobra mañana · 12,99
+ * € · Suscripciones». Uno de una vez, como una tarea con su importe: «Vence el lun 30 · 60 € ·
+ * Gastos».
+ */
+function paymentBody(reminder: DueReminder, days: number, day: string): string {
+  const price =
+    reminder.priceCents === null ? null : formatCents(reminder.priceCents, reminder.currency)
+  const relative =
+    days === 0 ? 'hoy' : days === 1 ? 'mañana' : days === 2 ? 'pasado mañana' : `el ${day}`
+  if (reminder.trial && days >= 0) {
+    const when = relative.charAt(0).toUpperCase() + relative.slice(1)
+    const what = [reminder.title, price].filter(Boolean).join(' · ')
+    return `${when} empieza a cobrar ${what}. Si no lo quieres, date de baja antes.`
+  }
+  const when =
+    days < 0
+      ? days === -1
+        ? 'Venció ayer'
+        : `Venció el ${day}`
+      : `${reminder.recurring ? 'Cobra' : 'Vence'} ${relative}`
+  return [when, price, reminder.listName].filter(Boolean).join(' · ')
+}
+
+/** Céntimos en texto, como `formatCents` de la app: «627 €», «9,99 €». */
+export function formatCents(cents: number, currency = 'EUR'): string {
+  const hasDecimals = cents % 100 !== 0
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: hasDecimals ? 2 : 0,
+  }).format(cents / 100)
 }
 
 /**
@@ -218,6 +262,10 @@ export function toDueReminder(row: Record<string, unknown>): DueReminder | null 
     done: row.done === true,
     hidden: row.hidden === true,
     concealed: row.concealed === true,
+    priceCents: typeof row.price_cents === 'number' ? row.price_cents : null,
+    currency: text('currency') ?? 'EUR',
+    recurring: row.recurring === true,
+    trial: row.trial === true,
   }
 }
 

@@ -14,6 +14,7 @@ import {
 } from '@/features/items'
 import type { List } from '@/features/lists'
 import { LIST_COLOR_BG } from '@/lib/listColors'
+import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 import { dayLogLabel, type TodayDone, type TodayItem, type TodayNote } from '../today'
@@ -143,8 +144,19 @@ export function DoneSection({
               )
             }
             aside={
-              tense === 'today' && (
-                <ListAndTime list={list} at={completion ? null : item.completedAt} tense={tense} />
+              // Lo pagado de un pago que se repite, a la derecha (diseño 30, H2).
+              completion?.priceCents != null ? (
+                <span className="shrink-0 font-display text-[15px] font-bold text-subtle-foreground">
+                  {formatCents(completion.priceCents, completion.currency ?? 'EUR')}
+                </span>
+              ) : (
+                tense === 'today' && (
+                  <ListAndTime
+                    list={list}
+                    at={completion ? null : item.completedAt}
+                    tense={tense}
+                  />
+                )
               )
             }
           />

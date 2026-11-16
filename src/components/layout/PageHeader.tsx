@@ -46,8 +46,12 @@ export function PageHeader({
           {leading}
           <div className="min-w-0">
             {eyebrow && <p className="text-[13px] font-medium text-muted-foreground">{eyebrow}</p>}
+            {/* Una palabra que no cabe (con el total al lado) se corta con guion: «Suscrip-ciones». */}
             <h1
-              className={cn('leading-[1.1] md:text-[32px]', back ? 'text-[28px]' : 'text-[30px]')}
+              className={cn(
+                'leading-[1.1] hyphens-auto md:text-[32px]',
+                back ? 'text-[28px]' : 'text-[30px]',
+              )}
             >
               {title}
             </h1>

@@ -1,7 +1,7 @@
 import { format } from 'date-fns'
 import { Repeat } from 'lucide-react'
 
-import { recurrenceLabel, type Completion } from '@/features/items'
+import { recurrenceLabel, returnsShort, type Completion } from '@/features/items'
 import type { List } from '@/features/lists'
 import { LIST_COLOR_BG } from '@/lib/listColors'
 import { cn } from '@/lib/utils'
@@ -39,7 +39,10 @@ export function CompletionMeta({
         </>
       ) : (
         <span className="truncate">
-          {item.dueAt ? `Vuelve el ${format(item.dueAt, 'EEEE d')}` : 'Hecha'} · {time}
+          {item.kind === 'shopping'
+            ? // Un pago (diseño 30, H2): «Pagado · vuelve el 15 dic».
+              ['Pagado', item.dueAt && returnsShort(item.dueAt)].filter(Boolean).join(' · ')
+            : `${item.dueAt ? `Vuelve el ${format(item.dueAt, 'EEEE d')}` : 'Hecha'} · ${time}`}
         </span>
       )}
     </p>

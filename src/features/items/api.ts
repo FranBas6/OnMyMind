@@ -20,6 +20,7 @@ import type {
   ItemPatch,
   ItemStatus,
   MovedItem,
+  Payment,
 } from './types'
 import type { NewItemDue } from './writtenDate'
 
@@ -489,6 +490,29 @@ export async function fetchCompletions(start: Date, end: Date): Promise<Completi
     doneAt: new Date(row.done_at),
     doneBy: row.done_by,
     occurrence: new Date(row.occurrence),
+    priceCents: row.price_cents,
+    currency: row.currency,
+  }))
+}
+
+/**
+ * Lo pagado en las compras de una lista (6.4), lo último primero: las veces de sus pagos que se
+ * repiten. RLS deja solo las de listas que ves. Hasta 500, que son años de recibos.
+ */
+export async function fetchListPayments(listId: string): Promise<Payment[]> {
+  const { data, error } = await supabase
+    .from('item_completions')
+    .select('id, item_id, done_at, done_by, price_cents, currency, item:items!inner(list_id, kind)')
+    .eq('item.list_id', listId)
+    .eq('item.kind', 'shopping')
+    .order('done_at', { ascending: false })
+    .limit(500)
+  if (error) throw error
+  return data.map((row) => ({
+    id: row.id,
+    itemId: row.item_id,
+    paidAt: new Date(row.done_at),
+    paidBy: row.done_by,
     priceCents: row.price_cents,
     currency: row.currency,
   }))

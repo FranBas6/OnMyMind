@@ -3,6 +3,7 @@ import { ITEM_TITLE_MAX_LENGTH } from './schemas'
 import { initialStatus, isActiveSublistStatus, isOutOfMind, STATUS_LABELS } from './status'
 import { withLinks } from './stores'
 import type { Item } from './types'
+import { monthlyText, paymentsLabel, paymentTotals } from './payments'
 
 /**
  * Lo que cuenta una lista o una sublista: lo pendiente, lo que ya está fuera de la cabeza y las
@@ -86,6 +87,12 @@ export function sublistMeta(sublist: SublistState, children: readonly Item[]): s
   const { pending } = countChildren(children)
   if (sublist.status === 'done') {
     return children.length > 0 ? `Hecha · ${children.length} dentro` : 'Hecha'
+  }
+  // Con pagos que se repiten (6.4, diseño 30, L2): «4 pagos · 43,98 €/mes».
+  const payments = paymentTotals(children)
+  if (payments.yearlyCents !== null) {
+    const content = `${paymentsLabel(payments.payments)} · ${monthlyText(payments.yearlyCents)}/mes`
+    return sublist.status === 'pending' ? content : `${content} · ${STATUS_LABELS[sublist.status]}`
   }
   const content =
     pending > 0

@@ -1,9 +1,13 @@
+import { Repeat } from 'lucide-react'
+
 import {
   checkboxState,
   FileMeta,
   hasThumb,
+  isPayment,
   ItemRowDotsMenu,
   LinkMeta,
+  RowPrice,
   RowThumb,
   RowTitle,
   rowHighlight,
@@ -15,7 +19,7 @@ import { cn } from '@/lib/utils'
 import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
 import { useItemPerson } from '@/features/sharing/hooks/useSharing'
 
-import { todayMeta, type TodayItem } from '../today'
+import { paymentTodayMeta, todayMeta, type TodayItem } from '../today'
 
 /**
  * Fila de Hoy (pantalla 7): la de tarea, con el checkbox en el color de su lista y la meta en
@@ -35,7 +39,13 @@ export function TodayRow({
   otherDay?: boolean
 }) {
   const actions = useItemActions()
-  const { overdue, detail } = todayMeta(item, now, actions.list.name, { otherDay })
+  // Un pago (6.4, diseño 30, H1): su línea, sin el chip de atrasada, y su precio a la derecha.
+  const payment = isPayment(item)
+    ? paymentTodayMeta(item, now, actions.list.name, { otherDay })
+    : null
+  const { overdue, detail } = payment
+    ? { overdue: null, detail: '' }
+    : todayMeta(item, now, actions.list.name, { otherDay })
   const thumb = hasThumb(item)
   // Una tarea de una lista compartida que añadió el otro, con su inicial (diseño 20, M6).
   const person = useItemPerson(item)
@@ -45,8 +55,12 @@ export function TodayRow({
       surfaceClassName={cn(
         'group relative flex min-h-14 animate-in items-start gap-3.5 rounded-[18px] border bg-card px-4 py-3.5 duration-200 fade-in hover:shadow-card md:grid md:items-center md:gap-4 md:rounded-2xl md:py-3 md:pr-3 md:pl-[18px]',
         thumb
-          ? 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto_32px]'
-          : 'md:grid-cols-[24px_minmax(0,1fr)_auto_32px]',
+          ? payment
+            ? 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto_auto_32px]'
+            : 'md:grid-cols-[24px_44px_minmax(0,1fr)_auto_32px]'
+          : payment
+            ? 'md:grid-cols-[24px_minmax(0,1fr)_auto_auto_32px]'
+            : 'md:grid-cols-[24px_minmax(0,1fr)_auto_32px]',
         overdue ? 'border-[1.5px] border-overdue-border' : 'border-border-soft hover:border-border',
         rowHighlight(actions, item),
       )}
@@ -55,6 +69,7 @@ export function TodayRow({
         state={checkboxState(item.status)}
         label={item.title}
         tone={actions.list.color}
+        shape={item.kind === 'shopping' ? 'square' : 'circle'}
         onToggle={() => {
           actions.toggle(item)
         }}
@@ -74,16 +89,36 @@ export function TodayRow({
               {overdue}
             </span>
           )}
-          {item.url && <LinkMeta url={item.url} item={item} />}
+          {item.url && !payment && <LinkMeta url={item.url} item={item} />}
           {detail && <span>{detail}</span>}
+          {payment && (
+            <>
+              {payment.route && <span>{payment.route} ·</span>}
+              <span
+                className={cn(
+                  payment.overdue ? 'text-error' : !otherDay && 'font-bold text-foreground',
+                )}
+              >
+                {payment.when}
+              </span>
+              {payment.repeat && (
+                <span className="flex items-center gap-1">
+                  <span aria-hidden>·</span>
+                  <Repeat aria-hidden className="size-3 shrink-0" strokeWidth={2.4} />
+                  {payment.repeat}
+                </span>
+              )}
+            </>
+          )}
           {item.files.length > 0 && (
             <span className="flex items-center gap-2">
-              {detail && <span aria-hidden>·</span>}
+              {(detail || payment) && <span aria-hidden>·</span>}
               <FileMeta item={item} />
             </span>
           )}
         </p>
       </div>
+      {payment && <RowPrice item={item} className="self-center md:w-full" />}
       {actions.isDesktop && <ItemRowDotsMenu item={item} />}
     </SwipeableRow>
   )

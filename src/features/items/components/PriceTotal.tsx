@@ -1,5 +1,6 @@
 import { formatCents } from '@/lib/money'
 
+import { monthlyText } from '../payments'
 import { othersLabel, type PriceTotals } from '../prices'
 
 /**
@@ -20,6 +21,24 @@ export function PriceTotal({ totals }: { totals: PriceTotals }) {
         {formatCents(totals.euros)}
       </p>
       {others && <p className="mt-1 text-xs text-subtle-foreground">{others}</p>}
+    </div>
+  )
+}
+
+/**
+ * El total de una lista o sublista con pagos que se repiten (diseño 30, L1): «AL MES» con lo de un
+ * mes en grande y, debajo, «527,76 € al año». Un pago anual cuenta su doceava parte al mes.
+ */
+export function MonthlyTotal({ yearlyCents }: { yearlyCents: number }) {
+  return (
+    <div className="shrink-0 text-right">
+      <p className="text-[11px] font-bold tracking-[0.08em] text-subtle-foreground uppercase">
+        Al mes
+      </p>
+      <p className="font-display text-[26px] leading-none font-extrabold tracking-[-0.03em] md:text-[28px]">
+        {monthlyText(yearlyCents)}
+      </p>
+      <p className="mt-1 text-xs text-subtle-foreground">{formatCents(yearlyCents)} al año</p>
     </div>
   )
 }
