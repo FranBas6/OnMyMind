@@ -17,6 +17,7 @@ import {
   isFinalStatus,
   isAutoPayment,
   isPayment,
+  isRecurringPayment,
   occurrence,
   occurrencesBetween,
   occursOn,
@@ -343,9 +344,21 @@ export function dayTense(day: Date, today: Date): DayTense {
   return days < 0 ? 'past' : days === 0 ? 'today' : 'future'
 }
 
+/**
+ * Un cobro de un pago que se repite en un día que viene (6.5): lo que se cobra solo y las veces
+ * siguientes de lo que se paga a mano. Es información, no algo que marcar: el próximo de lo que se
+ * paga a mano va en su lista, con su casilla.
+ */
+export interface TodayCharge {
+  item: TodayItem
+  list: List
+}
+
 export interface DayGroups {
   /** Sus eventos, también los que se repiten, como la «Agenda» de Hoy. */
   agenda: TodayEvent[]
+  /** Un día que viene: lo que se cobra ese día (Fran, 2026-11-16). */
+  charges: TodayCharge[]
   /** Un día que viene: lo que vence ese día, por listas. */
   sections: TodaySection[]
   /** Un día pasado: «Hecho ese día», lo terminado ese día de cualquier lista, lo último primero. */
@@ -394,6 +407,7 @@ export function groupDay(
   const tense = dayTense(day, today)
   const byId = new Map(lists.map((list) => [list.id, list]))
   const agenda: TodayEvent[] = []
+  const charges: TodayCharge[] = []
   const sections = new Map<string, TodaySection>()
   const done: TodayDone[] = []
   const noted: TodayNote[] = []
@@ -407,6 +421,8 @@ export function groupDay(
       }
       continue
     }
+    // Los cobros de ese día (6.5), todos los meses, como los eventos que se repiten.
+    if (tense !== 'past' && chargesOn(item, day)) charges.push({ item, list })
     if (item.kind === 'note') {
       if (tense === 'past' && isOnDay(item.createdAt, day)) noted.push({ item, list })
       continue
@@ -431,7 +447,19 @@ export function groupDay(
   done.sort(latestDone)
   noted.sort(latestNoted)
   agenda.sort(byTime(day))
-  return { agenda, sections: ordered, done, noted }
+  charges.sort((a, b) => a.list.position - b.list.position || a.item.position - b.item.position)
+  return { agenda, charges, sections: ordered, done, noted }
+}
+
+/**
+ * Si un pago que se repite se cobra ese día y va en «Cobros»: lo que se cobra solo, cualquier vez;
+ * lo que se paga a mano, las veces después de la próxima (la próxima va en su lista).
+ */
+function chargesOn(item: TodayItem, day: Date): boolean {
+  if (!isRecurringPayment(item) || isFinalStatus(item.status) || !showsInToday(item)) return false
+  const [at] = occurrencesBetween(item, day, addDays(startOfDay(day), 1))
+  if (!at) return false
+  return isAutoPayment(item) || !isOnDay(item.dueAt, at)
 }
 
 /**
@@ -461,6 +489,11 @@ export function markedDays(
         marked.add(dayKey(createdAt))
       }
       continue
+    }
+    // Los cobros que vienen (6.5): todas sus veces, desde hoy.
+    if (isRecurringPayment(item) && !isFinalStatus(item.status) && showsInToday(item)) {
+      const from = start > startOfDay(today) ? start : startOfDay(today)
+      for (const at of occurrencesBetween(item, from, end)) marked.add(dayKey(at))
     }
     const { completedAt, dueAt } = item
     if (DONE_STATUSES.has(item.status) && completedAt && completedAt < tomorrow) {

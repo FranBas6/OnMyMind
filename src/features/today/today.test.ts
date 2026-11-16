@@ -447,6 +447,35 @@ describe('groupDay', () => {
     expect(groups.noted.map(({ item }) => item.id)).toEqual(['lista', 'idea'])
   })
 
+  it('los cobros de ese día (6.5): todos los meses; el próximo de lo que se paga a mano, en su lista', () => {
+    // Hoy es el lunes 28 de septiembre: Youtube se cobra solo el 2; Spotify se paga a mano el 1.
+    const youtube = item('youtube', {
+      kind: 'shopping',
+      dueAt: new Date(2026, 9, 2),
+      recurrence: 'FREQ=MONTHLY',
+    })
+    const spotify = item('spotify', {
+      kind: 'shopping',
+      dueAt: thursday,
+      recurrence: 'FREQ=MONTHLY',
+      autoPay: false,
+    })
+    const items = [youtube, spotify]
+    const charges = (day: Date) =>
+      groupDay(items, lists, { day, today }).charges.map(({ item }) => item.id)
+    expect(charges(new Date(2026, 9, 2))).toEqual(['youtube'])
+    expect(charges(new Date(2026, 10, 2))).toEqual(['youtube'])
+    // El 1 de octubre, Spotify es lo que hay que pagar: en su lista, no en «Cobros».
+    expect(charges(thursday)).toEqual([])
+    expect(groupDay(items, lists, { day: thursday, today }).sections).toHaveLength(1)
+    expect(charges(new Date(2026, 10, 1))).toEqual(['spotify'])
+    // Ni antes de su primera vez ni en un día pasado.
+    expect(charges(at(2))).toEqual([])
+    const marked = markedDays(items, lists, { ...monthGrid(new Date(2026, 10, 1)), today })
+    expect(marked.has('2026-11-02')).toBe(true)
+    expect(marked.has('2026-11-01')).toBe(true)
+  })
+
   it('lo de una lista que ya no está (archivada) no sale', () => {
     const groups = groupDay([item('fuera', { listId: 'archivada', dueAt: thursday })], lists, {
       day: thursday,

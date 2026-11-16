@@ -237,6 +237,24 @@ describe('pagos que se repiten (6.4, diseño 30)', () => {
     })
   })
 
+  it('otro día: «Cobros», todos los meses, también lo que se cobra solo (6.5)', async () => {
+    const youtube = item('5a0c3e0e-1f7e-4d59-9a39-1c3b9f7a0c05', 'Youtube', {
+      kind: 'shopping',
+      dueAt: addDays(today, 3),
+      recurrence: 'FREQ=MONTHLY',
+      priceCents: 1599,
+      priceSource: 'manual',
+    })
+    vi.mocked(todayApi.fetchToday).mockResolvedValue([])
+    vi.mocked(todayApi.fetchDays).mockResolvedValue([{ ...youtube, parent: null }])
+    const day = addMonths(addDays(today, 3), 1)
+    renderAt(`/today?day=${format(day, 'yyyy-MM-dd')}`, [])
+    const charges = await screen.findByRole('list', { name: 'Cobros' })
+    expect(within(charges).getByText('Youtube')).toBeInTheDocument()
+    expect(within(charges).getByText('Se cobra solo')).toBeInTheDocument()
+    expect(within(charges).getByText('15,99 €')).toBeInTheDocument()
+  })
+
   it('Hoy: el cobro de hoy, con su precio (H1)', async () => {
     vi.mocked(todayApi.fetchToday).mockResolvedValue([{ ...spotify, parent: null }])
     renderAt('/today', [])

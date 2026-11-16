@@ -44,7 +44,7 @@ export async function fetchToday(now: Date): Promise<TodayItem[]> {
  * ese día»). También en peticiones separadas, por los índices.
  */
 export async function fetchDays(start: Date, end: Date): Promise<TodayItem[]> {
-  const [pending, done, events, notes] = await Promise.all([
+  const [pending, done, events, notes, payments] = await Promise.all([
     pendingDated()
       .gte('due_at', start.toISOString())
       .lt('due_at', end.toISOString())
@@ -53,8 +53,18 @@ export async function fetchDays(start: Date, end: Date): Promise<TodayItem[]> {
     doneBetween(start, end),
     upcomingEvents(start, end),
     notesBetween(start, end),
+    // Los pagos que se repiten, para sus cobros de esos días (6.5), aunque su próximo sea antes.
+    items()
+      .eq('kind', 'shopping')
+      .not('recurrence', 'is', null)
+      .is('completed_at', null)
+      .lt('due_at', end.toISOString()),
   ])
-  return rows(pending, done, events, notes)
+  // Un pago pendiente de ese mes llega dos veces: una basta.
+  const seen = new Set<string>()
+  return rows(pending, done, events, notes, payments).filter(
+    (item) => !seen.has(item.id) && Boolean(seen.add(item.id)),
+  )
 }
 
 /**

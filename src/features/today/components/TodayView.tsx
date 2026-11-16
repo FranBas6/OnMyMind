@@ -22,6 +22,7 @@ import {
   type TodayEvent,
 } from '../today'
 import { AgendaRow } from './AgendaRow'
+import { Charges } from './Charges'
 import { DayAside, DayStrip } from './DayCalendar'
 import { DoneSection, NotedSection } from './DayLog'
 import { TodayEmpty } from './TodayEmpty'
@@ -102,6 +103,7 @@ export function TodayView({ day, onSelectDay, openItemId, onOpenItem }: TodayVie
         ) : (
           other.groups &&
           (other.groups.agenda.length === 0 &&
+          other.groups.charges.length === 0 &&
           other.groups.sections.length === 0 &&
           other.groups.done.length === 0 &&
           other.groups.noted.length === 0 ? (
@@ -114,6 +116,7 @@ export function TodayView({ day, onSelectDay, openItemId, onOpenItem }: TodayVie
               {other.groups.sections.map((section) => (
                 <TodaySection key={section.list.id} section={section} now={today} otherDay />
               ))}
+              {other.groups.charges.length > 0 && <Charges charges={other.groups.charges} />}
               {other.groups.done.length > 0 && (
                 <DoneSection done={other.groups.done} tense="past" />
               )}
