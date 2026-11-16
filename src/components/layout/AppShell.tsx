@@ -8,12 +8,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 
 import { BottomNav } from './BottomNav'
-import {
-  LayoutWidthsContext,
-  MAX_APP_WIDTH,
-  SIDEBAR_WIDTH,
-  useLayoutWidthsState,
-} from './layoutWidths'
+import { LayoutWidthsContext, SIDEBAR_WIDTH, useLayoutWidthsState } from './layoutWidths'
 import { ResizeHandle } from './ResizeHandle'
 import { Sidebar } from './Sidebar'
 import { SidePanelContext } from './sidePanel'
@@ -24,15 +19,16 @@ interface AppShellProps {
 
 /**
  * Estructura de las pantallas privadas. Móvil (< 768 px): una columna y barra inferior fija.
- * Escritorio: sidebar (272 px, que se ensancha arrastrando su borde hasta 400) y el contenido, que
- * crece con la ventana hasta 1040 px (antes, 760 y 880 en las rutas `wide`; Fran, 2026-11-16). En
- * pantallas de más de 1760 px, la app entera se queda centrada y los paneles no se van a los bordes. Con `addBar`, el móvil deja sitio solo para la barra
+ * Escritorio: sidebar de 272 px, que se ensancha arrastrando su borde (Fran, 2026-11-16), y
+ * contenido centrado a 760 px (880 px si la ruta declara `staticData: { wide: true }`, como Inicio).
+ * Con `addBar`, el móvil deja sitio solo para la barra
  * (el detalle de lista pega su campo encima). Se pinta solo una de las dos
  * navegaciones para no duplicar enlaces en el DOM ni en el orden de tabulación. En escritorio hay
  * una tercera columna, vacía salvo cuando una pantalla abre ahí su panel lateral (`sidePanel.ts`).
  */
 export function AppShell({ children }: AppShellProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
+  const wide = useMatches({ select: (matches) => matches.some((match) => match.staticData.wide) })
   const addBar = useMatches({
     select: (matches) => matches.some((match) => match.staticData.addBar),
   })
@@ -47,33 +43,30 @@ export function AppShell({ children }: AppShellProps) {
     return (
       <LayoutWidthsContext value={widths}>
         <SidePanelContext value={panel}>
-          <div className="min-h-dvh bg-background text-foreground">
-            <div
-              className="mx-auto grid min-h-dvh"
-              style={{
-                maxWidth: MAX_APP_WIDTH,
-                gridTemplateColumns: `${String(widths.sidebar)}px minmax(0,1fr) auto`,
-              }}
-            >
-              <div className="sticky top-0 h-dvh">
-                <Sidebar />
-                <ResizeHandle
-                  label="Ancho de la barra lateral"
-                  edge="end"
-                  value={widths.sidebar}
-                  min={SIDEBAR_WIDTH.min}
-                  max={widths.sidebarMax}
-                  onChange={widths.setSidebar}
-                  onReset={() => {
-                    widths.setSidebar(SIDEBAR_WIDTH.initial)
-                  }}
-                />
-              </div>
-              <main className="min-w-0 px-12 py-9">
-                <div className="mx-auto w-full max-w-[1040px]">{children}</div>
-              </main>
-              <div ref={setPanel} className="sticky top-0 h-dvh" />
+          <div
+            className="grid min-h-dvh bg-background text-foreground"
+            style={{ gridTemplateColumns: `${String(widths.sidebar)}px minmax(0,1fr) auto` }}
+          >
+            <div className="sticky top-0 h-dvh">
+              <Sidebar />
+              <ResizeHandle
+                label="Ancho de la barra lateral"
+                edge="end"
+                value={widths.sidebar}
+                min={SIDEBAR_WIDTH.min}
+                max={widths.sidebarMax}
+                onChange={widths.setSidebar}
+                onReset={() => {
+                  widths.setSidebar(SIDEBAR_WIDTH.initial)
+                }}
+              />
             </div>
+            <main className="min-w-0 px-12 py-9">
+              <div className={cn('mx-auto w-full', wide ? 'max-w-[880px]' : 'max-w-[760px]')}>
+                {children}
+              </div>
+            </main>
+            <div ref={setPanel} className="sticky top-0 h-dvh" />
           </div>
         </SidePanelContext>
       </LayoutWidthsContext>

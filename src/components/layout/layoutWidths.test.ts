@@ -9,7 +9,7 @@ afterEach(() => {
 describe('el ancho de los paneles (layoutWidths.ts)', () => {
   it('entre su mínimo y su máximo, o el sitio que quede si es menos', () => {
     expect(clampWidth(100, SIDEBAR_WIDTH)).toBe(272)
-    expect(clampWidth(999, SIDEBAR_WIDTH)).toBe(400)
+    expect(clampWidth(999, SIDEBAR_WIDTH)).toBe(480)
     expect(clampWidth(300.4, SIDEBAR_WIDTH)).toBe(300)
     expect(clampWidth(700, PANEL_WIDTH, 500)).toBe(500)
     // Sin sitio, se queda en su mínimo: el contenido se estrecha antes que desaparecer el panel.
@@ -25,6 +25,6 @@ describe('el ancho de los paneles (layoutWidths.ts)', () => {
     localStorage.setItem(PANEL_WIDTH.key, 'ancho')
     expect(readWidth(PANEL_WIDTH)).toBe(420)
     localStorage.setItem(PANEL_WIDTH.key, '5000')
-    expect(readWidth(PANEL_WIDTH)).toBe(720)
+    expect(readWidth(PANEL_WIDTH)).toBe(960)
   })
 })

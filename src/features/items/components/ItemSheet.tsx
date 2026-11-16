@@ -85,7 +85,7 @@ function DesktopPanel({ item, ...props }: ItemDetailProps) {
       />
       <section
         aria-label={`Detalle de «${item.title}»`}
-        className="h-dvh w-full overflow-y-auto border-l border-border bg-card px-7 pt-6 pb-7 shadow-panel min-[1760px]:border-r"
+        className="h-dvh w-full overflow-y-auto border-l border-border bg-card px-7 pt-6 pb-7 shadow-panel"
       >
         <ItemDetail key={item.id} item={item} {...props} />
       </section>

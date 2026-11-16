@@ -336,7 +336,7 @@ export function DayAside({ selected, today, onSelect }: DayCalendarProps) {
   return (
     <aside
       aria-label="Calendario"
-      className="flex h-dvh w-[340px] flex-col gap-4 overflow-y-auto border-l border-border-soft bg-secondary px-6 py-9 min-[1760px]:border-r"
+      className="flex h-dvh w-[340px] flex-col gap-4 overflow-y-auto border-l border-border-soft bg-secondary px-6 py-9"
     >
       <MonthCalendar
         month={month}

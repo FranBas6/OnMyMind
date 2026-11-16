@@ -18,15 +18,13 @@ export interface WidthSpec {
  */
 export const SIDEBAR_WIDTH: WidthSpec = {
   min: 272,
-  max: 400,
+  max: 480,
   initial: 272,
   key: 'omm.layout.sidebar',
 }
-export const PANEL_WIDTH: WidthSpec = { min: 360, max: 720, initial: 420, key: 'omm.layout.panel' }
+export const PANEL_WIDTH: WidthSpec = { min: 360, max: 960, initial: 420, key: 'omm.layout.panel' }
 /** El contenido nunca baja de aquí: los paneles se quedan más estrechos antes. */
 export const MIN_MAIN_WIDTH = 560
-/** El ancho máximo de la app: en pantallas más anchas, todo junto y centrado. */
-export const MAX_APP_WIDTH = 1760
 
 /** Entre su mínimo y el menor de su máximo y el sitio que queda (`room`). */
 export function clampWidth(value: number, spec: WidthSpec, room: number = spec.max): number {
@@ -70,8 +68,8 @@ export interface LayoutWidths {
 }
 
 /**
- * Los dos anchos, ajustados a la ventana: el de la app (como mucho 1760 px) menos el otro panel y
- * el contenido mínimo. La barra lateral cuenta con el panel en su mínimo, que puede abrirse.
+ * Los dos anchos, ajustados a la ventana: lo que queda quitando el otro panel y el contenido
+ * mínimo. La barra lateral cuenta con el panel en su mínimo, que puede abrirse.
  */
 export function useLayoutWidthsState(): LayoutWidths {
   const [sidebarStored, setSidebarStored] = useState(() => readWidth(SIDEBAR_WIDTH))
@@ -79,9 +77,9 @@ export function useLayoutWidthsState(): LayoutWidths {
   const viewport = useSyncExternalStore(
     subscribeResize,
     () => window.innerWidth,
-    () => MAX_APP_WIDTH,
+    () => 1440,
   )
-  const app = Math.min(viewport, MAX_APP_WIDTH)
+  const app = viewport
   const sidebarMax = clampWidth(
     SIDEBAR_WIDTH.max,
     SIDEBAR_WIDTH,
