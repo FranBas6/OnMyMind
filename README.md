@@ -20,7 +20,7 @@
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-5A4BE6?style=flat-square&logo=typescript&logoColor=white" />
   <img alt="Supabase" src="https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-5A4BE6?style=flat-square&logo=supabase&logoColor=white" />
   <img alt="PWA" src="https://img.shields.io/badge/PWA-offline%20first-5A4BE6?style=flat-square&logo=pwa&logoColor=white" />
-  <img alt="Tests" src="https://img.shields.io/badge/tests-1%2C490%2B-5A4BE6?style=flat-square&logo=vitest&logoColor=white" />
+  <img alt="Tests" src="https://img.shields.io/badge/tests-1%2C600%2B-5A4BE6?style=flat-square&logo=vitest&logoColor=white" />
 </p>
 
 <p align="center">
@@ -29,8 +29,8 @@
     <img src=".github/readme/movil-inicio-claro.png" alt="Home: the inbox and the lists, each with its own icon" width="200" />
   </picture>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/readme/movil-compras-oscuro.png" />
-    <img src=".github/readme/movil-compras-claro.png" alt="A shopping list with its total and a price drop" width="200" />
+    <source media="(prefers-color-scheme: dark)" srcset=".github/readme/movil-pagos-oscuro.png" />
+    <img src=".github/readme/movil-pagos-claro.png" alt="Recurring payments: the monthly and yearly total, direct debits, one due today and a free trial" width="200" />
   </picture>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/readme/movil-hoy-oscuro.png" />
@@ -68,6 +68,12 @@ side by side. The app is in Spanish; it is the one I use every day.
 - 🛒 **Purchases with prices.** The price is read from the shop page when you paste the link, a
   product can have several shops, and the list adds it all up. Every morning prices are checked
   again on their own, the history is kept and you get a notification when one drops.
+- 💸 **Recurring payments.** Subscriptions and bills with their charge date: direct debits mark
+  themselves as paid on the day, and the ones you pay yourself show up in Today as a reminder.
+  What they add up to per month and per year, free trials with a reminder to cancel in time, and
+  every month's charges on the calendar.
+- 📎 **Documents.** PDF, Word, Excel or PowerPoint files on anything, so the invoice, the
+  contract or the ticket is always at hand.
 - 📅 **Today and the agenda.** What is due today across every list, any other day through its
   calendar, custom repeats, reminders and a morning summary. Events can also be subscribed to
   from the iPhone Calendar or Google Calendar.
@@ -97,6 +103,9 @@ side by side. The app is in Spanish; it is the one I use every day.
 - **Prices that update themselves.** A scheduled Edge Function (`pg_cron`) reads product pages
   in layers (JSON-LD, product and Open Graph meta tags, microdata), stores the history and sends Web Push
   notifications (VAPID) when a price drops.
+- **Charges that record themselves.** A PostgreSQL function scheduled with `pg_cron` records
+  each direct-debit charge with its date and moves the payment on to the next one, without anyone
+  opening the app; if months were missed it records each of them, and never the same one twice.
 - **Dates and repeats.** An in-house Spanish natural-language date parser that declines when it
   is unsure, and recurrence rules (RRULE) computed identically in TypeScript and SQL, checked
   against a shared set of cases.
@@ -114,8 +123,11 @@ side by side. The app is in Spanish; it is the one I use every day.
 - **Small, verified changes.** One branch per task, squashed into `develop`, with `main` only
   moving forward by fast-forward. A pre-push hook runs the type check, Deno checks for the Edge
   Functions, lint with zero warnings and the whole test suite: nothing red gets pushed.
-- **Tested at every level.** Over 1,140 app tests (Vitest and Testing Library, written from the
-  user's point of view), over 350 database tests (pgTAP) for RLS and SQL functions, and an
+- **Code that is easy to find your way around.** Organised by feature (lists, Today, sharing,
+  the private features…) and, for the largest one, items, by topic: notes, events, purchases,
+  payments, photos and documents, each with its logic, components and tests side by side.
+- **Tested at every level.** Over 1,200 app tests (Vitest and Testing Library, written from the
+  user's point of view), over 400 database tests (pgTAP) for RLS and SQL functions, and an
   end-to-end pass in a real browser, CSP included, before a session is closed. Every database
   change is a migration with its own tests.
 - **Tools.** Besides the usual ones, I use AI assistants (Claude Code and Claude Design) to
@@ -126,7 +138,7 @@ side by side. The app is in Spanish; it is the one I use every day.
 
 | Phases | ADRs | Migrations | Design iterations | App tests | Database tests |
 | :----: | :--: | :--------: | :---------------: | :-------: | :------------: |
-|   5    |  13  |     31     |        28         |   1,143   |      352       |
+|   6    |  13  |     34     |        30         |   1,210   |      412       |
 
 ## Tech stack
 

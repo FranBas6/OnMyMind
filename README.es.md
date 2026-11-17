@@ -20,7 +20,7 @@
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-estricto-5A4BE6?style=flat-square&logo=typescript&logoColor=white" />
   <img alt="Supabase" src="https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-5A4BE6?style=flat-square&logo=supabase&logoColor=white" />
   <img alt="PWA" src="https://img.shields.io/badge/PWA-sin%20conexi%C3%B3n-5A4BE6?style=flat-square&logo=pwa&logoColor=white" />
-  <img alt="Tests" src="https://img.shields.io/badge/tests-1.490%2B-5A4BE6?style=flat-square&logo=vitest&logoColor=white" />
+  <img alt="Tests" src="https://img.shields.io/badge/tests-1.600%2B-5A4BE6?style=flat-square&logo=vitest&logoColor=white" />
 </p>
 
 <p align="center">
@@ -29,8 +29,8 @@
     <img src=".github/readme/movil-inicio-claro.png" alt="Inicio: En mente y las listas con su icono" width="200" />
   </picture>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/readme/movil-compras-oscuro.png" />
-    <img src=".github/readme/movil-compras-claro.png" alt="Una lista de compras con su total y una bajada de precio" width="200" />
+    <source media="(prefers-color-scheme: dark)" srcset=".github/readme/movil-pagos-oscuro.png" />
+    <img src=".github/readme/movil-pagos-claro.png" alt="Pagos que se repiten: lo que suman al mes y al año, los que se cobran solos, uno por pagar hoy y una prueba gratis" width="200" />
   </picture>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/readme/movil-hoy-oscuro.png" />
@@ -68,6 +68,12 @@ compras y eventos. La uso a diario.
 - 🛒 **Compras con precio.** El precio sale de la web al pegar el enlace, con varias tiendas por
   compra y el total de la lista. Cada mañana se vuelve a mirar solo, se guarda su histórico y
   avisa si baja.
+- 💸 **Pagos que se repiten.** Suscripciones y recibos con su fecha de cobro: los domiciliados se
+  apuntan solos el día del cobro y los que pagas tú salen en Hoy para recordártelo. Lo que suman
+  al mes y al año, las pruebas gratis con aviso para darte de baja a tiempo y los cobros de cada
+  mes en el calendario.
+- 📎 **Documentos.** PDF, Word, Excel o PowerPoint en cualquier cosa, para tener a mano la
+  factura, el contrato o la entrada.
 - 📅 **Hoy y la agenda.** Lo que vence hoy de todas las listas y los eventos del día, cualquier
   otro día con su calendario, repeticiones a medida, avisos y un resumen por la mañana. Los
   eventos también en el Calendario del iPhone o en Google Calendar.
@@ -97,6 +103,9 @@ compras y eventos. La uso a diario.
 - **Precios que se miran solos.** Una Edge Function programada (`pg_cron`) lee las páginas de
   producto por capas (JSON-LD, las meta de producto y de Open Graph, microdatos), guarda el
   histórico y avisa con Web Push (VAPID) cuando un precio baja.
+- **Cobros que se apuntan solos.** Una función de PostgreSQL programada con `pg_cron` apunta
+  cada cobro domiciliado con su fecha y pasa el pago al siguiente, sin que nadie abra la app; si
+  lleva meses sin pasar, apunta cada uno de los que faltaban, y nunca dos veces el mismo.
 - **Fechas y repeticiones.** Un analizador propio de fechas escritas en español, que prefiere no
   entender a entender mal, y repeticiones (RRULE) calculadas igual en TypeScript y en SQL,
   comprobadas contra los mismos casos.
@@ -116,8 +125,11 @@ compras y eventos. La uso a diario.
 - **Cambios pequeños y comprobados.** Una rama por tarea, que entra en `develop` con squash; `main`
   solo avanza por fast-forward. Un hook antes de cada push pasa el typecheck, `deno check` de las
   Edge Functions, el lint sin un solo aviso y todos los tests: nada en rojo sale.
-- **Tests a todos los niveles.** Más de 1.140 tests de la app (Vitest y Testing Library, desde el
-  punto de vista de quien la usa), más de 350 de la base (pgTAP) para RLS y las funciones SQL, y
+- **Un código fácil de recorrer.** Organizado por funcionalidades (listas, Hoy, compartir, lo
+  privado…) y, la más grande, la de los ítems, por temas: notas, eventos, compras, pagos, fotos y
+  documentos, cada uno con su lógica, sus componentes y sus tests al lado.
+- **Tests a todos los niveles.** Más de 1.200 tests de la app (Vitest y Testing Library, desde el
+  punto de vista de quien la usa), más de 400 de la base (pgTAP) para RLS y las funciones SQL, y
   una pasada de punta a punta en un navegador de verdad, con la CSP, antes de cerrar cada
   sesión. Cada cambio en la base es una migración con sus tests.
 - **Herramientas.** Además de las de siempre, uso asistentes de IA (Claude Code y Claude Design)
@@ -128,7 +140,7 @@ compras y eventos. La uso a diario.
 
 | Fases | ADRs | Migraciones | Entregas de diseño | Tests de la app | Tests de la base |
 | :---: | :--: | :---------: | :----------------: | :-------------: | :--------------: |
-|   5   |  13  |     31      |         28         |      1.143      |       352        |
+|   6   |  13  |     34      |         30         |      1.210      |       412        |
 
 ## Con qué está hecha
 
