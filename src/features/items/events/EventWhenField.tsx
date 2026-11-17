@@ -19,7 +19,7 @@ import {
 } from './events'
 import type { Item, ItemPatch } from '../types'
 import { DueDatePicker } from '../dates/DueDatePicker'
-import { Row, SheetHeader, Value } from '../components/FieldRow'
+import { Row, SheetHeader, Value } from '../detail/FieldRow'
 import { RepeatField } from '../dates/RepeatField'
 
 /** La hora que se pone al quitar «Todo el día»: luego se cambia. */

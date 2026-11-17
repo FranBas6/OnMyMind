@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react'
 
 import { repeats } from '@/features/items/dates/recurrence'
 import { DueDatePicker } from '@/features/items/dates/DueDatePicker'
-import { SheetHeader } from '@/features/items/components/FieldRow'
+import { SheetHeader } from '@/features/items/detail/FieldRow'
 import type { Item } from '@/features/items/types'
 import { cn } from '@/lib/utils'
 

@@ -27,11 +27,11 @@ import {
   type NewItem,
 } from '../api'
 import { repeatOnDone } from '../dates/recurrence'
-import { buildMovePatch } from '../move'
+import { buildMovePatch } from '../move/move'
 import { schedulePhotoCleanup } from '../media/photoCleanup'
 import { isFinalStatus, isOutOfMind } from '../status'
 import { patchLink, regainCheapest, withLinks } from '../shopping/stores'
-import { countItems, type Counts } from '../sublists'
+import { countItems, type Counts } from '../sublists/sublists'
 import type {
   Completion,
   Payment,

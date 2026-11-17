@@ -3,13 +3,13 @@ import { useId, useState } from 'react'
 import { tallyLabel } from '@/features/lists'
 
 import { groupEvents, type EventGroup } from './events'
-import { filterEvents, type EventFilter } from '../filters'
-import { countItems } from '../sublists'
+import { filterEvents, type EventFilter } from '../list/filters'
+import { countItems } from '../sublists/sublists'
 import type { Item } from '../types'
 import { EventRow } from './EventRow'
-import { ItemRow } from '../components/ItemRow'
-import { EventsEmpty } from '../components/ItemsEmptyState'
-import { FoldHeading, OutOfMindSection } from '../components/OutOfMindSection'
+import { ItemRow } from '../rows/ItemRow'
+import { EventsEmpty } from '../list/ItemsEmptyState'
+import { FoldHeading, OutOfMindSection } from '../list/OutOfMindSection'
 
 interface EventsListProps {
   /** Lo que sigue en la cabeza (`splitItems`), con lo recién cancelado aún en su sitio. */

@@ -1,0 +1,279 @@
+import { format, isSameYear } from 'date-fns'
+import { ArrowRightLeft, ChevronDown } from 'lucide-react'
+import { useId, useState, type ReactNode } from 'react'
+
+import { formatCaptureAge } from '@/lib/dates/date'
+import { cn } from '@/lib/utils'
+import { personName } from '@/features/sharing/copy'
+import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
+import { useItemPerson } from '@/features/sharing/hooks/useSharing'
+
+import { doneMoment } from '../copy'
+import { eventWhen } from '../events/events'
+import { kindMark, proposedKind } from '../kind/kind'
+import { isPayment, isRecurringPayment } from '../payments/payments'
+import { itemPrice } from '../shopping/prices'
+import { isFinalStatus, STATUS_LABELS } from '../status'
+import type { Item, MovedItem } from '../types'
+import { ItemControl } from '../rows/ItemControl'
+import { rowHighlight, useItemActions } from '../workspace/itemActionsContext'
+import { RowTitle } from '../rows/RowTitle'
+import { SublistRow } from '../sublists/SublistRow'
+import { SwipeableRow } from '../rows/SwipeableRow'
+
+interface OutOfMindSectionProps {
+  items: readonly Item[]
+  /** Solo en «En mente»: lo que salió de ella hacia otra lista (diseño 05). */
+  moved?: readonly MovedItem[]
+  /** Abierta al entrar (cerrada en «En mente» cuando no queda nada pendiente, diseño 05 E3). */
+  defaultOpen: boolean
+  /** Con el filtro «Hechas» es lo único que se ve: siempre abierta, sin plegar. */
+  collapsible?: boolean
+  className?: string
+}
+
+type Entry =
+  { kind: 'done'; item: Item; at: number } | { kind: 'moved'; moved: MovedItem; at: number }
+
+/**
+ * «Fuera de la cabeza» (02 §Estados): lo terminado, al final, tachado y atenuado, con el
+ * contador. Tocar el checkbox lo devuelve a pendiente: hecho no es borrado; tocar la fila abre el
+ * detalle. En «En mente» también sale lo movido a otra lista, con el icono de mover y «movida a
+ * Casa · lunes». El diseño atenúa la fila entera al 60 %, pero así el título no llega a AA; se
+ * atenúa el checkbox y el título va en `subtle` (4,6:1).
+ */
+export function OutOfMindSection({
+  items,
+  moved = [],
+  defaultOpen,
+  collapsible = true,
+  className,
+}: OutOfMindSectionProps) {
+  const [open, setOpen] = useState(defaultOpen)
+  const listId = useId()
+  const expanded = !collapsible || open
+
+  // Lo hecho y lo movido, juntos y lo último primero (`items` ya viene así ordenado).
+  const entries: Entry[] = [
+    ...items.map((item, index) => ({
+      kind: 'done' as const,
+      item,
+      at: item.completedAt?.getTime() ?? -index,
+    })),
+    ...moved.map((entry) => ({
+      kind: 'moved' as const,
+      moved: entry,
+      at: entry.movedAt.getTime(),
+    })),
+  ].sort((a, b) => b.at - a.at)
+
+  const label = (
+    <>
+      Fuera de la cabeza{' '}
+      <span className="font-semibold text-subtle-foreground">· {entries.length}</span>
+    </>
+  )
+
+  return (
+    <section aria-label="Fuera de la cabeza" className={cn('flex flex-col', className)}>
+      <FoldHeading
+        open={collapsible ? open : undefined}
+        controls={listId}
+        onToggle={() => {
+          setOpen((current) => !current)
+        }}
+      >
+        {label}
+      </FoldHeading>
+      {expanded && (
+        <ul id={listId} className="flex flex-col gap-0.5">
+          {entries.map((entry) =>
+            entry.kind === 'done' ? (
+              entry.item.kind === 'sublist' ? (
+                <SublistRow key={entry.item.id} item={entry.item} done />
+              ) : (
+                <DoneRow key={entry.item.id} item={entry.item} showDoneAt />
+              )
+            ) : (
+              <MovedRow key={entry.moved.id} moved={entry.moved} />
+            ),
+          )}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+/**
+ * Cabecera de 36 px de una sección plegable de lo terminado, con el chevron que gira. Sin `open`,
+ * no se pliega: solo el texto.
+ */
+export function FoldHeading({
+  open,
+  controls,
+  onToggle,
+  children,
+}: {
+  open: boolean | undefined
+  controls: string
+  onToggle: () => void
+  children: ReactNode
+}) {
+  return (
+    <h2 className="text-sm tracking-normal text-muted-foreground">
+      {open === undefined ? (
+        <span className="flex h-9 items-center px-1">{children}</span>
+      ) : (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={controls}
+          onClick={onToggle}
+          className="flex h-9 items-center gap-1.5 rounded-lg px-1 outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <ChevronDown
+            aria-hidden
+            className={cn('size-3.5 transition-transform duration-200', !open && '-rotate-90')}
+            strokeWidth={2.2}
+          />
+          {children}
+        </button>
+      )}
+    </h2>
+  )
+}
+
+/** La fila baja de lo terminado (40 px): «Fuera de la cabeza» y lo hecho y apuntado de Hoy. */
+export const COMPACT_ROW =
+  'relative flex min-h-10 animate-in items-center gap-3.5 rounded-[18px] px-4 py-1 duration-200 fade-in md:gap-4 md:rounded-2xl md:px-[18px] md:py-2'
+
+/**
+ * Una fila terminada: tachada, con el control de su tipo atenuado; `aside`, a la derecha (en Hoy,
+ * su lista). Si no es del tipo por defecto de la lista, lleva su estado («Cable HDMI · Comprado»,
+ * diseño 12), porque el título solo no dice cómo terminó. Una compra con precio dice debajo cómo
+ * terminó y, si se compró, por cuánto («Comprado · 12 €», diseño 16, A1 y D2). `meta` es una
+ * línea más debajo (en «Hecho ese día» de Hoy, su lista); con `muted: false`, el control no se
+ * atenúa (diseño 17, C4). Con `showDoneAt` («Fuera de la cabeza» de una lista), dice cuándo se
+ * terminó: «hecha hoy · 14:05», «comprado ayer» (Fran, 2026-10-22).
+ */
+export function DoneRow({
+  item,
+  aside,
+  meta,
+  muted = true,
+  showDoneAt = false,
+  onToggle,
+}: {
+  item: Item
+  aside?: ReactNode
+  meta?: ReactNode
+  muted?: boolean
+  showDoneAt?: boolean
+  /** Lo que hace el checkbox, si no es devolverla a pendiente (la vez hecha de una que se repite). */
+  onToggle?: () => void
+}) {
+  const actions = useItemActions()
+  const price = itemPrice(item)
+  // Si lo completó el otro, su inicial (diseño 20, M2).
+  const person = useItemPerson(item)
+  // Un pago (diseño 30, L1, L2 y B3): «Pagado el 6 nov», «Marta pagó el 9 nov» o, si se repetía,
+  // «De baja desde el 2 oct», con el importe a la derecha.
+  const payment = paymentDoneLine(item, person ? personName(person.displayName) : null)
+  // La vez pagada de uno que se repite (Hoy, «Hecho hoy») sigue pendiente: su línea es otra.
+  const repeated = isRecurringPayment(item) && !isFinalStatus(item.status)
+  const paid = repeated
+    ? null
+    : (payment ??
+      (price
+        ? item.status === 'bought'
+          ? `${STATUS_LABELS[item.status]} · ${price.text}`
+          : STATUS_LABELS[item.status]
+        : null))
+  // Un evento dice cuándo fue o que se canceló (diseño 17, E1: «Sáb 12 sep · 21:30»).
+  const when =
+    item.kind === 'event'
+      ? item.status === 'cancelled'
+        ? STATUS_LABELS[item.status]
+        : item.dueAt && eventWhen(item)
+      : null
+  const status =
+    !paid && !when && kindMark(item.kind, proposedKind(actions.list))
+      ? STATUS_LABELS[item.status]
+      : null
+  // Cuándo, si la fila no lo dice ya (lo de un evento es cuándo fue); sin el verbo si ya dice
+  // cómo terminó («Comprado · 12 € · hoy · 14:05»).
+  const doneAt =
+    showDoneAt && item.kind !== 'event' && !payment
+      ? doneMoment(item, new Date(), { verb: !paid && !status })
+      : null
+  const line = [paid ?? when, doneAt].filter(Boolean).join(' · ')
+  return (
+    <SwipeableRow
+      item={item}
+      surfaceClassName={cn(COMPACT_ROW, 'bg-background hover:bg-fill', rowHighlight(actions, item))}
+    >
+      <ItemControl
+        item={item}
+        onToggle={() => {
+          if (onToggle) onToggle()
+          else actions.toggle(item)
+        }}
+        className={cn('z-10', muted && 'opacity-60')}
+      />
+      <div className="min-w-0 flex-1">
+        <RowTitle
+          item={item}
+          className="truncate text-[15px] font-normal text-subtle-foreground line-through"
+        >
+          {status ? `${item.title} · ${status}` : undefined}
+        </RowTitle>
+        {(line || person) && (
+          <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+            {person && <ItemPersonMark person={person} item={item} />}
+            {line}
+          </p>
+        )}
+        {meta}
+      </div>
+      {aside ??
+        (payment && price && (
+          <span className="shrink-0 font-display text-[15px] font-bold text-subtle-foreground">
+            {price.text}
+          </span>
+        ))}
+    </SwipeableRow>
+  )
+}
+
+/** Lo que salió de «En mente»: no se toca desde aquí (vive en su lista), solo se recuerda. */
+function MovedRow({ moved }: { moved: MovedItem }) {
+  return (
+    <li className={COMPACT_ROW}>
+      <span
+        aria-hidden
+        className="grid size-6 shrink-0 place-items-center rounded-full border border-border bg-fill opacity-60"
+      >
+        <ArrowRightLeft className="size-3 text-muted-foreground" strokeWidth={2.2} />
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[15px] text-subtle-foreground line-through">
+        {moved.title}
+      </span>
+      <span className="text-xs whitespace-nowrap text-subtle-foreground">
+        movida a {moved.listName} · {formatCaptureAge(moved.movedAt)}
+      </span>
+    </li>
+  )
+}
+
+/**
+ * La línea de un pago terminado (diseño 30): «Pagado el 6 nov» o, si lo pagó el otro, «Marta pagó
+ * el 9 nov»; uno que se repetía y se dio de baja, «De baja desde el 2 oct». `null` si no es un pago.
+ */
+function paymentDoneLine(item: Item, other: string | null): string | null {
+  if (!isPayment(item) || !item.completedAt) return null
+  const now = new Date()
+  const day = format(item.completedAt, isSameYear(item.completedAt, now) ? 'd MMM' : 'd MMM yyyy')
+  if (item.status === 'bought') return other ? `${other} pagó el ${day}` : `Pagado el ${day}`
+  if (item.status === 'discarded' && isRecurringPayment(item)) return `De baja desde el ${day}`
+  return null
+}

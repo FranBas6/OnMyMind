@@ -15,11 +15,11 @@ import { eventTime, isEarlierToday, isPastEvent, occurrence, shortDay } from './
 import { recurrenceLabel } from '../dates/recurrence'
 import { hasThumb } from '../media/photos'
 import type { Item } from '../types'
-import { rowHighlight, useItemActions } from '../components/itemActionsContext'
-import { ItemRowDotsMenu } from '../components/ItemRowMenu'
-import { FileMeta, RowThumb } from '../components/RowMedia'
-import { RowNotes, RowTitle } from '../components/RowTitle'
-import { SwipeableRow } from '../components/SwipeableRow'
+import { rowHighlight, useItemActions } from '../workspace/itemActionsContext'
+import { ItemRowDotsMenu } from '../rows/ItemRowMenu'
+import { FileMeta, RowThumb } from '../rows/RowMedia'
+import { RowNotes, RowTitle } from '../rows/RowTitle'
+import { SwipeableRow } from '../rows/SwipeableRow'
 
 const META = 'flex items-center gap-1 text-xs font-semibold whitespace-nowrap md:text-[13px]'
 

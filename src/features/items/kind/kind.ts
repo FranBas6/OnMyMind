@@ -4,7 +4,7 @@ import type { KindTotals, List } from '@/features/lists'
 import { formatDueDate } from '@/lib/dates/date'
 
 import { PRIORITY_LABELS } from '../fields'
-import { translateStatus } from '../move'
+import { translateStatus } from '../move/move'
 import { isFinalStatus, STATUS_LABELS } from '../status'
 import type { Item, ItemKind, ItemPatch } from '../types'
 

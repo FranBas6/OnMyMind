@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { repeats } from '@/features/items/dates/recurrence'
-import { Row, Value } from '@/features/items/components/FieldRow'
+import { Row, Value } from '@/features/items/detail/FieldRow'
 import type { Item } from '@/features/items/types'
 import { useOnline } from '@/hooks/useOnline'
 

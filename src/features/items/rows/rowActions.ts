@@ -1,0 +1,222 @@
+import { initialStatus, isFinalStatus, STATUSES_BY_KIND } from '../status'
+import type { ItemKind, ItemStatus } from '../types'
+
+export type RowActionId =
+  | 'progress'
+  | 'reopen'
+  | 'pause'
+  | 'resume'
+  | 'finish'
+  | 'chooseOne'
+  | 'choose'
+  | 'rename'
+  | 'duplicate'
+  | 'move'
+  | 'toTask'
+  | 'copyText'
+  | 'protect'
+  | 'unprotect'
+  | 'unsubscribe'
+  | 'delete'
+
+export interface RowAction {
+  id: RowActionId
+  label: string
+  /** Atajo de una letra del menú de escritorio (diseño 06, D8). */
+  shortcut: string
+  /** El estado al que lleva, si es una acción de estado. */
+  status?: ItemStatus
+  /** Lo que pasa, a la derecha en la hoja de móvil («Deja de salir en Hoy», diseño 12, S4). */
+  hint?: string
+  /** Empieza un grupo nuevo, tras un filete (en la sublista: estado · edición · borrar). */
+  separated?: boolean
+  /** Resaltada en la hoja de móvil, con una línea debajo que explica qué pasa («Elegir esta», A4). */
+  highlight?: { note: string }
+  /** Se ve en gris, sin poderse usar, con su porqué debajo («Proteger» en una compartida, C9). */
+  disabled?: { note: string }
+}
+
+/**
+ * Lo de proteger una nota (5.7, diseño 26): protegida, o si se puede y qué falta. `needsKey`: aún no
+ * hay clave privada («crea tu clave»); `blocked`: por qué no se puede (compartida, con fotos).
+ */
+export type Protection =
+  { protected: true } | { protected: false; needsKey: boolean; blocked: string | null }
+
+/** Lo que cambia el menú en una sublista «para elegir una» y en sus opciones (5.1, diseño 24). */
+export interface RowActionsContext {
+  /** La sublista es «para elegir una»: «Dejar de elegir una» en vez de «Elegir una». */
+  chooseOne?: boolean
+  /**
+   * El ítem es una opción en juego de una sublista «para elegir una»; `chosen`, si ya es la elegida
+   * (entonces se quita la elección).
+   */
+  option?: { note: string; chosen: boolean }
+  /** En una nota: si está protegida o si se puede proteger (5.7). */
+  protection?: Protection
+  /**
+   * Una compra con fecha, un pago (6.4, diseño 30): «Pagado» en vez de «Comprado». Si se repite,
+   * `returns` dice cuándo vuelve al pagarlo («vuelve el 3 ene») y el menú es el suyo (B1).
+   */
+  payment?: { recurring: boolean; returns: string | null }
+}
+
+/** Lo que explica la hoja bajo «Darse de baja» (diseño 30, B1). */
+export const UNSUBSCRIBE_NOTE =
+  'Darse de baja la quita de los totales y la deja en «Fuera de la cabeza» con sus pagos. Borrar la quita del todo.'
+
+const FINISH_LABEL: Record<ItemKind, string> = {
+  note: 'Hecha',
+  task: 'Hecha',
+  shopping: 'Comprado',
+  event: 'Cancelado',
+  sublist: 'Hecha',
+}
+
+const REOPEN_LABEL: Record<ItemKind, string> = {
+  note: 'Marcar pendiente',
+  task: 'Marcar pendiente',
+  shopping: 'Marcar pendiente',
+  event: 'Marcar próximo',
+  sublist: 'Marcar pendiente',
+}
+
+/**
+ * Acciones del menú de una fila (diseño 06, T9 y D8), la alternativa accesible a deslizar. En
+ * tareas, la primera alterna «Marcar en curso» y «Marcar pendiente» según el estado; después
+ * «Hecha» (o el final del tipo) si aún no lo está, «Mover a…» y «Borrar». La sublista (diseño 12,
+ * S4) ordena estado (con «Pausar» o «Reanudar», que la deja en curso), edición («Renombrar»,
+ * «Duplicar», «Mover a…») y «Borrar».
+ */
+export function rowActions(
+  kind: ItemKind,
+  status: ItemStatus,
+  context: RowActionsContext = {},
+): RowAction[] {
+  if (kind === 'sublist') return sublistActions(status, context.chooseOne ?? false)
+  if (kind === 'note') return noteActions(context)
+
+  const actions: RowAction[] = []
+  // Una opción se elige arriba del todo (A4). Elegir solo la marca: comprarla o hacerla va con
+  // las acciones de siempre (Fran, 2026-10-11).
+  const { option } = context
+  if (option) {
+    actions.push(
+      option.chosen
+        ? { id: 'choose', label: 'Quitar elección', shortcut: 'L' }
+        : { id: 'choose', label: 'Elegir esta', shortcut: 'L', highlight: { note: option.note } },
+    )
+  }
+  const initial = initialStatus(kind)
+  const final = STATUSES_BY_KIND[kind].find(isFinalStatus) ?? initial
+  const { payment } = context
+
+  // Un pago que se repite (B1): pagarlo (y cuándo vuelve), moverlo, darse de baja o borrarlo.
+  if (payment?.recurring && status === initial) {
+    actions.push({
+      id: 'finish',
+      label: 'Pagado',
+      shortcut: 'H',
+      status: final,
+      ...(payment.returns && { hint: payment.returns }),
+    })
+    actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })
+    actions.push({
+      id: 'unsubscribe',
+      label: 'Darse de baja',
+      shortcut: 'B',
+      status: 'discarded',
+      hint: 'deja de contar',
+      highlight: { note: UNSUBSCRIBE_NOTE },
+    })
+    actions.push({ id: 'delete', label: 'Borrar', shortcut: '⌫' })
+    return actions
+  }
+
+  if (kind === 'task' && status === 'pending') {
+    actions.push({ id: 'progress', label: 'Marcar en curso', shortcut: 'E', status: 'in_progress' })
+  } else if (status !== initial) {
+    actions.push({ id: 'reopen', label: REOPEN_LABEL[kind], shortcut: 'E', status: initial })
+  }
+  // La nota no se marca hecha (5.3): no tiene estado final.
+  if (!isFinalStatus(status) && isFinalStatus(final)) {
+    const label = payment && final === 'bought' ? 'Pagado' : FINISH_LABEL[kind]
+    actions.push({ id: 'finish', label, shortcut: 'H', status: final })
+  }
+  actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })
+  actions.push({ id: 'delete', label: 'Borrar', shortcut: '⌫' })
+  return actions
+}
+
+/**
+ * La nota no tiene estado (diseño 25, B11b): «Pasar a tarea», que le da casilla, «Mover a…»,
+ * «Copiar el texto» y «Borrar». En una sublista «para elegir una», «Elegir esta» va arriba. Antes
+ * de todo, «Proteger» (diseño 26, C6), en gris con su porqué si no se puede. Protegida, solo
+ * «Quitar la protección», «Mover a…» y «Borrar»: su texto se copia desde la ficha desbloqueada.
+ */
+function noteActions({ option, protection }: RowActionsContext): RowAction[] {
+  if (protection?.protected) {
+    return [
+      { id: 'unprotect', label: 'Quitar la protección', shortcut: 'P' },
+      { id: 'move', label: 'Mover a…', shortcut: 'M' },
+      { id: 'delete', label: 'Borrar', shortcut: '⌫' },
+    ]
+  }
+  const actions: RowAction[] = []
+  if (option) {
+    actions.push(
+      option.chosen
+        ? { id: 'choose', label: 'Quitar elección', shortcut: 'L' }
+        : { id: 'choose', label: 'Elegir esta', shortcut: 'L', highlight: { note: option.note } },
+    )
+  }
+  if (protection) {
+    actions.push({
+      id: 'protect',
+      label: 'Proteger',
+      shortcut: 'P',
+      ...(protection.needsKey && !protection.blocked && { hint: 'crea tu clave' }),
+      ...(protection.blocked !== null && { disabled: { note: protection.blocked } }),
+    })
+  }
+  actions.push({ id: 'toTask', label: 'Pasar a tarea', shortcut: 'T', hint: 'tendrá casilla' })
+  actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })
+  actions.push({ id: 'copyText', label: 'Copiar el texto', shortcut: 'C' })
+  actions.push({ id: 'delete', label: 'Borrar', shortcut: '⌫' })
+  return actions
+}
+
+function sublistActions(status: ItemStatus, chooseOne: boolean): RowAction[] {
+  const actions: RowAction[] = []
+  if (status === 'pending') {
+    actions.push({ id: 'progress', label: 'Marcar en curso', shortcut: 'E', status: 'in_progress' })
+  } else if (status !== 'paused') {
+    actions.push({ id: 'reopen', label: 'Marcar pendiente', shortcut: 'E', status: 'pending' })
+  }
+  if (status === 'pending' || status === 'in_progress') {
+    const hint = 'Deja de salir en Hoy'
+    actions.push({ id: 'pause', label: 'Pausar', shortcut: 'P', status: 'paused', hint })
+  }
+  if (status === 'paused') {
+    actions.push({ id: 'resume', label: 'Reanudar', shortcut: 'P', status: 'in_progress' })
+  }
+  if (status !== 'done') {
+    actions.push({ id: 'finish', label: 'Hecha', shortcut: 'H', status: 'done' })
+  }
+  // «Para elegir una» (5.1, diseño 24, A1): se activa y se quita aquí.
+  actions.push(
+    chooseOne
+      ? {
+          id: 'chooseOne',
+          label: 'Dejar de elegir una',
+          shortcut: 'L',
+          hint: 'vuelve a sumar todo',
+        }
+      : { id: 'chooseOne', label: 'Elegir una', shortcut: 'L', hint: 'cuenta la más barata' },
+  )
+  actions.push({ id: 'rename', label: 'Renombrar', shortcut: 'R', separated: true })
+  actions.push({ id: 'duplicate', label: 'Duplicar', shortcut: 'D' })
+  actions.push({ id: 'move', label: 'Mover a…', shortcut: 'M' })
+  actions.push({ id: 'delete', label: 'Borrar', shortcut: '⌫' })
+  return actions
+}

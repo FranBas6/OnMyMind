@@ -7,12 +7,12 @@ import { cn } from '@/lib/utils'
 import { noteBody } from './noteText'
 import { hasThumb } from '../media/photos'
 import type { Item } from '../types'
-import { ItemControl } from '../components/ItemControl'
-import { rowHighlight, useItemActions } from '../components/itemActionsContext'
-import { ItemRowDotsMenu } from '../components/ItemRowMenu'
-import { FileMeta, LinkMeta, RowThumb } from '../components/RowMedia'
-import { RowNotes, RowTitle } from '../components/RowTitle'
-import { SwipeableRow } from '../components/SwipeableRow'
+import { ItemControl } from '../rows/ItemControl'
+import { rowHighlight, useItemActions } from '../workspace/itemActionsContext'
+import { ItemRowDotsMenu } from '../rows/ItemRowMenu'
+import { FileMeta, LinkMeta, RowThumb } from '../rows/RowMedia'
+import { RowNotes, RowTitle } from '../rows/RowTitle'
+import { SwipeableRow } from '../rows/SwipeableRow'
 
 /**
  * La fila de una nota (diseño 25, B1, B1b y D1), en cualquier lista. En el sitio de la casilla, la

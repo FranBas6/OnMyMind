@@ -30,8 +30,8 @@ import {
   type Weekday,
 } from './recurrence'
 import type { Item, ItemPatch } from '../types'
-import { Row, SheetHeader } from '../components/FieldRow'
-import { SegmentedControl } from '../components/SegmentedControl'
+import { Row, SheetHeader } from '../detail/FieldRow'
+import { SegmentedControl } from '../detail/SegmentedControl'
 
 const MAX_INTERVAL = 99
 

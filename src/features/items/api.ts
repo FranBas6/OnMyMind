@@ -7,7 +7,7 @@ import type { Database } from '@/lib/supabase/database.types'
 import type { Positioned } from '@/lib/reorder'
 import { supabase } from '@/lib/supabase/client'
 
-import type { MovePatch } from './move'
+import type { MovePatch } from './move/move'
 import { fieldsFor, ITEM_COLUMNS, itemTitleSchema, mapItemRow } from './schemas'
 import type {
   Completion,
@@ -22,7 +22,7 @@ import type {
   MovedItem,
   Payment,
 } from './types'
-import type { NewItemDue } from './writtenDate'
+import type { NewItemDue } from './add/writtenDate'
 
 type ItemUpdate = Database['public']['Tables']['items']['Update']
 

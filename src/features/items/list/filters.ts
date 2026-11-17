@@ -1,0 +1,211 @@
+import { subDays } from 'date-fns'
+
+import {
+  counterLabel,
+  doneLabel,
+  NEW_LIST_LABEL,
+  notesLabel,
+  tallyLabel,
+  type ListKind,
+  type ListStyle,
+  type Tally,
+} from '@/features/lists'
+import type { InboxSort } from '@/features/profile/schemas'
+
+import { isEarlierToday, isPastEvent } from '../events/events'
+import { isOutOfMind } from '../status'
+import { countItems, openSublistsLabel } from '../sublists/sublists'
+import type { Item } from '../types'
+
+/** Filtro por estado de las listas normales: todo, lo pendiente o lo que ya está fuera. */
+export type StatusFilter = 'all' | 'open' | 'closed'
+/** Filtro de «En mente», por antigüedad (diseño 05): lo que pesa es lo que lleva tiempo ahí. */
+export type AgeFilter = 'all' | 'week' | 'older'
+/**
+ * Orden de «En mente» (diseño 14, E2): por fecha de captura o «A mi manera» (a mano, por
+ * `position`). Se recuerda en la cuenta (`settings.inbox_sort`).
+ */
+export type SortOrder = InboxSort
+
+export interface FilterOption<T extends string> {
+  value: T
+  label: string
+}
+
+const OPEN_CLOSED_LABELS: Record<ListStyle, [open: string, closed: string]> = {
+  inbox: ['Pendientes', 'Hechas'],
+  list: ['Pendientes', 'Hechas'],
+  agenda: ['Próximos', 'Pasados'],
+}
+
+/** «Todas / Pendientes / Hechas», con las etiquetas de la lista (02 §Estados; 5.3, comunes). */
+export function statusFilterOptions(style: ListStyle): FilterOption<StatusFilter>[] {
+  const [open, closed] = OPEN_CLOSED_LABELS[style]
+  return [
+    { value: 'all', label: 'Todas' },
+    { value: 'open', label: open },
+    { value: 'closed', label: closed },
+  ]
+}
+
+export const AGE_FILTER_OPTIONS: readonly FilterOption<AgeFilter>[] = [
+  { value: 'all', label: 'Todas' },
+  { value: 'week', label: 'Esta semana' },
+  { value: 'older', label: 'Antiguas' },
+]
+
+/** Las opciones del menú de ordenar (E2) y el texto corto del botón en escritorio (D7). */
+export const SORT_OPTIONS: readonly { value: SortOrder; label: string; short: string }[] = [
+  { value: 'newest', label: 'Más reciente primero', short: 'Más reciente' },
+  { value: 'oldest', label: 'Más antigua primero', short: 'Más antigua' },
+  { value: 'manual', label: 'A mi manera', short: 'A mi manera' },
+]
+
+/** Días que una captura cuenta como «de esta semana» (los siete últimos, no la semana natural). */
+const RECENT_DAYS = 7
+
+/** Si una captura es de los siete últimos días. */
+export function isRecent(item: Item, now: Date = new Date()): boolean {
+  return item.createdAt >= subDays(now, RECENT_DAYS)
+}
+
+export function matchesAge(item: Item, filter: AgeFilter, now: Date = new Date()): boolean {
+  if (filter === 'all') return true
+  return filter === 'week' ? isRecent(item, now) : !isRecent(item, now)
+}
+
+export interface SplitItems {
+  /** Lo que sigue en la cabeza, en el orden de la lista. */
+  active: Item[]
+  /** «Fuera de la cabeza»: lo terminado, lo último primero. */
+  outOfMind: Item[]
+}
+
+interface SplitOptions {
+  now?: Date
+  /**
+   * Ítems recién terminados que se quedan un momento en su sitio para que se vea el check antes
+   * de que bajen a «Fuera de la cabeza» (06 §Interacción: 400 ms).
+   */
+  lingering?: ReadonlySet<string>
+  /** Solo en «En mente», que se ordena por fecha de captura o a mano. */
+  sort?: SortOrder
+}
+
+/** El orden de una lista: `position` y, a igualdad, lo más antiguo antes. */
+export const byPosition = (a: Item, b: Item) =>
+  a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime()
+const byCreated = (order: Exclude<SortOrder, 'manual'>) => (a: Item, b: Item) =>
+  order === 'newest'
+    ? b.createdAt.getTime() - a.createdAt.getTime()
+    : a.createdAt.getTime() - b.createdAt.getTime()
+/** Lo último que salió de la cabeza, primero. Un evento pasado no tiene `completedAt`: su fecha. */
+const outOfMindAt = (item: Item) => (item.completedAt ?? item.dueAt ?? item.createdAt).getTime()
+
+/**
+ * Separa los ítems de una lista en lo pendiente y «Fuera de la cabeza». Las listas normales van
+ * por `position`; «En mente», por la fecha de captura (la más reciente arriba, como su tarjeta) o,
+ * con «A mi manera», también por `position`.
+ */
+export function splitItems(items: readonly Item[], kind: ListKind, options: SplitOptions = {}) {
+  const { now = new Date(), lingering, sort = 'newest' } = options
+  const active: Item[] = []
+  const outOfMind: Item[] = []
+  for (const item of items) {
+    if (isOutOfMind(item, now) && !lingering?.has(item.id)) outOfMind.push(item)
+    else active.push(item)
+  }
+  active.sort(kind === 'inbox' && sort !== 'manual' ? byCreated(sort) : byPosition)
+  outOfMind.sort((a, b) => outOfMindAt(b) - outOfMindAt(a))
+  return { active, outOfMind } satisfies SplitItems
+}
+
+/**
+ * Subtítulo del detalle mientras se cargan los ítems, con los contadores de la lista: «4 pendientes
+ * · 3 notas · 2 hechas» y, sin nada, «Lista recién creada» (diseño 25, B5). La inbox usa su
+ * contador («5 cosas sin ordenar»), que cuenta también las notas.
+ */
+export function detailSummary(style: ListStyle, tally: Tally): string {
+  return tallyLabel(style, tally, { withDone: true })
+}
+
+/**
+ * Subtítulo de una lista con sus ítems ya cargados (5.5, diseño 25). Cuenta como la vista
+ * `list_counters` (`countItems`): lo de dentro de las sublistas activas suma y la sublista en sí
+ * no. Lo pendiente y las notas y, detrás, lo hecho: «4 pendientes · 3 notas · 2 hechas». Con
+ * sublistas abiertas, en vez de lo hecho dice cuántas hay: «9 pendientes · 3 sublistas» (diseño 12,
+ * S1). En «En mente», las notas también están sin ordenar (5.3).
+ */
+export function listSummary(style: ListStyle, items: readonly Item[]): string {
+  const counts = countItems(items)
+  if (style === 'inbox' || items.length === 0) return detailSummary(style, counts)
+  const sublists = openSublistsLabel(items)
+  if (!sublists) return tallyLabel(style, counts, { withDone: true, empty: counterLabel(style, 0) })
+  return [tallyLabel(style, { ...counts, done: 0 }, { empty: '' }), sublists]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/**
+ * Subtítulo de una lista con eventos (diseño 25, B10 y D5), en sus dos vistas: los eventos que
+ * quedan (también los que aún no tienen día, como cuenta su tarjeta), lo demás pendiente y las
+ * notas, «3 próximos · 1 pendiente · 1 nota», y sus sublistas abiertas. Si no queda nada de eso, lo
+ * pasado («2 pasados»); sin nada, «Lista recién creada».
+ */
+export function agendaSummary(items: readonly Item[], now: Date = new Date()): string {
+  if (items.length === 0) return NEW_LIST_LABEL
+  const all = countItems(items, now)
+  const others = countItems(
+    items.filter((item) => item.kind !== 'event'),
+    now,
+  )
+  const upcoming = all.pending - others.pending
+  const parts: string[] = []
+  if (upcoming > 0) parts.push(counterLabel('agenda', upcoming))
+  if (others.pending > 0) parts.push(counterLabel('list', others.pending))
+  if (all.notes > 0) parts.push(notesLabel(all.notes))
+  const sublists = openSublistsLabel(items)
+  if (sublists) parts.push(sublists)
+  if (parts.length === 0) parts.push(doneLabel('agenda', all.done))
+  return parts.join(' · ')
+}
+
+/**
+ * Filtro de una lista de eventos (diseño 17, E1–E5): todo, lo que viene, lo que ya pasó (también lo
+ * de hoy cuya hora ya pasó) y lo cancelado.
+ */
+export type EventFilter = 'all' | 'upcoming' | 'past' | 'cancelled'
+
+export const EVENT_FILTER_OPTIONS: readonly FilterOption<EventFilter>[] = [
+  { value: 'all', label: 'Todos' },
+  { value: 'upcoming', label: 'Próximos' },
+  { value: 'past', label: 'Pasados' },
+  { value: 'cancelled', label: 'Cancelados' },
+]
+
+/** Un evento que ya pasó, o de hoy cuya hora ya pasó: lo del filtro «Pasados» (E3). */
+function isGone(item: Item, now: Date): boolean {
+  return item.status !== 'cancelled' && (isPastEvent(item, now) || isEarlierToday(item, now))
+}
+
+/**
+ * Los eventos de cada filtro (E1–E5). «Próximos» es lo que tiene día y aún no ha llegado; lo sin
+ * fecha solo sale en «Todos», arriba.
+ */
+export function filterEvents(
+  items: readonly Item[],
+  filter: Exclude<EventFilter, 'all'>,
+  now: Date = new Date(),
+): Item[] {
+  const events = items.filter((item) => item.kind === 'event')
+  switch (filter) {
+    case 'upcoming':
+      return events.filter(
+        (item) => item.status !== 'cancelled' && item.dueAt !== null && !isGone(item, now),
+      )
+    case 'past':
+      return events.filter((item) => isGone(item, now))
+    case 'cancelled':
+      return events.filter((item) => item.status === 'cancelled')
+  }
+}
