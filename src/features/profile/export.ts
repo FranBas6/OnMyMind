@@ -1,8 +1,8 @@
 import { format } from 'date-fns'
 
-import { recurrenceLabel } from '@/features/items/recurrence'
+import { recurrenceLabel } from '@/features/items/dates/recurrence'
 import { PRIORITY_LABELS } from '@/features/items/fields'
-import { KIND_LABELS } from '@/features/items/kind'
+import { KIND_LABELS } from '@/features/items/kind/kind'
 import { STATUS_LABELS } from '@/features/items/status'
 import type { Item } from '@/features/items/types'
 import type { List } from '@/features/lists/types'

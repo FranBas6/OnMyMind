@@ -11,7 +11,7 @@ import {
   parseRule,
   weekdayOf,
   WEEKDAYS,
-} from '@/features/items/recurrence'
+} from '@/features/items/dates/recurrence'
 import * as listsApi from '@/features/lists/api'
 import type { List } from '@/features/lists'
 import * as todayApi from '@/features/today/api'

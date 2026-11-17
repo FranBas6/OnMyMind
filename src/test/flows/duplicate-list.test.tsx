@@ -3,8 +3,8 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import * as files from '@/features/items/files'
-import * as photos from '@/features/items/photos'
+import * as files from '@/features/items/media/files'
+import * as photos from '@/features/items/media/photos'
 import * as api from '@/features/lists/api'
 import type { List } from '@/features/lists'
 import * as sharingApi from '@/features/sharing/api'
@@ -12,11 +12,11 @@ import { queryKeys } from '@/lib/query/queryKeys'
 import { fakeSession, renderRoute } from '@/test/render-route'
 
 vi.mock('@/features/lists/api')
-vi.mock('@/features/items/files', async (importOriginal) => ({
+vi.mock('@/features/items/media/files', async (importOriginal) => ({
   ...(await importOriginal<typeof files>()),
   copyItemFile: vi.fn(),
 }))
-vi.mock('@/features/items/photos', async (importOriginal) => ({
+vi.mock('@/features/items/media/photos', async (importOriginal) => ({
   ...(await importOriginal<typeof photos>()),
   copyItemPhoto: vi.fn(),
 }))

@@ -1,7 +1,7 @@
 import { addDays, format } from 'date-fns'
 import { describe, expect, it } from 'vitest'
 
-import { shortDay as appShortDay } from '@/features/items/events'
+import { shortDay as appShortDay } from '../../../src/features/items/events/events'
 import { parsePush } from '@/sw/push'
 
 import {

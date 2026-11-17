@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils'
 import { useSwipe } from '../hooks/useSwipe'
 import { LEFT_OPEN_PX, rightActions, rightStage, type SwipeStatusAction } from '../swipe'
 import type { Item } from '../types'
-import { isPayment } from '../payments'
+import { isPayment } from '../payments/payments'
 import { useItemActions } from './itemActionsContext'
 import { LiftedRowContext, useRowDrag, type RowDrag } from './rowDragContext'
 

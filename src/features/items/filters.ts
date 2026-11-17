@@ -12,7 +12,7 @@ import {
 } from '@/features/lists'
 import type { InboxSort } from '@/features/profile/schemas'
 
-import { isEarlierToday, isPastEvent } from './events'
+import { isEarlierToday, isPastEvent } from './events/events'
 import { isOutOfMind } from './status'
 import { countItems, openSublistsLabel } from './sublists'
 import type { Item } from './types'

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as itemsApi from '@/features/items/api'
 import type { Item } from '@/features/items'
 import type { ItemFile } from '@/features/items/types'
-import * as files from '@/features/items/files'
+import * as files from '@/features/items/media/files'
 import * as listsApi from '@/features/lists/api'
 import type { List } from '@/features/lists'
 import { queryKeys } from '@/lib/query/queryKeys'
@@ -13,7 +13,7 @@ import { fakeSession, renderRoute } from '@/test/render-route'
 
 vi.mock('@/features/items/api')
 vi.mock('@/features/lists/api')
-vi.mock('@/features/items/files', async (importOriginal) => ({
+vi.mock('@/features/items/media/files', async (importOriginal) => ({
   ...(await importOriginal<typeof files>()),
   uploadItemFile: vi.fn(),
   signedFileUrls: vi.fn(),

@@ -22,8 +22,8 @@ import { queryKeys } from '@/lib/query/queryKeys'
 import { showUndoToast } from '@/lib/undoToast'
 
 import { chosenLabel, isChoosing } from '../chooseOne'
-import { changeKindPatch, kindChangedMessage, revertKindChange } from '../kind'
-import { noteBody, noteText } from '../noteText'
+import { changeKindPatch, kindChangedMessage, revertKindChange } from '../kind/kind'
+import { noteBody, noteText } from '../notes/noteText'
 import {
   useDeleteItem,
   useInsertItems,
@@ -32,8 +32,8 @@ import {
   useUndoRepeat,
   useUpdateItem,
 } from '../hooks/useItemMutations'
-import { isRecurringPayment, paidToast } from '../payments'
-import { repeatOnDone } from '../recurrence'
+import { isRecurringPayment, paidToast } from '../payments/payments'
+import { repeatOnDone } from '../dates/recurrence'
 import { markRepeatDone } from '../repeatMarks'
 import { isFinalStatus, nextStatusOnToggle } from '../status'
 import {

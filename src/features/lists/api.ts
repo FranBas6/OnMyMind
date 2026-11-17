@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { CopiedFile } from '@/features/items/files'
+import type { CopiedFile } from '@/features/items/media/files'
 import type { Positioned } from '@/lib/reorder'
 import { supabase } from '@/lib/supabase/client'
 

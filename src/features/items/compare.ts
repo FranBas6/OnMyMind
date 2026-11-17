@@ -1,7 +1,7 @@
 import { chosenOption, cheapestOption } from './chooseOne'
-import { linkDomain } from './links'
+import { linkDomain } from './media/links'
 import { isOutOfMind } from './status'
-import { cheapestLink, hasStores, linksLabel, storeName } from './stores'
+import { cheapestLink, hasStores, linksLabel, storeName } from './shopping/stores'
 import type { Item } from './types'
 
 /**

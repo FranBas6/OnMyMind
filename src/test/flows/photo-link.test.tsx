@@ -5,7 +5,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 
 import * as itemsApi from '@/features/items/api'
 import type { Item } from '@/features/items'
-import * as photos from '@/features/items/photos'
+import * as photos from '@/features/items/media/photos'
 import * as listsApi from '@/features/lists/api'
 import type { List } from '@/features/lists'
 import { queryKeys } from '@/lib/query/queryKeys'
@@ -13,7 +13,7 @@ import { fakeSession, renderRoute } from '@/test/render-route'
 
 vi.mock('@/features/items/api')
 vi.mock('@/features/lists/api')
-vi.mock('@/features/items/photos', async (importOriginal) => ({
+vi.mock('@/features/items/media/photos', async (importOriginal) => ({
   ...(await importOriginal<typeof photos>()),
   uploadItemPhoto: vi.fn(),
   signedPhotoUrl: vi.fn(),

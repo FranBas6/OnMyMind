@@ -3,8 +3,8 @@ import type { MouseEvent } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { withBullets } from '../bullets'
-import { splitNoteText } from '../noteText'
+import { withBullets } from '../notes/bullets'
+import { splitNoteText } from '../notes/noteText'
 import { lineDate, pastedAsOneHeading, pastedLinesHeading, type PastedRow } from '../pastedLines'
 import type { ItemKind } from '../status'
 import { compactWrittenDateLabel } from '../writtenDate'

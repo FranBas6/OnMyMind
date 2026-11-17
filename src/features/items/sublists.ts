@@ -1,9 +1,9 @@
 import { chosenLabel, chosenOption, chosenSummary, isChoosing, optionsMeta } from './chooseOne'
 import { ITEM_TITLE_MAX_LENGTH } from './schemas'
 import { initialStatus, isActiveSublistStatus, isOutOfMind, STATUS_LABELS } from './status'
-import { withLinks } from './stores'
+import { withLinks } from './shopping/stores'
 import type { Item } from './types'
-import { monthlyText, paymentsLabel, paymentTotals } from './payments'
+import { monthlyText, paymentsLabel, paymentTotals } from './payments/payments'
 
 /**
  * Lo que cuenta una lista o una sublista: lo pendiente, lo que ya está fuera de la cabeza y las

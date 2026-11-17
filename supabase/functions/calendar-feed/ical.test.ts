@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { occurrencesFrom, parseRule } from '@/features/items/recurrence'
+import { occurrencesFrom, parseRule } from '../../../src/features/items/dates/recurrence'
 
 import {
   buildCalendar,

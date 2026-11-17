@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 import type { OptionMark } from '../chooseOne'
-import { itemPrice } from '../prices'
+import { itemPrice } from '../shopping/prices'
 import type { Item } from '../types'
 
 const CHIP = 'rounded-[8px] px-2 py-0.5 text-xs font-bold whitespace-nowrap'

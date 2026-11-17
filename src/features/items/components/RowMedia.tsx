@@ -3,11 +3,11 @@ import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { usePhotoSrc } from '../hooks/usePhoto'
-import { linkDomain } from '../links'
-import { hasThumb } from '../photos'
-import { changeDescription, changeLabel, itemPrice } from '../prices'
-import { linksLabel } from '../stores'
+import { usePhotoSrc } from '../media/usePhoto'
+import { linkDomain } from '../media/links'
+import { hasThumb } from '../media/photos'
+import { changeDescription, changeLabel, itemPrice } from '../shopping/prices'
+import { linksLabel } from '../shopping/stores'
 import type { Item } from '../types'
 
 /**

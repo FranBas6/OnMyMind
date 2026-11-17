@@ -1,6 +1,6 @@
-import { FILE_BUCKET } from '@/features/items/files'
-import { removeAllPhotos } from '@/features/items/photoCleanup'
-import { PHOTO_BUCKET, SIGNED_URL_SECONDS } from '@/features/items/photos'
+import { FILE_BUCKET } from '@/features/items/media/files'
+import { removeAllPhotos } from '@/features/items/media/photoCleanup'
+import { PHOTO_BUCKET, SIGNED_URL_SECONDS } from '@/features/items/media/photos'
 import { supabase } from '@/lib/supabase/client'
 
 import { exportDocument } from './export'

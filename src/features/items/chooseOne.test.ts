@@ -10,7 +10,7 @@ import {
   optionMarks,
   optionsMeta,
 } from './chooseOne'
-import { pendingTotals } from './prices'
+import { pendingTotals } from './shopping/prices'
 import { countItems, duplicateSublist, sublistMeta, sublistSummary } from './sublists'
 import type { Item } from './types'
 

@@ -2,7 +2,7 @@ import { addDays, format, isSameDay, isSameYear, startOfDay } from 'date-fns'
 
 import type { NaturalDate } from '@/lib/dates/naturalDate'
 
-import { formatRule, recurrenceLabel, simpleRule } from './recurrence'
+import { formatRule, recurrenceLabel, simpleRule } from './dates/recurrence'
 import type { ItemKind } from './status'
 
 /** La fecha con la que nace un ítem (3.5): su `due_at` y si es de todo el día. */

@@ -1,4 +1,4 @@
-import { isPastEvent } from './events'
+import { isPastEvent } from './events/events'
 
 /** Todos los estados que admite la base (trigger `items_validate`, documento 03 §items). */
 export const ITEM_STATUSES = [

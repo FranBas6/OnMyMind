@@ -7,8 +7,8 @@ import {
   isSameYear,
 } from 'date-fns'
 
-import { occurrence, occurrencesBetween } from '@/features/items/events'
-import { parseRule, repeats, ruleSentence } from '@/features/items/recurrence'
+import { occurrence, occurrencesBetween } from '@/features/items/events/events'
+import { parseRule, repeats, ruleSentence } from '@/features/items/dates/recurrence'
 import { isFinalStatus } from '@/features/items/status'
 import type { Item } from '@/features/items/types'
 

@@ -1,5 +1,5 @@
 import type { Item } from '../types'
-import { NoteRow } from './NoteRow'
+import { NoteRow } from '../notes/NoteRow'
 import { SublistRow } from './SublistRow'
 import { TaskRow } from './TaskRow'
 

@@ -43,7 +43,7 @@ vi.mock('@/features/private/api', async (importOriginal) => ({
 
 // La limpieza de fotos (2.8) va a la red un rato después de borrar o cambiar una foto: en los
 // tests, nada.
-vi.mock('@/features/items/photoCleanup', () => ({
+vi.mock('@/features/items/media/photoCleanup', () => ({
   CLEANUP_DELAY_MS: 30_000,
   removePhotos: () => Promise.resolve(),
   removeOrphanPhotos: () => Promise.resolve(0),

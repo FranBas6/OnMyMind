@@ -5,7 +5,7 @@ import { shortcutKey, thisDevice } from '@/lib/device/device'
 import { LIST_COLOR_TEXT, LIST_COLOR_TINT } from '@/features/lists/icons/listColors'
 import { cn } from '@/lib/utils'
 
-import { KIND_LABELS, proposedKind } from '../kind'
+import { KIND_LABELS, proposedKind } from '../kind/kind'
 import type { Item } from '../types'
 import { SublistIcon } from './SublistIcon'
 

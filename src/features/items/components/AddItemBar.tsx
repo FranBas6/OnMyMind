@@ -13,7 +13,7 @@ import {
 import { BottomSheet } from '@/components/sheets/BottomSheet'
 import { cn } from '@/lib/utils'
 
-import { withBullets } from '../bullets'
+import { withBullets } from '../notes/bullets'
 import {
   CHOOSABLE_KINDS,
   KIND_LABELS,
@@ -22,16 +22,16 @@ import {
   type AddableKind,
   type ChoosableKind,
   type ProposalReason,
-} from '../kind'
+} from '../kind/kind'
 import { usePastedLines } from '../hooks/usePastedLines'
 import { useWrittenDate } from '../hooks/useWrittenDate'
-import { splitNoteText } from '../noteText'
+import { splitNoteText } from '../notes/noteText'
 import { linesToSave, pastedAsOneHeading, type LineToSave } from '../pastedLines'
 import { ITEM_TITLE_MAX_LENGTH, itemTitleSchema } from '../schemas'
 import { readsWrittenDates, type WrittenDate } from '../writtenDate'
 import { FieldMarks, markedFieldClass } from './FieldMarks'
-import { KindOptions } from './KindOptions'
-import { KIND_ICONS } from './kindIcons'
+import { KindOptions } from '../kind/KindOptions'
+import { KIND_ICONS } from '../kind/kindIcons'
 import { PastedLinesBox, PastedNoteBox } from './PastedLinesBox'
 import { WrittenDatePill } from './WrittenDatePill'
 

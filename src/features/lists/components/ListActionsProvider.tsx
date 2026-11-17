@@ -3,7 +3,7 @@ import { Archive, Eye, EyeOff } from 'lucide-react'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 
 // Por su ruta y no por el índice: `items` usa piezas de `lists`.
-import { ProtectedNotesGate } from '@/features/items/components/ProtectedNotesGate'
+import { ProtectedNotesGate } from '@/features/items/notes/ProtectedNotesGate'
 import { usePrivate } from '@/features/private'
 // Por su ruta: `profile` usa piezas de `lists`.
 import { useProfile } from '@/features/profile/hooks/useProfile'

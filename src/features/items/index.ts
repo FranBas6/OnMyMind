@@ -31,7 +31,7 @@ export {
   paymentRepeatLabel,
   paymentWhen,
   returnsShort,
-} from './payments'
+} from './payments/payments'
 export {
   destinationName,
   destinationShortName,
@@ -58,11 +58,11 @@ export {
   proposalHint,
   proposedKind,
   type ChoosableKind,
-} from './kind'
-export { KIND_ICONS } from './components/kindIcons'
-export { KindOptions } from './components/KindOptions'
-export { NoteEditor } from './components/NoteTextField'
-export { withBullets } from './bullets'
+} from './kind/kind'
+export { KIND_ICONS } from './kind/kindIcons'
+export { KindOptions } from './kind/KindOptions'
+export { NoteEditor } from './notes/NoteTextField'
+export { withBullets } from './notes/bullets'
 export {
   joinNoteDraft,
   noteBody,
@@ -71,15 +71,15 @@ export {
   splitNoteText,
   type NoteDraft,
   type SplitNote,
-} from './noteText'
+} from './notes/noteText'
 export type { Item, ItemKind, ItemStatus, Priority } from './types'
 export { FileMeta, LinkMeta, RowPrice, RowThumb } from './components/RowMedia'
-export { hasThumb } from './photos'
-export { cleanupPhotosDaily } from './photoCleanup'
-export { hasPrices } from './prices'
+export { hasThumb } from './media/photos'
+export { cleanupPhotosDaily } from './media/photoCleanup'
+export { hasPrices } from './shopping/prices'
 export type { LinkMetadata, NewItemLink } from './api'
-export { useFillCapturedLink, useLinkPreview, type LinkPreviewState } from './hooks/useCapturedLink'
-export { linkDomain, linkPath, normalizeLink, URL_TITLE_MAX_LENGTH } from './links'
+export { useFillCapturedLink, useLinkPreview, type LinkPreviewState } from './media/useCapturedLink'
+export { linkDomain, linkPath, normalizeLink, URL_TITLE_MAX_LENGTH } from './media/links'
 export { ITEM_NOTES_MAX_LENGTH, ITEM_TITLE_MAX_LENGTH } from './schemas'
 export {
   eventTime,
@@ -90,16 +90,16 @@ export {
   occurrencesBetween,
   occursOn,
   shortDay,
-} from './events'
+} from './events/events'
 export { FieldMarks, markedFieldClass } from './components/FieldMarks'
 export { WrittenDatePill } from './components/WrittenDatePill'
 export { useWrittenDate, type WrittenDateState } from './hooks/useWrittenDate'
 export { readsWrittenDates, type WrittenDate } from './writtenDate'
 export { useCreateWithDate } from './hooks/useCreateWithDate'
-export { parseRule, recurrenceLabel, repeats } from './recurrence'
+export { parseRule, recurrenceLabel, repeats } from './dates/recurrence'
 export { fetchCompletions } from './api'
 export { useUndoRepeat } from './hooks/useItemMutations'
-export { PriceDropsSheet } from './components/PriceDropsSheet'
+export { PriceDropsSheet } from './shopping/PriceDropsSheet'
 export type { Completion } from './types'
 export { PastedLinesBox, PastedNoteBox } from './components/PastedLinesBox'
 export { usePastedLines } from './hooks/usePastedLines'
