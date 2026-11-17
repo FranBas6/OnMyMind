@@ -1,6 +1,6 @@
 import { Fingerprint, KeyRound, ScanFace, type LucideProps } from 'lucide-react'
 
-import type { DeviceUnlock } from '../passkey'
+import type { DeviceUnlock } from '../unlock/passkey'
 
 /** El icono del desbloqueo de este aparato: la cara de Face ID o la huella (diseño 26, C1b). */
 export function DeviceIcon({ unlock, ...props }: { unlock: DeviceUnlock } & LucideProps) {

@@ -1,11 +1,11 @@
-import type { SealedNotes } from '@/features/private/notes'
+import type { SealedNotes } from '@/features/private/notes/notes'
 
 import type { ItemKind, ItemStatus } from './status'
 import type { Priority } from './fields'
 
 export type { ItemKind, ItemStatus } from './status'
 export type { Priority, TaskFields } from './fields'
-export type { SealedNotes } from '@/features/private/notes'
+export type { SealedNotes } from '@/features/private/notes/notes'
 
 /**
  * Un ítem de cualquier lista. Los campos promocionados de la tabla (`due_at`, `recurrence`…) van

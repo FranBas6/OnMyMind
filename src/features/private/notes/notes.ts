@@ -2,9 +2,9 @@ import { useQuery, type QueryClient } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/query/queryKeys'
 
-import { usePrivateKeyId } from './privateContext'
-import { getUnlocked, UNLOCK_MS, useUnlocked, type Unlocked } from './unlock'
-import { openText, sealText, type SealedText } from './vault'
+import { usePrivateKeyId } from '../privateContext'
+import { getUnlocked, UNLOCK_MS, useUnlocked, type Unlocked } from '../unlock/unlock'
+import { openText, sealText, type SealedText } from '../vault/vault'
 
 /**
  * El texto de las notas protegidas (5.7, ADR-013): se cifra y se descifra aquí, en el aparato, con

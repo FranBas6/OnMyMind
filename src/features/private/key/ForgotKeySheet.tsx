@@ -8,9 +8,9 @@ import { queryKeys } from '@/lib/query/queryKeys'
 
 import { countProtectedNotes, sendResetCode, type VaultDeviceKey } from '../api'
 import { NEEDS_CONNECTION, protectedNotesLabel, SOMETHING_FAILED, tryDeviceLabel } from '../copy'
-import type { DeviceUnlock } from '../passkey'
-import { DeviceIcon } from './DeviceIcon'
-import { DesktopActions, InfoBox, Lead, MainAction, TextAction } from './SheetParts'
+import type { DeviceUnlock } from '../unlock/passkey'
+import { DeviceIcon } from '../components/DeviceIcon'
+import { DesktopActions, InfoBox, Lead, MainAction, TextAction } from '../components/SheetParts'
 
 interface ForgotKeySheetProps {
   open: boolean

@@ -10,8 +10,8 @@ import { downloadFile } from '@/lib/device/download'
 import { queryKeys } from '@/lib/query/queryKeys'
 
 import { deleteAccount, fetchAccountCounts, fetchExport } from '../api'
-import { exportFileName, listCsv, listFileName } from '../export'
-import { useCurrentUser } from './useProfile'
+import { exportFileName, listCsv, listFileName } from './export'
+import { useCurrentUser } from '../hooks/useProfile'
 
 export type ExportChoice = { kind: 'json' } | { kind: 'csv'; list: List }
 

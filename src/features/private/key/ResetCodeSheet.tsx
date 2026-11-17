@@ -20,7 +20,7 @@ import { useNow } from '@/hooks/useNow'
 
 import { sendResetCode, verifyResetCode } from '../api'
 import { NEEDS_CONNECTION, SOMETHING_FAILED } from '../copy'
-import { HeaderCancel, Lead, TextAction } from './SheetParts'
+import { HeaderCancel, Lead, TextAction } from '../components/SheetParts'
 
 interface ResetCodeSheetProps {
   open: boolean

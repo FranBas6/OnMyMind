@@ -10,7 +10,7 @@ import {
   usePrivate,
 } from '@/features/private'
 
-import { hideSharedNote } from '../hidden'
+import { hideSharedNote } from './hidden'
 import type { List } from '../types'
 
 interface HideListSheetProps {

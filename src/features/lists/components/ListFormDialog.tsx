@@ -11,8 +11,8 @@ import { cn } from '@/lib/utils'
 import { useCreateList, useUpdateList } from '../hooks/useListMutations'
 import { listFormSchema, type ListFormValues } from '../schemas'
 import type { List } from '../types'
-import { ColorPicker } from './ColorPicker'
-import { ListIconPicker } from './ListIconPicker'
+import { ColorPicker } from '../icons/ColorPicker'
+import { ListIconPicker } from '../icons/ListIconPicker'
 
 /** Lo que explica que una lista no tiene tipo (diseño 25, B8 y D7). */
 const ANYTHING_FITS =

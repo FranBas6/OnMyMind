@@ -8,9 +8,9 @@ import { useOnline } from '@/hooks/useOnline'
 
 import type { PrivateVault } from '../api'
 import { tryDeviceLabel, WRONG_KEY } from '../copy'
-import { openWithKey } from '../operations'
-import type { DeviceUnlock } from '../passkey'
-import { DesktopActions, HeaderCancel, MainAction, TextAction } from './SheetParts'
+import { openWithKey } from '../vault/operations'
+import type { DeviceUnlock } from './passkey'
+import { DesktopActions, HeaderCancel, MainAction, TextAction } from '../components/SheetParts'
 
 interface UnlockSheetProps {
   open: boolean

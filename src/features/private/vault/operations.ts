@@ -5,8 +5,13 @@ import {
   rewrapPrivateVault,
   type PrivateVault,
   type VaultDeviceKey,
-} from './api'
-import { evaluatePasskey, PasskeyFailure, registerPasskey, type DeviceUnlock } from './passkey'
+} from '../api'
+import {
+  evaluatePasskey,
+  PasskeyFailure,
+  registerPasskey,
+  type DeviceUnlock,
+} from '../unlock/passkey'
 import {
   generateVaultKey,
   keyCheck,

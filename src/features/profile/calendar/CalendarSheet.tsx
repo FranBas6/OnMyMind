@@ -10,7 +10,7 @@ import { useOnline } from '@/hooks/useOnline'
 import type { DevicePlatform } from '@/lib/device/device'
 import { cn } from '@/lib/utils'
 
-import { useCalendarFeed, useRotateCalendarFeed } from '../hooks/useCalendarFeed'
+import { useCalendarFeed, useRotateCalendarFeed } from './useCalendarFeed'
 
 /**
  * «Calendario del iPhone» (diseño 21, C2–C7 y D6): qué entra y qué no, «Suscribirse en el

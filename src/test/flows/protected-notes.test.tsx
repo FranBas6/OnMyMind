@@ -8,14 +8,14 @@ import * as listsApi from '@/features/lists/api'
 import type { List } from '@/features/lists'
 import { lock } from '@/features/private'
 import * as privateApi from '@/features/private/api'
-import type * as Passkey from '@/features/private/passkey'
+import type * as Passkey from '@/features/private/unlock/passkey'
 import {
   generateVaultKey,
   keyCheck,
   openText,
   sealText,
   wrapWithPassword,
-} from '@/features/private/vault'
+} from '@/features/private/vault/vault'
 import * as profileApi from '@/features/profile/api'
 import type * as SharingApi from '@/features/sharing/api'
 import * as sharingApi from '@/features/sharing/api'
@@ -36,7 +36,7 @@ vi.mock('@/features/sharing/api', async (importOriginal) => ({
   subscribeToLiveChanges: () => () => undefined,
 }))
 // Este móvil de jsdom no tiene Face ID: se desbloquea con la clave.
-vi.mock('@/features/private/passkey', async (importOriginal) => ({
+vi.mock('@/features/private/unlock/passkey', async (importOriginal) => ({
   ...(await importOriginal<typeof Passkey>()),
   canUsePasskeys: () => Promise.resolve(false),
 }))

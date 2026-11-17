@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
 
 import type { PrivateVault, VaultDeviceKey } from './api'
-import type { DeviceUnlock } from './passkey'
+import type { DeviceUnlock } from './unlock/passkey'
 
 /** Lo que sabe la app de la clave privada de quien la usa (5.6). */
 export interface PrivateState {

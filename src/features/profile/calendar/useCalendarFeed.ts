@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/queryKeys'
 
 import { createCalendarToken, fetchCalendarToken, rotateCalendarToken } from '../api'
-import { calendarFeedUrl, subscribeUrl } from '../calendar'
+import { calendarFeedUrl, subscribeUrl } from './calendar'
 
 /**
  * Crear y cambiar el enlace piden conexión (diseño 21, C6): no se guardan para luego, como los

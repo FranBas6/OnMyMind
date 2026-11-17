@@ -4,13 +4,13 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { UnlockedBand, useUnlocked } from '@/features/private'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 
-import { hiddenBandLabel } from '../hidden'
-import { useHiddenLists } from '../hooks/useHiddenLists'
-import { ArchivedListsSection } from './ArchivedListsSection'
-import { useSeenUnlocked } from '../hooks/useSeenUnlocked'
+import { hiddenBandLabel } from './hidden'
+import { useHiddenLists } from './useHiddenLists'
+import { ArchivedListsSection } from '../components/ArchivedListsSection'
+import { useSeenUnlocked } from './useSeenUnlocked'
 import { HiddenLocked, HiddenMark } from './HiddenLock'
-import { ListGrid } from './ListGrid'
-import { ListsSkeleton } from './ListsSkeleton'
+import { ListGrid } from '../components/ListGrid'
+import { ListsSkeleton } from '../components/ListsSkeleton'
 
 /**
  * Perfil › «Listas ocultas» (5.8, diseño 27, D4, D4b, E3 y E5): desbloqueadas, la franja con lo que

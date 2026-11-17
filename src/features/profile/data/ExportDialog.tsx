@@ -14,8 +14,8 @@ import { useUnlocked } from '@/features/private'
 import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
 import { cn } from '@/lib/utils'
 
-import { exportableLists } from '../export'
-import { useExportData } from '../hooks/useAccountData'
+import { exportableLists } from './export'
+import { useExportData } from './useAccountData'
 import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 
 interface ExportDialogProps {

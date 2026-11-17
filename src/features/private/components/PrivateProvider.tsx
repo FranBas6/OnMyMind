@@ -15,10 +15,10 @@ import {
   prfUnsupportedHere,
   readDeviceKey,
   saveDeviceKey,
-} from '../deviceKey'
+} from '../unlock/deviceKey'
 import { privateVaultQueryOptions } from '../queries'
-import { addDeviceKey, openWithDevice, openWithKey, type CreatedKey } from '../operations'
-import { canUsePasskeys, currentDeviceUnlock, PasskeyFailure } from '../passkey'
+import { addDeviceKey, openWithDevice, openWithKey, type CreatedKey } from '../vault/operations'
+import { canUsePasskeys, currentDeviceUnlock, PasskeyFailure } from '../unlock/passkey'
 import { PrivateContext, type PrivateContextValue, type PrivatePurpose } from '../privateContext'
 import {
   getUnlocked,
@@ -27,14 +27,14 @@ import {
   unlock as keepUnlocked,
   useUnlocked,
   withoutAutoLock,
-} from '../unlock'
-import { ChangeKeySheet } from './ChangeKeySheet'
-import { CreateKeySheet } from './CreateKeySheet'
-import { ForgotKeySheet } from './ForgotKeySheet'
-import { OfferDeviceKeySheet } from './OfferDeviceKeySheet'
-import { ProtectNoteSheet } from './ProtectNoteSheet'
-import { ResetCodeSheet } from './ResetCodeSheet'
-import { UnlockSheet } from './UnlockSheet'
+} from '../unlock/unlock'
+import { ChangeKeySheet } from '../key/ChangeKeySheet'
+import { CreateKeySheet } from '../key/CreateKeySheet'
+import { ForgotKeySheet } from '../key/ForgotKeySheet'
+import { OfferDeviceKeySheet } from '../unlock/OfferDeviceKeySheet'
+import { ProtectNoteSheet } from '../notes/ProtectNoteSheet'
+import { ResetCodeSheet } from '../key/ResetCodeSheet'
+import { UnlockSheet } from '../unlock/UnlockSheet'
 
 /** La hoja abierta: una cada vez, y unas llevan a otras («He olvidado la clave» → código → nueva). */
 type Sheet =

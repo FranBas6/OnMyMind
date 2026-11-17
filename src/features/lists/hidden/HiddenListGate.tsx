@@ -3,9 +3,9 @@ import type { ReactNode } from 'react'
 
 import { useUnlocked } from '@/features/private'
 
-import { useHiddenLists } from '../hooks/useHiddenLists'
+import { useHiddenLists } from './useHiddenLists'
 import type { List } from '../types'
-import { useSeenUnlocked } from '../hooks/useSeenUnlocked'
+import { useSeenUnlocked } from './useSeenUnlocked'
 import { HiddenLocked } from './HiddenLock'
 
 /**

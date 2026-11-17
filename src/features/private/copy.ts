@@ -1,5 +1,5 @@
-import type { DeviceUnlock } from './passkey'
-import { KEY_MIN_LENGTH } from './vault'
+import type { DeviceUnlock } from './unlock/passkey'
+import { KEY_MIN_LENGTH } from './vault/vault'
 
 /** Los textos de la clave privada (diseño 26). */
 

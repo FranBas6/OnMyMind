@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getUnlocked, lastLockReason, lock, unlock, UNLOCK_MS, withoutAutoLock } from './unlock'
-import { generateVaultKey } from './vault'
+import { generateVaultKey } from '../vault/vault'
 
 function hide() {
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })

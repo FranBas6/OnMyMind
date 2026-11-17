@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { deviceKeyLabel, passwordsApp, unsupportedNote } from './copy'
+import { deviceKeyLabel, passwordsApp, unsupportedNote } from '../copy'
 import { deviceUnlock } from './passkey'
 
 const IPHONE =

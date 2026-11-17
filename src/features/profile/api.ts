@@ -3,7 +3,7 @@ import { removeAllPhotos } from '@/features/items/media/photoCleanup'
 import { PHOTO_BUCKET, SIGNED_URL_SECONDS } from '@/features/items/media/photos'
 import { supabase } from '@/lib/supabase/client'
 
-import { exportDocument } from './export'
+import { exportDocument } from './data/export'
 import { displayNameSchema, mergeSettings, parseSettings, type SettingsPatch } from './schemas'
 import type { Profile } from './types'
 

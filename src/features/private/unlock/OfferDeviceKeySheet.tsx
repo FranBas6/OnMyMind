@@ -1,9 +1,9 @@
 import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 
 import { deviceActionLabel } from '../copy'
-import type { DeviceUnlock } from '../passkey'
-import { DeviceIcon } from './DeviceIcon'
-import { Lead, MainAction } from './SheetParts'
+import type { DeviceUnlock } from './passkey'
+import { DeviceIcon } from '../components/DeviceIcon'
+import { Lead, MainAction } from '../components/SheetParts'
 
 interface OfferDeviceKeySheetProps {
   open: boolean

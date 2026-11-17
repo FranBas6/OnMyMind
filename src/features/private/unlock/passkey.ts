@@ -1,4 +1,4 @@
-import { fromBase64, randomBytes, toBase64 } from './vault'
+import { fromBase64, randomBytes, toBase64 } from '../vault/vault'
 
 /**
  * La llave de este aparato (5.6, ADR-013): una llave de acceso (WebAuthn) con la extensión PRF,

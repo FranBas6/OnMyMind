@@ -8,9 +8,9 @@ import { cn } from '@/lib/utils'
 
 import { tryDeviceLabel, WRONG_KEY } from '../copy'
 import { usePrivate } from '../privateContext'
-import { useUnlocked } from '../unlock'
-import { DeviceIcon } from './DeviceIcon'
-import { TextAction } from './SheetParts'
+import { useUnlocked } from '../unlock/unlock'
+import { DeviceIcon } from '../components/DeviceIcon'
+import { TextAction } from '../components/SheetParts'
 
 /** Las barras grises en lugar del texto (C8). */
 function Bars() {

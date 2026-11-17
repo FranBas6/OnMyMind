@@ -8,7 +8,7 @@ import { PeopleButton } from '@/features/sharing/components/SharedInitials'
 import { useListSharing } from '@/features/sharing/hooks/useSharing'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 
-import { hiddenSharedNote } from '../hidden'
+import { hiddenSharedNote } from '../hidden/hidden'
 import type { List, ListView } from '../types'
 import { useListActions } from './listActionsContext'
 import { ListCardMenu } from './ListCardMenu'

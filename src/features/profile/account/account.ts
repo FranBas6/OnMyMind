@@ -1,4 +1,4 @@
-import type { AccountCounts } from './api'
+import type { AccountCounts } from '../api'
 
 /** Un trozo del texto de la confirmación; los números van en negrita (diseño 18, P9). */
 export interface Segment {

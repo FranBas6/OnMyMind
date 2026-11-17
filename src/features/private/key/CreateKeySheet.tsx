@@ -7,11 +7,11 @@ import { useOnline } from '@/hooks/useOnline'
 import { isNetworkError } from '@/lib/query/errors'
 
 import { KEY_HINT, KEY_MISMATCH, NEEDS_CONNECTION, passwordsApp, SOMETHING_FAILED } from '../copy'
-import { createKey, type CreatedKey } from '../operations'
-import type { DeviceUnlock } from '../passkey'
+import { createKey, type CreatedKey } from '../vault/operations'
+import type { DeviceUnlock } from '../unlock/passkey'
 import type { PrivatePurpose } from '../privateContext'
-import { KEY_MIN_LENGTH } from '../vault'
-import { DesktopActions, HeaderCancel, InfoBox, Lead, MainAction } from './SheetParts'
+import { KEY_MIN_LENGTH } from '../vault/vault'
+import { DesktopActions, HeaderCancel, InfoBox, Lead, MainAction } from '../components/SheetParts'
 
 interface CreateKeySheetProps {
   open: boolean

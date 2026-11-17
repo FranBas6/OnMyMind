@@ -1,5 +1,5 @@
-export { clearClipboardLater, copySecret, CLEAR_CLIPBOARD_MS } from './clipboard'
-export { LockedNoteCard, UnlockedBand } from './components/LockedNoteCard'
+export { clearClipboardLater, copySecret, CLEAR_CLIPBOARD_MS } from './notes/clipboard'
+export { LockedNoteCard, UnlockedBand } from './notes/LockedNoteCard'
 export { DeviceIcon } from './components/DeviceIcon'
 export {
   DesktopActions,
@@ -20,7 +20,7 @@ export {
   useOpenedNote,
   type OpenedNote,
   type SealedNotes,
-} from './notes'
+} from './notes/notes'
 export {
   useOptionalPrivate,
   usePrivate,
@@ -36,4 +36,4 @@ export {
   useUnlocked,
   type LockReason,
   type Unlocked,
-} from './unlock'
+} from './unlock/unlock'

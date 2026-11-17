@@ -12,8 +12,8 @@ import { useListSharing } from '@/features/sharing/hooks/useSharing'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { showUndoToast } from '@/lib/undoToast'
 
-import { HIDDEN_TOAST, shownToast } from '../hidden'
-import { useForgetHiddenOnLock } from '../hooks/useHiddenLists'
+import { HIDDEN_TOAST, shownToast } from '../hidden/hidden'
+import { useForgetHiddenOnLock } from '../hidden/useHiddenLists'
 import {
   useArchiveList,
   useDeleteList,
@@ -24,7 +24,7 @@ import {
 import type { List } from '../types'
 import { DeleteListDialog } from './DeleteListDialog'
 import { DuplicateListDialog } from './DuplicateListDialog'
-import { HideListSheet } from './HideListSheet'
+import { HideListSheet } from '../hidden/HideListSheet'
 import { ListActionsContext, type ListActions } from './listActionsContext'
 import { ListFormDialog } from './ListFormDialog'
 

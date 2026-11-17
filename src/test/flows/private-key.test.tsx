@@ -7,14 +7,14 @@ import * as listsApi from '@/features/lists/api'
 import type { List } from '@/features/lists'
 import { lock } from '@/features/private'
 import * as privateApi from '@/features/private/api'
-import type * as Passkey from '@/features/private/passkey'
+import type * as Passkey from '@/features/private/unlock/passkey'
 import {
   generateVaultKey,
   keyCheck,
   matchesCheck,
   unwrapWithPassword,
   wrapWithPassword,
-} from '@/features/private/vault'
+} from '@/features/private/vault/vault'
 import * as pricesApi from '@/features/prices/api'
 import * as profileApi from '@/features/profile/api'
 import { queryKeys } from '@/lib/query/queryKeys'
@@ -26,7 +26,7 @@ vi.mock('@/features/profile/api')
 vi.mock('@/features/prices/api')
 vi.mock('@/features/private/api')
 // Este «ordenador» de jsdom no tiene Face ID ni huella: se desbloquea con la clave.
-vi.mock('@/features/private/passkey', async (importOriginal) => ({
+vi.mock('@/features/private/unlock/passkey', async (importOriginal) => ({
   ...(await importOriginal<typeof Passkey>()),
   canUsePasskeys: () => Promise.resolve(false),
 }))

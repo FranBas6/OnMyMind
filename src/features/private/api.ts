@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { supabase } from '@/lib/supabase/client'
 
-import type { PasswordWrap, WrappedKey } from './vault'
+import type { PasswordWrap, WrappedKey } from './vault/vault'
 
 /** La caja de la clave privada (`private_vaults`, 5.6): cifrada, nunca la clave en claro. */
 export interface PrivateVault {

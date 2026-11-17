@@ -14,10 +14,10 @@ import {
   SOMETHING_FAILED,
   WRONG_CURRENT_KEY,
 } from '../copy'
-import { changeKey } from '../operations'
-import type { DeviceUnlock } from '../passkey'
-import { KEY_MIN_LENGTH } from '../vault'
-import { DesktopActions, HeaderCancel, Lead, MainAction } from './SheetParts'
+import { changeKey } from '../vault/operations'
+import type { DeviceUnlock } from '../unlock/passkey'
+import { KEY_MIN_LENGTH } from '../vault/vault'
+import { DesktopActions, HeaderCancel, Lead, MainAction } from '../components/SheetParts'
 
 interface ChangeKeySheetProps {
   open: boolean

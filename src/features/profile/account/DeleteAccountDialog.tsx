@@ -5,8 +5,8 @@ import { SharedListsNotice } from '@/features/sharing/components/SharedListsNoti
 import { useOnline } from '@/hooks/useOnline'
 import { cn } from '@/lib/utils'
 
-import { confirmsDeletion, deleteSummary } from '../account'
-import { useAccountCounts, useDeleteAccount } from '../hooks/useAccountData'
+import { confirmsDeletion, deleteSummary } from './account'
+import { useAccountCounts, useDeleteAccount } from '../data/useAccountData'
 import { ResponsiveSheet } from '@/components/sheets/ResponsiveSheet'
 
 interface DeleteAccountDialogProps {

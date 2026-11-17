@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { AppSection } from '@/features/profile/components/AppSection'
+import { AppSection } from '@/features/profile/settings/AppSection'
 import { usePwa } from '@/hooks/usePwa'
 
 import { PwaProvider } from './pwa'
