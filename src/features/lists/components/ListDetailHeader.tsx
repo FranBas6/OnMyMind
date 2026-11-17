@@ -3,9 +3,9 @@ import { useState, type ReactNode } from 'react'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ListIcon } from '@/features/lists/icons/ListIcon'
-import { withPeople } from '@/features/sharing/copy'
-import { PeopleButton } from '@/features/sharing/components/SharedInitials'
-import { useListSharing } from '@/features/sharing/hooks/useSharing'
+import { withPeople } from '@/features/sharing'
+import { PeopleButton } from '@/features/sharing'
+import { useListSharing } from '@/features/sharing'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 import { hiddenSharedNote } from '../hidden/hidden'

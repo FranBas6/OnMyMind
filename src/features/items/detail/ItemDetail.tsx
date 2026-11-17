@@ -16,16 +16,11 @@ import { Fragment, useCallback, useState } from 'react'
 
 import type { List } from '@/features/lists'
 import { useOpenedNote } from '@/features/private'
-// Por su ruta y no por el índice: `reminders` usa piezas de `items` y así no hay ciclo.
-import { useReminderField } from '@/features/reminders/hooks/useReminderField'
-import {
-  reminderFor,
-  useItemReminder,
-  useSetReminder,
-} from '@/features/reminders/hooks/useReminders'
-import { TWO_DAYS_BEFORE } from '@/features/reminders/reminders'
+import { useReminderField } from '@/features/reminders'
+import { reminderFor, useItemReminder, useSetReminder } from '@/features/reminders'
+import { TWO_DAYS_BEFORE } from '@/features/reminders'
 import { useOnline } from '@/hooks/useOnline'
-import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
+import { LIST_COLOR_BG } from '@/features/lists'
 import { showUndoToast } from '@/lib/undoToast'
 import { cn } from '@/lib/utils'
 

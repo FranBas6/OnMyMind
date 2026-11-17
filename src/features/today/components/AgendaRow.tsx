@@ -12,9 +12,9 @@ import {
   SwipeableRow,
   useItemActions,
 } from '@/features/items'
-import { recurrenceLabel } from '@/features/items/dates/recurrence'
+import { recurrenceLabel } from '@/features/items'
 import { useNow } from '@/hooks/useNow'
-import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
+import { LIST_COLOR_BG } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import type { DayTense, TodayItem } from '../today'

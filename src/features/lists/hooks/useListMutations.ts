@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { schedulePhotoCleanup } from '@/features/items/media/photoCleanup'
-import { copyItemFile } from '@/features/items/media/files'
-import { copyItemPhoto } from '@/features/items/media/photos'
+import { schedulePhotoCleanup } from '@/features/items'
+import { copyItemFile } from '@/features/items'
+import { copyItemPhoto } from '@/features/items'
 import { errorMessage } from '@/lib/query/errors'
 import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/query/mutations'
 import { withPositions, type Positioned } from '@/lib/reorder'

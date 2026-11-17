@@ -1,4 +1,4 @@
-import type { Item } from '@/features/items/types'
+import type { Item } from '@/features/items'
 
 import { completedNote } from '../copy'
 import type { ListPerson } from '../schemas'

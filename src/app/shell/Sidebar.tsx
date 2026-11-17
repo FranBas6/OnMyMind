@@ -4,7 +4,7 @@ import { Link, useNavigate, useRouter, useRouterState } from '@tanstack/react-ro
 import { Archive, Inbox, Plus, Sun, type LucideIcon } from 'lucide-react'
 import { useEffect, type ReactNode, type SyntheticEvent } from 'react'
 
-import { ListIcon } from '@/features/lists/icons/ListIcon'
+import { ListIcon } from '@/features/lists'
 import { useCapture } from '@/features/capture'
 import {
   ARCHIVED_SECTION_ID,
@@ -20,7 +20,7 @@ import {
 import { ProfileLink } from '@/features/profile'
 import { focusSearchField, SidebarSearchField } from '@/features/search'
 import { useTodayCount } from '@/features/today'
-import { SidebarSharedIcon } from '@/features/sharing/components/SharedInitials'
+import { SidebarSharedIcon } from '@/features/sharing'
 import { OfflineBanner } from '@/components/feedback/OfflineBanner'
 import { cn } from '@/lib/utils'
 import { shortcutKey } from '@/lib/device/device'

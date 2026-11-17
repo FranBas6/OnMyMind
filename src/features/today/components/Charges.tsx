@@ -8,7 +8,7 @@ import {
   RowTitle,
   useItemActions,
 } from '@/features/items'
-import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
+import { LIST_COLOR_BG } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import type { TodayCharge, TodayItem } from '../today'

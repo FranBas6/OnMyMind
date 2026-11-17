@@ -10,9 +10,9 @@ import {
   type ListStyle,
   type ListView,
 } from '@/features/lists'
-import { useProfile } from '@/features/profile/hooks/useProfile'
-import { useWithCompletedLive } from '@/features/sharing/liveRows'
-import { useUpdateSettings } from '@/features/profile/hooks/useProfileMutations'
+import { useProfile } from '@/features/profile'
+import { useWithCompletedLive } from '@/features/sharing'
+import { useUpdateSettings } from '@/features/profile'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useOnline } from '@/hooks/useOnline'
 import { dropNeighbors, reorder, stepNeighbors, type Neighbors } from '@/lib/reorder'

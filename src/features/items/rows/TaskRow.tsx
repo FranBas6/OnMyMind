@@ -1,15 +1,14 @@
 import { ChevronRight, Repeat } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-// Por sus rutas y no por el índice: `reminders` usa piezas de `items`.
-import { ReminderBell } from '@/features/reminders/components/ReminderBell'
-import { useItemReminder } from '@/features/reminders/hooks/useReminders'
-import { showsBell } from '@/features/reminders/reminders'
+import { ReminderBell } from '@/features/reminders'
+import { useItemReminder } from '@/features/reminders'
+import { showsBell } from '@/features/reminders'
 import { formatCaptureAge, formatDueDate } from '@/lib/dates/date'
 import { cn } from '@/lib/utils'
-import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
-import { LiveDoneNote } from '@/features/sharing/components/LiveDoneNote'
-import { useLiveRow } from '@/features/sharing/hooks/useLiveRow'
+import { ItemPersonMark } from '@/features/sharing'
+import { LiveDoneNote } from '@/features/sharing'
+import { useLiveRow } from '@/features/sharing'
 
 import { eventTime, eventWhen, occurrence, shortDay } from '../events/events'
 import { kindMark, proposedKind } from '../kind/kind'

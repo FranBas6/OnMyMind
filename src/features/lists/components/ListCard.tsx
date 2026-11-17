@@ -5,13 +5,12 @@ import { useState, type SyntheticEvent } from 'react'
 
 import { ListIcon } from '@/features/lists/icons/ListIcon'
 import { LIFT_TOLERANCE_PX } from '@/hooks/useReorderSensors'
-// Por su ruta y no por el índice: `items` usa piezas de `lists`.
-import { monthlyText } from '@/features/items/payments/payments'
+import { monthlyText } from '@/features/items'
 import { cn } from '@/lib/utils'
 
 import { listCounterLabel, pendingTotal } from '../templates'
 import type { List } from '../types'
-import { ListCardInitials, ListCardSharedNote } from '@/features/sharing/components/SharedInitials'
+import { ListCardInitials, ListCardSharedNote } from '@/features/sharing'
 
 import { ListCardMenu } from './ListCardMenu'
 import { useListDrag } from './listDragContext'

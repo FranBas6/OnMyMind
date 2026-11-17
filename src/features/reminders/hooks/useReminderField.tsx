@@ -3,9 +3,9 @@ import { Popover } from 'radix-ui'
 import { useState, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/sheets/BottomSheet'
-import { repeats } from '@/features/items/dates/recurrence'
-import { Row, Value } from '@/features/items/detail/FieldRow'
-import type { Item } from '@/features/items/types'
+import { repeats } from '@/features/items'
+import { Row, Value } from '@/components/controls/FieldRow'
+import type { Item } from '@/features/items'
 import { useOnline } from '@/hooks/useOnline'
 
 import { usePush } from './usePush'

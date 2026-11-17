@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { itemMutationKey, OFFLINE_TOLERANT } from '@/features/items/hooks/useItemMutations'
-import type { Item } from '@/features/items/types'
+import { itemMutationKey, OFFLINE_TOLERANT } from '@/lib/query/mutations'
+import type { Item } from '@/features/items'
 import { errorMessage } from '@/lib/query/errors'
 import { durableMutation, useDurableMutation } from '@/lib/query/mutations'
 import { queryKeys } from '@/lib/query/queryKeys'

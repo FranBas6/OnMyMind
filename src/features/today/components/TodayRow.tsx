@@ -16,8 +16,8 @@ import {
   useItemActions,
 } from '@/features/items'
 import { cn } from '@/lib/utils'
-import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
-import { useItemPerson } from '@/features/sharing/hooks/useSharing'
+import { ItemPersonMark } from '@/features/sharing'
+import { useItemPerson } from '@/features/sharing'
 
 import { paymentTodayMeta, todayMeta, type TodayItem } from '../today'
 

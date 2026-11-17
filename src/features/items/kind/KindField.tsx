@@ -3,8 +3,7 @@ import { Popover } from 'radix-ui'
 import { useState } from 'react'
 
 import { BottomSheet } from '@/components/sheets/BottomSheet'
-// Por su ruta y no por el índice: `reminders` usa piezas de `items`.
-import { useItemReminder } from '@/features/reminders/hooks/useReminders'
+import { useItemReminder } from '@/features/reminders'
 import { cn } from '@/lib/utils'
 
 import { KIND_LABELS, kindChangeNotice, type ChoosableKind } from './kind'

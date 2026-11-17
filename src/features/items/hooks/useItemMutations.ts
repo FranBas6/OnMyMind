@@ -3,7 +3,13 @@ import { toast } from 'sonner'
 
 import type { List } from '@/features/lists'
 import { errorMessage } from '@/lib/query/errors'
-import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/query/mutations'
+import {
+  durableMutation,
+  ITEM_MUTATION_KEY,
+  itemMutationKey,
+  OFFLINE_TOLERANT,
+  useDurableMutation,
+} from '@/lib/query/mutations'
 import { withPositions, type Positioned } from '@/lib/reorder'
 import { queryKeys } from '@/lib/query/queryKeys'
 
@@ -46,15 +52,6 @@ import type {
 } from '../types'
 
 /**
- * Todas las mutaciones de ítems empiezan su clave por `items` y comparten `scope`. El `scope` las
- * pone en fila: se envían de una en una y en orden, así que completar un ítem recién creado sin
- * red nunca llega a Supabase antes que su alta, ni un «Deshacer» antes que el borrado. Con el
- * prefijo se sabe cuántas quedan en vuelo; el resto de la clave dice cuál es, para encontrar su
- * función al restaurarla (2.10).
- */
-const ITEM_MUTATION_KEY = ['items'] as const
-
-/**
  * Las consultas que mezclan ítems de varias listas: Hoy (una por día), otro día de Hoy (una por
  * mes) y Buscar. Cada pantalla
  * vuelve a filtrar lo suyo (`groupToday`, `searchItems`), así que basta con aplicarles el cambio.
@@ -68,16 +65,6 @@ const MIXED_QUERIES = [
 function mixedQueries(queryClient: QueryClient): [QueryKey, Item[] | undefined][] {
   return MIXED_QUERIES.flatMap((queryKey) => queryClient.getQueriesData<Item[]>({ queryKey }))
 }
-const ITEM_MUTATION_SCOPE = { id: 'items' }
-
-/**
- * Sin red esperan en vez de fallar (`WAITS_FOR_NETWORK`), en fila. Los avisos (2.6) van en la
- * misma fila: el de un ítem creado sin red sale detrás de su alta.
- */
-export const OFFLINE_TOLERANT = { ...WAITS_FOR_NETWORK, scope: ITEM_MUTATION_SCOPE } as const
-
-/** La clave de una mutación de ítems: `items` y cuál es. */
-export const itemMutationKey = (name: string) => [...ITEM_MUTATION_KEY, name] as const
 
 /** Foto de las cachés que toca una mutación, para volver atrás si el servidor dice que no. */
 interface Snapshot {

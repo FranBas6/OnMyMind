@@ -1,8 +1,8 @@
 import { useId } from 'react'
 
-import { ListIcon } from '@/features/lists/icons/ListIcon'
+import { ListIcon } from '@/features/lists'
 import { ListScope } from '@/features/items'
-import { SharedWith } from '@/features/sharing/components/SharedInitials'
+import { SharedWith } from '@/features/sharing'
 
 import type { TodaySection as Section } from '../today'
 import { TodayRow } from './TodayRow'

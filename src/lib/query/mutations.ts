@@ -60,3 +60,27 @@ export function useDurableMutation<TVariables, TData, TContext>(
 ) {
   return useMutation<TData, Error, TVariables, TContext>({ mutationKey: mutation.mutationKey })
 }
+
+// ─── La fila de los ítems ────────────────────────────────────────────────────────────────────
+// Aquí y no en `features/items` (6.10): la usan también los avisos, y `items` y `reminders` se
+// importan el uno al otro. Desde aquí no hay ciclo.
+
+/**
+ * Todas las mutaciones de ítems empiezan su clave por `items` y comparten `scope`. El `scope` las
+ * pone en fila: se envían de una en una y en orden, así que completar un ítem recién creado sin
+ * red nunca llega a Supabase antes que su alta, ni un «Deshacer» antes que el borrado. Con el
+ * prefijo se sabe cuántas quedan en vuelo; el resto de la clave dice cuál es, para encontrar su
+ * función al restaurarla (2.10).
+ */
+export const ITEM_MUTATION_KEY = ['items'] as const
+
+const ITEM_MUTATION_SCOPE = { id: 'items' }
+
+/**
+ * Sin red esperan en vez de fallar (`WAITS_FOR_NETWORK`), en fila. Los avisos (2.6) van en la
+ * misma fila: el de un ítem creado sin red sale detrás de su alta.
+ */
+export const OFFLINE_TOLERANT = { ...WAITS_FOR_NETWORK, scope: ITEM_MUTATION_SCOPE } as const
+
+/** La clave de una mutación de ítems: `items` y cuál es. */
+export const itemMutationKey = (name: string) => [...ITEM_MUTATION_KEY, name] as const

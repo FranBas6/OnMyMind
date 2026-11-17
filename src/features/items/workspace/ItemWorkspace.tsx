@@ -13,10 +13,9 @@ import {
   sealNote,
   useOptionalPrivate,
 } from '@/features/private'
-// Por sus rutas y no por el índice: `reminders` y `sharing` usan piezas de `items`.
-import { useSetReminder } from '@/features/reminders/hooks/useReminders'
-import { canHaveReminder, type Reminder } from '@/features/reminders/reminders'
-import { copyText } from '@/features/sharing/share'
+import { useSetReminder } from '@/features/reminders'
+import { canHaveReminder, type Reminder } from '@/features/reminders'
+import { copyText } from '@/features/sharing'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { queryKeys } from '@/lib/query/queryKeys'
 import { showUndoToast } from '@/lib/undoToast'

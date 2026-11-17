@@ -4,9 +4,9 @@ import { useId, useState, type ReactNode } from 'react'
 
 import { formatCaptureAge } from '@/lib/dates/date'
 import { cn } from '@/lib/utils'
-import { personName } from '@/features/sharing/copy'
-import { ItemPersonMark } from '@/features/sharing/components/ItemPersonMark'
-import { useItemPerson } from '@/features/sharing/hooks/useSharing'
+import { personName } from '@/features/sharing'
+import { ItemPersonMark } from '@/features/sharing'
+import { useItemPerson } from '@/features/sharing'
 
 import { doneMoment } from '../copy'
 import { eventWhen } from '../events/events'

@@ -11,7 +11,7 @@ import {
   type List,
 } from '@/features/lists'
 import { useUnlocked } from '@/features/private'
-import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
+import { LIST_COLOR_BG } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import { exportableLists } from './export'

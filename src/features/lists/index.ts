@@ -46,3 +46,15 @@ export type {
   ListView,
   RecentCapture,
 } from './types'
+
+// Lo que usan otras features (6.10): se entra por aquí, no por la ruta.
+export { ListIcon } from './icons/ListIcon'
+export { SublistGlyph } from './icons/SublistGlyph'
+export {
+  LIST_COLOR_BG,
+  LIST_COLOR_BORDER,
+  LIST_COLOR_SUBLIST,
+  LIST_COLOR_TEXT,
+  LIST_COLOR_TINT,
+} from './icons/listColors'
+export { parseListIcon } from './icons/listIcons'

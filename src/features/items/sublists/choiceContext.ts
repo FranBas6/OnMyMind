@@ -1,9 +1,8 @@
 import { createContext, use } from 'react'
 
 import { useOptionalPrivate } from '@/features/private'
-import { personName } from '@/features/sharing/copy'
-// Por su ruta y no por el índice: `sharing` usa piezas de `items`.
-import { useListSharing } from '@/features/sharing/hooks/useSharing'
+import { personName } from '@/features/sharing'
+import { useListSharing } from '@/features/sharing'
 
 import { chooseNote, isChoosing, type OptionMark } from './chooseOne'
 import { isPayment, isRecurringPayment, returnsShort } from '../payments/payments'

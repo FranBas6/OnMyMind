@@ -1,10 +1,10 @@
 import { Check } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
-import { ListIcon } from '@/features/lists/icons/ListIcon'
+import { ListIcon } from '@/features/lists'
 import { destinationName, type Destination } from '@/features/items'
-import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
-import { parseListIcon } from '@/features/lists/icons/listIcons'
+import { LIST_COLOR_BG } from '@/features/lists'
+import { parseListIcon } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 /**

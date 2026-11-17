@@ -1,5 +1,4 @@
-// Por su ruta y no por el índice: `reminders` usa piezas de `items`.
-import { reminderFor, useSetReminder } from '@/features/reminders/hooks/useReminders'
+import { reminderFor, useSetReminder } from '@/features/reminders'
 
 import type { NewItem } from '../api'
 import type { WrittenDate } from './writtenDate'

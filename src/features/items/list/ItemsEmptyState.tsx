@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 import type { List } from '@/features/lists'
 import { shortcutKey, thisDevice } from '@/lib/device/device'
-import { LIST_COLOR_TEXT, LIST_COLOR_TINT } from '@/features/lists/icons/listColors'
+import { LIST_COLOR_TEXT, LIST_COLOR_TINT } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import { KIND_LABELS, proposedKind } from '../kind/kind'

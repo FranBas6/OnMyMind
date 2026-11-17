@@ -1,5 +1,9 @@
 # lists
 
+**Carpetas (6.6, 6.9).** `icons/` (el icono de una lista, sus colores, sus iconos y los
+selectores), `hidden/` (las listas ocultas) y, en `components/` y `hooks/`, lo demás: Inicio, la
+tarjeta, la cabecera del detalle, crear, editar, duplicar, archivar y borrar.
+
 Listas del usuario: sin tipo desde la 5.3 (ADR-012), con sus textos, consultas, mutaciones y
 componentes, y las ocultas (5.8).
 
@@ -17,7 +21,7 @@ componentes, y las ocultas (5.8).
 
 **Duplicar (4.4):** `duplicate.ts` (el nombre de la copia y los textos, puro), `DuplicateListDialog`
 (la hoja) y `useDuplicateList`, que llama a `duplicate_list` y luego copia las fotos subidas con
-`copyItemPhoto` (`features/items/photos.ts`). La abren el menú ··· (`ListCardMenu`), el menú del
+`copyItemPhoto` (`features/items/media/photos.ts`). La abren el menú ··· (`ListCardMenu`), el menú del
 botón derecho del sidebar (`ListContextMenu`) y la hoja de una archivada.
 
 **Listas ocultas (5.8, diseño 27, ADR-013):** se ocultan para quien lo pide, sin cifrar nada.
@@ -25,7 +29,7 @@ botón derecho del sidebar (`ListContextMenu`) y la hoja de una archivada.
 - `api.ts`: `fetchLists` y `fetchArchivedLists` piden `my_lists` sin las ocultas (`hidden = false`);
   `fetchHiddenLists` las pide aparte, y `fetchHiddenListIds` solo cuáles son. `hideList` y
   `showList` son una fila de `hidden_lists`.
-- `hooks/useHiddenLists.ts`: `useHiddenLists` (solo desbloqueado, en memoria), `useHiddenListIds`
+- `hidden/useHiddenLists.ts`: `useHiddenLists` (solo desbloqueado, en memoria), `useHiddenListIds`
   (se guarda: es lo que pide desbloquear al abrir una y lo que `persister.ts` no guarda) y
   `useForgetHiddenOnLock` (al bloquear, se olvida lo de dentro). `useHideList` y `useShowList`, en
   `useListMutations`.
@@ -33,13 +37,13 @@ botón derecho del sidebar (`ListContextMenu`) y la hoja de una archivada.
   `HiddenListsScreen` (Perfil › «Listas ocultas», ruta `/profile/hidden`); `HiddenLocked` (la
   pantalla tapada); `HiddenListGate`, que abre una oculta desde su enlace o un aviso. La cabecera
   (`ListDetailHeader`) dice «Oculta» y vuelve a «Listas ocultas».
-- `hidden.ts`: sus textos.
+- `hidden/hidden.ts`: sus textos.
 
 **Iconos y emojis (5.9, diseño 28):** el cuadrado de la lista lleva la inicial, un icono de lucide o
 un emoji (`lists.icon`: `lucide:<nombre>`, `emoji:<emoji>` o `null`).
 
-- `src/lib/listIcons.ts` (compartido, porque lo pinta `components/ListIcon`): los 8 grupos de 6
+- `icons/listIcons.ts` (compartido, porque lo pinta `components/ListIcon`): los 8 grupos de 6
   iconos, los 48 emojis y `parseListIcon`.
-- `components/ListIconPicker.tsx`: el cuadrado del formulario y su selector (hoja en el móvil,
+- `icons/ListIconPicker.tsx`: el cuadrado del formulario y su selector (hoja en el móvil,
   popover en escritorio, con flechas). `ListFormDialog` guarda `icon` con `createList` y
   `updateList`.

@@ -1,7 +1,7 @@
 import { Archive } from 'lucide-react'
 import { useId } from 'react'
 
-import { ListIcon } from '@/features/lists/icons/ListIcon'
+import { ListIcon } from '@/features/lists'
 import { InboxMark } from '@/features/capture'
 import { hasPrices, ListScope } from '@/features/items'
 

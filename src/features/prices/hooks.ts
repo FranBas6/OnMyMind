@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { toast } from 'sonner'
 
-import { useCurrentUser } from '@/features/profile/hooks/useProfile'
+import { useCurrentUser } from '@/features/profile'
 import { errorMessage } from '@/lib/query/errors'
 import { durableMutation, useDurableMutation, WAITS_FOR_NETWORK } from '@/lib/query/mutations'
 import { queryKeys } from '@/lib/query/queryKeys'

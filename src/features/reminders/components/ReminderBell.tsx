@@ -1,7 +1,7 @@
 import { format, isSameDay } from 'date-fns'
 import { Bell } from 'lucide-react'
 
-import type { Item } from '@/features/items/types'
+import type { Item } from '@/features/items'
 import { cn } from '@/lib/utils'
 
 import { useItemReminder } from '../hooks/useReminders'

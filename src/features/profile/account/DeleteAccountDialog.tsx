@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { FormError } from '@/features/auth'
-import { SharedListsNotice } from '@/features/sharing/components/SharedListsNotice'
+import { SharedListsNotice } from '@/features/sharing'
 import { useOnline } from '@/hooks/useOnline'
 import { cn } from '@/lib/utils'
 

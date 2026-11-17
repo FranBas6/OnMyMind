@@ -23,3 +23,9 @@ export {
   type ReminderShape,
 } from './reminders'
 export type { PushState } from './push'
+
+// Lo que usan otras features (6.10): se entra por aquí, no por la ruta.
+export { PushPrompt } from './components/PushPrompt'
+export type { PushPromptKind } from './components/PushPrompt'
+export { askPermission } from './push'
+export { TWO_DAYS_BEFORE } from './reminders'

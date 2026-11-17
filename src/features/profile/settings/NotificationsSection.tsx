@@ -4,11 +4,10 @@ import { toast } from 'sonner'
 
 import { Switch } from '@/components/controls/Switch'
 import { usePriceAlerts } from '@/features/prices'
-// Por sus rutas y no por el índice: `reminders` usa piezas de `profile`.
-import { PushPrompt, type PushPromptKind } from '@/features/reminders/components/PushPrompt'
-import { usePush } from '@/features/reminders/hooks/usePush'
-import { askPermission } from '@/features/reminders/push'
-import { deviceName } from '@/features/reminders/reminders'
+import { PushPrompt, type PushPromptKind } from '@/features/reminders'
+import { usePush } from '@/features/reminders'
+import { askPermission } from '@/features/reminders'
+import { deviceName } from '@/features/reminders'
 import { cn } from '@/lib/utils'
 
 import { useProfile } from '../hooks/useProfile'

@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Archive } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { ListIcon } from '@/features/lists/icons/ListIcon'
+import { ListIcon } from '@/features/lists'
 import { InboxMark } from '@/features/capture'
 import { DimmedIcon, listCounterLabel, type List } from '@/features/lists'
 import { cn } from '@/lib/utils'

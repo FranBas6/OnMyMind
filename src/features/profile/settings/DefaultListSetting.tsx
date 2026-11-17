@@ -3,7 +3,7 @@ import { Popover } from 'radix-ui'
 import { useState, type ReactNode } from 'react'
 
 import { BottomSheet } from '@/components/sheets/BottomSheet'
-import { ListIcon } from '@/features/lists/icons/ListIcon'
+import { ListIcon } from '@/features/lists'
 import { InboxMark } from '@/features/capture'
 import {
   filterListsByName,
@@ -14,7 +14,7 @@ import {
   type List,
 } from '@/features/lists'
 import { shortcutKey } from '@/lib/device/device'
-import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
+import { LIST_COLOR_BG } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import { useProfile } from '../hooks/useProfile'

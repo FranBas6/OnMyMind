@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs'
+
 import js from '@eslint/js'
 import prettier from 'eslint-config-prettier/flat'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -5,6 +7,50 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
+
+// Las fronteras entre carpetas (6.10, docs/plans/06b-organizar-carpetas.md). Lo que vive en
+// `components/`, `lib/` y `hooks/` es genérico: no conoce las features ni la app. Una feature no
+// conoce la app. Y la interfaz de una feature (sus componentes y sus hooks) entra en otra solo por
+// su índice: la lógica pura (api, esquemas, cálculos) sí va directa a la lógica de otra, porque el
+// índice arrastra toda la interfaz y, con ella, los ciclos al cargar (`items` ↔ `profile`…).
+const FEATURES = readdirSync(new URL('./src/features', import.meta.url))
+const APP = {
+  group: ['@/app', '@/app/**', '@/routes', '@/routes/**'],
+  message: 'La app compone las features, no al revés: esto no se importa desde aquí.',
+}
+const restrict = (patterns) => ({ 'no-restricted-imports': ['error', { patterns }] })
+const boundaries = [
+  {
+    files: ['src/{components,lib,hooks}/**/*.{ts,tsx}'],
+    rules: restrict([
+      {
+        group: ['@/features', '@/features/**'],
+        message: 'components, lib y hooks son genéricos: no importan features.',
+      },
+      APP,
+    ]),
+  },
+  { files: ['src/features/**/*.{ts,tsx}'], rules: restrict([APP]) },
+  ...FEATURES.map((feature) => ({
+    files: [
+      `src/features/${feature}/**/*.tsx`,
+      `src/features/${feature}/**/hooks/**/*.ts`,
+      `src/features/${feature}/**/use*.ts`,
+    ],
+    rules: restrict([
+      APP,
+      ...FEATURES.filter((other) => other !== feature).map((other) => ({
+        group: [`@/features/${other}/**`],
+        message: `Se entra en «${other}» por su índice: import { … } from '@/features/${other}'.`,
+      })),
+    ]),
+  })),
+  // Los tests sí entran donde haga falta: simulan módulos concretos (`vi.mock`).
+  {
+    files: ['**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
+]
 
 export default defineConfig([
   globalIgnores([
@@ -68,5 +114,6 @@ export default defineConfig([
       'react-refresh/only-export-components': 'off',
     },
   },
+  ...boundaries,
   prettier,
 ])

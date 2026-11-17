@@ -1,6 +1,6 @@
 import { Users } from 'lucide-react'
 
-import type { List } from '@/features/lists/types'
+import type { List } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 import { useListSharing } from '../hooks/useSharing'

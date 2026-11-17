@@ -10,12 +10,7 @@ export { StatusCheckbox } from './rows/StatusCheckbox'
 export { SublistIcon } from './sublists/SublistIcon'
 export { SwipeableRow } from './rows/SwipeableRow'
 export { PRIORITY_LABELS } from './fields'
-export {
-  itemMutations,
-  OFFLINE_TOLERANT,
-  useCreateItem,
-  useDeleteItem,
-} from './hooks/useItemMutations'
+export { itemMutations, useCreateItem, useDeleteItem } from './hooks/useItemMutations'
 export { useItems } from './hooks/useItems'
 export { useLingering } from './list/useLingering'
 export { useOpenSublist } from './sublists/useOpenSublist'
@@ -104,3 +99,11 @@ export type { Completion } from './types'
 export { PastedLinesBox, PastedNoteBox } from './add/PastedLinesBox'
 export { usePastedLines } from './add/usePastedLines'
 export { linesToSave, pastedLinesSaved, type LineToSave } from './add/pastedLines'
+
+// Lo que usan otras features (6.10): se entra por aquí, no por la ruta.
+export { fetchItems } from './api'
+export { copyItemFile } from './media/files'
+export { schedulePhotoCleanup } from './media/photoCleanup'
+export { copyItemPhoto } from './media/photos'
+export { ProtectedNotesGate } from './notes/ProtectedNotesGate'
+export { monthlyText } from './payments/payments'

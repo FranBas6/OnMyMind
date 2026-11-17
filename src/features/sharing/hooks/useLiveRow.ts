@@ -1,5 +1,5 @@
-import { isFinalStatus } from '@/features/items/status'
-import type { Item } from '@/features/items/types'
+import { isFinalStatus } from '@/features/items'
+import type { Item } from '@/features/items'
 
 import { useArrived, useCompletedLive } from '../liveRows'
 import { useItemPerson } from './useSharing'

@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { useProfile } from '@/features/profile/hooks/useProfile'
-import { useUpdateSettings } from '@/features/profile/hooks/useProfileMutations'
+import { useProfile } from '@/features/profile'
+import { useUpdateSettings } from '@/features/profile'
 import { errorMessage } from '@/lib/query/errors'
 import { queryKeys } from '@/lib/query/queryKeys'
 

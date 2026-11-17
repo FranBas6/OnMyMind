@@ -29,3 +29,8 @@ export {
 } from './schemas'
 export type { ChangePasswordValues } from './schemas'
 export { authErrorMessage } from './errors'
+
+// Lo que usan otras features (6.10): se entra por aquí, no por la ruta.
+export { markAccountDeleted } from './accountDeleted'
+export { signOut } from './api'
+export { Spinner } from './components/Spinner'

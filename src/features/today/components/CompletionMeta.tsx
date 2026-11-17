@@ -3,7 +3,7 @@ import { Repeat } from 'lucide-react'
 
 import { recurrenceLabel, returnsShort, type Completion } from '@/features/items'
 import type { List } from '@/features/lists'
-import { LIST_COLOR_BG } from '@/features/lists/icons/listColors'
+import { LIST_COLOR_BG } from '@/features/lists'
 import { cn } from '@/lib/utils'
 
 /**

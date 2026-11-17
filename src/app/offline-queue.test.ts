@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as itemsApi from '@/features/items/api'
 import type { NewItem } from '@/features/items/api'
-import { itemMutationKey } from '@/features/items/hooks/useItemMutations'
+import { itemMutationKey } from '@/lib/query/mutations'
 import type { Item } from '@/features/items'
 import type { List } from '@/features/lists'
 import { queryKeys } from '@/lib/query/queryKeys'

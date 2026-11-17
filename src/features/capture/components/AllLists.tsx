@@ -2,7 +2,7 @@ import { Check, Search } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { useState, type KeyboardEvent } from 'react'
 
-import { ListIcon } from '@/features/lists/icons/ListIcon'
+import { ListIcon } from '@/features/lists'
 import { filterDestinations, SublistIcon, type Destination } from '@/features/items'
 import { cn } from '@/lib/utils'
 

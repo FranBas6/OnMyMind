@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 
 import { isFinalStatus } from '../status'
 import type { Item } from '../types'
-import { DueDatePicker } from './DueDatePicker'
+import { DueDatePicker } from '@/components/controls/DueDatePicker'
 
 interface DueDateFieldProps {
   item: Item

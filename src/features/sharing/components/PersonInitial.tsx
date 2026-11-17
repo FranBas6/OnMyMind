@@ -1,4 +1,4 @@
-import { initialOf } from '@/features/profile/schemas'
+import { initialOf } from '@/features/profile'
 import { cn } from '@/lib/utils'
 
 const SIZES = {

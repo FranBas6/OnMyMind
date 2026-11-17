@@ -1,8 +1,8 @@
-import { ListIcon } from '@/features/lists/icons/ListIcon'
-import { useArchivedLists } from '@/features/lists/hooks/useArchivedLists'
-import { useLists } from '@/features/lists/hooks/useLists'
-import type { List } from '@/features/lists/types'
-import { useCurrentUser } from '@/features/profile/hooks/useProfile'
+import { ListIcon } from '@/features/lists'
+import { useArchivedLists } from '@/features/lists'
+import { useLists } from '@/features/lists'
+import type { List } from '@/features/lists'
+import { useCurrentUser } from '@/features/profile'
 
 import { deletionNote } from '../copy'
 import { useSharedPeople } from '../hooks/useSharing'

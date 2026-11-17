@@ -91,22 +91,25 @@ src/
   routes/         Rutas file-based de TanStack Router (__root.tsx + una por pantalla)
   features/       Código de dominio agrupado por funcionalidad:
     auth/           login, sesión y guardas de ruta
-    lists/          listas y sus tipos/plantillas; las ocultas (5.8); icons/: ListIcon, colores e iconos
-    items/          ítems, estados y campos flexibles
+    lists/          listas y sus tipos/plantillas; hidden/ (las ocultas), icons/ (ListIcon, colores, iconos)
+    items/          ítems: en la raíz el núcleo (tipos, estados, api); el resto por temas: kind/,
+                    workspace/, list/, rows/, detail/, add/, move/, dates/, notes/, events/,
+                    shopping/, payments/, sublists/, media/
     capture/        captura rápida y detección de URLs
     today/          vista Hoy
     search/         Buscar: búsqueda en cliente sobre todos los ítems
-    profile/        Perfil: nombre, ajustes en `profiles.settings` (tema, lista por defecto)
+    profile/        Perfil: nombre, ajustes en `profiles.settings`; account/, data/, calendar/, settings/
     reminders/      recordatorios y push
     sharing/        compartir listas: invitar con un enlace, unirse, quién está
     prices/         histórico de precios y gráficas
-    private/        la clave privada: la caja cifrada, desbloquear con la clave o la llave del aparato, el texto de las notas protegidas y abrir las listas ocultas
+    private/        la clave privada: vault/ (la caja cifrada), unlock/ (la clave o la llave del aparato),
+                    key/ (crear, cambiar, olvidar) y notes/ (las notas protegidas)
   components/     Solo piezas genéricas, sin dominio, que no importan features
     ui/           Componentes generados por shadcn (no editar salvo ajustes de estilo)
     layout/       PageHeader, ResizeHandle, anchos de los paneles y el panel lateral
     sheets/       BottomSheet, ResponsiveSheet, KeyboardSheet, ConfirmDialog, InlineConfirm
     feedback/     EmptyState, UndoToast, OfflineBanner, InstallHint, KeyboardDragHint
-    controls/     Switch, Fab, OutlineButton
+    controls/     Switch, Fab, OutlineButton, FieldRow (filas de una caja de la ficha), DueDatePicker
   lib/            Infraestructura y utilidades sin dominio
     supabase/     client.ts (cliente tipado) y database.types.ts (generado, no editar)
     query/        queryKeys, mutaciones duraderas, errores
@@ -126,9 +129,29 @@ public/logos/     Logos oficiales del diseño (svg/ y png/): no se generan ni se
 docs/             Documentación funcional y de diseño (local, fuera de git)
 ```
 
-Dentro de cada feature, organiza por necesidad: `components/`, `hooks/`, `api/` (queries y
-mutations de Supabase), `schemas.ts` (zod), `types.ts`. Las rutas de `src/routes/` deben ser finas:
-importan de `features/` y componen la pantalla.
+Dentro de cada feature, en la raíz lo que es de toda ella: `index.ts` (lo que ven las demás),
+`api.ts` y `queries.ts` (Supabase y TanStack Query), `schemas.ts` (zod) y `types.ts`. Mientras es
+pequeña, `components/` y `hooks/`; cuando crece, **por temas** (`items/payments/`,
+`private/unlock/`…), cada tema con su lógica, sus componentes, sus hooks y sus tests juntos, sin
+otro nivel `components/` dentro. Un tema no se parte por tipo de archivo. Las rutas de
+`src/routes/` deben ser finas: importan de `features/` y componen la pantalla.
+
+### Fronteras (las impone ESLint, `eslint.config.js`)
+
+- `components/`, `lib/` y `hooks/` son genéricos: **no importan features** ni la app.
+- Una feature **no importa la app** (`@/app`, `@/routes`): la app compone las features.
+- **La interfaz de una feature (sus `.tsx` y sus hooks) entra en otra solo por su índice**:
+  `import { … } from '@/features/items'`. Si falta algo, se añade al `index.ts` de esa feature.
+- **La lógica pura (`.ts` que no son hooks: api, esquemas, cálculos) sí va directa** a la lógica
+  de otra (`@/features/items/dates/recurrence`): el índice arrastra toda la interfaz y, con ella,
+  ciclos al cargar (`items` ↔ `profile`, `items` ↔ `reminders`), que rompen en los tests con
+  `vi.mock` o con algo usado al cargar el módulo (6.10).
+- Lo que comparten varias features y usan al cargar (claves de mutación, constantes) baja a
+  `lib/` (como la fila de los ítems, `lib/query/mutations.ts`).
+- Los tests pueden entrar donde haga falta: simulan módulos concretos.
+- **Mayúsculas:** un componente y una lógica con el mismo nombre (`Stores.tsx` y `stores.ts`) no
+  comparten carpeta: en macOS los nombres no distinguen mayúsculas y el import se confunde. El
+  componente se llama por lo que exporta (`StoresSection.tsx`).
 
 ## Convenciones
 
